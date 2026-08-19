@@ -191,6 +191,23 @@ export default async function DashboardPage() {
 
       <div className="mt-12">
         <div className="text-[11px] tracking-[0.15em] uppercase text-slate-500 mb-2 px-1">Tasks</div>
+        {listsWithTasks.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3 px-1">
+            {listsWithTasks.map((l) => {
+              const open = l.tasks.filter((t) => !t.completed).length;
+              return (
+                <span
+                  key={l.id}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
+                    open > 0 ? "bg-white border-teal-200 text-teal-800" : "bg-slate-50 border-slate-200 text-slate-400"
+                  }`}
+                >
+                  {open} {l.title}
+                </span>
+              );
+            })}
+          </div>
+        )}
         <TaskBoard lists={listsWithTasks} />
       </div>
     </div>
