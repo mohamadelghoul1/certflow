@@ -349,6 +349,15 @@ export async function resolveAmendment(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+export async function removeAmendment(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const amendmentId = String(formData.get("amendment_id"));
+  const jobId = String(formData.get("job_id"));
+  await supabase.from("amendments").delete().eq("id", amendmentId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
 export async function addCondition(formData: FormData) {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();

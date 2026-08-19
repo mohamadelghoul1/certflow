@@ -1,10 +1,10 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
-import { addAmendment, resolveAmendment } from "@/lib/actions/jobs";
+import { addAmendment, resolveAmendment, removeAmendment } from "@/lib/actions/jobs";
 import type { Amendment } from "@/types/db";
 
-type AmendAction = { type: "add"; amendment: Amendment } | { type: "resolve"; id: string };
+type AmendAction = { type: "add"; amendment: Amendment } | { type: "resolve"; id: string } | { type: "remove"; id: string };
 
 function reducer(state: Amendment[], action: AmendAction): Amendment[] {
   switch (action.type) {
@@ -12,6 +12,8 @@ function reducer(state: Amendment[], action: AmendAction): Amendment[] {
       return [...state, action.amendment];
     case "resolve":
       return state.map((a) => (a.id === action.id ? { ...a, resolved: true, resolved_at: new Date().toISOString() } : a));
+    case "remove":
+      return state.filter((a) => a.id !== action.id);
   }
 }
 
@@ -46,16 +48,31 @@ export function AmendmentsList({ itemId, jobId, amendments }: { itemId: string; 
     });
   }
 
+  function handleRemove(id: string) {
+    startTransition(async () => {
+      dispatch({ type: "remove", id });
+      const fd = new FormData();
+      fd.set("amendment_id", id);
+      fd.set("job_id", jobId);
+      await removeAmendment(fd);
+    });
+  }
+
   return (
     <>
       {list.length > 0 && (
         <div className="mt-3 space-y-2">
           {list.map((a) => (
-            <div key={a.id} className={`text-xs rounded-md px-3 py-2 flex items-start justify-between gap-3 ${a.resolved ? "bg-slate-50 text-slate-400 line-through" : "bg-amber-50 text-amber-800"}`}>
-              <span>{a.text}</span>
+            <div key={a.id} className={`text-xs rounded-md px-3 py-2 flex items-start justify-between gap-3 ${a.resolved ? "bg-slate-50 text-slate-400" : "bg-amber-50 text-amber-800"}`}>
+              <span className={a.resolved ? "line-through" : ""}>{a.text}</span>
               {!a.resolved && (
                 <button onClick={() => handleResolve(a.id)} className="font-semibold hover:underline shrink-0">
                   Resolve
+                </button>
+              )}
+              {a.resolved && (
+                <button onClick={() => handleRemove(a.id)} className="font-semibold hover:underline hover:text-red-500 shrink-0">
+                  Remove
                 </button>
               )}
             </div>
