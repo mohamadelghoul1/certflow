@@ -1,6 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { stageComplete, unresolvedCount, daysUntil, calcCdcLapseDate } from "@/lib/business";
+import { stageComplete, unresolvedCount, daysUntil, calcCdcLapseDate, portalReportDeadline } from "@/lib/business";
 import Link from "next/link";
 import { DashboardSearch } from "@/components/certifier/DashboardSearch";
 
@@ -14,9 +14,11 @@ type DashboardJob = {
   status: "active" | "complete";
   details: { certificateDetails?: { determinationDate?: string } };
   pathway_generated: boolean;
+  pathway_generated_date: string | null;
+  pathway_portal_reported: boolean;
   checklists: { kind: string; checklist_items: { status: string; amendments: { resolved: boolean }[] }[] }[];
-  inspections: { id: string; outcome: string; booked_by_client: boolean; confirmed: boolean; title: string; date: string | null }[];
-  oc_records: { id: string; type: string }[];
+  inspections: { id: string; outcome: string; date: string | null; booked_by_client: boolean; confirmed: boolean; title: string; portal_reported: boolean }[];
+  oc_records: { id: string; type: string; generated_date: string | null; portal_reported: boolean }[];
 };
 
 export default async function DashboardPage() {
@@ -26,10 +28,10 @@ export default async function DashboardPage() {
   const { data: jobs } = await supabase
     .from("jobs")
     .select(
-      "id, address, description, pathway, status, details, pathway_generated, " +
+      "id, address, description, pathway, status, details, pathway_generated, pathway_generated_date, pathway_portal_reported, " +
         "checklists(id, kind, checklist_items(id, status, amendments(id, resolved))), " +
-        "inspections(id, outcome, booked_by_client, confirmed, title, date), " +
-        "oc_records(id, type)"
+        "inspections(id, outcome, booked_by_client, confirmed, title, date, portal_reported), " +
+        "oc_records(id, type, generated_date, portal_reported)"
     )
     .eq("firm_id", profile.firm_id)
     .eq("status", "active")
@@ -101,6 +103,44 @@ export default async function DashboardPage() {
       const d = daysUntil(lapse);
       if (d !== null && d <= 90) {
         tasks.push({ priority: "High", text: d < 0 ? `CDC lapsed ${lapse} — ${p.address}` : `CDC lapses in ${d} day${d === 1 ? "" : "s"} (${lapse}) — ${p.address}`, jobId: p.id, href });
+      }
+    }
+
+    // Build Brief §9: CDC/CC/OC issuance and critical stage inspections must
+    // be reported to the NSW Planning Portal within 2 business days.
+    if (p.pathway_generated && p.pathway_generated_date && !p.pathway_portal_reported) {
+      const deadline = daysUntil(portalReportDeadline(p.pathway_generated_date));
+      if (deadline !== null && deadline <= 2) {
+        tasks.push({
+          priority: "High",
+          text: deadline < 0 ? `${p.pathway} Planning Portal report overdue — ${p.address}` : `Report ${p.pathway} to NSW Planning Portal within ${deadline} day${deadline === 1 ? "" : "s"} — ${p.address}`,
+          jobId: p.id,
+          href,
+        });
+      }
+    }
+    for (const r of p.oc_records || []) {
+      if (!r.generated_date || r.portal_reported) continue;
+      const deadline = daysUntil(portalReportDeadline(r.generated_date));
+      if (deadline !== null && deadline <= 2) {
+        tasks.push({
+          priority: "High",
+          text: deadline < 0 ? `OC Planning Portal report overdue — ${p.address}` : `Report OC to NSW Planning Portal within ${deadline} day${deadline === 1 ? "" : "s"} — ${p.address}`,
+          jobId: p.id,
+          href: `${href}?tab=oc`,
+        });
+      }
+    }
+    for (const i of p.inspections || []) {
+      if (i.outcome === "pending" || !i.date || i.portal_reported) continue;
+      const deadline = daysUntil(portalReportDeadline(i.date));
+      if (deadline !== null && deadline <= 2) {
+        tasks.push({
+          priority: "High",
+          text: deadline < 0 ? `Inspection Planning Portal report overdue — ${i.title} — ${p.address}` : `Report inspection to NSW Planning Portal within ${deadline} day${deadline === 1 ? "" : "s"} — ${i.title} — ${p.address}`,
+          jobId: p.id,
+          href: `${href}?tab=inspections`,
+        });
       }
     }
   }

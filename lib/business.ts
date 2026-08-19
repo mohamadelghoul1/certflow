@@ -132,3 +132,17 @@ export function suggestedInspectionBookingDate(isoDateStr: string, now = new Dat
 export function pathwayCertRef(pathway: "CDC" | "CC", projectNumberOrId: string, version: number) {
   return `${pathway}-${projectNumberOrId}/${String(version || 1).padStart(2, "0")}`;
 }
+
+// Build Brief §9: CDC/CC/OC issuance and critical stage inspections must be
+// reported to the NSW Planning Portal within 2 business days of the event.
+// Returns the ISO deadline date (business days only, weekends skipped).
+export function portalReportDeadline(eventDateIso: string) {
+  const d = new Date(`${eventDateIso}T00:00:00`);
+  let remaining = 2;
+  while (remaining > 0) {
+    d.setDate(d.getDate() + 1);
+    const day = d.getDay();
+    if (day !== 0 && day !== 6) remaining--;
+  }
+  return d.toISOString().slice(0, 10);
+}

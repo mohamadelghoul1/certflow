@@ -1,6 +1,6 @@
 import { formatISODate, stageComplete, pathwayCertRef } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { issuePathwayCertificate, uploadPathwayApproval, startModification, issueModification, uploadModificationApproval, notifyClientMessage } from "@/lib/actions/jobs";
+import { issuePathwayCertificate, reportPathwayToPortal, uploadPathwayApproval, startModification, issueModification, uploadModificationApproval, notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import Link from "next/link";
@@ -95,6 +95,12 @@ export async function CertificatesPanel({
                 </form>
               </>
             )}
+            <form action={reportPathwayToPortal}>
+              <input type="hidden" name="job_id" value={job.id} />
+              <button disabled={job.pathway_portal_reported} className="text-xs font-semibold text-slate-600 hover:underline disabled:opacity-50 disabled:cursor-default">
+                {job.pathway_portal_reported ? `Reported to Portal ${formatISODate(job.pathway_portal_reported_date)}` : "Report to NSW Planning Portal"}
+              </button>
+            </form>
           </div>
         )}
       </div>

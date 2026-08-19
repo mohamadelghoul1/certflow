@@ -1,6 +1,6 @@
 import { formatISODate, stageComplete } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { issueOc, uploadOcApproval, markJobComplete, reopenJob, notifyClientMessage } from "@/lib/actions/jobs";
+import { issueOc, uploadOcApproval, reportOcToPortal, markJobComplete, reopenJob, notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import type { Job, Certifier, OcRecord, ChecklistItem, Amendment } from "@/types/db";
@@ -118,6 +118,13 @@ async function OcRecordCard({ record, job, firmId, certifiers }: { record: OcRec
             <button className="text-xs font-semibold text-teal-800 hover:underline">Notify client</button>
           </form>
         )}
+        <form action={reportOcToPortal}>
+          <input type="hidden" name="job_id" value={job.id} />
+          <input type="hidden" name="oc_id" value={record.id} />
+          <button disabled={record.portal_reported} className="text-xs font-semibold text-slate-600 hover:underline disabled:opacity-50 disabled:cursor-default">
+            {record.portal_reported ? `Reported to Portal ${formatISODate(record.portal_reported_date)}` : "Report to NSW Planning Portal"}
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -141,6 +141,8 @@ export type Job = {
   pathway_approval_uploaded: boolean;
   pathway_approval_date: string | null;
   pathway_approval_file_path: string | null;
+  pathway_portal_reported: boolean;
+  pathway_portal_reported_date: string | null;
   created_at: string;
 };
 
@@ -201,6 +203,8 @@ export type OcRecord = {
   approval_uploaded: boolean;
   approval_date: string | null;
   approval_file_path: string | null;
+  portal_reported: boolean;
+  portal_reported_date: string | null;
 };
 
 export type Inspection = {
