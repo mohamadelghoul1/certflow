@@ -1,9 +1,9 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { updateJobDetails, addCondition, assignJobClient } from "@/lib/actions/jobs";
+import { updateJobDetails, addCondition, assignJobClient, updateCouncilLetter, updateApplicantLetter, toggleCriticalStageInspection } from "@/lib/actions/jobs";
 import type { ActionState } from "@/lib/actions/auth";
-import { BCA_VERSIONS, BUILDING_CLASSIFICATIONS, CONSTRUCTION_TYPES } from "@/lib/constants";
+import { BCA_VERSIONS, BUILDING_CLASSIFICATIONS, CONSTRUCTION_TYPES, MANDATORY_CRITICAL_STAGE_INSPECTIONS } from "@/lib/constants";
 import { formatISODate } from "@/lib/business";
 import type { Job, ConditionOfConsent, ClientContact } from "@/types/db";
 
@@ -160,6 +160,41 @@ export function DetailsTab({ job, conditions, clients }: { job: Job; conditions:
       </div>
 
       <div className="bg-white rounded-lg border border-slate-200 p-5">
+        <div className="font-bold text-teal-900 mb-1">Critical stage inspections</div>
+        <p className="text-xs text-slate-400 mb-3">Which of the mandatory critical stage inspections apply to this job — shown on the Mandatory Inspections Notice in the certificate package.</p>
+        <div className="space-y-2">
+          {MANDATORY_CRITICAL_STAGE_INSPECTIONS.map((insp) => (
+            <form action={toggleCriticalStageInspection} key={insp.no}>
+              <input type="hidden" name="job_id" value={job.id} />
+              <input type="hidden" name="no" value={insp.no} />
+              <label className="flex items-start gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  defaultChecked={job.critical_stage_inspections.includes(insp.no)}
+                  onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                  className="mt-0.5 accent-teal-700"
+                />
+                <span>
+                  {insp.no}. {insp.stage} <span className="text-slate-400">({insp.inspector})</span>
+                </span>
+              </label>
+            </form>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg border border-slate-200 p-5">
+        <div className="font-bold text-teal-900 mb-1">Certificate package letters</div>
+        <p className="text-xs text-slate-400 mb-3">
+          The council and applicant letters in the certificate package use a standard template automatically. Leave blank to keep that, or write your own text
+          here to override it for this job.
+        </p>
+        <LetterOverrideForm action={updateCouncilLetter} jobId={job.id} label="Council letter override" defaultValue={job.council_letter_override || ""} />
+        <div className="h-4" />
+        <LetterOverrideForm action={updateApplicantLetter} jobId={job.id} label="Applicant letter override" defaultValue={job.applicant_letter_override || ""} />
+      </div>
+
+      <div className="bg-white rounded-lg border border-slate-200 p-5">
         <div className="font-bold text-teal-900 mb-3">Conditions of Consent</div>
         <div className="space-y-2 mb-3">
           {conditions.map((c) => (
@@ -177,5 +212,33 @@ export function DetailsTab({ job, conditions, clients }: { job: Job; conditions:
         </form>
       </div>
     </div>
+  );
+}
+
+function LetterOverrideForm({ action, jobId, label, defaultValue }: { action: (formData: FormData) => Promise<void>; jobId: string; label: string; defaultValue: string }) {
+  const [pending, setPending] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPending(true);
+    await action(new FormData(e.currentTarget));
+    setPending(false);
+    setShowSaved(true);
+    setTimeout(() => setShowSaved(false), 2500);
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input type="hidden" name="job_id" value={jobId} />
+      <label className={labelCls}>{label}</label>
+      <textarea name="text" defaultValue={defaultValue} rows={4} placeholder="Leave blank for the standard letter text…" className={inputCls} />
+      <div className="flex items-center gap-3 mt-2">
+        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-teal-800 text-white text-xs font-semibold hover:bg-teal-900 disabled:opacity-60">
+          {pending ? "Saving…" : "Save"}
+        </button>
+        {showSaved && <span className="text-xs font-medium text-emerald-700">Saved ✓</span>}
+      </div>
+    </form>
   );
 }

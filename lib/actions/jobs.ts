@@ -413,3 +413,34 @@ export async function assignJobClient(formData: FormData) {
   await supabase.from("jobs").update({ client_id: clientId }).eq("id", jobId);
   revalidatePath(`/jobs/${jobId}`);
 }
+
+// Both blank by default — the certificate package falls back to a standard
+// letter body (see app/certificate/pathway/[jobId]/page.tsx) unless the
+// certifier has overridden it here for this specific job.
+export async function updateCouncilLetter(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  await supabase.from("jobs").update({ council_letter_override: String(formData.get("text") || "") }).eq("id", jobId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function updateApplicantLetter(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  await supabase.from("jobs").update({ applicant_letter_override: String(formData.get("text") || "") }).eq("id", jobId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function toggleCriticalStageInspection(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const no = Number(formData.get("no"));
+  const { data: job } = await supabase.from("jobs").select("critical_stage_inspections").eq("id", jobId).single();
+  const current: number[] = job?.critical_stage_inspections || [];
+  const next = current.includes(no) ? current.filter((n) => n !== no) : [...current, no].sort((a, b) => a - b);
+  await supabase.from("jobs").update({ critical_stage_inspections: next }).eq("id", jobId);
+  revalidatePath(`/jobs/${jobId}`);
+}

@@ -132,6 +132,8 @@ export type Job = {
   client_id: string | null;
   details: JobDetails;
   critical_stage_inspections: number[];
+  council_letter_override: string | null;
+  applicant_letter_override: string | null;
   pathway_generated: boolean;
   pathway_generated_date: string | null;
   pathway_issued_by: string | null;
