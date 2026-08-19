@@ -10,13 +10,15 @@ import { OcPanel } from "@/components/certifier/OcPanel";
 import { InspectionsPanel } from "@/components/certifier/InspectionsPanel";
 import type { Job } from "@/types/db";
 
-const TABS = [
-  { key: "details", label: "Details" },
-  { key: "pathway", label: "Original CDC/CC" },
-  { key: "noc", label: "NOC" },
-  { key: "inspections", label: "Inspections" },
-  { key: "oc", label: "Occupation Certificate" },
-];
+function tabsFor(pathway: "CDC" | "CC") {
+  return [
+    { key: "details", label: "Details" },
+    { key: "pathway", label: `Original ${pathway}` },
+    { key: "noc", label: "NOC" },
+    { key: "inspections", label: "Inspections" },
+    { key: "oc", label: "Occupation Certificate" },
+  ];
+}
 
 export default async function JobDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
   const { id } = await params;
@@ -70,7 +72,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
       </div>
 
       <div className="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
-        {TABS.map((t) => {
+        {tabsFor(job.pathway).map((t) => {
           let progress: string | null = null;
           if (t.key === "pathway") progress = checklistProgress((pathwayChecklist?.checklist_items as never[]) || []);
           if (t.key === "noc") progress = checklistProgress((nocChecklist?.checklist_items as never[]) || []);
@@ -110,7 +112,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
 
       {tab === "inspections" && (
         <div className="bg-white rounded-lg border border-slate-200 p-5">
-          <InspectionsPanel jobId={id} firmId={profile.firm_id} pathwayGenerated={job.pathway_generated} inspections={(inspections as never[]) || []} certifiers={certifiers || []} />
+          <InspectionsPanel jobId={id} firmId={profile.firm_id} pathway={job.pathway} pathwayGenerated={job.pathway_generated} inspections={(inspections as never[]) || []} certifiers={certifiers || []} />
         </div>
       )}
 

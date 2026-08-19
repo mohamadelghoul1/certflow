@@ -32,18 +32,20 @@ const OUTCOME_META: Record<string, { label: string; style: string }> = {
 export async function InspectionsPanel({
   jobId,
   firmId,
+  pathway,
   pathwayGenerated,
   inspections,
   certifiers,
 }: {
   jobId: string;
   firmId: string;
+  pathway: "CDC" | "CC";
   pathwayGenerated: boolean;
   inspections: InspectionWithDefects[];
   certifiers: Certifier[];
 }) {
   if (!pathwayGenerated) {
-    return <div className="text-sm text-slate-400">Inspections open once the original {"CDC/CC"} is issued.</div>;
+    return <div className="text-sm text-slate-400">Inspections open once the original {pathway} is issued.</div>;
   }
 
   return (
