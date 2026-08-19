@@ -312,7 +312,7 @@ create function current_firm_id() returns uuid
   language sql stable security definer set search_path = public as
   $$ select firm_id from profiles where id = auth.uid() $$;
 
-create function current_role() returns text
+create function current_app_role() returns text
   language sql stable security definer set search_path = public as
   $$ select role from profiles where id = auth.uid() $$;
 
@@ -361,90 +361,90 @@ create policy "certifier update own firm" on firms for update using (id = curren
 -- can read certifiers of firms they have a job with (names/rego appear on
 -- certificates and inspection reports).
 create policy "certifier firm crud" on certifiers for all
-  using (firm_id = current_firm_id() and current_role() = 'certifier')
-  with check (firm_id = current_firm_id() and current_role() = 'certifier');
+  using (firm_id = current_firm_id() and current_app_role() = 'certifier')
+  with check (firm_id = current_firm_id() and current_app_role() = 'certifier');
 create policy "client read certifiers" on certifiers for select
-  using (current_role() = 'client' and firm_id = current_firm_id());
+  using (current_app_role() = 'client' and firm_id = current_firm_id());
 
 -- clients (the contact-record table): firm staff manage; a client user can
 -- read their own contact record.
 create policy "certifier firm crud clients" on clients for all
-  using (firm_id = current_firm_id() and current_role() = 'certifier')
-  with check (firm_id = current_firm_id() and current_role() = 'certifier');
+  using (firm_id = current_firm_id() and current_app_role() = 'certifier')
+  with check (firm_id = current_firm_id() and current_app_role() = 'certifier');
 create policy "client read own record" on clients for select
-  using (current_role() = 'client' and id = current_client_id());
+  using (current_app_role() = 'client' and id = current_client_id());
 
 -- quotes / fee lines: certifier-only (clients never see quotes in this
 -- version — matches the brief, which scopes the client portal to jobs).
 create policy "certifier firm crud quotes" on quotes for all
-  using (firm_id = current_firm_id() and current_role() = 'certifier')
-  with check (firm_id = current_firm_id() and current_role() = 'certifier');
+  using (firm_id = current_firm_id() and current_app_role() = 'certifier')
+  with check (firm_id = current_firm_id() and current_app_role() = 'certifier');
 create policy "certifier firm crud fee lines" on quote_fee_lines for all
-  using (exists (select 1 from quotes q where q.id = quote_id and q.firm_id = current_firm_id()) and current_role() = 'certifier')
-  with check (exists (select 1 from quotes q where q.id = quote_id and q.firm_id = current_firm_id()) and current_role() = 'certifier');
+  using (exists (select 1 from quotes q where q.id = quote_id and q.firm_id = current_firm_id()) and current_app_role() = 'certifier')
+  with check (exists (select 1 from quotes q where q.id = quote_id and q.firm_id = current_firm_id()) and current_app_role() = 'certifier');
 
 -- jobs: certifier full access within firm; client read-only on their own job(s).
 create policy "certifier firm crud jobs" on jobs for all
-  using (firm_id = current_firm_id() and current_role() = 'certifier')
-  with check (firm_id = current_firm_id() and current_role() = 'certifier');
+  using (firm_id = current_firm_id() and current_app_role() = 'certifier')
+  with check (firm_id = current_firm_id() and current_app_role() = 'certifier');
 create policy "client read own jobs" on jobs for select
-  using (current_role() = 'client' and job_visible_to_client(id));
+  using (current_app_role() = 'client' and job_visible_to_client(id));
 
 create policy "certifier firm crud shared access" on job_shared_access for all
-  using (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_role() = 'certifier')
-  with check (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_role() = 'certifier');
+  using (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier')
+  with check (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier');
 
 -- Every job-child table below follows the same two-policy shape: certifier
 -- full access scoped by firm via the parent job, client read-only scoped by
 -- job_visible_to_client().
 
 create policy "certifier crud conditions" on conditions_of_consent for all
-  using (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_role() = 'certifier')
-  with check (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_role() = 'certifier');
+  using (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier')
+  with check (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier');
 create policy "client read conditions" on conditions_of_consent for select
-  using (current_role() = 'client' and job_visible_to_client(job_id));
+  using (current_app_role() = 'client' and job_visible_to_client(job_id));
 
 create policy "certifier crud modifications" on modifications for all
-  using (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_role() = 'certifier')
-  with check (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_role() = 'certifier');
+  using (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier')
+  with check (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier');
 create policy "client read modifications" on modifications for select
-  using (current_role() = 'client' and job_visible_to_client(job_id));
+  using (current_app_role() = 'client' and job_visible_to_client(job_id));
 
 create policy "certifier crud oc_records" on oc_records for all
-  using (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_role() = 'certifier')
-  with check (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_role() = 'certifier');
+  using (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier')
+  with check (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier');
 create policy "client read oc_records" on oc_records for select
-  using (current_role() = 'client' and job_visible_to_client(job_id));
+  using (current_app_role() = 'client' and job_visible_to_client(job_id));
 
 create policy "certifier crud checklists" on checklists for all
-  using (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_role() = 'certifier')
-  with check (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_role() = 'certifier');
+  using (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier')
+  with check (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier');
 create policy "client read checklists" on checklists for select
-  using (current_role() = 'client' and job_visible_to_client(job_id));
+  using (current_app_role() = 'client' and job_visible_to_client(job_id));
 
 create policy "certifier crud checklist_items" on checklist_items for all
-  using (exists (select 1 from checklists c join jobs j on j.id = c.job_id where c.id = checklist_id and j.firm_id = current_firm_id()) and current_role() = 'certifier')
-  with check (exists (select 1 from checklists c join jobs j on j.id = c.job_id where c.id = checklist_id and j.firm_id = current_firm_id()) and current_role() = 'certifier');
+  using (exists (select 1 from checklists c join jobs j on j.id = c.job_id where c.id = checklist_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier')
+  with check (exists (select 1 from checklists c join jobs j on j.id = c.job_id where c.id = checklist_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier');
 create policy "client read checklist_items" on checklist_items for select
-  using (current_role() = 'client' and exists (select 1 from checklists c where c.id = checklist_id and job_visible_to_client(c.job_id)));
+  using (current_app_role() = 'client' and exists (select 1 from checklists c where c.id = checklist_id and job_visible_to_client(c.job_id)));
 
 create policy "certifier crud amendments" on amendments for all
-  using (exists (select 1 from checklist_items i join checklists c on c.id = i.checklist_id join jobs j on j.id = c.job_id where i.id = checklist_item_id and j.firm_id = current_firm_id()) and current_role() = 'certifier')
-  with check (exists (select 1 from checklist_items i join checklists c on c.id = i.checklist_id join jobs j on j.id = c.job_id where i.id = checklist_item_id and j.firm_id = current_firm_id()) and current_role() = 'certifier');
+  using (exists (select 1 from checklist_items i join checklists c on c.id = i.checklist_id join jobs j on j.id = c.job_id where i.id = checklist_item_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier')
+  with check (exists (select 1 from checklist_items i join checklists c on c.id = i.checklist_id join jobs j on j.id = c.job_id where i.id = checklist_item_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier');
 create policy "client read amendments" on amendments for select
-  using (current_role() = 'client' and exists (select 1 from checklist_items i join checklists c on c.id = i.checklist_id where i.id = checklist_item_id and job_visible_to_client(c.job_id)));
+  using (current_app_role() = 'client' and exists (select 1 from checklist_items i join checklists c on c.id = i.checklist_id where i.id = checklist_item_id and job_visible_to_client(c.job_id)));
 
 create policy "certifier crud inspections" on inspections for all
-  using (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_role() = 'certifier')
-  with check (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_role() = 'certifier');
+  using (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier')
+  with check (exists (select 1 from jobs j where j.id = job_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier');
 create policy "client read inspections" on inspections for select
-  using (current_role() = 'client' and job_visible_to_client(job_id));
+  using (current_app_role() = 'client' and job_visible_to_client(job_id));
 
 create policy "certifier crud defects" on defects for all
-  using (exists (select 1 from inspections i join jobs j on j.id = i.job_id where i.id = inspection_id and j.firm_id = current_firm_id()) and current_role() = 'certifier')
-  with check (exists (select 1 from inspections i join jobs j on j.id = i.job_id where i.id = inspection_id and j.firm_id = current_firm_id()) and current_role() = 'certifier');
+  using (exists (select 1 from inspections i join jobs j on j.id = i.job_id where i.id = inspection_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier')
+  with check (exists (select 1 from inspections i join jobs j on j.id = i.job_id where i.id = inspection_id and j.firm_id = current_firm_id()) and current_app_role() = 'certifier');
 create policy "client read defects" on defects for select
-  using (current_role() = 'client' and exists (select 1 from inspections i where i.id = inspection_id and job_visible_to_client(i.job_id)));
+  using (current_app_role() = 'client' and exists (select 1 from inspections i where i.id = inspection_id and job_visible_to_client(i.job_id)));
 
 -- =============================================================================
 -- Client write actions — deliberately NOT plain table UPDATE grants.
@@ -466,7 +466,7 @@ as $$
 declare
   v_job_id uuid;
 begin
-  if current_role() <> 'client' then
+  if current_app_role() <> 'client' then
     raise exception 'not a client user';
   end if;
 
@@ -538,7 +538,7 @@ declare
   v_job_id uuid;
   v_earliest date;
 begin
-  if current_role() <> 'client' then
+  if current_app_role() <> 'client' then
     raise exception 'not a client user';
   end if;
 
@@ -577,11 +577,11 @@ insert into storage.buckets (id, name, public) values ('certflow-files', 'certfl
 on conflict (id) do nothing;
 
 create policy "certifier firm storage access" on storage.objects for all
-  using (bucket_id = 'certflow-files' and current_role() = 'certifier' and (storage.foldername(name))[1] = current_firm_id()::text)
-  with check (bucket_id = 'certflow-files' and current_role() = 'certifier' and (storage.foldername(name))[1] = current_firm_id()::text);
+  using (bucket_id = 'certflow-files' and current_app_role() = 'certifier' and (storage.foldername(name))[1] = current_firm_id()::text)
+  with check (bucket_id = 'certflow-files' and current_app_role() = 'certifier' and (storage.foldername(name))[1] = current_firm_id()::text);
 
 create policy "client read own job storage" on storage.objects for select
-  using (bucket_id = 'certflow-files' and current_role() = 'client' and job_visible_to_client(((storage.foldername(name))[2])::uuid));
+  using (bucket_id = 'certflow-files' and current_app_role() = 'client' and job_visible_to_client(((storage.foldername(name))[2])::uuid));
 
 create policy "client upload own job storage" on storage.objects for insert
-  with check (bucket_id = 'certflow-files' and current_role() = 'client' and job_visible_to_client(((storage.foldername(name))[2])::uuid));
+  with check (bucket_id = 'certflow-files' and current_app_role() = 'client' and job_visible_to_client(((storage.foldername(name))[2])::uuid));
