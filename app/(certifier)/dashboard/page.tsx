@@ -1,6 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { unresolvedCount } from "@/lib/business";
+import { unresolvedCount, daysUntil, calcCdcLapseDate } from "@/lib/business";
 import Link from "next/link";
 import { DashboardSearch } from "@/components/certifier/DashboardSearch";
 import { TaskBoard } from "@/components/certifier/TaskBoard";
@@ -13,8 +13,9 @@ type DashboardJob = {
   address: string;
   description: string | null;
   pathway: "CDC" | "CC";
-  checklists: { checklist_items: { status: string; amendments: { resolved: boolean }[] }[] }[];
-  inspections: { id: string; title: string; date: string | null; booked_by_client: boolean; confirmed: boolean }[];
+  details: { certificateDetails?: { determinationDate?: string } };
+  checklists: { kind: string; checklist_items: { status: string; amendments: { resolved: boolean }[] }[] }[];
+  inspections: { id: string; title: string; date: string | null; outcome: string; booked_by_client: boolean; confirmed: boolean }[];
 };
 
 export default async function DashboardPage() {
@@ -23,10 +24,19 @@ export default async function DashboardPage() {
 
   const { data: jobs } = await supabase
     .from("jobs")
-    .select("id, address, description, pathway, checklists(checklist_items(status, amendments(resolved))), inspections(id, title, date, booked_by_client, confirmed)")
+    .select(
+      "id, address, description, pathway, details, " +
+        "checklists(kind, checklist_items(status, amendments(resolved))), " +
+        "inspections(id, title, date, outcome, booked_by_client, confirmed)"
+    )
     .eq("firm_id", profile.firm_id)
     .eq("status", "active")
     .returns<DashboardJob[]>();
+
+  const { data: certifiers } = await supabase
+    .from("certifiers")
+    .select("id, name, pi_insurance_expiry, registration_expiry")
+    .eq("firm_id", profile.firm_id);
 
   const [{ data: taskLists }, { data: manualTasks }] = await Promise.all([
     supabase.from("task_lists").select("*").eq("firm_id", profile.firm_id).order("sort_order"),
@@ -40,11 +50,32 @@ export default async function DashboardPage() {
   }
   const listsWithTasks = ((taskLists || []) as TaskList[]).map((l) => ({ ...l, tasks: tasksByList.get(l.id) || [] }));
 
-  // Only two things belong on "Needs your attention": a client submitted a
-  // document for review, or a client booked an inspection. Everything else
-  // (lapse dates, portal deadlines, PI expiry, etc.) is deliberately left
-  // out — those are tracked elsewhere, not here.
+  // "Needs your attention" is intentionally narrow: client submissions,
+  // client bookings, PI/registration expiry, and CDC lapse dates. Ready-to-
+  // issue nudges, portal deadlines, and open-amendment counts are
+  // deliberately left out — those are tracked elsewhere, not here.
   const tasks: Task[] = [];
+
+  for (const c of certifiers || []) {
+    const piDays = daysUntil(c.pi_insurance_expiry);
+    if (piDays !== null && piDays <= 30) {
+      tasks.push({
+        priority: "High",
+        text: piDays < 0 ? `${c.name}'s PI insurance expired` : `${c.name}'s PI insurance expires in ${piDays} day${piDays === 1 ? "" : "s"}`,
+        jobId: null,
+        href: "/settings",
+      });
+    }
+    const regDays = daysUntil(c.registration_expiry);
+    if (regDays !== null && regDays <= 30) {
+      tasks.push({
+        priority: "High",
+        text: regDays < 0 ? `${c.name}'s registration/CPD renewal is overdue` : `${c.name}'s registration/CPD renewal due in ${regDays} day${regDays === 1 ? "" : "s"}`,
+        jobId: null,
+        href: "/settings",
+      });
+    }
+  }
 
   for (const p of jobs || []) {
     const href = `/jobs/${p.id}`;
@@ -56,6 +87,15 @@ export default async function DashboardPage() {
     const unconfirmed = (p.inspections || []).filter((i) => i.booked_by_client && !i.confirmed);
     for (const i of unconfirmed) {
       tasks.push({ priority: "High", text: `Inspection booked by client — ${i.title} on ${i.date} — needs confirmation — ${p.address}`, jobId: p.id, href: `${href}?tab=inspections` });
+    }
+    if (p.pathway === "CDC") {
+      const nocChecklist = (p.checklists || []).find((c) => c.kind === "noc");
+      const outcomes = (p.inspections || []).map((i) => i.outcome);
+      const lapse = calcCdcLapseDate("CDC", p.details?.certificateDetails?.determinationDate, (nocChecklist?.checklist_items || []) as never, outcomes);
+      const d = daysUntil(lapse);
+      if (d !== null && d <= 90) {
+        tasks.push({ priority: "High", text: d < 0 ? `CDC lapsed ${lapse} — ${p.address}` : `CDC lapses in ${d} day${d === 1 ? "" : "s"} (${lapse}) — ${p.address}`, jobId: p.id, href });
+      }
     }
   }
 
