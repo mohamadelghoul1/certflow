@@ -23,31 +23,67 @@ export async function createQuote(_prev: ActionState, formData: FormData): Promi
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const pathway = String(formData.get("pathway") || "CDC") as "CDC" | "CC";
+  const ownerIsApplicant = formData.get("owner_is_applicant") === "on";
+
+  const scopeOfWorks = formData.getAll("scope_item").map(String).filter((s) => s.trim().length > 0);
 
   const { data: quote, error } = await supabase
     .from("quotes")
     .insert({
       firm_id: profile.firm_id,
+      state: String(formData.get("state") || "NSW"),
+      project_type: String(formData.get("project_type") || "") || null,
       pathway,
+      required_start_date: String(formData.get("required_start_date") || "") || null,
+      required_end_date: String(formData.get("required_end_date") || "") || null,
+      valid_for: String(formData.get("valid_for") || "7 Days"),
       proposal_address: String(formData.get("proposal_address") || ""),
+      lot_section_plan: String(formData.get("lot_section_plan") || ""),
       project_title: String(formData.get("project_title") || ""),
       certifier_id: String(formData.get("certifier_id") || "") || null,
+      classifications: formData.getAll("classifications").map(String),
       development_description: String(formData.get("development_description") || ""),
+      owner_is_applicant: ownerIsApplicant,
       council_lga: String(formData.get("council_lga") || ""),
       client_id: String(formData.get("client_id") || "") || null,
       applicant: {
         name: String(formData.get("applicant_name") || ""),
         email: String(formData.get("applicant_email") || ""),
         phone: String(formData.get("applicant_phone") || ""),
+        address: {
+          streetNumber: String(formData.get("applicant_streetNumber") || ""),
+          street: String(formData.get("applicant_street") || ""),
+          suburb: String(formData.get("applicant_suburb") || ""),
+          state: String(formData.get("applicant_state") || "NSW"),
+          postcode: String(formData.get("applicant_postcode") || ""),
+        },
       },
-      scope_of_works: defaultScopeOfWorks(pathway),
+      owner: ownerIsApplicant
+        ? {}
+        : {
+            name: String(formData.get("owner_name") || ""),
+            phone: String(formData.get("owner_phone") || ""),
+            email: String(formData.get("owner_email") || ""),
+          },
+      scope_of_works: scopeOfWorks.length > 0 ? scopeOfWorks : defaultScopeOfWorks(pathway),
     })
     .select("id")
     .single();
 
   if (error || !quote) return { error: error?.message || "Could not create quote." };
 
-  await supabase.from("quote_fee_lines").insert({ quote_id: quote.id, description: `${pathway}/PC/OC`, quantity: "1", amount: 2500, sort_order: 0 });
+  const feeDescriptions = formData.getAll("fee_description").map(String);
+  const feeQuantities = formData.getAll("fee_quantity").map(String);
+  const feeAmounts = formData.getAll("fee_amount").map(String);
+  const feeLines = feeDescriptions
+    .map((description, idx) => ({ description, quantity: feeQuantities[idx] || "1", amount: Number(feeAmounts[idx]) || 0, sort_order: idx }))
+    .filter((l) => l.description.trim().length > 0);
+
+  if (feeLines.length > 0) {
+    await supabase.from("quote_fee_lines").insert(feeLines.map((l) => ({ ...l, quote_id: quote.id })));
+  } else {
+    await supabase.from("quote_fee_lines").insert({ quote_id: quote.id, description: `${pathway}/PC/OC`, quantity: "1", amount: 2500, sort_order: 0 });
+  }
 
   redirect(`/quotes/${quote.id}`);
 }
