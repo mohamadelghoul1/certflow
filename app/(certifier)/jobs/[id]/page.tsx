@@ -61,7 +61,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     <div>
       <div className="mb-6">
         <Link href="/jobs" className="text-xs text-slate-400 hover:text-teal-800">
-          ← All jobs
+          ← All projects
         </Link>
         <h1 className="text-xl font-bold text-teal-900 mt-1">{job.address}</h1>
         <div className="text-sm text-slate-500">

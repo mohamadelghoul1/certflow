@@ -9,7 +9,7 @@ export function NavBar({ firmName }: { firmName: string }) {
           CERTFLOW
         </Link>
         <Link href="/jobs" className="py-4 px-3 text-sm font-semibold text-slate-200 hover:text-amber-300 shrink-0 whitespace-nowrap">
-          Jobs
+          Projects
         </Link>
         <Link href="/quotes" className="py-4 px-3 text-sm font-semibold text-slate-200 hover:text-amber-300 shrink-0 whitespace-nowrap">
           Quotes

@@ -90,10 +90,10 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
   return (
     <form action={formAction}>
       <div className="bg-teal-50 border border-teal-100 rounded-md px-4 py-3 mb-5 text-sm text-teal-800">
-        This information is captured once and stays attached to the job — you can come back and edit it later from the Details tab.
+        This information is captured once and stays attached to the project — you can come back and edit it later from the Details tab.
       </div>
 
-      <Section title="Job basics">
+      <Section title="Project basics">
         <div>
           <label className={labelCls}>Property address</label>
           <input name="address" required value={address} onChange={(e) => handleAddressChange(e.target.value)} placeholder="e.g. 12 Example Street, Suburb NSW 2000" className={inputCls} />
@@ -108,7 +108,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
           <textarea name="description" rows={2} placeholder="e.g. Construction of a secondary dwelling" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Job type(s)</label>
+          <label className={labelCls}>Project type(s)</label>
           <div className="flex flex-wrap gap-2 mb-2">
             {JOB_TYPES.map((t) => {
               const active = types.includes(t);
@@ -466,7 +466,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
 
       {state?.error && <div className="text-sm text-red-600 mb-4">{state.error}</div>}
       <button disabled={pending} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900 disabled:opacity-60">
-        {pending ? "Creating…" : "Create job"}
+        {pending ? "Creating…" : "Create project"}
       </button>
     </form>
   );

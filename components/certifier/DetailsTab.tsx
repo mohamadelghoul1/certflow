@@ -399,7 +399,7 @@ export function DetailsTab({
             ))}
           </select>
         </form>
-        <p className="text-xs text-slate-400 mt-2">Add clients under Settings, then assign one here to give them portal access to this job.</p>
+        <p className="text-xs text-slate-400 mt-2">Add clients under Settings, then assign one here to give them portal access to this project.</p>
 
         <div className="mt-4 pt-4 border-t border-slate-100">
           <div className="text-xs font-semibold text-slate-500 mb-2">Additional shared access (e.g. the owner, alongside the primary contact)</div>
@@ -437,7 +437,7 @@ export function DetailsTab({
 
       <div className="bg-white rounded-lg border border-slate-200 p-5">
         <div className="font-bold text-teal-900 mb-1">Critical stage inspections</div>
-        <p className="text-xs text-slate-400 mb-3">Which of the mandatory critical stage inspections apply to this job — shown on the Mandatory Inspections Notice in the certificate package.</p>
+        <p className="text-xs text-slate-400 mb-3">Which of the mandatory critical stage inspections apply to this project — shown on the Mandatory Inspections Notice in the certificate package.</p>
         <div className="space-y-2">
           {MANDATORY_CRITICAL_STAGE_INSPECTIONS.map((insp) => (
             <form action={toggleCriticalStageInspection} key={insp.no}>
@@ -463,7 +463,7 @@ export function DetailsTab({
         <div className="font-bold text-teal-900 mb-1">Certificate package letters</div>
         <p className="text-xs text-slate-400 mb-3">
           The council and applicant letters in the certificate package use a standard template automatically. Leave blank to keep that, or write your own text
-          here to override it for this job.
+          here to override it for this project.
         </p>
         <LetterOverrideForm action={updateCouncilLetter} jobId={job.id} label="Council letter override" defaultValue={job.council_letter_override || ""} />
         <div className="h-4" />

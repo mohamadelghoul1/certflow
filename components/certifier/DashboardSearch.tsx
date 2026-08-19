@@ -29,7 +29,7 @@ export function DashboardSearch({ jobs }: { jobs: JobLite[] }) {
       {trimmed && (
         <div className="mt-4 rounded-lg overflow-hidden border border-slate-200 bg-white">
           {results.length === 0 ? (
-            <div className="px-4 py-6 text-center text-sm text-slate-400">No jobs match &ldquo;{trimmed}&rdquo;.</div>
+            <div className="px-4 py-6 text-center text-sm text-slate-400">No projects match &ldquo;{trimmed}&rdquo;.</div>
           ) : (
             results.map((j) => (
               <Link key={j.id} href={`/jobs/${j.id}`} className="block px-4 py-3 border-t border-slate-100 first:border-t-0 hover:bg-slate-50">

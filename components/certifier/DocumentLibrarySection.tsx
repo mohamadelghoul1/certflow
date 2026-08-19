@@ -19,7 +19,7 @@ export function DocumentLibrarySection({ items }: { items: LibItem[] }) {
   return (
     <div>
       <p className="text-xs text-slate-500 mb-3">
-        These are the documents new jobs start with, and what shows up in &ldquo;+ Request documents&rdquo; on every job. Edit this once — no need to type the same items in per project.
+        These are the documents new projects start with, and what shows up in &ldquo;+ Request documents&rdquo; on every project. Edit this once — no need to type the same items in per project.
       </p>
       <div className="flex gap-2 mb-4">
         {PATHWAYS.map((p) => (

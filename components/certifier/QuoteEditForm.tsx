@@ -104,7 +104,7 @@ export function QuoteEditForm({
           </div>
         </div>
         <div>
-          <label className={labelCls}>Pathway — used if this quote converts into a job</label>
+          <label className={labelCls}>Pathway — used if this quote converts into a project</label>
           <div className="flex gap-2">
             {(["CDC", "CC"] as const).map((p) => (
               <button
@@ -214,7 +214,7 @@ export function QuoteEditForm({
           </select>
         </div>
         <div>
-          <label className={labelCls}>Client — link this quote to a client so it can flow through to the job automatically</label>
+          <label className={labelCls}>Client — link this quote to a client so it can flow through to the project automatically</label>
           <select name="client_id" className={inputCls} defaultValue={quote.client_id || ""}>
             <option value="">— None —</option>
             {clients.map((c) => (

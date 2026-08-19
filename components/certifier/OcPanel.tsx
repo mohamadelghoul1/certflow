@@ -74,13 +74,13 @@ export async function OcPanel({
       {hasWhole && job.status !== "complete" && (
         <form action={markJobComplete}>
           <input type="hidden" name="job_id" value={job.id} />
-          <button className="text-xs font-semibold text-white bg-teal-800 hover:bg-teal-900 px-3 py-1.5 rounded-md">Mark job complete</button>
+          <button className="text-xs font-semibold text-white bg-teal-800 hover:bg-teal-900 px-3 py-1.5 rounded-md">Mark project complete</button>
         </form>
       )}
       {job.status === "complete" && (
         <form action={reopenJob}>
           <input type="hidden" name="job_id" value={job.id} />
-          <button className="text-xs text-slate-500 hover:underline">Reopen job</button>
+          <button className="text-xs text-slate-500 hover:underline">Reopen project</button>
         </form>
       )}
     </div>

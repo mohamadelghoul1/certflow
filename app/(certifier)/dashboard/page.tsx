@@ -90,7 +90,7 @@ export default async function DashboardPage() {
       tasks.push({ priority: "Medium", text: `Ready to issue Occupation Certificate — ${p.address}`, jobId: p.id, href: `${href}?tab=oc` });
     }
     if (ocRecords.some((r) => r.type === "whole")) {
-      tasks.push({ priority: "Low", text: `Whole OC issued — ready to mark job complete — ${p.address}`, jobId: p.id, href });
+      tasks.push({ priority: "Low", text: `Whole OC issued — ready to mark project complete — ${p.address}`, jobId: p.id, href });
     }
     const pending = (p.inspections || []).filter((i) => i.outcome === "pending").length;
     if (p.pathway_generated && pending > 0) {

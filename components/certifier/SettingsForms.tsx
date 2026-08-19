@@ -212,7 +212,7 @@ export function ClientList({ clients }: { clients: ClientContact[] }) {
       {clients.map((c) => (
         <ClientRow key={c.id} client={c} />
       ))}
-      {clients.length === 0 && <div className="text-sm text-slate-400">No clients yet — add one below, then assign them to a job.</div>}
+      {clients.length === 0 && <div className="text-sm text-slate-400">No clients yet — add one below, then assign them to a project.</div>}
 
       {adding ? (
         <form action={addAction} className="border border-slate-200 rounded-md p-4 space-y-3 mt-3">

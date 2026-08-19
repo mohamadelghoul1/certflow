@@ -66,7 +66,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           {quote.status === "accepted" && !quote.linked_job_id && (
             <form action={generateJobFromQuote}>
               <input type="hidden" name="quote_id" value={id} />
-              <button className="px-3.5 py-2 rounded-md bg-emerald-700 text-white text-sm font-semibold hover:bg-emerald-800">Generate job from quote</button>
+              <button className="px-3.5 py-2 rounded-md bg-emerald-700 text-white text-sm font-semibold hover:bg-emerald-800">Generate project from quote</button>
             </form>
           )}
           {quote.status !== "draft" && quote.payment_status !== "paid" && (
@@ -77,7 +77,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           )}
           {quote.linked_job_id && (
             <Link href={`/jobs/${quote.linked_job_id}`} className="flex items-center gap-1.5 px-3 py-2 text-sm text-emerald-700 font-medium hover:underline">
-              <Check size={14} /> View job
+              <Check size={14} /> View project
             </Link>
           )}
         </div>

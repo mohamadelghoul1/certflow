@@ -57,7 +57,7 @@ export function JobsList({ jobs, certifiers }: { jobs: JobRow[]; certifiers: { i
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by job number or address"
+            placeholder="Search by project number or address"
             className="w-full pl-9 pr-3 py-2 rounded-md border border-slate-200 bg-white text-sm text-slate-700 placeholder-slate-400 outline-none focus:ring-2 focus:ring-teal-600"
           />
         </div>
@@ -85,7 +85,7 @@ export function JobsList({ jobs, certifiers }: { jobs: JobRow[]; certifiers: { i
           </button>
         )}
         <Link href="/jobs/new" className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">
-          <Plus size={16} /> New job
+          <Plus size={16} /> New project
         </Link>
       </div>
 
@@ -127,7 +127,7 @@ export function JobsList({ jobs, certifiers }: { jobs: JobRow[]; certifiers: { i
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={2} className="px-5 py-10 text-center text-slate-400">
-                  {query || certifierFilter ? "No jobs match your search." : 'No jobs yet. Click "New job" to create your first one.'}
+                  {query || certifierFilter ? "No projects match your search." : 'No projects yet. Click "New project" to create your first one.'}
                 </td>
               </tr>
             )}

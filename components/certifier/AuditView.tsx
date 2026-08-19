@@ -14,7 +14,7 @@ export function AuditView({ certifiers, events }: { certifiers: CertifierRow[]; 
     <div>
       <h1 className="text-xl font-bold text-teal-900 mb-1">Certifier Audit</h1>
       <p className="text-slate-500 text-sm mb-6 max-w-2xl">
-        What each registered certifier has actually issued or carried out, across every job — derived from real issuance and inspection records, not a separate log.
+        What each registered certifier has actually issued or carried out, across every project — derived from real issuance and inspection records, not a separate log.
       </p>
 
       <div className="space-y-4 max-w-3xl">
