@@ -3,6 +3,7 @@ import { signedUrl } from "@/lib/storage";
 import { issuePathwayCertificate, uploadPathwayApproval, startModification, issueModification, uploadModificationApproval, notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
+import Link from "next/link";
 import type { Job, Certifier, Modification, ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -47,6 +48,11 @@ export async function CertificatesPanel({
             </div>
           </div>
           {!complete && !job.pathway_generated && <span className="text-xs text-slate-400">Checklist not yet complete</span>}
+          {job.pathway_generated && (
+            <Link href={`/certificate/pathway/${job.id}`} target="_blank" className="text-xs font-semibold text-teal-800 hover:underline shrink-0">
+              View certificate document →
+            </Link>
+          )}
         </div>
 
         {complete && (
