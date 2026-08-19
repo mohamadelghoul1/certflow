@@ -25,19 +25,24 @@ export function EditableChecklistItemHeader({
   const [draftTitle, setDraftTitle] = useState(title);
   const [draftDescription, setDraftDescription] = useState(description);
 
-  function save(e: React.FormEvent) {
-    e.preventDefault();
+  function commit() {
     const trimmed = draftTitle.trim();
+    setEditing(false);
     if (!trimmed) return;
     setDisplayTitle(trimmed);
     setDisplayDescription(draftDescription.trim());
-    setEditing(false);
     const fd = new FormData();
     fd.set("item_id", itemId);
     fd.set("job_id", jobId);
     fd.set("title", trimmed);
     fd.set("description", draftDescription.trim());
     updateItemDetails(fd);
+  }
+
+  // Only save when focus leaves the whole title/description box, not when
+  // it just moves between the two fields (or to the Save/Cancel buttons).
+  function handleBoxBlur(e: React.FocusEvent<HTMLFormElement>) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) commit();
   }
 
   return (
@@ -67,7 +72,14 @@ export function EditableChecklistItemHeader({
       {!editing && displayDescription && <div className="text-xs text-slate-500 mt-0.5">{displayDescription}</div>}
 
       {editing && (
-        <form onSubmit={save} className="mt-1.5 space-y-1.5 max-w-sm">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            commit();
+          }}
+          onBlur={handleBoxBlur}
+          className="mt-1.5 space-y-1.5 max-w-sm"
+        >
           <input
             value={draftTitle}
             onChange={(e) => setDraftTitle(e.target.value)}
