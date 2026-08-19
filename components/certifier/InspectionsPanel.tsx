@@ -2,6 +2,7 @@ import { formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { assignInspector, setInspectionDate, recordOutcome, addDefect, resolveDefect, confirmBooking, uploadInspectionReport } from "@/lib/actions/inspections";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { AutoSubmitSelect } from "@/components/certifier/AutoSubmitSelect";
 import type { Inspection, Defect, Certifier } from "@/types/db";
 
 type InspectionWithDefects = Inspection & { defects: Defect[] };
@@ -68,31 +69,39 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
           <button className="text-xs text-teal-800 hover:underline pb-1.5">Save</button>
         </form>
 
-        <form action={assignInspector}>
-          <input type="hidden" name="inspection_id" value={insp.id} />
-          <input type="hidden" name="job_id" value={jobId} />
+        <div>
           <label className="block text-[11px] text-slate-400 mb-1">Inspector</label>
-          <select name="certifier_id" defaultValue={insp.inspector_certifier_id || ""} onChange={(e) => e.currentTarget.form?.requestSubmit()} className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs">
+          <AutoSubmitSelect
+            action={assignInspector}
+            hidden={{ inspection_id: insp.id, job_id: jobId }}
+            name="certifier_id"
+            defaultValue={insp.inspector_certifier_id || ""}
+            className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+          >
             <option value="">— Select —</option>
             {certifiers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
-          </select>
-        </form>
+          </AutoSubmitSelect>
+        </div>
 
-        <form action={recordOutcome}>
-          <input type="hidden" name="inspection_id" value={insp.id} />
-          <input type="hidden" name="job_id" value={jobId} />
+        <div>
           <label className="block text-[11px] text-slate-400 mb-1">Outcome</label>
-          <select name="outcome" defaultValue={insp.outcome} onChange={(e) => e.currentTarget.form?.requestSubmit()} className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs">
+          <AutoSubmitSelect
+            action={recordOutcome}
+            hidden={{ inspection_id: insp.id, job_id: jobId }}
+            name="outcome"
+            defaultValue={insp.outcome}
+            className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+          >
             <option value="pending">Pending</option>
             <option value="passed">Passed</option>
             <option value="failed">Failed</option>
             <option value="passed_subject_to">Passed subject to</option>
-          </select>
-        </form>
+          </AutoSubmitSelect>
+        </div>
       </div>
 
       {insp.booked_by_client && !insp.confirmed && (

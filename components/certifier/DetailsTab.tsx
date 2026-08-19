@@ -1,3 +1,5 @@
+"use client";
+
 import { updateJobDetails, addCondition, assignJobClient } from "@/lib/actions/jobs";
 import { BCA_VERSIONS, BUILDING_CLASSIFICATIONS, CONSTRUCTION_TYPES } from "@/lib/constants";
 import { formatISODate } from "@/lib/business";
