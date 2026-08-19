@@ -1,6 +1,6 @@
 import { displayStatus, unresolvedCount } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { approveItem, reopenItem, addAmendment, resolveAmendment, toggleStamping, updateItemMeta, certifierUploadItem, removeChecklistItem, notifyClientOfChecklist } from "@/lib/actions/jobs";
+import { approveItem, reopenItem, addAmendment, resolveAmendment, toggleStamping, updateItemDetails, updateItemMeta, certifierUploadItem, removeChecklistItem, notifyClientOfChecklist } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
@@ -105,6 +105,17 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
         </form>
         <RemoveItemButton itemId={item.id} jobId={jobId} title={item.title} />
       </div>
+
+      <details className="mt-3">
+        <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-600">Edit document name / description (this project only — your firm&apos;s document library is unaffected)</summary>
+        <form action={updateItemDetails} className="mt-2 space-y-2">
+          <input type="hidden" name="item_id" value={item.id} />
+          <input type="hidden" name="job_id" value={jobId} />
+          <input name="title" defaultValue={item.title} required placeholder="Document name" className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs" />
+          <textarea name="description" defaultValue={item.description || ""} rows={2} placeholder="Description" className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs" />
+          <button className="text-xs text-teal-800 hover:underline">Save</button>
+        </form>
+      </details>
 
       <details className="mt-3">
         <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-600">Document details (revision, date, prepared by)</summary>

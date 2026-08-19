@@ -240,6 +240,20 @@ export async function certifierUploadItem(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+export async function updateItemDetails(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const itemId = String(formData.get("item_id"));
+  const jobId = String(formData.get("job_id"));
+  const title = String(formData.get("title") || "").trim();
+  if (!title) return;
+  await supabase
+    .from("checklist_items")
+    .update({ title, description: String(formData.get("description") || "").trim() })
+    .eq("id", itemId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
 export async function updateItemMeta(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
