@@ -9,7 +9,7 @@ type ListWithTasks = TaskList & { tasks: ManualTask[] };
 
 type TaskAction =
   | { type: "add"; task: ManualTask }
-  | { type: "toggle"; id: string; completed: boolean }
+  | { type: "toggle"; id: string; completed: boolean; completedAt: string | null }
   | { type: "edit"; id: string; text: string; note: string | null }
   | { type: "remove"; id: string };
 
@@ -18,12 +18,27 @@ function tasksReducer(state: ManualTask[], action: TaskAction): ManualTask[] {
     case "add":
       return [...state, action.task];
     case "toggle":
-      return state.map((t) => (t.id === action.id ? { ...t, completed: action.completed } : t));
+      return state.map((t) => (t.id === action.id ? { ...t, completed: action.completed, completed_at: action.completedAt } : t));
     case "edit":
       return state.map((t) => (t.id === action.id ? { ...t, text: action.text, note: action.note } : t));
     case "remove":
       return state.filter((t) => t.id !== action.id);
   }
+}
+
+function formatCompletedAt(iso: string) {
+  return new Date(iso).toLocaleString("en-AU", { day: "2-digit", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
+}
+
+function formatDuration(startIso: string, endIso: string) {
+  const ms = Math.max(0, new Date(endIso).getTime() - new Date(startIso).getTime());
+  const minutes = Math.round(ms / 60000);
+  if (minutes < 1) return "under a minute";
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hr${hours === 1 ? "" : "s"}`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"}`;
 }
 
 export function TaskBoard({ lists }: { lists: ListWithTasks[] }) {
@@ -79,11 +94,13 @@ function TaskListColumn({ list }: { list: ListWithTasks }) {
   }
 
   function handleToggle(task: ManualTask) {
+    const completed = !task.completed;
+    const completedAt = completed ? new Date().toISOString() : null;
     startTransition(async () => {
-      dispatch({ type: "toggle", id: task.id, completed: !task.completed });
+      dispatch({ type: "toggle", id: task.id, completed, completedAt });
       const fd = new FormData();
       fd.set("task_id", task.id);
-      fd.set("completed", (!task.completed).toString());
+      fd.set("completed", completed.toString());
       await toggleTaskComplete(fd);
     });
   }
@@ -245,6 +262,11 @@ function TaskRow({ task, onToggle, onEdit, onDelete }: { task: ManualTask; onTog
       <button onClick={() => setEditing(true)} className="flex-1 min-w-0 text-left">
         <div className={`text-sm ${task.completed ? "text-slate-400 line-through" : "text-slate-700"}`}>{task.text}</div>
         {task.note && <div className="text-xs text-slate-400 truncate">{task.note}</div>}
+        {task.completed && task.completed_at && (
+          <div className="text-[11px] text-emerald-600 mt-0.5">
+            Completed {formatCompletedAt(task.completed_at)} · took {formatDuration(task.created_at, task.completed_at)}
+          </div>
+        )}
       </button>
       <button onClick={onDelete} className="p-0.5 rounded text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 shrink-0">
         <X size={13} />
