@@ -4,10 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { INSPECTION_LIBRARY, MANDATORY_CRITICAL_STAGE_INSPECTIONS } from "@/lib/constants";
+import { INSPECTION_LIBRARY, MANDATORY_CRITICAL_STAGE_INSPECTIONS, epiForCodeParts } from "@/lib/constants";
 import { todayISO } from "@/lib/business";
 import { notifyJobClient } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
+import type { JobDetails } from "@/types/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Not exported — a plain helper, not a server action — even though this
@@ -21,6 +22,90 @@ async function firmLibrary(supabase: SupabaseClient, firmId: string, pathway: st
     .eq("pathway", pathway)
     .order("sort_order");
   return data || [];
+}
+
+// Shared by the New Job intake form and the Details-tab edit form — same
+// full field set as the prototype's single JobForm (used for both create
+// and edit). CDC's relevant instrument/part of code are computed from the
+// ticked SEPP code parts rather than typed in directly.
+function extractJobDetails(formData: FormData, pathway: string): JobDetails {
+  const codeParts = formData.getAll("codeParts").map(String);
+  const relevantInstrument = pathway === "CDC" && codeParts.length > 0 ? epiForCodeParts(codeParts) : String(formData.get("relevantInstrument") || "");
+  const relevantPartOfCode = pathway === "CDC" && codeParts.length > 0 ? codeParts.join(", ") : String(formData.get("relevantPartOfCode") || "");
+
+  return {
+    projectNumber: String(formData.get("projectNumber") || ""),
+    zoning: String(formData.get("zoning") || ""),
+    bcaVersion: String(formData.get("bcaVersion") || ""),
+    contact: {
+      nameOrCompany: String(formData.get("contact_nameOrCompany") || ""),
+      title: String(formData.get("contact_title") || ""),
+      givenNames: String(formData.get("contact_givenNames") || ""),
+      surname: String(formData.get("contact_surname") || ""),
+      phone: String(formData.get("contact_phone") || ""),
+      fax: String(formData.get("contact_fax") || ""),
+      mobile: String(formData.get("contact_mobile") || ""),
+      email: String(formData.get("contact_email") || ""),
+    },
+    applicantAddress: {
+      streetNumber: String(formData.get("applicantAddress_streetNumber") || ""),
+      street: String(formData.get("applicantAddress_street") || ""),
+      suburb: String(formData.get("applicantAddress_suburb") || ""),
+      state: String(formData.get("applicantAddress_state") || "NSW"),
+      postcode: String(formData.get("applicantAddress_postcode") || ""),
+    },
+    ownerSameAsApplicant: formData.get("ownerSameAsApplicant") === "on",
+    owner: {
+      name: String(formData.get("owner_name") || ""),
+      phone: String(formData.get("owner_phone") || ""),
+      address: {
+        streetNumber: String(formData.get("owner_streetNumber") || ""),
+        street: String(formData.get("owner_street") || ""),
+        suburb: String(formData.get("owner_suburb") || ""),
+        state: String(formData.get("owner_state") || "NSW"),
+        postcode: String(formData.get("owner_postcode") || ""),
+      },
+    },
+    council: {
+      lga: String(formData.get("council_lga") || ""),
+      address: {
+        streetNumber: String(formData.get("council_streetNumber") || ""),
+        street: String(formData.get("council_street") || ""),
+        suburb: String(formData.get("council_suburb") || ""),
+        state: String(formData.get("council_state") || "NSW"),
+        postcode: String(formData.get("council_postcode") || ""),
+      },
+      contact: {
+        phone: String(formData.get("council_phone") || ""),
+        fax: String(formData.get("council_fax") || ""),
+        email: String(formData.get("council_email") || ""),
+      },
+    },
+    proposal: {
+      classifications: formData.getAll("classifications").map(String),
+      constructionType: String(formData.get("constructionType") || "N/A"),
+      dwellingsExisting: String(formData.get("dwellingsExisting") || ""),
+      dwellingsDemolished: String(formData.get("dwellingsDemolished") || ""),
+      dwellingsNew: String(formData.get("dwellingsNew") || ""),
+      estimatedCost: String(formData.get("estimatedCost") || ""),
+      storeysAbove: String(formData.get("storeysAbove") || ""),
+      storeysBelow: String(formData.get("storeysBelow") || ""),
+      storeysTotal: String(formData.get("storeysTotal") || ""),
+      effectiveHeight: String(formData.get("effectiveHeight") || ""),
+      floorAreaExisting: String(formData.get("floorAreaExisting") || ""),
+      floorAreaNew: String(formData.get("floorAreaNew") || ""),
+    },
+    siteArea: String(formData.get("siteArea") || ""),
+    buildingDescription: String(formData.get("buildingDescription") || ""),
+    certificateDetails: {
+      lotSectionDp: String(formData.get("lotSectionDp") || ""),
+      planningPortalRef: String(formData.get("planningPortalRef") || ""),
+      relevantInstrument,
+      relevantPartOfCode,
+      codeParts,
+      determinationDate: String(formData.get("determinationDate") || ""),
+    },
+  };
 }
 
 export async function createJob(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -42,6 +127,7 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
       pathway,
       assigned_certifier_id: certifierId,
       client_id: clientId,
+      details: extractJobDetails(formData, pathway),
       critical_stage_inspections: MANDATORY_CRITICAL_STAGE_INSPECTIONS.map((i) => i.no),
     })
     .select("id")
@@ -86,35 +172,9 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
+  const pathway = String(formData.get("pathway") || "CDC");
 
-  const details = {
-    projectNumber: String(formData.get("projectNumber") || ""),
-    zoning: String(formData.get("zoning") || ""),
-    bcaVersion: String(formData.get("bcaVersion") || ""),
-    contact: {
-      nameOrCompany: String(formData.get("contact_nameOrCompany") || ""),
-      givenNames: String(formData.get("contact_givenNames") || ""),
-      surname: String(formData.get("contact_surname") || ""),
-      mobile: String(formData.get("contact_mobile") || ""),
-      email: String(formData.get("contact_email") || ""),
-    },
-    council: { lga: String(formData.get("council_lga") || "") },
-    proposal: {
-      classifications: formData.getAll("classifications").map(String),
-      constructionType: String(formData.get("constructionType") || "N/A"),
-      estimatedCost: String(formData.get("estimatedCost") || ""),
-      storeysTotal: String(formData.get("storeysTotal") || ""),
-    },
-    siteArea: String(formData.get("siteArea") || ""),
-    buildingDescription: String(formData.get("buildingDescription") || ""),
-    certificateDetails: {
-      lotSectionDp: String(formData.get("lotSectionDp") || ""),
-      planningPortalRef: String(formData.get("planningPortalRef") || ""),
-      relevantInstrument: String(formData.get("relevantInstrument") || ""),
-      relevantPartOfCode: String(formData.get("relevantPartOfCode") || ""),
-      determinationDate: String(formData.get("determinationDate") || ""),
-    },
-  };
+  const details = extractJobDetails(formData, pathway);
 
   await supabase.from("jobs").update({ details }).eq("id", jobId).eq("firm_id", profile.firm_id);
   revalidatePath(`/jobs/${jobId}`);

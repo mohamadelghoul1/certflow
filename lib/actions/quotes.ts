@@ -97,6 +97,9 @@ export async function generateJobFromQuote(formData: FormData) {
   const { data: quote } = await supabase.from("quotes").select("*").eq("id", quoteId).eq("firm_id", profile.firm_id).single();
   if (!quote || quote.status !== "accepted") return;
 
+  const applicant = quote.applicant as { name?: string; email?: string; phone?: string };
+  const owner = quote.owner as { name?: string; email?: string; phone?: string };
+
   const { data: job } = await supabase
     .from("jobs")
     .insert({
@@ -107,7 +110,14 @@ export async function generateJobFromQuote(formData: FormData) {
       assigned_certifier_id: quote.certifier_id,
       client_id: quote.client_id,
       critical_stage_inspections: MANDATORY_CRITICAL_STAGE_INSPECTIONS.map((i) => i.no),
-      details: { council: { lga: quote.council_lga || "" }, contact: { nameOrCompany: (quote.applicant as { name?: string })?.name || "" } },
+      details: {
+        contact: { nameOrCompany: applicant?.name || "", email: applicant?.email || "", phone: applicant?.phone || "" },
+        council: { lga: quote.council_lga || "" },
+        ownerSameAsApplicant: quote.owner_is_applicant,
+        owner: quote.owner_is_applicant ? undefined : { name: owner?.name || "", phone: owner?.phone || "" },
+        proposal: { classifications: quote.classifications || [] },
+        certificateDetails: { lotSectionDp: quote.lot_section_plan || "" },
+      },
     })
     .select("id")
     .single();
