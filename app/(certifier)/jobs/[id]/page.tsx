@@ -30,7 +30,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
   if (!job) notFound();
   const typedJob = job as Job;
 
-  const [{ data: checklists }, { data: modifications }, { data: ocRecords }, { data: inspections }, { data: conditions }, { data: certifiers }, { data: clients }, { data: libraryItems }] = await Promise.all([
+  const [{ data: checklists }, { data: modifications }, { data: ocRecords }, { data: inspections }, { data: conditions }, { data: certifiers }, { data: clients }, { data: libraryItems }, { data: pathwayVersions }] = await Promise.all([
     supabase.from("checklists").select("id, kind, modification_id, checklist_items(*, amendments(*))").eq("job_id", id),
     supabase.from("modifications").select("*").eq("job_id", id).order("created_at"),
     supabase.from("oc_records").select("*").eq("job_id", id).order("created_at"),
@@ -39,6 +39,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     supabase.from("certifiers").select("*").eq("firm_id", profile.firm_id).order("name"),
     supabase.from("clients").select("*").eq("firm_id", profile.firm_id).order("name"),
     supabase.from("document_library_items").select("*").eq("firm_id", profile.firm_id).order("sort_order"),
+    supabase.from("pathway_certificate_versions").select("*").eq("job_id", id).order("version", { ascending: false }),
   ]);
 
   const { data: sharedAccessRows } = await supabase.from("job_shared_access").select("client_id, clients(id, name, type)").eq("job_id", id);
@@ -101,6 +102,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           certifiers={certifiers || []}
           modifications={modificationsWithChecklist as never[]}
           library={libraries[job.pathway]}
+          versions={(pathwayVersions as never[]) || []}
         />
       )}
 

@@ -364,27 +364,66 @@ export async function reopenItem(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// Mirrors one pathway_certificate_versions row onto the job's own
+// pathway_* columns, since the certificate document page, client portal,
+// dashboard tasks, and reports/audit all read those columns directly.
+// Keeping this in one place means only the "currently visible" version's
+// data ever has to be duplicated onto jobs.
+async function mirrorVisiblePathwayVersion(supabase: SupabaseClient, jobId: string, version: { version: number; generated_date: string; issued_by: string | null; approval_uploaded: boolean; approval_date: string | null; approval_file_path: string | null } | null) {
+  if (!version) {
+    await supabase
+      .from("jobs")
+      .update({
+        pathway_generated: false,
+        pathway_generated_date: null,
+        pathway_issued_by: null,
+        pathway_version: 0,
+        pathway_approval_uploaded: false,
+        pathway_approval_date: null,
+        pathway_approval_file_path: null,
+        pathway_portal_reported: false,
+        pathway_portal_reported_date: null,
+      })
+      .eq("id", jobId);
+    return;
+  }
+  await supabase
+    .from("jobs")
+    .update({
+      pathway_generated: true,
+      pathway_generated_date: version.generated_date,
+      pathway_issued_by: version.issued_by,
+      pathway_version: version.version,
+      pathway_approval_uploaded: version.approval_uploaded,
+      pathway_approval_date: version.approval_date,
+      pathway_approval_file_path: version.approval_file_path,
+    })
+    .eq("id", jobId);
+}
+
 export async function issuePathwayCertificate(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const certifierId = String(formData.get("certifier_id") || "");
   if (!certifierId) return { error: "Select a certifier before issuing." };
-  const { data: job } = await supabase.from("jobs").select("pathway_version").eq("id", jobId).eq("firm_id", profile.firm_id).single();
-  const { error } = await supabase
-    .from("jobs")
-    .update({
-      pathway_generated: true,
-      pathway_generated_date: todayISO(),
-      pathway_issued_by: certifierId,
-      pathway_version: (job?.pathway_version || 0) + 1,
-      pathway_approval_uploaded: false,
-      pathway_approval_date: null,
-      pathway_approval_file_path: null,
-    })
-    .eq("id", jobId)
-    .eq("firm_id", profile.firm_id);
-  if (error) return { error: error.message };
+
+  const { data: job } = await supabase.from("jobs").select("id").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return { error: "Project not found." };
+
+  const { data: existing } = await supabase.from("pathway_certificate_versions").select("version").eq("job_id", jobId).order("version", { ascending: false }).limit(1);
+  const nextVersion = (existing?.[0]?.version || 0) + 1;
+  const generatedDate = todayISO();
+
+  await supabase.from("pathway_certificate_versions").update({ visible_to_client: false }).eq("job_id", jobId);
+  const { data: newVersion, error } = await supabase
+    .from("pathway_certificate_versions")
+    .insert({ job_id: jobId, version: nextVersion, generated_date: generatedDate, issued_by: certifierId, visible_to_client: true })
+    .select()
+    .single();
+  if (error || !newVersion) return { error: error?.message || "Could not issue certificate." };
+
+  await mirrorVisiblePathwayVersion(supabase, jobId, newVersion);
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
 }
@@ -401,11 +440,54 @@ export async function uploadPathwayApproval(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
+  const versionId = String(formData.get("version_id"));
   const filePath = String(formData.get("file_path"));
-  await supabase
-    .from("jobs")
-    .update({ pathway_approval_uploaded: true, pathway_approval_date: todayISO(), pathway_approval_file_path: filePath })
-    .eq("id", jobId);
+  const approvalDate = todayISO();
+
+  const { data: version } = await supabase
+    .from("pathway_certificate_versions")
+    .update({ approval_uploaded: true, approval_date: approvalDate, approval_file_path: filePath })
+    .eq("id", versionId)
+    .select()
+    .single();
+
+  if (version?.visible_to_client) await mirrorVisiblePathwayVersion(supabase, jobId, version);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function setVisiblePathwayVersion(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const versionId = String(formData.get("version_id"));
+
+  const { data: job } = await supabase.from("jobs").select("id").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return;
+
+  await supabase.from("pathway_certificate_versions").update({ visible_to_client: false }).eq("job_id", jobId);
+  const { data: version } = await supabase.from("pathway_certificate_versions").update({ visible_to_client: true }).eq("id", versionId).select().single();
+
+  await mirrorVisiblePathwayVersion(supabase, jobId, version || null);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function deletePathwayVersion(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const versionId = String(formData.get("version_id"));
+
+  const { data: job } = await supabase.from("jobs").select("id").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return;
+
+  const { data: deleted } = await supabase.from("pathway_certificate_versions").delete().eq("id", versionId).select().single();
+
+  if (deleted?.visible_to_client) {
+    const { data: remaining } = await supabase.from("pathway_certificate_versions").select("*").eq("job_id", jobId).order("version", { ascending: false }).limit(1);
+    const promoted = remaining?.[0] || null;
+    if (promoted) await supabase.from("pathway_certificate_versions").update({ visible_to_client: true }).eq("id", promoted.id);
+    await mirrorVisiblePathwayVersion(supabase, jobId, promoted);
+  }
   revalidatePath(`/jobs/${jobId}`);
 }
 

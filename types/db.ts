@@ -193,6 +193,19 @@ export type Modification = {
   approval_file_path: string | null;
 };
 
+export type PathwayCertificateVersion = {
+  id: string;
+  job_id: string;
+  version: number;
+  generated_date: string;
+  issued_by: string | null;
+  approval_uploaded: boolean;
+  approval_date: string | null;
+  approval_file_path: string | null;
+  visible_to_client: boolean;
+  created_at: string;
+};
+
 export type OcRecord = {
   id: string;
   job_id: string;
