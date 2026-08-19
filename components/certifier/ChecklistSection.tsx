@@ -1,9 +1,11 @@
 import { displayStatus, unresolvedCount } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { approveItem, reopenItem, addAmendment, resolveAmendment, toggleStamping, updateItemDetails, updateItemMeta, certifierUploadItem, removeChecklistItem, notifyClientOfChecklist } from "@/lib/actions/jobs";
+import { approveItem, reopenItem, toggleStamping, updateItemMeta, certifierUploadItem, removeChecklistItem, notifyClientOfChecklist } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
+import { EditableChecklistItemHeader } from "@/components/certifier/EditableChecklistItemHeader";
+import { AmendmentsList } from "@/components/certifier/AmendmentsList";
 import type { ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -56,13 +58,8 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
   return (
     <div className="border border-slate-200 rounded-md p-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${status.dot}`} />
-            <span className="text-sm font-semibold text-teal-900">{item.title}</span>
-            {item.version > 0 && <span className="text-[11px] text-slate-400">v{item.version}</span>}
-          </div>
-          <div className="text-xs text-slate-500 mt-0.5">{item.description}</div>
+        <div className="flex-1 min-w-0">
+          <EditableChecklistItemHeader itemId={item.id} jobId={jobId} title={item.title} description={item.description || ""} version={item.version} statusDot={status.dot} />
           <div className="text-xs mt-1 font-medium" style={{ color: status.dot.includes("amber") ? "#b45309" : status.dot.includes("emerald") ? "#047857" : "#475569" }}>
             {status.label}
           </div>
@@ -107,17 +104,6 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
       </div>
 
       <details className="mt-3">
-        <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-600">Edit document name / description (this project only — your firm&apos;s document library is unaffected)</summary>
-        <form action={updateItemDetails} className="mt-2 space-y-2">
-          <input type="hidden" name="item_id" value={item.id} />
-          <input type="hidden" name="job_id" value={jobId} />
-          <input name="title" defaultValue={item.title} required placeholder="Document name" className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs" />
-          <textarea name="description" defaultValue={item.description || ""} rows={2} placeholder="Description" className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs" />
-          <button className="text-xs text-teal-800 hover:underline">Save</button>
-        </form>
-      </details>
-
-      <details className="mt-3">
         <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-600">Document details (revision, date, prepared by)</summary>
         <form action={updateItemMeta} className="mt-2 grid sm:grid-cols-5 gap-2">
           <input type="hidden" name="item_id" value={item.id} />
@@ -131,29 +117,7 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
         </form>
       </details>
 
-      {item.amendments.length > 0 && (
-        <div className="mt-3 space-y-2">
-          {item.amendments.map((a) => (
-            <div key={a.id} className={`text-xs rounded-md px-3 py-2 flex items-start justify-between gap-3 ${a.resolved ? "bg-slate-50 text-slate-400 line-through" : "bg-amber-50 text-amber-800"}`}>
-              <span>{a.text}</span>
-              {!a.resolved && (
-                <form action={resolveAmendment} className="shrink-0">
-                  <input type="hidden" name="amendment_id" value={a.id} />
-                  <input type="hidden" name="job_id" value={jobId} />
-                  <button className="font-semibold hover:underline">Resolve</button>
-                </form>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <form action={addAmendment} className="mt-3 flex gap-2">
-        <input type="hidden" name="item_id" value={item.id} />
-        <input type="hidden" name="job_id" value={jobId} />
-        <input name="text" placeholder="Add an amendment point…" className="flex-1 px-2 py-1.5 rounded border border-slate-200 text-xs" />
-        <button className="text-xs font-semibold text-amber-700 hover:underline">Add</button>
-      </form>
+      <AmendmentsList itemId={item.id} jobId={jobId} amendments={item.amendments} />
     </div>
   );
 }
