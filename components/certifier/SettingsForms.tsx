@@ -1,10 +1,22 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { updateFirm, addCertifier, updateCertifier, removeCertifier, addClient, updateClient, removeClient, inviteClient } from "@/lib/actions/settings";
+import {
+  updateFirm,
+  addCertifier,
+  updateCertifier,
+  removeCertifier,
+  updateCertifierSignature,
+  removeCertifierSignature,
+  addClient,
+  updateClient,
+  removeClient,
+  inviteClient,
+} from "@/lib/actions/settings";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Firm, Certifier, ClientContact } from "@/types/db";
 import { CLIENT_TYPES } from "@/lib/constants";
+import { ActionUpload } from "@/components/certifier/ActionUpload";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
 const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
@@ -51,14 +63,14 @@ export function FirmForm({ firm }: { firm: Firm | null }) {
   );
 }
 
-export function CertifierList({ certifiers }: { certifiers: Certifier[] }) {
+export function CertifierList({ certifiers, firmId, signatureUrls }: { certifiers: Certifier[]; firmId: string; signatureUrls: Record<string, string> }) {
   const [adding, setAdding] = useState(false);
   const [addState, addAction, addPending] = useActionState<ActionState, FormData>(addCertifier, undefined);
 
   return (
     <div className="space-y-3">
       {certifiers.map((c) => (
-        <CertifierRow key={c.id} certifier={c} />
+        <CertifierRow key={c.id} certifier={c} firmId={firmId} signatureUrl={signatureUrls[c.id]} />
       ))}
       {certifiers.length === 0 && <div className="text-sm text-slate-400">No certifiers yet.</div>}
 
@@ -106,7 +118,7 @@ export function CertifierList({ certifiers }: { certifiers: Certifier[] }) {
   );
 }
 
-function CertifierRow({ certifier }: { certifier: Certifier }) {
+function CertifierRow({ certifier, firmId, signatureUrl }: { certifier: Certifier; firmId: string; signatureUrl?: string }) {
   const [editing, setEditing] = useState(false);
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateCertifier, undefined);
 
@@ -117,6 +129,26 @@ function CertifierRow({ certifier }: { certifier: Certifier }) {
           <div className="text-sm font-semibold text-teal-900">{certifier.name}</div>
           <div className="text-xs text-slate-500">
             {certifier.registration_no} · {certifier.registration_body}
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            {signatureUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={signatureUrl} alt={`${certifier.name} signature`} className="h-10 border border-slate-100 rounded bg-white px-2" />
+            ) : (
+              <span className="text-[11px] text-slate-400">No signature uploaded</span>
+            )}
+            <ActionUpload
+              action={updateCertifierSignature}
+              fields={{ id: certifier.id }}
+              pathPrefix={`${firmId}/signatures/${certifier.id}`}
+              label={signatureUrl ? "Replace signature" : "Upload signature"}
+            />
+            {signatureUrl && (
+              <form action={removeCertifierSignature}>
+                <input type="hidden" name="id" value={certifier.id} />
+                <button className="text-xs text-red-500 hover:underline">Remove</button>
+              </form>
+            )}
           </div>
         </div>
         <div className="flex gap-2">

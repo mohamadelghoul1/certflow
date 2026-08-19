@@ -229,6 +229,15 @@ export type Defect = {
   resolved_at: string | null;
 };
 
+export type InspectionPhoto = {
+  id: string;
+  inspection_id: string;
+  file_path: string;
+  caption: string | null;
+  sort_order: number;
+  created_at: string;
+};
+
 export type ConditionOfConsent = {
   id: string;
   job_id: string;

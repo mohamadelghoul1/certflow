@@ -1,12 +1,26 @@
+import Link from "next/link";
 import { formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { assignInspector, setInspectionDate, recordOutcome, addDefect, resolveDefect, confirmBooking, uploadInspectionReport, removeInspection } from "@/lib/actions/inspections";
+import {
+  assignInspector,
+  setInspectionDate,
+  recordOutcome,
+  addDefect,
+  resolveDefect,
+  confirmBooking,
+  uploadInspectionReport,
+  removeInspection,
+  addPhoto,
+  setPhotoCaption,
+  removePhoto,
+  reportToPortal,
+} from "@/lib/actions/inspections";
 import { notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { AutoSubmitSelect } from "@/components/certifier/AutoSubmitSelect";
-import type { Inspection, Defect, Certifier } from "@/types/db";
+import type { Inspection, Defect, InspectionPhoto, Certifier } from "@/types/db";
 
-type InspectionWithDefects = Inspection & { defects: Defect[] };
+type InspectionWithDefects = Inspection & { defects: Defect[]; inspection_photos: InspectionPhoto[] };
 
 const OUTCOME_META: Record<string, { label: string; style: string }> = {
   pending: { label: "Pending", style: "bg-slate-100 text-slate-600" },
@@ -51,6 +65,8 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
   const reportUrl = await signedUrl(insp.report_file_path);
   const needsDefect = insp.outcome === "failed" || insp.outcome === "passed_subject_to";
   const dateOnWeekend = !!insp.date && fallsOnWeekend(insp.date);
+  const photos = insp.inspection_photos || [];
+  const photoUrls = await Promise.all(photos.map((p) => signedUrl(p.file_path)));
 
   return (
     <div className="border border-slate-200 rounded-md p-4">
@@ -143,17 +159,48 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-4">
+      <div className="mt-3">
+        <div className="text-[11px] font-semibold text-slate-500 mb-1.5">Photos</div>
+        {photos.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
+            {photos.map((p, idx) => (
+              <div key={p.id} className="space-y-1">
+                {photoUrls[idx] && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photoUrls[idx]!} alt={p.caption || "Inspection photo"} className="w-full aspect-[4/3] object-cover rounded-md border border-slate-200" />
+                )}
+                <form action={setPhotoCaption} className="flex gap-1">
+                  <input type="hidden" name="photo_id" value={p.id} />
+                  <input type="hidden" name="job_id" value={jobId} />
+                  <input name="caption" defaultValue={p.caption || ""} placeholder="Caption" className="flex-1 min-w-0 px-1.5 py-1 rounded border border-slate-200 text-[11px]" />
+                  <button className="text-[11px] text-teal-800 hover:underline shrink-0">Save</button>
+                </form>
+                <form action={removePhoto}>
+                  <input type="hidden" name="photo_id" value={p.id} />
+                  <input type="hidden" name="job_id" value={jobId} />
+                  <button className="text-[11px] text-red-500 hover:underline">Remove</button>
+                </form>
+              </div>
+            ))}
+          </div>
+        )}
+        <ActionUpload action={addPhoto} fields={{ inspection_id: insp.id, job_id: jobId }} pathPrefix={`${firmId}/${jobId}/inspections/${insp.id}/photos`} label="Add photo" />
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-4">
+        <Link href={`/jobs/${jobId}/inspections/${insp.id}/report`} className="text-xs font-semibold text-teal-800 hover:underline">
+          Generate inspection report
+        </Link>
         {reportUrl && (
           <a href={reportUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-800 hover:underline">
-            View report
+            View uploaded report
           </a>
         )}
         <ActionUpload
           action={uploadInspectionReport}
           fields={{ inspection_id: insp.id, job_id: jobId }}
           pathPrefix={`${firmId}/${jobId}/inspections/${insp.id}`}
-          label={insp.report_sent ? "Replace report" : "Upload report"}
+          label={insp.report_sent ? "Replace uploaded report" : "Upload report file"}
         />
         {insp.report_sent && (
           <>
@@ -166,6 +213,13 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
             </form>
           </>
         )}
+        <form action={reportToPortal}>
+          <input type="hidden" name="inspection_id" value={insp.id} />
+          <input type="hidden" name="job_id" value={jobId} />
+          <button disabled={insp.portal_reported} className="text-xs font-semibold text-slate-600 hover:underline disabled:opacity-50 disabled:cursor-default">
+            {insp.portal_reported ? `Reported to Portal ${formatISODate(insp.portal_reported_date)}` : "Report to NSW Planning Portal"}
+          </button>
+        </form>
         <form action={removeInspection} className="ml-auto">
           <input type="hidden" name="inspection_id" value={insp.id} />
           <input type="hidden" name="job_id" value={jobId} />

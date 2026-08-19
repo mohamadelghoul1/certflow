@@ -492,6 +492,25 @@ export async function assignJobClient(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+export async function addSharedAccess(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const clientId = String(formData.get("client_id") || "");
+  if (!clientId) return;
+  await supabase.from("job_shared_access").insert({ job_id: jobId, client_id: clientId });
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function removeSharedAccess(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const clientId = String(formData.get("client_id"));
+  await supabase.from("job_shared_access").delete().eq("job_id", jobId).eq("client_id", clientId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
 // Both blank by default — the certificate package falls back to a standard
 // letter body (see app/certificate/pathway/[jobId]/page.tsx) unless the
 // certifier has overridden it here for this specific job.

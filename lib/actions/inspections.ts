@@ -94,3 +94,41 @@ export async function removeInspection(formData: FormData) {
   await supabase.from("inspections").delete().eq("id", inspectionId);
   revalidatePath(`/jobs/${jobId}`);
 }
+
+export async function addPhoto(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const inspectionId = String(formData.get("inspection_id"));
+  const jobId = String(formData.get("job_id"));
+  const filePath = String(formData.get("file_path"));
+  await supabase.from("inspection_photos").insert({ inspection_id: inspectionId, file_path: filePath });
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function setPhotoCaption(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const photoId = String(formData.get("photo_id"));
+  const jobId = String(formData.get("job_id"));
+  const caption = String(formData.get("caption") || "");
+  await supabase.from("inspection_photos").update({ caption }).eq("id", photoId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function removePhoto(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const photoId = String(formData.get("photo_id"));
+  const jobId = String(formData.get("job_id"));
+  await supabase.from("inspection_photos").delete().eq("id", photoId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function reportToPortal(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const inspectionId = String(formData.get("inspection_id"));
+  const jobId = String(formData.get("job_id"));
+  await supabase.from("inspections").update({ portal_reported: true, portal_reported_date: todayISO() }).eq("id", inspectionId);
+  revalidatePath(`/jobs/${jobId}`);
+}

@@ -32,12 +32,15 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     supabase.from("checklists").select("id, kind, modification_id, checklist_items(*, amendments(*))").eq("job_id", id),
     supabase.from("modifications").select("*").eq("job_id", id).order("created_at"),
     supabase.from("oc_records").select("*").eq("job_id", id).order("created_at"),
-    supabase.from("inspections").select("*, defects(*)").eq("job_id", id),
+    supabase.from("inspections").select("*, defects(*), inspection_photos(*)").eq("job_id", id).order("sort_order", { referencedTable: "inspection_photos" }),
     supabase.from("conditions_of_consent").select("*").eq("job_id", id).order("created_at"),
     supabase.from("certifiers").select("*").eq("firm_id", profile.firm_id).order("name"),
     supabase.from("clients").select("*").eq("firm_id", profile.firm_id).order("name"),
     supabase.from("document_library_items").select("*").eq("firm_id", profile.firm_id).order("sort_order"),
   ]);
+
+  const { data: sharedAccessRows } = await supabase.from("job_shared_access").select("client_id, clients(id, name, type)").eq("job_id", id);
+  const sharedClients = (sharedAccessRows || []).map((r) => r.clients).filter(Boolean) as unknown as { id: string; name: string; type: string }[];
 
   const libraries: Record<string, { title: string; description: string | null; category: string | null }[]> = { CDC: [], CC: [], NOC: [], OC: [] };
   for (const item of libraryItems || []) {
@@ -85,7 +88,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
         })}
       </div>
 
-      {tab === "details" && <DetailsTab job={typedJob} conditions={conditions || []} clients={clients || []} />}
+      {tab === "details" && <DetailsTab job={typedJob} conditions={conditions || []} clients={clients || []} sharedClients={sharedClients} />}
 
       {tab === "pathway" && pathwayChecklist && (
         <CertificatesPanel

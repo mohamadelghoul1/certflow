@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { updateJobDetails, addCondition, removeCondition, assignJobClient, updateCouncilLetter, updateApplicantLetter, toggleCriticalStageInspection } from "@/lib/actions/jobs";
+import { updateJobDetails, addCondition, removeCondition, assignJobClient, addSharedAccess, removeSharedAccess, updateCouncilLetter, updateApplicantLetter, toggleCriticalStageInspection } from "@/lib/actions/jobs";
 import type { ActionState } from "@/lib/actions/auth";
 import {
   BCA_VERSIONS,
@@ -40,7 +40,17 @@ type CouncilState = {
   email: string;
 };
 
-export function DetailsTab({ job, conditions, clients }: { job: Job; conditions: ConditionOfConsent[]; clients: ClientContact[] }) {
+export function DetailsTab({
+  job,
+  conditions,
+  clients,
+  sharedClients,
+}: {
+  job: Job;
+  conditions: ConditionOfConsent[];
+  clients: ClientContact[];
+  sharedClients: { id: string; name: string; type: string }[];
+}) {
   const d = job.details || {};
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateJobDetails, undefined);
   const [showSaved, setShowSaved] = useState(false);
@@ -390,6 +400,39 @@ export function DetailsTab({ job, conditions, clients }: { job: Job; conditions:
           </select>
         </form>
         <p className="text-xs text-slate-400 mt-2">Add clients under Settings, then assign one here to give them portal access to this job.</p>
+
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <div className="text-xs font-semibold text-slate-500 mb-2">Additional shared access (e.g. the owner, alongside the primary contact)</div>
+          <div className="space-y-1.5 mb-2">
+            {sharedClients.map((c) => (
+              <div key={c.id} className="flex items-center justify-between text-sm text-slate-700">
+                <span>
+                  {c.name} <span className="text-slate-400">({c.type})</span>
+                </span>
+                <form action={removeSharedAccess}>
+                  <input type="hidden" name="job_id" value={job.id} />
+                  <input type="hidden" name="client_id" value={c.id} />
+                  <button className="text-xs text-red-500 hover:underline">Remove</button>
+                </form>
+              </div>
+            ))}
+            {sharedClients.length === 0 && <div className="text-xs text-slate-400">No additional people have access yet.</div>}
+          </div>
+          <form action={addSharedAccess} className="flex items-center gap-2">
+            <input type="hidden" name="job_id" value={job.id} />
+            <select name="client_id" defaultValue="" className={inputCls}>
+              <option value="">— Select a client to add —</option>
+              {clients
+                .filter((c) => c.id !== job.client_id && !sharedClients.some((s) => s.id === c.id))
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.type})
+                  </option>
+                ))}
+            </select>
+            <button className="px-3 py-2 rounded-md bg-teal-800 text-white text-xs font-semibold hover:bg-teal-900 shrink-0">Add</button>
+          </form>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg border border-slate-200 p-5">

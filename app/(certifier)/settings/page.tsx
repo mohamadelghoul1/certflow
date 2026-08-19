@@ -2,6 +2,7 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FirmForm, CertifierList, ClientList } from "@/components/certifier/SettingsForms";
 import { DocumentLibrarySection } from "@/components/certifier/DocumentLibrarySection";
+import { signedUrl } from "@/lib/storage";
 
 export default async function SettingsPage() {
   const { profile } = await requireProfile("certifier");
@@ -13,6 +14,16 @@ export default async function SettingsPage() {
     supabase.from("clients").select("*").eq("firm_id", profile.firm_id).order("name"),
     supabase.from("document_library_items").select("*").eq("firm_id", profile.firm_id).order("sort_order"),
   ]);
+
+  const signatureUrls: Record<string, string> = {};
+  await Promise.all(
+    (certifiers || []).map(async (c) => {
+      if (c.signature_url) {
+        const url = await signedUrl(c.signature_url);
+        if (url) signatureUrls[c.id] = url;
+      }
+    })
+  );
 
   return (
     <div className="space-y-8 max-w-3xl">
@@ -28,7 +39,7 @@ export default async function SettingsPage() {
       <section className="bg-white rounded-lg border border-slate-200">
         <div className="px-5 py-3 border-b border-slate-100 font-bold text-teal-900">Certifiers</div>
         <div className="p-5">
-          <CertifierList certifiers={certifiers || []} />
+          <CertifierList certifiers={certifiers || []} firmId={profile.firm_id} signatureUrls={signatureUrls} />
         </div>
       </section>
 

@@ -45,6 +45,19 @@ function Section({ children, last }: { children: React.ReactNode; last?: boolean
   return <div className={`bg-white p-10 mb-6 shadow-sm print:shadow-none print:mb-0 ${!last ? "print:break-after-page" : ""}`}>{children}</div>;
 }
 
+function SignatureLine({ signatureUrl, topPadding }: { signatureUrl: string | null; topPadding: string }) {
+  if (signatureUrl) {
+    return (
+      <div className={topPadding} data-stamp>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={signatureUrl} alt="Signature" className="h-14 mb-1" />
+        <div className="border-b border-slate-400 w-56" />
+      </div>
+    );
+  }
+  return <div className={`${topPadding} border-b border-slate-400 w-56`} data-stamp />;
+}
+
 export default async function PathwayCertificatePage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params;
   const { profile } = await requireProfile("certifier");
@@ -60,6 +73,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
     supabase.from("conditions_of_consent").select("*").eq("job_id", jobId).order("created_at"),
     job.pathway_issued_by ? supabase.from("certifiers").select("*").eq("id", job.pathway_issued_by).single().then((r) => r.data) : Promise.resolve(null),
   ]);
+  const signatureUrl = issuedBy?.signature_url ? await signedUrl(issuedBy.signature_url) : null;
 
   const pathwayChecklist = (checklists || []).find((c) => c.kind === "pathway");
   const nocChecklist = (checklists || []).find((c) => c.kind === "noc");
@@ -157,7 +171,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               </div>
             ))}
             <div className="pt-4">Yours sincerely,</div>
-            <div className="pt-10 border-b border-slate-400 w-56" data-stamp />
+            <SignatureLine signatureUrl={signatureUrl} topPadding="pt-10" />
             <div>{issuedBy?.name || "—"}</div>
             <div className="text-xs text-slate-500">Registered Certifier / {issuedBy?.registration_no}</div>
             <div className="text-xs text-slate-500">{firm?.name} Pty Ltd</div>
@@ -192,7 +206,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               </div>
             ))}
             <div className="pt-4">Yours sincerely,</div>
-            <div className="pt-10 border-b border-slate-400 w-56" data-stamp />
+            <SignatureLine signatureUrl={signatureUrl} topPadding="pt-10" />
             <div>{issuedBy?.name || "—"}</div>
             <div className="text-xs text-slate-500">Registered Certifier / {issuedBy?.registration_no}</div>
             <div className="text-xs text-slate-500">{firm?.name} Pty Ltd</div>
@@ -375,7 +389,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               <span />
               <span>Dated: {issuedDate}</span>
             </div>
-            <div className="pt-8 border-b border-slate-400 w-56" data-stamp />
+            <SignatureLine signatureUrl={signatureUrl} topPadding="pt-8" />
             <div>{issuedBy?.name || "—"}</div>
             <div className="text-xs text-slate-500">Principal Certifier / {issuedBy?.registration_no}</div>
 

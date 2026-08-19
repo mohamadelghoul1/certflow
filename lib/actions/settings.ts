@@ -69,6 +69,23 @@ export async function removeCertifier(formData: FormData) {
   revalidatePath("/settings");
 }
 
+export async function updateCertifierSignature(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const filePath = String(formData.get("file_path"));
+  await supabase.from("certifiers").update({ signature_url: filePath }).eq("id", id).eq("firm_id", profile.firm_id);
+  revalidatePath("/settings");
+}
+
+export async function removeCertifierSignature(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  await supabase.from("certifiers").update({ signature_url: null }).eq("id", id).eq("firm_id", profile.firm_id);
+  revalidatePath("/settings");
+}
+
 export async function addClient(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
