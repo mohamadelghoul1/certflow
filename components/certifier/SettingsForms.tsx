@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { updateFirm, addCertifier, updateCertifier, removeCertifier, addClient, inviteClient } from "@/lib/actions/settings";
+import { updateFirm, addCertifier, updateCertifier, removeCertifier, addClient, updateClient, removeClient, inviteClient } from "@/lib/actions/settings";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Firm, Certifier, ClientContact } from "@/types/db";
 import { CLIENT_TYPES } from "@/lib/constants";
@@ -178,20 +178,7 @@ export function ClientList({ clients }: { clients: ClientContact[] }) {
   return (
     <div className="space-y-3">
       {clients.map((c) => (
-        <div key={c.id} className="flex items-center justify-between border border-slate-100 rounded-md px-4 py-3">
-          <div>
-            <div className="text-sm font-semibold text-teal-900">
-              {c.name} <span className="font-normal text-slate-400">({c.type})</span>
-            </div>
-            <div className="text-xs text-slate-500">{c.email || "No email on file"}</div>
-          </div>
-          {c.email && (
-            <form action={inviteClient}>
-              <input type="hidden" name="client_id" value={c.id} />
-              <button className="text-xs text-teal-800 hover:underline">{c.user_id ? "Resend invite" : "Invite to portal"}</button>
-            </form>
-          )}
-        </div>
+        <ClientRow key={c.id} client={c} />
       ))}
       {clients.length === 0 && <div className="text-sm text-slate-400">No clients yet — add one below, then assign them to a job.</div>}
 
@@ -239,5 +226,79 @@ export function ClientList({ clients }: { clients: ClientContact[] }) {
         </button>
       )}
     </div>
+  );
+}
+
+function ClientRow({ client }: { client: ClientContact }) {
+  const [editing, setEditing] = useState(false);
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(updateClient, undefined);
+
+  if (!editing) {
+    return (
+      <div className="flex items-center justify-between border border-slate-100 rounded-md px-4 py-3">
+        <div>
+          <div className="text-sm font-semibold text-teal-900">
+            {client.name} <span className="font-normal text-slate-400">({client.type})</span>
+          </div>
+          <div className="text-xs text-slate-500">{client.email || "No email on file"}</div>
+        </div>
+        <div className="flex items-center gap-3">
+          {client.email && (
+            <form action={inviteClient}>
+              <input type="hidden" name="client_id" value={client.id} />
+              <button className="text-xs text-teal-800 hover:underline">{client.user_id ? "Resend invite" : "Invite to portal"}</button>
+            </form>
+          )}
+          <button onClick={() => setEditing(true)} className="text-xs text-teal-800 hover:underline">
+            Edit
+          </button>
+          <form action={removeClient}>
+            <input type="hidden" name="id" value={client.id} />
+            <button className="text-xs text-red-600 hover:underline">Remove</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form action={formAction} className="border border-slate-200 rounded-md p-4 space-y-3">
+      <input type="hidden" name="id" value={client.id} />
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Name</label>
+          <input name="name" defaultValue={client.name} required className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Type</label>
+          <select name="type" defaultValue={client.type} className={inputCls}>
+            {CLIENT_TYPES.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Company</label>
+          <input name="company" defaultValue={client.company || ""} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Phone</label>
+          <input name="phone" defaultValue={client.phone || ""} className={inputCls} />
+        </div>
+        <div className="sm:col-span-2">
+          <label className={labelCls}>Email</label>
+          <input type="email" name="email" defaultValue={client.email || ""} className={inputCls} />
+        </div>
+      </div>
+      {state?.error && <div className="text-sm text-red-600">{state.error}</div>}
+      <div className="flex gap-2">
+        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">
+          {pending ? "Saving…" : "Save"}
+        </button>
+        <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-sm text-slate-600 hover:bg-slate-50">
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }

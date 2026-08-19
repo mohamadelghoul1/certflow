@@ -85,6 +85,33 @@ export async function addClient(_prev: ActionState, formData: FormData): Promise
   return undefined;
 }
 
+export async function updateClient(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const { error } = await supabase
+    .from("clients")
+    .update({
+      name: String(formData.get("name") || ""),
+      type: String(formData.get("type") || "Other"),
+      company: String(formData.get("company") || ""),
+      email: String(formData.get("email") || ""),
+      phone: String(formData.get("phone") || ""),
+    })
+    .eq("id", id)
+    .eq("firm_id", profile.firm_id);
+  if (error) return { error: error.message };
+  revalidatePath("/settings");
+  return undefined;
+}
+
+export async function removeClient(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  await supabase.from("clients").delete().eq("id", String(formData.get("id"))).eq("firm_id", profile.firm_id);
+  revalidatePath("/settings");
+}
+
 export async function inviteClient(formData: FormData) {
   const { profile } = await requireProfile("certifier");
   const clientId = String(formData.get("client_id"));
