@@ -251,6 +251,21 @@ export async function notifyClientOfChecklist(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// Generic one-off milestone notification — used by the manual "Notify
+// client" buttons next to a certificate/report once it's ready, instead
+// of firing automatically the moment it's uploaded/marked sent.
+export async function notifyClientMessage(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const subject = String(formData.get("subject") || "Update on your project");
+  const message = String(formData.get("message") || "");
+
+  await notifyJobClient(supabase, jobId, subject, `<p>${message}</p>`);
+  await supabase.from("jobs").update({ last_notified_at: new Date().toISOString() }).eq("id", jobId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
 export async function resolveAmendment(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
@@ -301,7 +316,6 @@ export async function uploadPathwayApproval(formData: FormData) {
     .from("jobs")
     .update({ pathway_approval_uploaded: true, pathway_approval_date: todayISO(), pathway_approval_file_path: filePath })
     .eq("id", jobId);
-  await notifyJobClient(supabase, jobId, "Certificate issued", `<p>Your certificate has been issued and is now available to view in your portal.</p>`);
   revalidatePath(`/jobs/${jobId}`);
 }
 
@@ -351,7 +365,6 @@ export async function uploadModificationApproval(formData: FormData) {
   const modificationId = String(formData.get("modification_id"));
   const filePath = String(formData.get("file_path"));
   await supabase.from("modifications").update({ approval_uploaded: true, approval_date: todayISO(), approval_file_path: filePath }).eq("id", modificationId);
-  await notifyJobClient(supabase, jobId, "Modified certificate issued", `<p>A modified certificate has been issued and is now available to view in your portal.</p>`);
   revalidatePath(`/jobs/${jobId}`);
 }
 
@@ -372,8 +385,7 @@ export async function uploadOcApproval(formData: FormData) {
   const jobId = String(formData.get("job_id"));
   const ocId = String(formData.get("oc_id"));
   const filePath = String(formData.get("file_path"));
-  const { data: oc } = await supabase.from("oc_records").update({ approval_uploaded: true, approval_date: todayISO(), approval_file_path: filePath }).eq("id", ocId).select("type").single();
-  await notifyJobClient(supabase, jobId, "Occupation Certificate issued", `<p>Your ${oc?.type === "whole" ? "Whole" : "Partial"} Occupation Certificate has been issued and is now available to view in your portal.</p>`);
+  await supabase.from("oc_records").update({ approval_uploaded: true, approval_date: todayISO(), approval_file_path: filePath }).eq("id", ocId);
   revalidatePath(`/jobs/${jobId}`);
 }
 

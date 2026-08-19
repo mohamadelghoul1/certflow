@@ -1,6 +1,6 @@
 import { formatISODate, stageComplete, pathwayCertRef } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { issuePathwayCertificate, uploadPathwayApproval, startModification, issueModification, uploadModificationApproval } from "@/lib/actions/jobs";
+import { issuePathwayCertificate, uploadPathwayApproval, startModification, issueModification, uploadModificationApproval, notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import type { Job, Certifier, Modification, ChecklistItem, Amendment } from "@/types/db";
@@ -78,7 +78,17 @@ export async function CertificatesPanel({
               pathPrefix={`${firmId}/${job.id}/certificates/pathway`}
               label={job.pathway_approval_uploaded ? "Replace signed approval" : "Upload signed approval"}
             />
-            {job.pathway_approval_uploaded && <span className="text-[11px] text-emerald-700">Visible to client</span>}
+            {job.pathway_approval_uploaded && (
+              <>
+                <span className="text-[11px] text-emerald-700">Visible to client</span>
+                <form action={notifyClientMessage}>
+                  <input type="hidden" name="job_id" value={job.id} />
+                  <input type="hidden" name="subject" value="Certificate issued" />
+                  <input type="hidden" name="message" value="Your certificate has been issued and is now available to view in your portal." />
+                  <button className="text-xs font-semibold text-teal-800 hover:underline">Notify client</button>
+                </form>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -147,6 +157,14 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
             pathPrefix={`${firmId}/${job.id}/certificates/modification/${mod.id}`}
             label={mod.approval_uploaded ? "Replace signed approval" : "Upload signed approval"}
           />
+          {mod.approval_uploaded && (
+            <form action={notifyClientMessage}>
+              <input type="hidden" name="job_id" value={job.id} />
+              <input type="hidden" name="subject" value="Modified certificate issued" />
+              <input type="hidden" name="message" value="A modified certificate has been issued and is now available to view in your portal." />
+              <button className="text-xs font-semibold text-teal-800 hover:underline">Notify client</button>
+            </form>
+          )}
         </div>
       )}
     </div>

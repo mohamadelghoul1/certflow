@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { todayISO } from "@/lib/business";
-import { notifyJobClient } from "@/lib/email";
 
 export async function assignInspector(formData: FormData) {
   await requireProfile("certifier");
@@ -61,8 +60,7 @@ export async function sendReport(formData: FormData) {
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
-  const { data: insp } = await supabase.from("inspections").update({ report_sent: true, report_sent_date: todayISO() }).eq("id", inspectionId).select("title").single();
-  if (insp) await notifyJobClient(supabase, jobId, "Inspection report available", `<p>The report for your <strong>${insp.title}</strong> inspection is now available in your portal.</p>`);
+  await supabase.from("inspections").update({ report_sent: true, report_sent_date: todayISO() }).eq("id", inspectionId);
   revalidatePath(`/jobs/${jobId}`);
 }
 
@@ -72,13 +70,10 @@ export async function uploadInspectionReport(formData: FormData) {
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
   const filePath = String(formData.get("file_path"));
-  const { data: insp } = await supabase
+  await supabase
     .from("inspections")
     .update({ report_file_path: filePath, report_sent: true, report_sent_date: todayISO() })
-    .eq("id", inspectionId)
-    .select("title")
-    .single();
-  if (insp) await notifyJobClient(supabase, jobId, "Inspection report available", `<p>The report for your <strong>${insp.title}</strong> inspection is now available in your portal.</p>`);
+    .eq("id", inspectionId);
   revalidatePath(`/jobs/${jobId}`);
 }
 

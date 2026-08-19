@@ -1,6 +1,7 @@
 import { formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { assignInspector, setInspectionDate, recordOutcome, addDefect, resolveDefect, confirmBooking, uploadInspectionReport } from "@/lib/actions/inspections";
+import { notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { AutoSubmitSelect } from "@/components/certifier/AutoSubmitSelect";
 import type { Inspection, Defect, Certifier } from "@/types/db";
@@ -145,9 +146,19 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
           action={uploadInspectionReport}
           fields={{ inspection_id: insp.id, job_id: jobId }}
           pathPrefix={`${firmId}/${jobId}/inspections/${insp.id}`}
-          label={insp.report_sent ? "Replace report & re-send" : "Upload report & send to client"}
+          label={insp.report_sent ? "Replace report" : "Upload report"}
         />
-        {insp.report_sent && <span className="text-[11px] text-emerald-700">Sent {formatISODate(insp.report_sent_date)}</span>}
+        {insp.report_sent && (
+          <>
+            <span className="text-[11px] text-emerald-700">Available {formatISODate(insp.report_sent_date)}</span>
+            <form action={notifyClientMessage}>
+              <input type="hidden" name="job_id" value={jobId} />
+              <input type="hidden" name="subject" value="Inspection report available" />
+              <input type="hidden" name="message" value={`The report for your ${insp.title} inspection is now available in your portal.`} />
+              <button className="text-xs font-semibold text-teal-800 hover:underline">Notify client</button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

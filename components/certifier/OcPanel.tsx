@@ -1,6 +1,6 @@
 import { formatISODate, stageComplete } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { issueOc, uploadOcApproval, markJobComplete, reopenJob } from "@/lib/actions/jobs";
+import { issueOc, uploadOcApproval, markJobComplete, reopenJob, notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import type { Job, Certifier, OcRecord, ChecklistItem, Amendment } from "@/types/db";
@@ -110,6 +110,14 @@ async function OcRecordCard({ record, job, firmId, certifiers }: { record: OcRec
           pathPrefix={`${firmId}/${job.id}/certificates/oc/${record.id}`}
           label={record.approval_uploaded ? "Replace signed approval" : "Upload signed approval"}
         />
+        {record.approval_uploaded && (
+          <form action={notifyClientMessage}>
+            <input type="hidden" name="job_id" value={job.id} />
+            <input type="hidden" name="subject" value="Occupation Certificate issued" />
+            <input type="hidden" name="message" value={`Your ${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate has been issued and is now available to view in your portal.`} />
+            <button className="text-xs font-semibold text-teal-800 hover:underline">Notify client</button>
+          </form>
+        )}
       </div>
     </div>
   );
