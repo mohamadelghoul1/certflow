@@ -160,8 +160,7 @@ function TaskListColumn({ list }: { list: ListWithTasks }) {
 function AddTaskForm({ onAdd }: { onAdd: (text: string) => void }) {
   const [text, setText] = useState("");
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
+  function commit() {
     const trimmed = text.trim();
     if (!trimmed) return;
     onAdd(trimmed);
@@ -169,13 +168,20 @@ function AddTaskForm({ onAdd }: { onAdd: (text: string) => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex items-center gap-1.5 text-sm text-slate-500">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        commit();
+      }}
+      className="flex items-center gap-1.5 text-sm text-slate-500"
+    >
       <button type="submit" aria-label="Add task" className="shrink-0 text-teal-700 hover:text-teal-900 p-0.5 -m-0.5">
         <Plus size={14} />
       </button>
       <input
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
         placeholder="Add a task"
         className="flex-1 min-w-0 outline-none bg-transparent placeholder-slate-400 py-1"
       />
