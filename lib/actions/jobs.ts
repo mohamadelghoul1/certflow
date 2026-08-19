@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { INSPECTION_LIBRARY, MANDATORY_CRITICAL_STAGE_INSPECTIONS } from "@/lib/constants";
 import { todayISO } from "@/lib/business";
+import { notifyJobClient } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -156,7 +157,8 @@ export async function approveItem(formData: FormData) {
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
-  await supabase.from("checklist_items").update({ status: "approved", updated_at: new Date().toISOString() }).eq("id", itemId);
+  const { data: item } = await supabase.from("checklist_items").update({ status: "approved", updated_at: new Date().toISOString() }).eq("id", itemId).select("title").single();
+  if (item) await notifyJobClient(supabase, jobId, "Document approved", `<p>Your document <strong>${item.title}</strong> has been approved.</p>`);
   revalidatePath(`/jobs/${jobId}`);
 }
 
@@ -211,7 +213,9 @@ export async function addAmendment(formData: FormData) {
   const jobId = String(formData.get("job_id"));
   const text = String(formData.get("text") || "").trim();
   if (!text) return;
+  const { data: item } = await supabase.from("checklist_items").select("title").eq("id", itemId).single();
   await supabase.from("amendments").insert({ checklist_item_id: itemId, text });
+  await notifyJobClient(supabase, jobId, "Amendment requested", `<p>An amendment has been requested on <strong>${item?.title || "a document"}</strong>:</p><p style="padding:12px;background:#fffbeb;border-radius:6px">${text}</p>`);
   revalidatePath(`/jobs/${jobId}`);
 }
 
@@ -265,6 +269,7 @@ export async function uploadPathwayApproval(formData: FormData) {
     .from("jobs")
     .update({ pathway_approval_uploaded: true, pathway_approval_date: todayISO(), pathway_approval_file_path: filePath })
     .eq("id", jobId);
+  await notifyJobClient(supabase, jobId, "Certificate issued", `<p>Your certificate has been issued and is now available to view in your portal.</p>`);
   revalidatePath(`/jobs/${jobId}`);
 }
 
@@ -314,6 +319,7 @@ export async function uploadModificationApproval(formData: FormData) {
   const modificationId = String(formData.get("modification_id"));
   const filePath = String(formData.get("file_path"));
   await supabase.from("modifications").update({ approval_uploaded: true, approval_date: todayISO(), approval_file_path: filePath }).eq("id", modificationId);
+  await notifyJobClient(supabase, jobId, "Modified certificate issued", `<p>A modified certificate has been issued and is now available to view in your portal.</p>`);
   revalidatePath(`/jobs/${jobId}`);
 }
 
@@ -334,7 +340,8 @@ export async function uploadOcApproval(formData: FormData) {
   const jobId = String(formData.get("job_id"));
   const ocId = String(formData.get("oc_id"));
   const filePath = String(formData.get("file_path"));
-  await supabase.from("oc_records").update({ approval_uploaded: true, approval_date: todayISO(), approval_file_path: filePath }).eq("id", ocId);
+  const { data: oc } = await supabase.from("oc_records").update({ approval_uploaded: true, approval_date: todayISO(), approval_file_path: filePath }).eq("id", ocId).select("type").single();
+  await notifyJobClient(supabase, jobId, "Occupation Certificate issued", `<p>Your ${oc?.type === "whole" ? "Whole" : "Partial"} Occupation Certificate has been issued and is now available to view in your portal.</p>`);
   revalidatePath(`/jobs/${jobId}`);
 }
 

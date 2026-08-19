@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { suggestedInspectionBookingDate } from "@/lib/business";
 
-export function BookInspectionForm({ inspectionId }: { inspectionId: string }) {
+export function BookInspectionForm({ inspectionId, jobId }: { inspectionId: string; jobId: string }) {
   const [date, setDate] = useState(() => suggestedInspectionBookingDate(""));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -19,6 +19,11 @@ export function BookInspectionForm({ inspectionId }: { inspectionId: string }) {
       const supabase = createClient();
       const { error: rpcError } = await supabase.rpc("client_book_inspection", { p_inspection_id: inspectionId, p_date: date });
       if (rpcError) throw rpcError;
+      fetch("/api/notify/inspection-booked", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inspectionId, jobId, date }),
+      }).catch(() => {});
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't book that date.");

@@ -158,7 +158,6 @@ async function InspectionsSection({
   certifiers: Certifier[];
 }) {
   if (!pathwayGenerated) return null;
-  void jobId;
   void firmId;
 
   return (
@@ -169,7 +168,7 @@ async function InspectionsSection({
           const meta = OUTCOME_META[insp.outcome];
           const inspector = certifiers.find((c) => c.id === insp.inspector_certifier_id);
           return (
-            <InspectionCard key={insp.id} insp={insp} meta={meta} inspectorName={inspector?.name} />
+            <InspectionCard key={insp.id} insp={insp} jobId={jobId} meta={meta} inspectorName={inspector?.name} />
           );
         })}
       </div>
@@ -177,7 +176,7 @@ async function InspectionsSection({
   );
 }
 
-async function InspectionCard({ insp, meta, inspectorName }: { insp: Inspection & { defects: Defect[] }; meta: { label: string; style: string }; inspectorName?: string }) {
+async function InspectionCard({ insp, jobId, meta, inspectorName }: { insp: Inspection & { defects: Defect[] }; jobId: string; meta: { label: string; style: string }; inspectorName?: string }) {
   const reportUrl = await signedUrl(insp.report_file_path);
   const canBook = insp.outcome === "pending";
 
@@ -205,7 +204,7 @@ async function InspectionCard({ insp, meta, inspectorName }: { insp: Inspection 
 
       {canBook && (
         <div className="mt-3">
-          <BookInspectionForm inspectionId={insp.id} />
+          <BookInspectionForm inspectionId={insp.id} jobId={jobId} />
           <div className="text-[11px] text-slate-400 mt-1">Weekend dates aren&apos;t available — we&apos;ll suggest the next working day automatically.</div>
         </div>
       )}
