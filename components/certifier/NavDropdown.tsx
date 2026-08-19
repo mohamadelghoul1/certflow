@@ -13,7 +13,7 @@ export function NavDropdown({
   viewAllLabel,
   createHref,
   createLabel,
-  itemHref,
+  itemHrefBase,
 }: {
   label: string;
   items: Item[];
@@ -21,7 +21,7 @@ export function NavDropdown({
   viewAllLabel: string;
   createHref: string;
   createLabel: string;
-  itemHref: (id: string) => string;
+  itemHrefBase: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -63,7 +63,7 @@ export function NavDropdown({
           {items.length > 0 && (
             <div className="max-h-72 overflow-y-auto">
               {items.map((it) => (
-                <Link key={it.id} href={itemHref(it.id)} onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm hover:bg-slate-50 border-b border-slate-50 last:border-b-0">
+                <Link key={it.id} href={`${itemHrefBase}/${it.id}`} onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm hover:bg-slate-50 border-b border-slate-50 last:border-b-0">
                   <div className="font-medium text-slate-800 truncate">{it.title}</div>
                   {it.subtitle && <div className="text-xs text-slate-400 truncate">{it.subtitle}</div>}
                 </Link>

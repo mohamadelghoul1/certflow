@@ -18,7 +18,7 @@ export function NavBar({ firmName, recentJobs, recentQuotes }: { firmName: strin
           viewAllLabel="View all projects"
           createHref="/jobs/new"
           createLabel="New project"
-          itemHref={(id) => `/jobs/${id}`}
+          itemHrefBase="/jobs"
         />
         <NavDropdown
           label="Quotes"
@@ -27,7 +27,7 @@ export function NavBar({ firmName, recentJobs, recentQuotes }: { firmName: strin
           viewAllLabel="View all quotes"
           createHref="/quotes/new"
           createLabel="New quote"
-          itemHref={(id) => `/quotes/${id}`}
+          itemHrefBase="/quotes"
         />
         <Link href="/reports" className="py-4 px-3 text-sm font-semibold text-slate-200 hover:text-amber-300 shrink-0 whitespace-nowrap">
           Reports
