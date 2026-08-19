@@ -11,12 +11,14 @@ type ModificationWithChecklist = Modification & { checklistId: string | null; it
 export async function CertificatesPanel({
   job,
   firmId,
+  pathwayChecklistId,
   pathwayItems,
   certifiers,
   modifications,
 }: {
   job: Job;
   firmId: string;
+  pathwayChecklistId: string;
   pathwayItems: ItemWithAmendments[];
   certifiers: Certifier[];
   modifications: ModificationWithChecklist[];
@@ -28,6 +30,11 @@ export async function CertificatesPanel({
 
   return (
     <div className="space-y-6">
+      <div>
+        <div className="text-sm font-semibold text-teal-900 mb-2">{job.pathway} checklist</div>
+        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} libraryKey={job.pathway} items={pathwayItems} />
+      </div>
+
       <div className="border border-slate-200 rounded-md p-4">
         <div className="flex items-center justify-between">
           <div>

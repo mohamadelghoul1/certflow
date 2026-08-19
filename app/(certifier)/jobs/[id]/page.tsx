@@ -85,6 +85,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
         <CertificatesPanel
           job={typedJob}
           firmId={profile.firm_id}
+          pathwayChecklistId={pathwayChecklist.id}
           pathwayItems={(pathwayChecklist.checklist_items as never[]) || []}
           certifiers={certifiers || []}
           modifications={modificationsWithChecklist as never[]}
