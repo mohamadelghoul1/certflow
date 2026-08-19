@@ -1,6 +1,8 @@
 "use client";
 
+import { useActionState, useEffect, useRef, useState } from "react";
 import { updateJobDetails, addCondition, assignJobClient } from "@/lib/actions/jobs";
+import type { ActionState } from "@/lib/actions/auth";
 import { BCA_VERSIONS, BUILDING_CLASSIFICATIONS, CONSTRUCTION_TYPES } from "@/lib/constants";
 import { formatISODate } from "@/lib/business";
 import type { Job, ConditionOfConsent, ClientContact } from "@/types/db";
@@ -10,9 +12,22 @@ const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
 
 export function DetailsTab({ job, conditions, clients }: { job: Job; conditions: ConditionOfConsent[]; clients: ClientContact[] }) {
   const d = job.details || {};
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(updateJobDetails, undefined);
+  const [showSaved, setShowSaved] = useState(false);
+  const wasPending = useRef(false);
+
+  useEffect(() => {
+    if (wasPending.current && !pending && !state?.error) {
+      setShowSaved(true);
+      const t = setTimeout(() => setShowSaved(false), 2500);
+      return () => clearTimeout(t);
+    }
+    wasPending.current = pending;
+  }, [pending, state]);
+
   return (
     <div className="space-y-6">
-      <form action={updateJobDetails} className="bg-white rounded-lg border border-slate-200 p-5 space-y-4">
+      <form action={formAction} className="bg-white rounded-lg border border-slate-200 p-5 space-y-4">
         <input type="hidden" name="job_id" value={job.id} />
         <div className="grid sm:grid-cols-3 gap-4">
           <div>
@@ -119,7 +134,13 @@ export function DetailsTab({ job, conditions, clients }: { job: Job; conditions:
           </div>
         </div>
 
-        <button className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">Save details</button>
+        <div className="flex items-center gap-3">
+          <button disabled={pending} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900 disabled:opacity-60">
+            {pending ? "Saving…" : "Save details"}
+          </button>
+          {showSaved && <span className="text-sm font-medium text-emerald-700">Saved ✓</span>}
+          {state?.error && <span className="text-sm text-red-600">{state.error}</span>}
+        </div>
       </form>
 
       <div className="bg-white rounded-lg border border-slate-200 p-5">

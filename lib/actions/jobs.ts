@@ -66,7 +66,7 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
   redirect(`/jobs/${job.id}`);
 }
 
-export async function updateJobDetails(formData: FormData): Promise<void> {
+export async function updateJobDetails(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
@@ -102,6 +102,7 @@ export async function updateJobDetails(formData: FormData): Promise<void> {
 
   await supabase.from("jobs").update({ details }).eq("id", jobId).eq("firm_id", profile.firm_id);
   revalidatePath(`/jobs/${jobId}`);
+  return undefined;
 }
 
 export async function addChecklistItems(formData: FormData) {
