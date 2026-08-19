@@ -11,14 +11,8 @@ export function NavBar({ firmName }: { firmName: string }) {
         <Link href="/jobs" className="py-4 px-3 text-sm font-semibold text-slate-200 hover:text-amber-300 shrink-0 whitespace-nowrap">
           Jobs
         </Link>
-        <Link href="/jobs/new" className="py-4 px-3 text-sm font-semibold text-slate-200 hover:text-amber-300 shrink-0 whitespace-nowrap">
-          New Job
-        </Link>
         <Link href="/quotes" className="py-4 px-3 text-sm font-semibold text-slate-200 hover:text-amber-300 shrink-0 whitespace-nowrap">
           Quotes
-        </Link>
-        <Link href="/quotes/new" className="py-4 px-3 text-sm font-semibold text-slate-200 hover:text-amber-300 shrink-0 whitespace-nowrap">
-          New Quote
         </Link>
         <Link href="/reports" className="py-4 px-3 text-sm font-semibold text-slate-200 hover:text-amber-300 shrink-0 whitespace-nowrap">
           Reports
