@@ -36,13 +36,13 @@ export async function CertificatesPanel({
     <div className="space-y-6">
       <div>
         <div className="text-sm font-semibold text-teal-900 mb-2">{job.pathway} checklist</div>
-        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} label={`Original ${job.pathway}`} library={library} items={pathwayItems} />
+        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} label={job.pathway} library={library} items={pathwayItems} />
       </div>
 
       <div className="border border-slate-200 rounded-md p-4">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-semibold text-teal-900">Original {job.pathway} — {ref}</div>
+            <div className="text-sm font-semibold text-teal-900">{job.pathway} — {ref}</div>
             <div className="text-xs text-slate-500 mt-0.5">
               {job.pathway_generated ? `Issued ${formatISODate(job.pathway_generated_date)} by ${issuedBy?.name || "—"} (v${job.pathway_version})` : "Not yet issued"}
             </div>

@@ -53,7 +53,7 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
       </div>
 
       <StageSection
-        title={`Original ${job.pathway}`}
+        title={job.pathway}
         items={(pathwayChecklist?.checklist_items as ItemWithAmendments[]) || []}
         jobId={id}
         firmId={job.firm_id}

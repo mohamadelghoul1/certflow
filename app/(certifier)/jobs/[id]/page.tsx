@@ -13,7 +13,7 @@ import type { Job } from "@/types/db";
 function tabsFor(pathway: "CDC" | "CC") {
   return [
     { key: "details", label: "Details" },
-    { key: "pathway", label: `Original ${pathway}` },
+    { key: "pathway", label: pathway },
     { key: "noc", label: "NOC" },
     { key: "inspections", label: "Inspections" },
     { key: "oc", label: "Occupation Certificate" },

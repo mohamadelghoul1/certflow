@@ -45,7 +45,7 @@ export async function InspectionsPanel({
   certifiers: Certifier[];
 }) {
   if (!pathwayGenerated) {
-    return <div className="text-sm text-slate-400">Inspections open once the original {pathway} is issued.</div>;
+    return <div className="text-sm text-slate-400">Inspections open once the {pathway} is issued.</div>;
   }
 
   return (

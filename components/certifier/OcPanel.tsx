@@ -35,7 +35,7 @@ export async function OcPanel({
         <ChecklistSection jobId={job.id} firmId={firmId} checklistId={checklistId} label="Occupation Certificate" library={library} items={items} />
       </div>
 
-      {!job.pathway_generated && <div className="text-xs text-slate-400">Occupation Certificates can&apos;t be issued until the original {job.pathway} is issued.</div>}
+      {!job.pathway_generated && <div className="text-xs text-slate-400">Occupation Certificates can&apos;t be issued until the {job.pathway} is issued.</div>}
 
       {job.pathway_generated && complete && (
         <form action={issueOc} className="border border-slate-200 rounded-md p-4 flex flex-wrap items-end gap-2">
