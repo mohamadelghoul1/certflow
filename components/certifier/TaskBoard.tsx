@@ -1,11 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { createTaskList, renameTaskList, deleteTaskList, addTask, toggleTaskComplete, updateTaskText, deleteTask } from "@/lib/actions/tasks";
 import { Plus, X, Trash2, GripVertical } from "lucide-react";
 import type { TaskList, ManualTask } from "@/types/db";
 
 type ListWithTasks = TaskList & { tasks: ManualTask[] };
+
+type TaskAction =
+  | { type: "add"; task: ManualTask }
+  | { type: "toggle"; id: string; completed: boolean }
+  | { type: "edit"; id: string; text: string; note: string | null }
+  | { type: "remove"; id: string };
+
+function tasksReducer(state: ManualTask[], action: TaskAction): ManualTask[] {
+  switch (action.type) {
+    case "add":
+      return [...state, action.task];
+    case "toggle":
+      return state.map((t) => (t.id === action.id ? { ...t, completed: action.completed } : t));
+    case "edit":
+      return state.map((t) => (t.id === action.id ? { ...t, text: action.text, note: action.note } : t));
+    case "remove":
+      return state.filter((t) => t.id !== action.id);
+  }
+}
 
 export function TaskBoard({ lists }: { lists: ListWithTasks[] }) {
   return (
@@ -22,8 +41,10 @@ export function TaskBoard({ lists }: { lists: ListWithTasks[] }) {
 
 function TaskListColumn({ list }: { list: ListWithTasks }) {
   const [title, setTitle] = useState(list.title);
-  const incomplete = list.tasks.filter((t) => !t.completed);
-  const completed = list.tasks.filter((t) => t.completed);
+  const [, startTransition] = useTransition();
+  const [tasks, dispatch] = useOptimistic(list.tasks, tasksReducer);
+  const incomplete = tasks.filter((t) => !t.completed);
+  const completed = tasks.filter((t) => t.completed);
 
   function saveTitle() {
     const trimmed = title.trim();
@@ -35,6 +56,56 @@ function TaskListColumn({ list }: { list: ListWithTasks }) {
     fd.set("list_id", list.id);
     fd.set("title", trimmed);
     renameTaskList(fd);
+  }
+
+  function handleAdd(text: string) {
+    const task: ManualTask = {
+      id: `temp-${Math.random().toString(36).slice(2)}`,
+      list_id: list.id,
+      text,
+      note: null,
+      completed: false,
+      completed_at: null,
+      sort_order: tasks.length,
+      created_at: new Date().toISOString(),
+    };
+    startTransition(async () => {
+      dispatch({ type: "add", task });
+      const fd = new FormData();
+      fd.set("list_id", list.id);
+      fd.set("text", text);
+      await addTask(fd);
+    });
+  }
+
+  function handleToggle(task: ManualTask) {
+    startTransition(async () => {
+      dispatch({ type: "toggle", id: task.id, completed: !task.completed });
+      const fd = new FormData();
+      fd.set("task_id", task.id);
+      fd.set("completed", (!task.completed).toString());
+      await toggleTaskComplete(fd);
+    });
+  }
+
+  function handleEdit(task: ManualTask, text: string, note: string) {
+    startTransition(async () => {
+      dispatch({ type: "edit", id: task.id, text, note: note || null });
+      const fd = new FormData();
+      fd.set("task_id", task.id);
+      fd.set("text", text);
+      fd.set("note", note);
+      await updateTaskText(fd);
+    });
+  }
+
+  function handleDelete(task: ManualTask) {
+    startTransition(async () => {
+      dispatch({ type: "remove", id: task.id });
+      const fd = new FormData();
+      fd.set("task_id", task.id);
+      await deleteTask(fd);
+    });
   }
 
   return (
@@ -63,12 +134,12 @@ function TaskListColumn({ list }: { list: ListWithTasks }) {
       </div>
 
       <div className="px-3 pt-2 pb-1">
-        <AddTaskForm listId={list.id} />
+        <AddTaskForm onAdd={handleAdd} />
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5">
         {incomplete.map((t) => (
-          <TaskRow key={t.id} task={t} />
+          <TaskRow key={t.id} task={t} onToggle={() => handleToggle(t)} onEdit={(text, note) => handleEdit(t, text, note)} onDelete={() => handleDelete(t)} />
         ))}
       </div>
 
@@ -77,7 +148,7 @@ function TaskListColumn({ list }: { list: ListWithTasks }) {
           <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-600 select-none">Completed ({completed.length})</summary>
           <div className="mt-1.5 space-y-0.5">
             {completed.map((t) => (
-              <TaskRow key={t.id} task={t} />
+              <TaskRow key={t.id} task={t} onToggle={() => handleToggle(t)} onEdit={(text, note) => handleEdit(t, text, note)} onDelete={() => handleDelete(t)} />
             ))}
           </div>
         </details>
@@ -86,17 +157,14 @@ function TaskListColumn({ list }: { list: ListWithTasks }) {
   );
 }
 
-function AddTaskForm({ listId }: { listId: string }) {
+function AddTaskForm({ onAdd }: { onAdd: (text: string) => void }) {
   const [text, setText] = useState("");
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = text.trim();
     if (!trimmed) return;
-    const fd = new FormData();
-    fd.set("list_id", listId);
-    fd.set("text", trimmed);
-    addTask(fd);
+    onAdd(trimmed);
     setText("");
   }
 
@@ -115,17 +183,10 @@ function AddTaskForm({ listId }: { listId: string }) {
   );
 }
 
-function TaskRow({ task }: { task: ManualTask }) {
+function TaskRow({ task, onToggle, onEdit, onDelete }: { task: ManualTask; onToggle: () => void; onEdit: (text: string, note: string) => void; onDelete: () => void }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(task.text);
   const [note, setNote] = useState(task.note || "");
-
-  function toggle() {
-    const fd = new FormData();
-    fd.set("task_id", task.id);
-    fd.set("completed", (!task.completed).toString());
-    toggleTaskComplete(fd);
-  }
 
   function save() {
     const trimmed = text.trim();
@@ -134,18 +195,8 @@ function TaskRow({ task }: { task: ManualTask }) {
       setEditing(false);
       return;
     }
-    const fd = new FormData();
-    fd.set("task_id", task.id);
-    fd.set("text", trimmed);
-    fd.set("note", note.trim());
-    updateTaskText(fd);
+    onEdit(trimmed, note.trim());
     setEditing(false);
-  }
-
-  function remove() {
-    const fd = new FormData();
-    fd.set("task_id", task.id);
-    deleteTask(fd);
   }
 
   if (editing) {
@@ -184,12 +235,12 @@ function TaskRow({ task }: { task: ManualTask }) {
 
   return (
     <div className="group flex items-start gap-2 px-1 py-1.5 rounded-md hover:bg-slate-50">
-      <input type="checkbox" checked={task.completed} onChange={toggle} className="mt-0.5 accent-teal-700 shrink-0" />
+      <input type="checkbox" checked={task.completed} onChange={onToggle} className="mt-0.5 accent-teal-700 shrink-0" />
       <button onClick={() => setEditing(true)} className="flex-1 min-w-0 text-left">
         <div className={`text-sm ${task.completed ? "text-slate-400 line-through" : "text-slate-700"}`}>{task.text}</div>
         {task.note && <div className="text-xs text-slate-400 truncate">{task.note}</div>}
       </button>
-      <button onClick={remove} className="p-0.5 rounded text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 shrink-0">
+      <button onClick={onDelete} className="p-0.5 rounded text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 shrink-0">
         <X size={13} />
       </button>
     </div>
