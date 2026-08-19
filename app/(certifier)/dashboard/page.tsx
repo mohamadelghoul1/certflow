@@ -77,12 +77,23 @@ export default async function DashboardPage() {
     }
   }
 
+  // Modification checklists live under the pathway tab, not their own —
+  // route both there so the click lands on the right tab straight away.
+  const tabForKind: Record<string, string> = { pathway: "pathway", modification: "pathway", noc: "noc", oc: "oc" };
+
   for (const p of jobs || []) {
     const href = `/jobs/${p.id}`;
-    const allItems = (p.checklists || []).flatMap((cl) => cl.checklist_items || []);
-    const awaitingReview = allItems.filter((i) => i.status === "submitted" && unresolvedCount(i as never) === 0).length;
-    if (awaitingReview > 0) {
-      tasks.push({ priority: "Medium", text: `${awaitingReview} document${awaitingReview === 1 ? "" : "s"} submitted — awaiting your review — ${p.address}`, jobId: p.id, href });
+    for (const cl of p.checklists || []) {
+      const awaitingReview = (cl.checklist_items || []).filter((i) => i.status === "submitted" && unresolvedCount(i as never) === 0).length;
+      if (awaitingReview > 0) {
+        const tab = tabForKind[cl.kind] || "details";
+        tasks.push({
+          priority: "Medium",
+          text: `${awaitingReview} document${awaitingReview === 1 ? "" : "s"} submitted — awaiting your review — ${p.address}`,
+          jobId: p.id,
+          href: `${href}?tab=${tab}`,
+        });
+      }
     }
     const unconfirmed = (p.inspections || []).filter((i) => i.booked_by_client && !i.confirmed);
     for (const i of unconfirmed) {
@@ -94,7 +105,12 @@ export default async function DashboardPage() {
       const lapse = calcCdcLapseDate("CDC", p.details?.certificateDetails?.determinationDate, (nocChecklist?.checklist_items || []) as never, outcomes);
       const d = daysUntil(lapse);
       if (d !== null && d <= 90) {
-        tasks.push({ priority: "High", text: d < 0 ? `CDC lapsed ${lapse} — ${p.address}` : `CDC lapses in ${d} day${d === 1 ? "" : "s"} (${lapse}) — ${p.address}`, jobId: p.id, href });
+        tasks.push({
+          priority: "High",
+          text: d < 0 ? `CDC lapsed ${lapse} — ${p.address}` : `CDC lapses in ${d} day${d === 1 ? "" : "s"} (${lapse}) — ${p.address}`,
+          jobId: p.id,
+          href: `${href}?tab=pathway`,
+        });
       }
     }
   }
