@@ -1,0 +1,113 @@
+import { requireProfile } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { checklistProgress } from "@/lib/business";
+import { DetailsTab } from "@/components/certifier/DetailsTab";
+import { ChecklistSection } from "@/components/certifier/ChecklistSection";
+import { CertificatesPanel } from "@/components/certifier/CertificatesPanel";
+import { OcPanel } from "@/components/certifier/OcPanel";
+import { InspectionsPanel } from "@/components/certifier/InspectionsPanel";
+import type { Job } from "@/types/db";
+
+const TABS = [
+  { key: "details", label: "Details" },
+  { key: "pathway", label: "Original CDC/CC" },
+  { key: "noc", label: "NOC" },
+  { key: "inspections", label: "Inspections" },
+  { key: "oc", label: "Occupation Certificate" },
+];
+
+export default async function JobDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
+  const { id } = await params;
+  const { tab = "details" } = await searchParams;
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+
+  const { data: job } = await supabase.from("jobs").select("*").eq("id", id).eq("firm_id", profile.firm_id).single();
+  if (!job) notFound();
+  const typedJob = job as Job;
+
+  const [{ data: checklists }, { data: modifications }, { data: ocRecords }, { data: inspections }, { data: conditions }, { data: certifiers }, { data: clients }] = await Promise.all([
+    supabase.from("checklists").select("id, kind, modification_id, checklist_items(*, amendments(*))").eq("job_id", id),
+    supabase.from("modifications").select("*").eq("job_id", id).order("created_at"),
+    supabase.from("oc_records").select("*").eq("job_id", id).order("created_at"),
+    supabase.from("inspections").select("*, defects(*)").eq("job_id", id),
+    supabase.from("conditions_of_consent").select("*").eq("job_id", id).order("created_at"),
+    supabase.from("certifiers").select("*").eq("firm_id", profile.firm_id).order("name"),
+    supabase.from("clients").select("*").eq("firm_id", profile.firm_id).order("name"),
+  ]);
+
+  const pathwayChecklist = (checklists || []).find((c) => c.kind === "pathway");
+  const nocChecklist = (checklists || []).find((c) => c.kind === "noc");
+  const ocChecklist = (checklists || []).find((c) => c.kind === "oc");
+  const modChecklistsById = new Map((checklists || []).filter((c) => c.kind === "modification").map((c) => [c.modification_id, c]));
+
+  const modificationsWithChecklist = (modifications || []).map((m) => {
+    const cl = modChecklistsById.get(m.id);
+    return { ...m, checklistId: cl?.id || null, items: (cl?.checklist_items as never[]) || [] };
+  });
+
+  return (
+    <div>
+      <div className="mb-6">
+        <Link href="/jobs" className="text-xs text-slate-400 hover:text-teal-800">
+          ← All jobs
+        </Link>
+        <h1 className="text-xl font-bold text-teal-900 mt-1">{job.address}</h1>
+        <div className="text-sm text-slate-500">
+          {job.pathway} · {job.description} · <span className={job.status === "complete" ? "text-emerald-700 font-medium" : ""}>{job.status === "complete" ? "Complete" : "Active"}</span>
+        </div>
+      </div>
+
+      <div className="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
+        {TABS.map((t) => {
+          let progress: string | null = null;
+          if (t.key === "pathway") progress = checklistProgress((pathwayChecklist?.checklist_items as never[]) || []);
+          if (t.key === "noc") progress = checklistProgress((nocChecklist?.checklist_items as never[]) || []);
+          if (t.key === "oc") progress = checklistProgress((ocChecklist?.checklist_items as never[]) || []);
+          return (
+            <Link
+              key={t.key}
+              href={`/jobs/${id}?tab=${t.key}`}
+              className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 ${tab === t.key ? "border-teal-800 text-teal-900" : "border-transparent text-slate-500 hover:text-teal-800"}`}
+            >
+              {t.label}
+              {progress && <span className="ml-1 text-xs font-normal text-slate-400">{progress}</span>}
+            </Link>
+          );
+        })}
+      </div>
+
+      {tab === "details" && <DetailsTab job={typedJob} conditions={conditions || []} clients={clients || []} />}
+
+      {tab === "pathway" && pathwayChecklist && (
+        <CertificatesPanel
+          job={typedJob}
+          firmId={profile.firm_id}
+          pathwayItems={(pathwayChecklist.checklist_items as never[]) || []}
+          certifiers={certifiers || []}
+          modifications={modificationsWithChecklist as never[]}
+        />
+      )}
+
+      {tab === "noc" && nocChecklist && (
+        <div className="bg-white rounded-lg border border-slate-200 p-5">
+          <ChecklistSection jobId={id} firmId={profile.firm_id} checklistId={nocChecklist.id} libraryKey="NOC" items={(nocChecklist.checklist_items as never[]) || []} />
+        </div>
+      )}
+
+      {tab === "inspections" && (
+        <div className="bg-white rounded-lg border border-slate-200 p-5">
+          <InspectionsPanel jobId={id} firmId={profile.firm_id} pathwayGenerated={job.pathway_generated} inspections={(inspections as never[]) || []} certifiers={certifiers || []} />
+        </div>
+      )}
+
+      {tab === "oc" && ocChecklist && (
+        <div className="bg-white rounded-lg border border-slate-200 p-5">
+          <OcPanel job={typedJob} firmId={profile.firm_id} checklistId={ocChecklist.id} items={(ocChecklist.checklist_items as never[]) || []} certifiers={certifiers || []} ocRecords={ocRecords || []} />
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,144 @@
+import { formatISODate, stageComplete, pathwayCertRef } from "@/lib/business";
+import { signedUrl } from "@/lib/storage";
+import { issuePathwayCertificate, uploadPathwayApproval, startModification, issueModification, uploadModificationApproval } from "@/lib/actions/jobs";
+import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { ChecklistSection } from "@/components/certifier/ChecklistSection";
+import type { Job, Certifier, Modification, ChecklistItem, Amendment } from "@/types/db";
+
+type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
+type ModificationWithChecklist = Modification & { checklistId: string | null; items: ItemWithAmendments[] };
+
+export async function CertificatesPanel({
+  job,
+  firmId,
+  pathwayItems,
+  certifiers,
+  modifications,
+}: {
+  job: Job;
+  firmId: string;
+  pathwayItems: ItemWithAmendments[];
+  certifiers: Certifier[];
+  modifications: ModificationWithChecklist[];
+}) {
+  const complete = stageComplete(pathwayItems);
+  const issuedBy = certifiers.find((c) => c.id === job.pathway_issued_by);
+  const approvalUrl = await signedUrl(job.pathway_approval_file_path);
+  const ref = pathwayCertRef(job.pathway, job.details?.projectNumber || job.id.slice(0, 8), job.pathway_version);
+
+  return (
+    <div className="space-y-6">
+      <div className="border border-slate-200 rounded-md p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold text-teal-900">Original {job.pathway} — {ref}</div>
+            <div className="text-xs text-slate-500 mt-0.5">
+              {job.pathway_generated ? `Issued ${formatISODate(job.pathway_generated_date)} by ${issuedBy?.name || "—"} (v${job.pathway_version})` : "Not yet issued"}
+            </div>
+          </div>
+          {!complete && !job.pathway_generated && <span className="text-xs text-slate-400">Checklist not yet complete</span>}
+        </div>
+
+        {complete && (
+          <form action={issuePathwayCertificate} className="mt-3 flex items-end gap-2">
+            <input type="hidden" name="job_id" value={job.id} />
+            <select name="certifier_id" defaultValue={job.assigned_certifier_id || ""} className="px-2 py-1.5 rounded border border-slate-200 text-xs">
+              {certifiers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <button className="text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-md">
+              {job.pathway_generated ? "Regenerate certificate" : "Issue certificate"}
+            </button>
+          </form>
+        )}
+
+        {job.pathway_generated && (
+          <div className="mt-3 flex items-center gap-4">
+            {approvalUrl && (
+              <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-800 hover:underline">
+                View signed approval
+              </a>
+            )}
+            <ActionUpload
+              action={uploadPathwayApproval}
+              fields={{ job_id: job.id }}
+              pathPrefix={`${firmId}/${job.id}/certificates/pathway`}
+              label={job.pathway_approval_uploaded ? "Replace signed approval" : "Upload signed approval"}
+            />
+            {job.pathway_approval_uploaded && <span className="text-[11px] text-emerald-700">Visible to client</span>}
+          </div>
+        )}
+      </div>
+
+      {job.pathway_generated && (
+        <div>
+          <div className="text-sm font-semibold text-teal-900 mb-2">Modifications</div>
+          <div className="space-y-4">
+            {modifications.map((m) => (
+              <ModificationCard key={m.id} mod={m} job={job} firmId={firmId} certifiers={certifiers} />
+            ))}
+            <form action={startModification} className="flex items-center gap-2">
+              <input type="hidden" name="job_id" value={job.id} />
+              <input type="hidden" name="pathway" value={job.pathway} />
+              <input name="reason" placeholder="Reason for modification…" className="flex-1 px-2 py-1.5 rounded border border-slate-200 text-xs" />
+              <button className="text-xs font-semibold text-teal-800 hover:underline">Start a modified {job.pathway}</button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+async function ModificationCard({ mod, job, firmId, certifiers }: { mod: ModificationWithChecklist; job: Job; firmId: string; certifiers: Certifier[] }) {
+  const complete = stageComplete(mod.items);
+  const issuedBy = certifiers.find((c) => c.id === mod.issued_by);
+  const approvalUrl = await signedUrl(mod.approval_file_path);
+
+  return (
+    <div className="border border-slate-200 rounded-md p-4">
+      <div className="text-sm font-semibold text-teal-900">Modification {mod.reason ? `— ${mod.reason}` : ""}</div>
+      <div className="text-xs text-slate-500 mt-0.5">{mod.generated ? `Issued ${formatISODate(mod.generated_date)} by ${issuedBy?.name || "—"} (v${mod.version})` : "Checklist in progress"}</div>
+
+      {mod.checklistId && (
+        <div className="mt-3">
+          <ChecklistSection jobId={job.id} firmId={firmId} checklistId={mod.checklistId} libraryKey={job.pathway} items={mod.items} />
+        </div>
+      )}
+
+      {complete && !mod.generated && (
+        <form action={issueModification} className="mt-3 flex items-end gap-2">
+          <input type="hidden" name="job_id" value={job.id} />
+          <input type="hidden" name="modification_id" value={mod.id} />
+          <select name="certifier_id" defaultValue={job.assigned_certifier_id || ""} className="px-2 py-1.5 rounded border border-slate-200 text-xs">
+            {certifiers.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <button className="text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-md">Issue modification</button>
+        </form>
+      )}
+
+      {mod.generated && (
+        <div className="mt-3 flex items-center gap-4">
+          {approvalUrl && (
+            <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-800 hover:underline">
+              View signed approval
+            </a>
+          )}
+          <ActionUpload
+            action={uploadModificationApproval}
+            fields={{ job_id: job.id, modification_id: mod.id }}
+            pathPrefix={`${firmId}/${job.id}/certificates/modification/${mod.id}`}
+            label={mod.approval_uploaded ? "Replace signed approval" : "Upload signed approval"}
+          />
+        </div>
+      )}
+    </div>
+  );
+}

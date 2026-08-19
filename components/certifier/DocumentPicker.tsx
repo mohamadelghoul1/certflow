@@ -1,0 +1,115 @@
+"use client";
+
+import { useState } from "react";
+import { X } from "lucide-react";
+import { addChecklistItems } from "@/lib/actions/jobs";
+
+type LibItem = { title: string; desc: string; category: string };
+
+export function DocumentPicker({ jobId, checklistId, library, existingTitles }: { jobId: string; checklistId: string; library: LibItem[]; existingTitles: string[] }) {
+  const [open, setOpen] = useState(false);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [customText, setCustomText] = useState("");
+  const [customItems, setCustomItems] = useState<{ title: string; desc: string }[]>([]);
+
+  const toggle = (t: string) =>
+    setChecked((prev) => {
+      const next = new Set(prev);
+      next.has(t) ? next.delete(t) : next.add(t);
+      return next;
+    });
+
+  const addCustom = () => {
+    const text = customText.trim();
+    if (!text) return;
+    setCustomItems((prev) => [...prev, { title: text, desc: "Custom document request." }]);
+    setCustomText("");
+  };
+
+  const selected = [...library.filter((l) => checked.has(l.title)), ...customItems.map((c) => ({ ...c, category: "Other" }))];
+
+  async function confirm() {
+    if (selected.length === 0) return;
+    const fd = new FormData();
+    fd.set("job_id", jobId);
+    fd.set("checklist_id", checklistId);
+    selected.forEach((s) => {
+      fd.append("title", s.title);
+      fd.append("desc", s.desc);
+      fd.append("category", s.category);
+    });
+    await addChecklistItems(fd);
+    setOpen(false);
+    setChecked(new Set());
+    setCustomItems([]);
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="text-sm font-medium text-teal-800 hover:underline">
+        + Request documents
+      </button>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4" onClick={() => setOpen(false)}>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h3 className="font-bold text-teal-900">Request documents</h3>
+          <button onClick={() => setOpen(false)} className="p-1 rounded hover:bg-slate-100 text-slate-400">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="overflow-y-auto px-5 py-4 space-y-2">
+          <div className="text-[11px] font-semibold tracking-wide text-slate-400 mb-1">COMMON ITEMS</div>
+          {library.map((item) => {
+            const already = existingTitles.includes(item.title);
+            return (
+              <label key={item.title} className={`flex items-start gap-3 p-2.5 rounded-md border ${already ? "border-slate-100 bg-slate-50 opacity-50" : "border-slate-100 hover:bg-teal-50/50 cursor-pointer"}`}>
+                <input type="checkbox" disabled={already} checked={checked.has(item.title)} onChange={() => toggle(item.title)} className="mt-1 accent-teal-700" />
+                <div>
+                  <div className="text-sm font-semibold text-teal-900">{item.title}</div>
+                  <div className="text-xs text-slate-500">{already ? "Already on this checklist" : item.desc}</div>
+                </div>
+              </label>
+            );
+          })}
+          <div className="text-[11px] font-semibold tracking-wide text-slate-400 mt-4 mb-1">ADD YOUR OWN</div>
+          <div className="flex gap-2">
+            <input
+              value={customText}
+              onChange={(e) => setCustomText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustom())}
+              placeholder="e.g. Acoustic report"
+              className="flex-1 px-3 py-2 rounded-md border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600"
+            />
+            <button type="button" onClick={addCustom} className="px-3 py-2 rounded-md bg-teal-800 text-white text-sm font-medium hover:bg-teal-900">
+              Add
+            </button>
+          </div>
+          {customItems.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {customItems.map((c, i) => (
+                <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-teal-50 text-teal-800 text-xs font-medium">
+                  {c.title}
+                  <button onClick={() => setCustomItems((prev) => prev.filter((_, idx) => idx !== i))}>
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="px-5 py-4 border-t border-slate-100 flex justify-end gap-2">
+          <button onClick={() => setOpen(false)} className="px-4 py-2 rounded-md text-sm text-slate-600 hover:bg-slate-50">
+            Cancel
+          </button>
+          <button onClick={confirm} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">
+            Add to checklist
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

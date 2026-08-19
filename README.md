@@ -1,0 +1,143 @@
+# CertFlow
+
+A real, working staging version of the CertFlow certification-job-management
+software described in `certflow-build-brief.md` — built with a real database,
+real logins for both certifiers and clients, and real file uploads, replacing
+the click-through prototype (`certflow-client-portal.jsx`).
+
+This README assumes no coding or IT background. Every step below is exactly
+what to click. It should take about 10–15 minutes.
+
+---
+
+## What you're setting up
+
+Three free accounts/services work together:
+
+- **Supabase** — your database, your login system, and your file storage,
+  all in one. This is where every job, quote, document, and photo actually
+  lives.
+- **GitHub** — already holding this code (you're looking at it).
+- **Vercel** — turns this code into a real website with a real address,
+  and automatically updates it every time new code is pushed here.
+
+You'll create free accounts on Supabase and Vercel. Nothing here costs money
+at this stage (small free tiers on both).
+
+---
+
+## Step 1 — Create your Supabase project
+
+1. Go to [supabase.com](https://supabase.com) and click **Start your project**, sign up (GitHub sign-in is easiest).
+2. Click **New project**. Pick any name (e.g. "certflow"), set a database password (save it somewhere safe — a password manager, not a sticky note), pick the region closest to Sydney (e.g. `ap-southeast-2`), and click **Create new project**. Wait ~2 minutes while it's provisioned.
+
+## Step 2 — Create the database structure
+
+1. In your new Supabase project, click **SQL Editor** in the left sidebar.
+2. Click **New query**.
+3. Open `supabase/migrations/0001_init.sql` in this repository, copy its entire contents, paste into the SQL editor, and click **Run**. This creates every table, security rule, and the file storage area.
+4. Repeat with `supabase/migrations/0002_client_invite.sql` (new query, paste, run).
+
+You should see "Success. No rows returned" both times. If you see a red
+error instead, stop and get help before continuing — don't re-run a
+partially-failed script.
+
+## Step 3 — Create your own certifier login
+
+1. In Supabase, click **Authentication** in the sidebar, then **Users**, then **Add user** → **Create new user**.
+2. Enter your own email and a password. Leave "Auto Confirm User" turned on. Click **Create user**.
+3. Click on the user you just created and copy their **User UID** (a long code like `a1b2c3d4-...`) — you'll need it in a moment.
+
+## Step 4 — Link your login to a firm
+
+1. Open `supabase/seed_firm_template.sql` in this repository. It's a short script with three parts and some `<PLACEHOLDER>` values.
+2. Go back to Supabase's **SQL Editor**, new query.
+3. Copy in **part 1** only (the `insert into firms...` block) and run it. It will print back an `id` — copy that.
+4. Copy in **part 2**, replace `<FIRM_ID>` with the id you just copied, edit the name/registration details to your own, and run it. It prints another `id` — copy that too.
+5. Copy in **part 3**, replace `<AUTH_USER_ID>` with the User UID from Step 3, `<FIRM_ID>` and `<CERTIFIER_ID>` with the two ids above, and your real name/email. Run it.
+
+You now have one working certifier login tied to your firm.
+
+## Step 5 — Get your API keys
+
+1. In Supabase, click the gear icon (**Project Settings**) → **API**.
+2. You'll need three values from this page for the next step:
+   - **Project URL**
+   - **anon public** key
+   - **service_role** key (click "Reveal" — keep this one private, never share it)
+
+## Step 6 — Deploy to Vercel
+
+1. Go to [vercel.com](https://vercel.com) and sign up (GitHub sign-in is easiest — use the same GitHub account this repository is under).
+2. Click **Add New** → **Project**, and import this GitHub repository (`certflow`).
+3. Before clicking Deploy, open **Environment Variables** and add these four (values from Step 5, plus your Vercel URL once you know it — you can add/edit the last one after the first deploy):
+
+   | Name | Value |
+   |---|---|
+   | `NEXT_PUBLIC_SUPABASE_URL` | the Project URL from Step 5 |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the anon public key from Step 5 |
+   | `SUPABASE_SERVICE_ROLE_KEY` | the service_role key from Step 5 |
+   | `NEXT_PUBLIC_SITE_URL` | `https://your-project-name.vercel.app` (Vercel shows you this after the first deploy — come back and set it, then redeploy) |
+
+4. Click **Deploy**. After a couple of minutes you'll get a live URL.
+5. Once deployed, go back to **Settings → Environment Variables**, fill in the real `NEXT_PUBLIC_SITE_URL` with the URL Vercel gave you, then go to the **Deployments** tab and click **Redeploy** on the latest one (so it picks up that last value).
+
+From now on, every time new code is pushed to this repository's branch,
+Vercel automatically rebuilds and updates your live site — nothing further
+to click.
+
+## Step 7 — Try it out
+
+1. Visit your Vercel URL, click **Certifier sign in**, and log in with the email/password from Step 3.
+2. Go to **Settings** and check your firm details and certifier entry look right.
+3. Add a **Client** under Settings (name + email), then click **Invite to portal** — Supabase will email them a sign-in link (Supabase's built-in email sender works out of the box for light testing; see the note below if invite emails don't arrive).
+4. Create a **New Job**, assign that client to it under the job's Details tab, and try requesting a document, approving it, issuing the CDC/CC, etc.
+5. Ask the invited client to check their email, click the link, set a password, and see their job in the portal at `/portal`.
+
+> **If invite emails don't arrive:** Supabase's default email sender is
+> rate-limited and meant for testing, not real client communication. For
+> anything beyond a quick test, connect a proper email provider under
+> Supabase **Authentication → Providers → SMTP Settings** (e.g. using
+> [Resend](https://resend.com), which is also what Section 10 of the build
+> brief recommends for the real notification emails later).
+
+---
+
+## What's real vs. what's still ahead
+
+**Real and working now:** certifier login, client login, the full job
+workflow (quotes → jobs → CDC/CC/NOC/OC checklists → amendments →
+inspections → certificates → modifications → Partial/Whole OC → job
+completion), real file uploads and downloads via Supabase Storage, and the
+brand-new client portal (view job status, see amendment notes, upload
+documents, book inspections under the exact lead-time/weekend rules in the
+brief, view issued certificates and inspection reports once released). The
+database is multi-tenant-ready (every row carries a `firm_id`, enforced by
+Postgres Row Level Security) per the brief's Section 12 guidance, even
+though only one firm uses it today.
+
+**Deliberately not built yet** — these all need a paid third-party account
+with an API key only you can obtain, exactly as the build brief describes:
+
+- **Real email sending** for status-change notifications (brief §10) — currently only the client-invite email exists, via Supabase's basic default sender.
+- **Real payment collection via Stripe** (§16) — the "Mark as paid" button is real and manual; actual card charging isn't wired up.
+- **NSW Planning Portal reporting** (§9) — this is a **legal requirement** for the firm to report certificates/inspections within 2 business days; it needs the firm's own API subscription key from the NSW Planning Portal team before it can be built.
+- **NSW Planning Portal zoning/address lookup** (§8) — Lot/DP and address autocomplete.
+- **Combined stamped PDF bundle** (§11) — merging approved documents into one stamped PDF (the per-document "requires stamping" toggle is already in place, ready for this).
+- **Multi-certifier-firm billing/signup** (§13) — this is intentionally a later phase, once the certifier side is proven on this firm's real jobs.
+- **Offline inspection capture** (§14) — a mobile-specific, offline-first rebuild.
+- Reports and Audit screens from the prototype haven't been ported yet (all the underlying data is there — this is a next-iteration UI task, not a data-model gap).
+
+Tell me when you're ready for any of these and I'll wire it up — most of
+them just need you to paste in an API key once you've signed up for that
+service.
+
+---
+
+## For future reference (technical)
+
+- Framework: Next.js (App Router) + TypeScript + Tailwind CSS.
+- Database/auth/storage: Supabase (Postgres + Row Level Security).
+- `supabase/migrations/` — run these in order on a fresh project.
+- `lib/business.ts` / `lib/constants.ts` — business rules and reference data ported directly from the original prototype.
+- Local development: copy `.env.example` to `.env.local`, fill in the same Supabase values, then `npm install && npm run dev`.
