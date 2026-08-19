@@ -364,13 +364,14 @@ export async function reopenItem(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
-export async function issuePathwayCertificate(formData: FormData) {
-  await requireProfile("certifier");
+export async function issuePathwayCertificate(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
-  const certifierId = String(formData.get("certifier_id"));
-  const { data: job } = await supabase.from("jobs").select("pathway_version").eq("id", jobId).single();
-  await supabase
+  const certifierId = String(formData.get("certifier_id") || "");
+  if (!certifierId) return { error: "Select a certifier before issuing." };
+  const { data: job } = await supabase.from("jobs").select("pathway_version").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  const { error } = await supabase
     .from("jobs")
     .update({
       pathway_generated: true,
@@ -381,8 +382,11 @@ export async function issuePathwayCertificate(formData: FormData) {
       pathway_approval_date: null,
       pathway_approval_file_path: null,
     })
-    .eq("id", jobId);
+    .eq("id", jobId)
+    .eq("firm_id", profile.firm_id);
+  if (error) return { error: error.message };
   revalidatePath(`/jobs/${jobId}`);
+  return undefined;
 }
 
 export async function reportPathwayToPortal(formData: FormData) {
@@ -430,18 +434,21 @@ export async function startModification(formData: FormData) {
   void profile;
 }
 
-export async function issueModification(formData: FormData) {
+export async function issueModification(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const modificationId = String(formData.get("modification_id"));
-  const certifierId = String(formData.get("certifier_id"));
+  const certifierId = String(formData.get("certifier_id") || "");
+  if (!certifierId) return { error: "Select a certifier before issuing." };
   const { data: mod } = await supabase.from("modifications").select("version").eq("id", modificationId).single();
-  await supabase
+  const { error } = await supabase
     .from("modifications")
     .update({ generated: true, generated_date: todayISO(), issued_by: certifierId, version: (mod?.version || 0) + 1 })
     .eq("id", modificationId);
+  if (error) return { error: error.message };
   revalidatePath(`/jobs/${jobId}`);
+  return undefined;
 }
 
 export async function uploadModificationApproval(formData: FormData) {
@@ -454,15 +461,18 @@ export async function uploadModificationApproval(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
-export async function issueOc(formData: FormData) {
+export async function issueOc(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const type = String(formData.get("type")) as "partial" | "whole";
   const description = String(formData.get("description") || "");
-  const certifierId = String(formData.get("certifier_id"));
-  await supabase.from("oc_records").insert({ job_id: jobId, type, description, generated_date: todayISO(), issued_by: certifierId });
+  const certifierId = String(formData.get("certifier_id") || "");
+  if (!certifierId) return { error: "Select a certifier before issuing." };
+  const { error } = await supabase.from("oc_records").insert({ job_id: jobId, type, description, generated_date: todayISO(), issued_by: certifierId });
+  if (error) return { error: error.message };
   revalidatePath(`/jobs/${jobId}`);
+  return undefined;
 }
 
 export async function reportOcToPortal(formData: FormData) {

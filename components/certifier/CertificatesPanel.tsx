@@ -1,8 +1,9 @@
 import { formatISODate, stageComplete, pathwayCertRef } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { issuePathwayCertificate, reportPathwayToPortal, uploadPathwayApproval, startModification, issueModification, uploadModificationApproval, notifyClientMessage } from "@/lib/actions/jobs";
+import { reportPathwayToPortal, uploadPathwayApproval, startModification, uploadModificationApproval, notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
+import { IssueCertificateForm, IssueModificationForm } from "@/components/certifier/IssueCertificateForm";
 import Link from "next/link";
 import type { Job, Certifier, Modification, ChecklistItem, Amendment } from "@/types/db";
 
@@ -55,21 +56,7 @@ export async function CertificatesPanel({
           )}
         </div>
 
-        {complete && (
-          <form action={issuePathwayCertificate} className="mt-3 flex items-end gap-2">
-            <input type="hidden" name="job_id" value={job.id} />
-            <select name="certifier_id" defaultValue={job.assigned_certifier_id || ""} className="px-2 py-1.5 rounded border border-slate-200 text-xs">
-              {certifiers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <button className="text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-md">
-              {job.pathway_generated ? "Regenerate certificate" : "Issue certificate"}
-            </button>
-          </form>
-        )}
+        {complete && <IssueCertificateForm jobId={job.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} isRegenerate={job.pathway_generated} />}
 
         {job.pathway_generated && (
           <div className="mt-3 flex items-center gap-4">
@@ -141,20 +128,7 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
         </div>
       )}
 
-      {complete && !mod.generated && (
-        <form action={issueModification} className="mt-3 flex items-end gap-2">
-          <input type="hidden" name="job_id" value={job.id} />
-          <input type="hidden" name="modification_id" value={mod.id} />
-          <select name="certifier_id" defaultValue={job.assigned_certifier_id || ""} className="px-2 py-1.5 rounded border border-slate-200 text-xs">
-            {certifiers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <button className="text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-md">Issue modification</button>
-        </form>
-      )}
+      {complete && !mod.generated && <IssueModificationForm jobId={job.id} modificationId={mod.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} />}
 
       {mod.generated && (
         <div className="mt-3 flex items-center gap-4">

@@ -1,8 +1,9 @@
 import { formatISODate, stageComplete } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { issueOc, uploadOcApproval, reportOcToPortal, markJobComplete, reopenJob, notifyClientMessage } from "@/lib/actions/jobs";
+import { uploadOcApproval, reportOcToPortal, markJobComplete, reopenJob, notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
+import { IssueOcForm } from "@/components/certifier/IssueOcForm";
 import type { Job, Certifier, OcRecord, ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -37,33 +38,7 @@ export async function OcPanel({
 
       {!job.pathway_generated && <div className="text-xs text-slate-400">Occupation Certificates can&apos;t be issued until the {job.pathway} is issued.</div>}
 
-      {job.pathway_generated && complete && (
-        <form action={issueOc} className="border border-slate-200 rounded-md p-4 flex flex-wrap items-end gap-2">
-          <input type="hidden" name="job_id" value={job.id} />
-          <div>
-            <label className="block text-[11px] text-slate-400 mb-1">Type</label>
-            <select name="type" className="px-2 py-1.5 rounded border border-slate-200 text-xs">
-              <option value="partial">Partial OC</option>
-              <option value="whole">Whole OC</option>
-            </select>
-          </div>
-          <div className="flex-1 min-w-[160px]">
-            <label className="block text-[11px] text-slate-400 mb-1">Description (scope, for partials)</label>
-            <input name="description" className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs" />
-          </div>
-          <div>
-            <label className="block text-[11px] text-slate-400 mb-1">Certifier</label>
-            <select name="certifier_id" defaultValue={job.assigned_certifier_id || ""} className="px-2 py-1.5 rounded border border-slate-200 text-xs">
-              {certifiers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button className="text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-md">Issue OC</button>
-        </form>
-      )}
+      {job.pathway_generated && complete && <IssueOcForm jobId={job.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} />}
 
       <div className="space-y-3">
         {ocRecords.map((r) => (
