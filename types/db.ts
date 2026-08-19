@@ -261,3 +261,22 @@ export type ConditionOfConsent = {
   text: string;
   date_added: string;
 };
+
+export type TaskList = {
+  id: string;
+  firm_id: string;
+  title: string;
+  sort_order: number;
+  created_at: string;
+};
+
+export type ManualTask = {
+  id: string;
+  list_id: string;
+  text: string;
+  note: string | null;
+  completed: boolean;
+  completed_at: string | null;
+  sort_order: number;
+  created_at: string;
+};

@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { stageComplete, unresolvedCount, daysUntil, calcCdcLapseDate, portalReportDeadline } from "@/lib/business";
 import Link from "next/link";
 import { DashboardSearch } from "@/components/certifier/DashboardSearch";
+import { TaskBoard } from "@/components/certifier/TaskBoard";
+import type { TaskList, ManualTask } from "@/types/db";
 
 type Task = { priority: "High" | "Medium" | "Low"; text: string; jobId: string | null; href: string };
 
@@ -41,6 +43,18 @@ export default async function DashboardPage() {
     .from("certifiers")
     .select("id, name, pi_insurance_expiry, registration_expiry")
     .eq("firm_id", profile.firm_id);
+
+  const [{ data: taskLists }, { data: manualTasks }] = await Promise.all([
+    supabase.from("task_lists").select("*").eq("firm_id", profile.firm_id).order("sort_order"),
+    supabase.from("manual_tasks").select("*, task_lists!inner(firm_id)").eq("task_lists.firm_id", profile.firm_id).order("sort_order"),
+  ]);
+  const tasksByList = new Map<string, ManualTask[]>();
+  for (const t of (manualTasks || []) as ManualTask[]) {
+    const existing = tasksByList.get(t.list_id);
+    if (existing) existing.push(t);
+    else tasksByList.set(t.list_id, [t]);
+  }
+  const listsWithTasks = ((taskLists || []) as TaskList[]).map((l) => ({ ...l, tasks: tasksByList.get(l.id) || [] }));
 
   const tasks: Task[] = [];
 
@@ -149,31 +163,36 @@ export default async function DashboardPage() {
   tasks.sort((a, b) => order[a.priority] - order[b.priority]);
 
   return (
-    <div className="min-h-[70vh] flex flex-col items-center px-2 py-10">
-      <div className="w-full max-w-lg">
-        <DashboardSearch jobs={(jobs || []).map((p) => ({ id: p.id, address: p.address, description: p.description || "", pathway: p.pathway }))} />
+    <div className="px-2 py-10">
+      <div className="flex flex-col items-center">
+        <div className="w-full max-w-lg">
+          <DashboardSearch jobs={(jobs || []).map((p) => ({ id: p.id, address: p.address, description: p.description || "", pathway: p.pathway }))} />
+        </div>
+
+        {tasks.length > 0 && (
+          <div className="w-full max-w-lg mt-10">
+            <div className="text-[11px] tracking-[0.15em] uppercase text-slate-500 mb-2 px-1">Needs your attention</div>
+            <div className="rounded-lg overflow-hidden border border-slate-200 bg-white">
+              {tasks.slice(0, 8).map((t, i) => {
+                const dot = t.priority === "High" ? "bg-red-500" : t.priority === "Medium" ? "bg-amber-500" : "bg-slate-400";
+                return (
+                  <Link key={i} href={t.href} className="block px-4 py-3 border-t border-slate-100 first:border-t-0 hover:bg-slate-50 flex items-start gap-3">
+                    <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+                    <div className="text-sm text-slate-700">{t.text}</div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {tasks.length === 0 && <div className="mt-10 text-sm text-slate-400">Nothing needs your attention right now.</div>}
       </div>
 
-      {tasks.length > 0 && (
-        <div className="w-full max-w-lg mt-10">
-          <div className="text-[11px] tracking-[0.15em] uppercase text-slate-500 mb-2 px-1">Needs your attention</div>
-          <div className="rounded-lg overflow-hidden border border-slate-200 bg-white">
-            {tasks.slice(0, 8).map((t, i) => {
-              const dot = t.priority === "High" ? "bg-red-500" : t.priority === "Medium" ? "bg-amber-500" : "bg-slate-400";
-              return (
-                <Link key={i} href={t.href} className="block px-4 py-3 border-t border-slate-100 first:border-t-0 hover:bg-slate-50 flex items-start gap-3">
-                  <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
-                  <div className="text-sm text-slate-700">{t.text}</div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {tasks.length === 0 && (
-        <div className="mt-10 text-sm text-slate-400">Nothing needs your attention right now.</div>
-      )}
+      <div className="mt-12">
+        <div className="text-[11px] tracking-[0.15em] uppercase text-slate-500 mb-2 px-1">Tasks</div>
+        <TaskBoard lists={listsWithTasks} />
+      </div>
     </div>
   );
 }

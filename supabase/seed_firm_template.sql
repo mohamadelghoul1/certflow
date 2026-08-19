@@ -43,3 +43,16 @@ values (
   'Your Name',
   'you@example.com'
 );
+
+-- 4) Starter lists for the dashboard task board. Replace <FIRM_ID> again.
+--    Rename, delete, or add to these freely from the dashboard afterward.
+insert into task_lists (firm_id, title, sort_order)
+values
+  ('<FIRM_ID>', 'CDC/CC Assessments', 0),
+  ('<FIRM_ID>', 'CDC/CC Approvals Typing', 1),
+  ('<FIRM_ID>', 'OC Assessments', 2),
+  ('<FIRM_ID>', 'OC Approvals Typing', 3),
+  ('<FIRM_ID>', 'PC Appointment', 4),
+  ('<FIRM_ID>', 'Neighbouring Notifications', 5),
+  ('<FIRM_ID>', 'Payments', 6),
+  ('<FIRM_ID>', 'Inspections', 7);
