@@ -14,6 +14,7 @@ import {
   matchCouncilByAddress,
   epiForCodeParts,
 } from "@/lib/constants";
+import { X } from "lucide-react";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
 const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
@@ -42,7 +43,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; name: string }[]; clients: { id: string; name: string; type: string }[] }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createJob, undefined);
-  const [types, setTypes] = useState<Set<string>>(new Set());
+  const [types, setTypes] = useState<string[]>([]);
+  const [customType, setCustomType] = useState("");
   const [pathway, setPathway] = useState<"CDC" | "CC">("CDC");
   const [address, setAddress] = useState("");
   const [council, setCouncil] = useState<CouncilState>(emptyCouncil);
@@ -107,26 +109,60 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
         </div>
         <div>
           <label className={labelCls}>Job type(s)</label>
-          <div className="flex flex-wrap gap-2">
-            {JOB_TYPES.map((t) => (
-              <label key={t} className={`px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer ${types.has(t) ? "bg-teal-800 text-white border-teal-800" : "border-slate-200 text-slate-600"}`}>
-                <input
-                  type="checkbox"
-                  name="job_types"
-                  value={t}
-                  className="hidden"
-                  onChange={(e) => {
-                    setTypes((prev) => {
-                      const next = new Set(prev);
-                      e.target.checked ? next.add(t) : next.delete(t);
-                      return next;
-                    });
-                  }}
-                />
-                {t}
-              </label>
-            ))}
+          <div className="flex flex-wrap gap-2 mb-2">
+            {JOB_TYPES.map((t) => {
+              const active = types.includes(t);
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTypes((prev) => (active ? prev.filter((v) => v !== t) : [...prev, t]))}
+                  className={`px-3 py-1.5 rounded-full border text-xs font-medium ${active ? "bg-teal-800 text-white border-teal-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                >
+                  {t}
+                </button>
+              );
+            })}
+            {types
+              .filter((t) => !JOB_TYPES.includes(t))
+              .map((t) => (
+                <span key={t} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-teal-50 text-teal-800 border border-teal-200">
+                  {t}
+                  <button type="button" onClick={() => setTypes((prev) => prev.filter((v) => v !== t))} className="hover:text-teal-900">
+                    <X size={11} />
+                  </button>
+                </span>
+              ))}
           </div>
+          <div className="flex gap-2">
+            <input
+              value={customType}
+              onChange={(e) => setCustomType(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                const text = customType.trim();
+                if (text && !types.includes(text)) setTypes((prev) => [...prev, text]);
+                setCustomType("");
+              }}
+              placeholder="Type your own and press Enter to add"
+              className="flex-1 px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const text = customType.trim();
+                if (text && !types.includes(text)) setTypes((prev) => [...prev, text]);
+                setCustomType("");
+              }}
+              className="px-3 py-2 rounded-md bg-teal-800 text-white text-sm font-medium hover:bg-teal-900"
+            >
+              Add
+            </button>
+          </div>
+          {types.map((t) => (
+            <input key={t} type="hidden" name="job_types" value={t} />
+          ))}
         </div>
         <div>
           <label className={labelCls}>Pathway</label>

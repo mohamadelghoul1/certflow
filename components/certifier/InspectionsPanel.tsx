@@ -1,6 +1,6 @@
 import { formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { assignInspector, setInspectionDate, recordOutcome, addDefect, resolveDefect, confirmBooking, uploadInspectionReport } from "@/lib/actions/inspections";
+import { assignInspector, setInspectionDate, recordOutcome, addDefect, resolveDefect, confirmBooking, uploadInspectionReport, removeInspection } from "@/lib/actions/inspections";
 import { notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { AutoSubmitSelect } from "@/components/certifier/AutoSubmitSelect";
@@ -41,10 +41,16 @@ export async function InspectionsPanel({
   );
 }
 
+function fallsOnWeekend(isoDate: string) {
+  const day = new Date(`${isoDate}T00:00:00`).getDay();
+  return day === 0 || day === 6;
+}
+
 async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: InspectionWithDefects; jobId: string; firmId: string; certifiers: Certifier[] }) {
   const meta = OUTCOME_META[insp.outcome];
   const reportUrl = await signedUrl(insp.report_file_path);
   const needsDefect = insp.outcome === "failed" || insp.outcome === "passed_subject_to";
+  const dateOnWeekend = !!insp.date && fallsOnWeekend(insp.date);
 
   return (
     <div className="border border-slate-200 rounded-md p-4">
@@ -66,6 +72,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
           <div className="flex-1">
             <label className="block text-[11px] text-slate-400 mb-1">Date</label>
             <input type="date" name="date" defaultValue={insp.date || ""} className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs" />
+            {dateOnWeekend && <div className="text-[11px] text-amber-700 mt-1">⚠ falls on a weekend</div>}
           </div>
           <button className="text-xs text-teal-800 hover:underline pb-1.5">Save</button>
         </form>
@@ -159,6 +166,11 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
             </form>
           </>
         )}
+        <form action={removeInspection} className="ml-auto">
+          <input type="hidden" name="inspection_id" value={insp.id} />
+          <input type="hidden" name="job_id" value={jobId} />
+          <button className="text-xs text-red-500 hover:underline">Remove</button>
+        </form>
       </div>
     </div>
   );

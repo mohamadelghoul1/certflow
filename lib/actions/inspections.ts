@@ -85,3 +85,12 @@ export async function confirmBooking(formData: FormData) {
   await supabase.from("inspections").update({ confirmed: true }).eq("id", inspectionId);
   revalidatePath(`/jobs/${jobId}`);
 }
+
+export async function removeInspection(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const inspectionId = String(formData.get("inspection_id"));
+  const jobId = String(formData.get("job_id"));
+  await supabase.from("inspections").delete().eq("id", inspectionId);
+  revalidatePath(`/jobs/${jobId}`);
+}

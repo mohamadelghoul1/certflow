@@ -1,6 +1,6 @@
 import { displayStatus, unresolvedCount } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { approveItem, addAmendment, resolveAmendment, toggleStamping, updateItemMeta, certifierUploadItem, removeChecklistItem, notifyClientOfChecklist } from "@/lib/actions/jobs";
+import { approveItem, reopenItem, addAmendment, resolveAmendment, toggleStamping, updateItemMeta, certifierUploadItem, removeChecklistItem, notifyClientOfChecklist } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
@@ -82,6 +82,13 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
             <button className="text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-md">Approve</button>
           </form>
         )}
+        {item.status === "approved" && (
+          <form action={reopenItem}>
+            <input type="hidden" name="item_id" value={item.id} />
+            <input type="hidden" name="job_id" value={jobId} />
+            <button className="text-xs text-slate-400 hover:text-slate-600 hover:underline">Reopen</button>
+          </form>
+        )}
         <ActionUpload
           action={certifierUploadItem}
           fields={{ item_id: item.id, job_id: jobId }}
@@ -101,14 +108,15 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
 
       <details className="mt-3">
         <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-600">Document details (revision, date, prepared by)</summary>
-        <form action={updateItemMeta} className="mt-2 grid sm:grid-cols-4 gap-2">
+        <form action={updateItemMeta} className="mt-2 grid sm:grid-cols-5 gap-2">
           <input type="hidden" name="item_id" value={item.id} />
           <input type="hidden" name="job_id" value={jobId} />
           <input name="revision" defaultValue={item.revision || ""} placeholder="Revision" className="px-2 py-1.5 rounded border border-slate-200 text-xs" />
           <input type="date" name="document_date" defaultValue={item.document_date || ""} className="px-2 py-1.5 rounded border border-slate-200 text-xs" />
           <input name="prepared_by" defaultValue={item.prepared_by || ""} placeholder="Prepared by" className="px-2 py-1.5 rounded border border-slate-200 text-xs" />
+          <input name="drawing_number" defaultValue={item.drawing_number || ""} placeholder="Drawing number" className="px-2 py-1.5 rounded border border-slate-200 text-xs" />
           <input name="clause_ref" defaultValue={item.clause_ref || ""} placeholder="NCC/BCA clause ref" className="px-2 py-1.5 rounded border border-slate-200 text-xs" />
-          <button className="sm:col-span-4 text-xs text-teal-800 hover:underline text-left">Save details</button>
+          <button className="sm:col-span-5 text-xs text-teal-800 hover:underline text-left">Save details</button>
         </form>
       </details>
 

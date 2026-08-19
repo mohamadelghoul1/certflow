@@ -19,18 +19,16 @@ async function firmLibrary(supabase: SupabaseClient, firmId: string, pathway: st
   return data || [];
 }
 
-export async function createQuote(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
-  const supabase = await createClient();
+function extractQuoteFields(formData: FormData) {
   const pathway = String(formData.get("pathway") || "CDC") as "CDC" | "CC";
   const ownerIsApplicant = formData.get("owner_is_applicant") === "on";
-
   const scopeOfWorks = formData.getAll("scope_item").map(String).filter((s) => s.trim().length > 0);
 
-  const { data: quote, error } = await supabase
-    .from("quotes")
-    .insert({
-      firm_id: profile.firm_id,
+  return {
+    pathway,
+    ownerIsApplicant,
+    scopeOfWorks,
+    fields: {
       state: String(formData.get("state") || "NSW"),
       project_type: String(formData.get("project_type") || "") || null,
       pathway,
@@ -66,19 +64,33 @@ export async function createQuote(_prev: ActionState, formData: FormData): Promi
             email: String(formData.get("owner_email") || ""),
           },
       scope_of_works: scopeOfWorks.length > 0 ? scopeOfWorks : defaultScopeOfWorks(pathway),
-    })
+    },
+  };
+}
+
+function extractFeeLines(formData: FormData) {
+  const feeDescriptions = formData.getAll("fee_description").map(String);
+  const feeQuantities = formData.getAll("fee_quantity").map(String);
+  const feeAmounts = formData.getAll("fee_amount").map(String);
+  return feeDescriptions
+    .map((description, idx) => ({ description, quantity: feeQuantities[idx] || "1", amount: Number(feeAmounts[idx]) || 0, sort_order: idx }))
+    .filter((l) => l.description.trim().length > 0);
+}
+
+export async function createQuote(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const { pathway, fields } = extractQuoteFields(formData);
+
+  const { data: quote, error } = await supabase
+    .from("quotes")
+    .insert({ firm_id: profile.firm_id, ...fields })
     .select("id")
     .single();
 
   if (error || !quote) return { error: error?.message || "Could not create quote." };
 
-  const feeDescriptions = formData.getAll("fee_description").map(String);
-  const feeQuantities = formData.getAll("fee_quantity").map(String);
-  const feeAmounts = formData.getAll("fee_amount").map(String);
-  const feeLines = feeDescriptions
-    .map((description, idx) => ({ description, quantity: feeQuantities[idx] || "1", amount: Number(feeAmounts[idx]) || 0, sort_order: idx }))
-    .filter((l) => l.description.trim().length > 0);
-
+  const feeLines = extractFeeLines(formData);
   if (feeLines.length > 0) {
     await supabase.from("quote_fee_lines").insert(feeLines.map((l) => ({ ...l, quote_id: quote.id })));
   } else {
@@ -86,6 +98,25 @@ export async function createQuote(_prev: ActionState, formData: FormData): Promi
   }
 
   redirect(`/quotes/${quote.id}`);
+}
+
+export async function updateQuote(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const quoteId = String(formData.get("quote_id"));
+  const { fields } = extractQuoteFields(formData);
+
+  const { error } = await supabase.from("quotes").update(fields).eq("id", quoteId).eq("firm_id", profile.firm_id);
+  if (error) return { error: error.message };
+
+  const feeLines = extractFeeLines(formData);
+  await supabase.from("quote_fee_lines").delete().eq("quote_id", quoteId);
+  if (feeLines.length > 0) {
+    await supabase.from("quote_fee_lines").insert(feeLines.map((l) => ({ ...l, quote_id: quoteId })));
+  }
+
+  revalidatePath(`/quotes/${quoteId}`);
+  return undefined;
 }
 
 export async function addFeeLine(formData: FormData) {
@@ -123,6 +154,16 @@ export async function markQuotePaid(formData: FormData) {
   const quoteId = String(formData.get("quote_id"));
   await supabase.from("quotes").update({ payment_status: "paid", payment_received_date: new Date().toISOString().slice(0, 10) }).eq("id", quoteId);
   revalidatePath(`/quotes/${quoteId}`);
+}
+
+export async function updateQuoteTerms(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const quoteId = String(formData.get("quote_id"));
+  const termsOverride = String(formData.get("terms_override") || "");
+  await supabase.from("quotes").update({ terms_override: termsOverride || null }).eq("id", quoteId);
+  revalidatePath(`/quotes/${quoteId}`);
+  revalidatePath(`/quotes/${quoteId}/document`);
 }
 
 export async function generateJobFromQuote(formData: FormData) {

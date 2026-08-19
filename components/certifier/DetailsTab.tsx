@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { updateJobDetails, addCondition, assignJobClient, updateCouncilLetter, updateApplicantLetter, toggleCriticalStageInspection } from "@/lib/actions/jobs";
+import { updateJobDetails, addCondition, removeCondition, assignJobClient, updateCouncilLetter, updateApplicantLetter, toggleCriticalStageInspection } from "@/lib/actions/jobs";
 import type { ActionState } from "@/lib/actions/auth";
 import {
   BCA_VERSIONS,
@@ -431,9 +431,16 @@ export function DetailsTab({ job, conditions, clients }: { job: Job; conditions:
         <div className="font-bold text-teal-900 mb-3">Conditions of Consent</div>
         <div className="space-y-2 mb-3">
           {conditions.map((c) => (
-            <div key={c.id} className="text-sm text-slate-700 border-b border-slate-50 pb-2">
-              {c.text}
-              <div className="text-[11px] text-slate-400">{formatISODate(c.date_added)}</div>
+            <div key={c.id} className="flex items-start justify-between gap-3 text-sm text-slate-700 border-b border-slate-50 pb-2">
+              <div>
+                {c.text}
+                <div className="text-[11px] text-slate-400">{formatISODate(c.date_added)}</div>
+              </div>
+              <form action={removeCondition}>
+                <input type="hidden" name="job_id" value={job.id} />
+                <input type="hidden" name="condition_id" value={c.id} />
+                <button className="text-xs text-red-500 hover:underline shrink-0">Remove</button>
+              </form>
             </div>
           ))}
           {conditions.length === 0 && <div className="text-sm text-slate-400">None added.</div>}

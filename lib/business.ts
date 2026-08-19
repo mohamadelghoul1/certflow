@@ -38,6 +38,15 @@ export function checklistProgress(items: ChecklistItemLike[]) {
   return `${done}/${items.length}`;
 }
 
+export function inspectionsComplete(outcomes: string[]) {
+  return outcomes.length > 0 && outcomes.every((o) => o === "passed" || o === "passed_subject_to");
+}
+export function inspectionProgress(outcomes: string[]) {
+  if (outcomes.length === 0) return null;
+  const done = outcomes.filter((o) => o === "passed" || o === "passed_subject_to").length;
+  return `${done}/${outcomes.length}`;
+}
+
 export function addYears(dateStr?: string | null, years = 0) {
   if (!dateStr) return "";
   const dt = new Date(dateStr);

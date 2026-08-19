@@ -346,6 +346,24 @@ export async function addCondition(formData: FormData) {
   void profile;
 }
 
+export async function removeCondition(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const conditionId = String(formData.get("condition_id"));
+  await supabase.from("conditions_of_consent").delete().eq("id", conditionId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function reopenItem(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const itemId = String(formData.get("item_id"));
+  const jobId = String(formData.get("job_id"));
+  await supabase.from("checklist_items").update({ status: "submitted", updated_at: new Date().toISOString() }).eq("id", itemId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
 export async function issuePathwayCertificate(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
