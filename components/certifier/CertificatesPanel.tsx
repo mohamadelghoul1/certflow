@@ -35,7 +35,7 @@ export async function CertificatesPanel({
     <div className="space-y-6">
       <div>
         <div className="text-sm font-semibold text-teal-900 mb-2">{job.pathway} checklist</div>
-        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} library={library} items={pathwayItems} />
+        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} label={`Original ${job.pathway}`} library={library} items={pathwayItems} />
       </div>
 
       <div className="border border-slate-200 rounded-md p-4">
@@ -115,7 +115,7 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
 
       {mod.checklistId && (
         <div className="mt-3">
-          <ChecklistSection jobId={job.id} firmId={firmId} checklistId={mod.checklistId} library={library} items={mod.items} />
+          <ChecklistSection jobId={job.id} firmId={firmId} checklistId={mod.checklistId} label={`Modification${mod.reason ? ` — ${mod.reason}` : ""}`} library={library} items={mod.items} />
         </div>
       )}
 

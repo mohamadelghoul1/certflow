@@ -1,6 +1,6 @@
 import { displayStatus, unresolvedCount } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { approveItem, addAmendment, resolveAmendment, toggleStamping, updateItemMeta, certifierUploadItem, removeChecklistItem } from "@/lib/actions/jobs";
+import { approveItem, addAmendment, resolveAmendment, toggleStamping, updateItemMeta, certifierUploadItem, removeChecklistItem, notifyClientOfChecklist } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
@@ -13,12 +13,14 @@ export async function ChecklistSection({
   jobId,
   firmId,
   checklistId,
+  label,
   library,
   items,
 }: {
   jobId: string;
   firmId: string;
   checklistId: string;
+  label: string;
   library: LibItem[];
   items: ItemWithAmendments[];
 }) {
@@ -27,6 +29,16 @@ export async function ChecklistSection({
 
   return (
     <div className="space-y-3">
+      {items.length > 0 && (
+        <div className="flex justify-end">
+          <form action={notifyClientOfChecklist}>
+            <input type="hidden" name="job_id" value={jobId} />
+            <input type="hidden" name="checklist_id" value={checklistId} />
+            <input type="hidden" name="label" value={label} />
+            <button className="text-xs font-semibold text-teal-800 hover:underline">Notify client of update</button>
+          </form>
+        </div>
+      )}
       {items.map((item) => (
         <ItemRow key={item.id} item={item} jobId={jobId} firmId={firmId} />
       ))}

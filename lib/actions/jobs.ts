@@ -157,8 +157,10 @@ export async function approveItem(formData: FormData) {
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
-  const { data: item } = await supabase.from("checklist_items").update({ status: "approved", updated_at: new Date().toISOString() }).eq("id", itemId).select("title").single();
-  if (item) await notifyJobClient(supabase, jobId, "Document approved", `<p>Your document <strong>${item.title}</strong> has been approved.</p>`);
+  // No automatic email here on purpose — approvals/amendments happen too
+  // often to email on each one. Use the "Notify client of update" button
+  // on the checklist instead, which sends one batched summary.
+  await supabase.from("checklist_items").update({ status: "approved", updated_at: new Date().toISOString() }).eq("id", itemId);
   revalidatePath(`/jobs/${jobId}`);
 }
 
@@ -213,9 +215,39 @@ export async function addAmendment(formData: FormData) {
   const jobId = String(formData.get("job_id"));
   const text = String(formData.get("text") || "").trim();
   if (!text) return;
-  const { data: item } = await supabase.from("checklist_items").select("title").eq("id", itemId).single();
+  // No automatic email here on purpose — see note in approveItem above.
   await supabase.from("amendments").insert({ checklist_item_id: itemId, text });
-  await notifyJobClient(supabase, jobId, "Amendment requested", `<p>An amendment has been requested on <strong>${item?.title || "a document"}</strong>:</p><p style="padding:12px;background:#fffbeb;border-radius:6px">${text}</p>`);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+// Manual, batched notification — one summary email per click, instead of
+// one email per approval/amendment. Mirrors the prototype's
+// buildJobUpdateMailto: "X of Y documents approved — Z items need your
+// attention", not a blow-by-blow log.
+export async function notifyClientOfChecklist(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const checklistId = String(formData.get("checklist_id"));
+  const label = String(formData.get("label") || "your project");
+
+  const { data: items } = await supabase.from("checklist_items").select("status, amendments(resolved)").eq("checklist_id", checklistId);
+
+  const total = items?.length || 0;
+  const approved = (items || []).filter((i) => i.status === "approved").length;
+  const openAmendments = (items || []).reduce((sum, i) => sum + (i.amendments || []).filter((a: { resolved: boolean }) => !a.resolved).length, 0);
+
+  let statusLine = total > 0 ? `${approved} of ${total} documents approved` : "No documents requested yet";
+  if (openAmendments > 0) statusLine += ` — ${openAmendments} item${openAmendments === 1 ? "" : "s"} require your attention`;
+
+  await notifyJobClient(
+    supabase,
+    jobId,
+    `${label} — status update`,
+    `<p>Here&rsquo;s the current status of the <strong>${label}</strong> checklist:</p><p style="padding:12px;background:#f0fdfa;border-radius:6px">${statusLine}</p>`
+  );
+
+  await supabase.from("jobs").update({ last_notified_at: new Date().toISOString() }).eq("id", jobId);
   revalidatePath(`/jobs/${jobId}`);
 }
 

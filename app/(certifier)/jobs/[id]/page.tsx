@@ -101,7 +101,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
 
       {tab === "noc" && nocChecklist && (
         <div className="bg-white rounded-lg border border-slate-200 p-5">
-          <ChecklistSection jobId={id} firmId={profile.firm_id} checklistId={nocChecklist.id} library={libraries.NOC} items={(nocChecklist.checklist_items as never[]) || []} />
+          <ChecklistSection jobId={id} firmId={profile.firm_id} checklistId={nocChecklist.id} label="Notice of Commencement" library={libraries.NOC} items={(nocChecklist.checklist_items as never[]) || []} />
         </div>
       )}
 

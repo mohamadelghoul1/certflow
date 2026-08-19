@@ -32,7 +32,7 @@ export async function OcPanel({
     <div className="space-y-6">
       <div>
         <div className="text-sm font-semibold text-teal-900 mb-2">OC checklist</div>
-        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={checklistId} library={library} items={items} />
+        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={checklistId} label="Occupation Certificate" library={library} items={items} />
       </div>
 
       {!job.pathway_generated && <div className="text-xs text-slate-400">Occupation Certificates can&apos;t be issued until the original {job.pathway} is issued.</div>}
