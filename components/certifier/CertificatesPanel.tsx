@@ -7,6 +7,7 @@ import type { Job, Certifier, Modification, ChecklistItem, Amendment } from "@/t
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
 type ModificationWithChecklist = Modification & { checklistId: string | null; items: ItemWithAmendments[] };
+type LibItem = { title: string; description: string | null; category: string | null };
 
 export async function CertificatesPanel({
   job,
@@ -15,6 +16,7 @@ export async function CertificatesPanel({
   pathwayItems,
   certifiers,
   modifications,
+  library,
 }: {
   job: Job;
   firmId: string;
@@ -22,6 +24,7 @@ export async function CertificatesPanel({
   pathwayItems: ItemWithAmendments[];
   certifiers: Certifier[];
   modifications: ModificationWithChecklist[];
+  library: LibItem[];
 }) {
   const complete = stageComplete(pathwayItems);
   const issuedBy = certifiers.find((c) => c.id === job.pathway_issued_by);
@@ -32,7 +35,7 @@ export async function CertificatesPanel({
     <div className="space-y-6">
       <div>
         <div className="text-sm font-semibold text-teal-900 mb-2">{job.pathway} checklist</div>
-        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} libraryKey={job.pathway} items={pathwayItems} />
+        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} library={library} items={pathwayItems} />
       </div>
 
       <div className="border border-slate-200 rounded-md p-4">
@@ -85,7 +88,7 @@ export async function CertificatesPanel({
           <div className="text-sm font-semibold text-teal-900 mb-2">Modifications</div>
           <div className="space-y-4">
             {modifications.map((m) => (
-              <ModificationCard key={m.id} mod={m} job={job} firmId={firmId} certifiers={certifiers} />
+              <ModificationCard key={m.id} mod={m} job={job} firmId={firmId} certifiers={certifiers} library={library} />
             ))}
             <form action={startModification} className="flex items-center gap-2">
               <input type="hidden" name="job_id" value={job.id} />
@@ -100,7 +103,7 @@ export async function CertificatesPanel({
   );
 }
 
-async function ModificationCard({ mod, job, firmId, certifiers }: { mod: ModificationWithChecklist; job: Job; firmId: string; certifiers: Certifier[] }) {
+async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod: ModificationWithChecklist; job: Job; firmId: string; certifiers: Certifier[]; library: LibItem[] }) {
   const complete = stageComplete(mod.items);
   const issuedBy = certifiers.find((c) => c.id === mod.issued_by);
   const approvalUrl = await signedUrl(mod.approval_file_path);
@@ -112,7 +115,7 @@ async function ModificationCard({ mod, job, firmId, certifiers }: { mod: Modific
 
       {mod.checklistId && (
         <div className="mt-3">
-          <ChecklistSection jobId={job.id} firmId={firmId} checklistId={mod.checklistId} libraryKey={job.pathway} items={mod.items} />
+          <ChecklistSection jobId={job.id} firmId={firmId} checklistId={mod.checklistId} library={library} items={mod.items} />
         </div>
       )}
 

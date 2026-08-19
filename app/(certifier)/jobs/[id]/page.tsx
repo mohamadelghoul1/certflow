@@ -28,7 +28,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
   if (!job) notFound();
   const typedJob = job as Job;
 
-  const [{ data: checklists }, { data: modifications }, { data: ocRecords }, { data: inspections }, { data: conditions }, { data: certifiers }, { data: clients }] = await Promise.all([
+  const [{ data: checklists }, { data: modifications }, { data: ocRecords }, { data: inspections }, { data: conditions }, { data: certifiers }, { data: clients }, { data: libraryItems }] = await Promise.all([
     supabase.from("checklists").select("id, kind, modification_id, checklist_items(*, amendments(*))").eq("job_id", id),
     supabase.from("modifications").select("*").eq("job_id", id).order("created_at"),
     supabase.from("oc_records").select("*").eq("job_id", id).order("created_at"),
@@ -36,7 +36,13 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     supabase.from("conditions_of_consent").select("*").eq("job_id", id).order("created_at"),
     supabase.from("certifiers").select("*").eq("firm_id", profile.firm_id).order("name"),
     supabase.from("clients").select("*").eq("firm_id", profile.firm_id).order("name"),
+    supabase.from("document_library_items").select("*").eq("firm_id", profile.firm_id).order("sort_order"),
   ]);
+
+  const libraries: Record<string, { title: string; description: string | null; category: string | null }[]> = { CDC: [], CC: [], NOC: [], OC: [] };
+  for (const item of libraryItems || []) {
+    (libraries[item.pathway] ||= []).push(item);
+  }
 
   const pathwayChecklist = (checklists || []).find((c) => c.kind === "pathway");
   const nocChecklist = (checklists || []).find((c) => c.kind === "noc");
@@ -89,12 +95,13 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           pathwayItems={(pathwayChecklist.checklist_items as never[]) || []}
           certifiers={certifiers || []}
           modifications={modificationsWithChecklist as never[]}
+          library={libraries[job.pathway]}
         />
       )}
 
       {tab === "noc" && nocChecklist && (
         <div className="bg-white rounded-lg border border-slate-200 p-5">
-          <ChecklistSection jobId={id} firmId={profile.firm_id} checklistId={nocChecklist.id} libraryKey="NOC" items={(nocChecklist.checklist_items as never[]) || []} />
+          <ChecklistSection jobId={id} firmId={profile.firm_id} checklistId={nocChecklist.id} library={libraries.NOC} items={(nocChecklist.checklist_items as never[]) || []} />
         </div>
       )}
 
@@ -106,7 +113,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
 
       {tab === "oc" && ocChecklist && (
         <div className="bg-white rounded-lg border border-slate-200 p-5">
-          <OcPanel job={typedJob} firmId={profile.firm_id} checklistId={ocChecklist.id} items={(ocChecklist.checklist_items as never[]) || []} certifiers={certifiers || []} ocRecords={ocRecords || []} />
+          <OcPanel job={typedJob} firmId={profile.firm_id} checklistId={ocChecklist.id} items={(ocChecklist.checklist_items as never[]) || []} certifiers={certifiers || []} ocRecords={ocRecords || []} library={libraries.OC} />
         </div>
       )}
     </div>

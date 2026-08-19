@@ -6,6 +6,7 @@ import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import type { Job, Certifier, OcRecord, ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
+type LibItem = { title: string; description: string | null; category: string | null };
 
 export async function OcPanel({
   job,
@@ -14,6 +15,7 @@ export async function OcPanel({
   items,
   certifiers,
   ocRecords,
+  library,
 }: {
   job: Job;
   firmId: string;
@@ -21,6 +23,7 @@ export async function OcPanel({
   items: ItemWithAmendments[];
   certifiers: Certifier[];
   ocRecords: OcRecord[];
+  library: LibItem[];
 }) {
   const complete = stageComplete(items);
   const hasWhole = ocRecords.some((r) => r.type === "whole");
@@ -29,7 +32,7 @@ export async function OcPanel({
     <div className="space-y-6">
       <div>
         <div className="text-sm font-semibold text-teal-900 mb-2">OC checklist</div>
-        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={checklistId} libraryKey="OC" items={items} />
+        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={checklistId} library={library} items={items} />
       </div>
 
       {!job.pathway_generated && <div className="text-xs text-slate-400">Occupation Certificates can&apos;t be issued until the original {job.pathway} is issued.</div>}

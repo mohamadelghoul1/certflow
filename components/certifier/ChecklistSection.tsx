@@ -1,27 +1,28 @@
 import { displayStatus, unresolvedCount } from "@/lib/business";
-import { DOC_LIBRARY } from "@/lib/constants";
 import { signedUrl } from "@/lib/storage";
-import { approveItem, addAmendment, resolveAmendment, toggleStamping, updateItemMeta, certifierUploadItem } from "@/lib/actions/jobs";
+import { approveItem, addAmendment, resolveAmendment, toggleStamping, updateItemMeta, certifierUploadItem, removeChecklistItem } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
+import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
 import type { ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
+type LibItem = { title: string; description: string | null; category: string | null };
 
 export async function ChecklistSection({
   jobId,
   firmId,
   checklistId,
-  libraryKey,
+  library,
   items,
 }: {
   jobId: string;
   firmId: string;
   checklistId: string;
-  libraryKey: string;
+  library: LibItem[];
   items: ItemWithAmendments[];
 }) {
-  const library = DOC_LIBRARY[libraryKey] || [];
+  const pickerLibrary = library.map((l) => ({ title: l.title, desc: l.description || "", category: l.category || "Other" }));
   const existingTitles = items.map((i) => i.title);
 
   return (
@@ -30,7 +31,7 @@ export async function ChecklistSection({
         <ItemRow key={item.id} item={item} jobId={jobId} firmId={firmId} />
       ))}
       {items.length === 0 && <div className="text-sm text-slate-400">No documents requested yet.</div>}
-      <DocumentPicker jobId={jobId} checklistId={checklistId} library={library} existingTitles={existingTitles} />
+      <DocumentPicker jobId={jobId} checklistId={checklistId} library={pickerLibrary} existingTitles={existingTitles} />
     </div>
   );
 }
@@ -83,6 +84,7 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
             {item.requires_stamping ? "Stamp: required" : "Stamp: not required"}
           </button>
         </form>
+        <RemoveItemButton itemId={item.id} jobId={jobId} title={item.title} />
       </div>
 
       <details className="mt-3">

@@ -4,9 +4,23 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { DOC_LIBRARY, INSPECTION_LIBRARY, MANDATORY_CRITICAL_STAGE_INSPECTIONS } from "@/lib/constants";
+import { INSPECTION_LIBRARY, MANDATORY_CRITICAL_STAGE_INSPECTIONS } from "@/lib/constants";
 import { todayISO } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+// Not exported — a plain helper, not a server action — even though this
+// file is "use server". Reads the firm's own editable document library
+// (Settings -> Document Library) instead of a fixed list shared by every firm.
+async function firmLibrary(supabase: SupabaseClient, firmId: string, pathway: string) {
+  const { data } = await supabase
+    .from("document_library_items")
+    .select("title, description, category")
+    .eq("firm_id", firmId)
+    .eq("pathway", pathway)
+    .order("sort_order");
+  return data || [];
+}
 
 export async function createJob(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
@@ -34,8 +48,8 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
 
   if (error || !job) return { error: error?.message || "Could not create job." };
 
-  // Auto-populate the three standard checklists from the document library —
-  // same behaviour as the prototype's makeProject().
+  // Auto-populate the three standard checklists from the firm's own
+  // document library (Settings -> Document Library).
   const kinds: { kind: "pathway" | "noc" | "oc"; libraryKey: string }[] = [
     { kind: "pathway", libraryKey: pathway },
     { kind: "noc", libraryKey: "NOC" },
@@ -45,10 +59,11 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
   for (const { kind, libraryKey } of kinds) {
     const { data: checklist } = await supabase.from("checklists").insert({ job_id: job.id, kind }).select("id").single();
     if (!checklist) continue;
-    const items = (DOC_LIBRARY[libraryKey] || []).map((doc, idx) => ({
+    const library = await firmLibrary(supabase, profile.firm_id, libraryKey);
+    const items = library.map((doc, idx) => ({
       checklist_id: checklist.id,
       title: doc.title,
-      description: doc.desc,
+      description: doc.description,
       category: doc.category,
       sort_order: idx,
     }));
@@ -103,6 +118,15 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   await supabase.from("jobs").update({ details }).eq("id", jobId).eq("firm_id", profile.firm_id);
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
+}
+
+export async function removeChecklistItem(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const itemId = String(formData.get("item_id"));
+  const jobId = String(formData.get("job_id"));
+  await supabase.from("checklist_items").delete().eq("id", itemId);
+  revalidatePath(`/jobs/${jobId}`);
 }
 
 export async function addChecklistItems(formData: FormData) {
@@ -255,10 +279,11 @@ export async function startModification(formData: FormData) {
   if (!mod) return;
   const { data: checklist } = await supabase.from("checklists").insert({ job_id: jobId, kind: "modification", modification_id: mod.id }).select("id").single();
   if (checklist) {
-    const items = (DOC_LIBRARY[pathway] || []).map((doc, idx) => ({
+    const library = await firmLibrary(supabase, profile.firm_id, pathway);
+    const items = library.map((doc, idx) => ({
       checklist_id: checklist.id,
       title: doc.title,
-      description: doc.desc,
+      description: doc.description,
       category: doc.category,
       sort_order: idx,
     }));

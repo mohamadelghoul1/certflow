@@ -5,8 +5,19 @@ import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { defaultScopeOfWorks, MANDATORY_CRITICAL_STAGE_INSPECTIONS } from "@/lib/constants";
-import { DOC_LIBRARY, INSPECTION_LIBRARY } from "@/lib/constants";
+import { INSPECTION_LIBRARY } from "@/lib/constants";
 import type { ActionState } from "@/lib/actions/auth";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+async function firmLibrary(supabase: SupabaseClient, firmId: string, pathway: string) {
+  const { data } = await supabase
+    .from("document_library_items")
+    .select("title, description, category")
+    .eq("firm_id", firmId)
+    .eq("pathway", pathway)
+    .order("sort_order");
+  return data || [];
+}
 
 export async function createQuote(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
@@ -111,7 +122,8 @@ export async function generateJobFromQuote(formData: FormData) {
   for (const { kind, libraryKey } of kinds) {
     const { data: checklist } = await supabase.from("checklists").insert({ job_id: job.id, kind }).select("id").single();
     if (!checklist) continue;
-    const items = (DOC_LIBRARY[libraryKey] || []).map((doc, idx) => ({ checklist_id: checklist.id, title: doc.title, description: doc.desc, category: doc.category, sort_order: idx }));
+    const library = await firmLibrary(supabase, profile.firm_id, libraryKey);
+    const items = library.map((doc, idx) => ({ checklist_id: checklist.id, title: doc.title, description: doc.description, category: doc.category, sort_order: idx }));
     if (items.length) await supabase.from("checklist_items").insert(items);
   }
   const inspections = INSPECTION_LIBRARY.map((i) => ({ job_id: job.id, title: i.title, description: i.desc, inspector_certifier_id: quote.certifier_id }));
