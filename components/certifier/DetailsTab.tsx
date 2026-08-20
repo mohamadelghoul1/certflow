@@ -9,8 +9,6 @@ import {
   addSharedAccess,
   removeSharedAccess,
   addClientAndShare,
-  updateCouncilLetter,
-  updateApplicantLetter,
 } from "@/lib/actions/jobs";
 import type { ActionState } from "@/lib/actions/auth";
 import {
@@ -134,9 +132,15 @@ export function DetailsTab({
 
         <Section title="Project configuration">
           <div className="grid sm:grid-cols-3 gap-4">
-            <div>
-              <label className={labelCls}>Project number</label>
-              <input name="projectNumber" defaultValue={d.projectNumber || ""} className={inputCls} />
+            <div className="space-y-4">
+              <div>
+                <label className={labelCls}>Project number</label>
+                <input name="projectNumber" defaultValue={d.projectNumber || ""} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>NSW Planning Portal ref</label>
+                <input name="planningPortalRef" defaultValue={d.certificateDetails?.planningPortalRef || ""} className={inputCls} />
+              </div>
             </div>
             <div>
               <label className={labelCls}>Zoning</label>
@@ -151,6 +155,14 @@ export function DetailsTab({
                 ))}
               </datalist>
             </div>
+          </div>
+          <div>
+            <label className={labelCls}>Development street address</label>
+            <input name="address" defaultValue={job.address || ""} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Lot/Section/DP</label>
+            <input name="lotSectionDp" defaultValue={d.certificateDetails?.lotSectionDp || ""} className={inputCls} />
           </div>
         </Section>
 
@@ -229,16 +241,6 @@ export function DetailsTab({
         </Section>
 
         <Section title={`${job.pathway} certificate details`}>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Lot/Section/DP</label>
-              <input name="lotSectionDp" defaultValue={d.certificateDetails?.lotSectionDp || ""} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>NSW Planning Portal ref</label>
-              <input name="planningPortalRef" defaultValue={d.certificateDetails?.planningPortalRef || ""} className={inputCls} />
-            </div>
-          </div>
           <div>
             <label className={labelCls}>Other consent references (DA / Modification / Notice of Determination — one per line)</label>
             <textarea name="consentReferences" defaultValue={d.certificateDetails?.consentReferences || ""} rows={2} className={inputCls} />
@@ -515,17 +517,6 @@ export function DetailsTab({
       </div>
 
       <div className="bg-white rounded-lg border border-slate-200 p-5">
-        <div className="font-bold text-teal-900 mb-1">Certificate package letters</div>
-        <p className="text-xs text-slate-400 mb-3">
-          The council and applicant letters in the certificate package use a standard template automatically. Leave blank to keep that, or write your own text
-          here to override it for this project.
-        </p>
-        <LetterOverrideForm action={updateCouncilLetter} jobId={job.id} label="Council letter override" defaultValue={job.council_letter_override || ""} />
-        <div className="h-4" />
-        <LetterOverrideForm action={updateApplicantLetter} jobId={job.id} label="Applicant letter override" defaultValue={job.applicant_letter_override || ""} />
-      </div>
-
-      <div className="bg-white rounded-lg border border-slate-200 p-5">
         <div className="font-bold text-teal-900 mb-3">Conditions of Consent</div>
         <div className="space-y-2 mb-3">
           {conditions.map((c) => (
@@ -550,33 +541,5 @@ export function DetailsTab({
         </form>
       </div>
     </div>
-  );
-}
-
-function LetterOverrideForm({ action, jobId, label, defaultValue }: { action: (formData: FormData) => Promise<void>; jobId: string; label: string; defaultValue: string }) {
-  const [pending, setPending] = useState(false);
-  const [showSaved, setShowSaved] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setPending(true);
-    await action(new FormData(e.currentTarget));
-    setPending(false);
-    setShowSaved(true);
-    setTimeout(() => setShowSaved(false), 2500);
-  }
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <input type="hidden" name="job_id" value={jobId} />
-      <label className={labelCls}>{label}</label>
-      <textarea name="text" defaultValue={defaultValue} rows={4} placeholder="Leave blank for the standard letter text…" className={inputCls} />
-      <div className="flex items-center gap-3 mt-2">
-        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-teal-800 text-white text-xs font-semibold hover:bg-teal-900 disabled:opacity-60">
-          {pending ? "Saving…" : "Save"}
-        </button>
-        {showSaved && <span className="text-xs font-medium text-emerald-700">Saved ✓</span>}
-      </div>
-    </form>
   );
 }

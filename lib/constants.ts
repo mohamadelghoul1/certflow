@@ -53,6 +53,35 @@ export function defaultCriticalStageInspections() {
   return MANDATORY_CRITICAL_STAGE_INSPECTIONS.map((i) => ({ id: String(i.no), stage: i.stage, inspector: i.inspector, enabled: true }));
 }
 
+// Jobs created before per-job critical stage inspections existed still store
+// the old shape (a plain list of numbers referencing MANDATORY_CRITICAL_STAGE_INSPECTIONS,
+// where presence meant "enabled"). Reading that old shape as the new
+// {id, stage, inspector, enabled} objects leaves every row with the same
+// missing id, so ticking one checkbox matches and toggles every row. This
+// reconstructs the full editable list from either shape so old jobs self-heal
+// on first read/save instead of relying on the one-off SQL migration having run.
+export function normalizeCriticalStageInspections(raw: unknown): { id: string; stage: string; inspector: string; enabled: boolean }[] {
+  if (!Array.isArray(raw)) return [];
+  if (raw.length > 0 && typeof raw[0] !== "object") {
+    const enabledNos = new Set(raw.map(Number));
+    return MANDATORY_CRITICAL_STAGE_INSPECTIONS.map((m) => ({
+      id: String(m.no),
+      stage: m.stage,
+      inspector: m.inspector,
+      enabled: enabledNos.has(m.no),
+    }));
+  }
+  return raw.map((item, idx) => {
+    const obj = (item || {}) as { id?: string; stage?: string; inspector?: string; enabled?: boolean };
+    return {
+      id: obj.id ? String(obj.id) : `row-${idx}`,
+      stage: obj.stage || "",
+      inspector: obj.inspector || "",
+      enabled: obj.enabled !== false,
+    };
+  });
+}
+
 export const INSPECTION_LIBRARY = [
   { title: "Prior to CC/CDC", desc: "Site inspection prior to issue of CC or CDC." },
   { title: "Piers & Footings", desc: "Inspection of piers and footings prior to pour." },

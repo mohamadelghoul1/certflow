@@ -2,6 +2,7 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 import { toggleCriticalStageInspection, updateCriticalStageInspection, addCriticalStageInspection, removeCriticalStageInspection } from "@/lib/actions/jobs";
+import { normalizeCriticalStageInspections } from "@/lib/constants";
 import { Plus, X } from "lucide-react";
 import type { CriticalStageInspection } from "@/types/db";
 
@@ -25,7 +26,7 @@ function reducer(state: CriticalStageInspection[], action: Action): CriticalStag
 }
 
 export function CriticalStageInspections({ jobId, items }: { jobId: string; items: CriticalStageInspection[] }) {
-  const [list, dispatch] = useOptimistic(items, reducer);
+  const [list, dispatch] = useOptimistic(normalizeCriticalStageInspections(items), reducer);
   const [, startTransition] = useTransition();
 
   function handleToggle(id: string) {

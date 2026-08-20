@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { INSPECTION_LIBRARY, defaultCriticalStageInspections, epiForCodeParts } from "@/lib/constants";
+import { INSPECTION_LIBRARY, defaultCriticalStageInspections, normalizeCriticalStageInspections, epiForCodeParts } from "@/lib/constants";
 import { todayISO } from "@/lib/business";
 import { notifyJobClient } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
@@ -179,8 +179,9 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   const { data: existingJob } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
   const details = extractJobDetails(formData, pathway);
   details.certificateDetails!.determinationDate = existingJob?.details?.certificateDetails?.determinationDate || "";
+  const address = String(formData.get("address") || "");
 
-  await supabase.from("jobs").update({ details }).eq("id", jobId).eq("firm_id", profile.firm_id);
+  await supabase.from("jobs").update({ details, address }).eq("id", jobId).eq("firm_id", profile.firm_id);
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
 }
@@ -684,28 +685,10 @@ export async function removeSharedAccess(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
-// Both blank by default — the certificate package falls back to a standard
-// letter body (see app/certificate/pathway/[jobId]/page.tsx) unless the
-// certifier has overridden it here for this specific job.
-export async function updateCouncilLetter(formData: FormData) {
-  await requireProfile("certifier");
-  const supabase = await createClient();
-  const jobId = String(formData.get("job_id"));
-  await supabase.from("jobs").update({ council_letter_override: String(formData.get("text") || "") }).eq("id", jobId);
-  revalidatePath(`/jobs/${jobId}`);
-}
-
-export async function updateApplicantLetter(formData: FormData) {
-  await requireProfile("certifier");
-  const supabase = await createClient();
-  const jobId = String(formData.get("job_id"));
-  await supabase.from("jobs").update({ applicant_letter_override: String(formData.get("text") || "") }).eq("id", jobId);
-  revalidatePath(`/jobs/${jobId}`);
-}
 
 async function getCriticalStageInspections(supabase: SupabaseClient, jobId: string): Promise<CriticalStageInspection[]> {
   const { data: job } = await supabase.from("jobs").select("critical_stage_inspections").eq("id", jobId).single();
-  return (job?.critical_stage_inspections as CriticalStageInspection[]) || [];
+  return normalizeCriticalStageInspections(job?.critical_stage_inspections);
 }
 
 export async function toggleCriticalStageInspection(formData: FormData) {
