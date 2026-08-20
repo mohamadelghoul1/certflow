@@ -57,13 +57,43 @@ export const INSPECTION_LIBRARY = [
 ];
 
 export const JOB_TYPES = ["Secondary Dwelling", "Dual Occupancy", "Alterations & Additions", "New Dwelling", "Pool"];
-export const BCA_VERSIONS = ["NCC 2022", "NCC 2025", "BCA 2019 Amendment 1"];
+
+// Not exhaustive — certifiers can also just type any version directly into
+// the BCA/NCC field (it's a free-text input with this list as suggestions),
+// so a new amendment doesn't need a code change to be usable.
+export const BCA_VERSIONS = [
+  "NCC 2025",
+  "NCC 2022 Amendment 3",
+  "NCC 2022 Amendment 2",
+  "NCC 2022 Amendment 1",
+  "NCC 2022",
+  "NCC 2019 Amendment 1",
+  "NCC 2019",
+  "NCC 2016 Amendment 1",
+  "NCC 2016",
+  "BCA 2015",
+  "BCA 2014",
+  "BCA 2013",
+  "BCA 2012",
+];
+
 export const BUILDING_CLASSIFICATIONS = [
   "Class 1a — Single dwelling",
   "Class 1b — Boarding house / B&B",
-  "Class 2 — Apartments",
+  "Class 2 — Apartments / multi-unit residential",
+  "Class 3 — Residential (hotel, motel, hostel, boarding house)",
+  "Class 4 — Residential part of a commercial building",
+  "Class 5 — Office building",
+  "Class 6 — Shop / retail / cafe / restaurant",
+  "Class 7a — Carpark",
+  "Class 7b — Warehouse / storage",
+  "Class 8 — Laboratory / factory (industrial)",
+  "Class 9a — Health care building",
+  "Class 9b — Assembly building (school, hall, theatre)",
+  "Class 9c — Aged care building",
   "Class 10a — Non-habitable (garage, shed, carport)",
   "Class 10b — Structure (pool, fence, retaining wall)",
+  "Class 10c — Private bushfire shelter",
 ];
 export const CONSTRUCTION_TYPES = ["N/A", "Type A", "Type B", "Type C"];
 export const NSW_STATE = ["NSW", "ACT", "QLD", "VIC"];
@@ -136,6 +166,18 @@ export const COUNCIL_DIRECTORY = [
   { name: "Central Coast Council", address: { streetNumber: "2", street: "Hely Street", suburb: "Wyong", state: "NSW", postcode: "2259" }, phone: "02 4306 7900", fax: "", email: "ask@centralcoast.nsw.gov.au", suburbs: ["Wyong", "Gosford", "Terrigal", "Tuggerah", "Erina", "The Entrance", "Woy Woy", "Umina Beach"] },
   { name: "Wollongong City Council", address: { streetNumber: "41", street: "Burelli Street", suburb: "Wollongong", state: "NSW", postcode: "2500" }, phone: "02 4227 7111", fax: "02 4227 7277", email: "council@wollongong.nsw.gov.au", suburbs: ["Wollongong", "Fairy Meadow", "Corrimal", "Dapto", "Figtree", "Thirroul", "Bulli", "Port Kembla"] },
 ];
+
+// Picks Lot/Section/DP out of an address when the certifier pastes it in
+// directly (e.g. "Lot 12 Section 3 DP123456, 45 Smith Street, Suburb NSW"),
+// normalised to match the "Lot/Section/DP" field's own format.
+const LOT_DP_RE = /lot\s*(\d+[a-z]?)(?:\s*,?\s*sec(?:tion)?\s*(\d+))?\s*,?\s*(?:in\s*)?dp\s*(\d+)/i;
+export function extractLotDpFromAddress(addressText: string): string | null {
+  if (!addressText) return null;
+  const m = addressText.match(LOT_DP_RE);
+  if (!m) return null;
+  const [, lot, section, dp] = m;
+  return `${lot}/${section || "-"}/DP${dp}`;
+}
 
 export function matchCouncilByAddress(addressText: string) {
   if (!addressText) return null;

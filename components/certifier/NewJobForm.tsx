@@ -12,6 +12,7 @@ import {
   SEPP_CODE_PARTS,
   COUNCIL_DIRECTORY,
   matchCouncilByAddress,
+  extractLotDpFromAddress,
   epiForCodeParts,
 } from "@/lib/constants";
 import { X } from "lucide-react";
@@ -27,10 +28,9 @@ type CouncilState = {
   state: string;
   postcode: string;
   phone: string;
-  fax: string;
   email: string;
 };
-const emptyCouncil: CouncilState = { lga: "", streetNumber: "", street: "", suburb: "", state: "NSW", postcode: "", phone: "", fax: "", email: "" };
+const emptyCouncil: CouncilState = { lga: "", streetNumber: "", street: "", suburb: "", state: "NSW", postcode: "", phone: "", email: "" };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -47,6 +47,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
   const [customType, setCustomType] = useState("");
   const [pathway, setPathway] = useState<"CDC" | "CC">("CDC");
   const [address, setAddress] = useState("");
+  const [lotSectionDp, setLotSectionDp] = useState("");
   const [council, setCouncil] = useState<CouncilState>(emptyCouncil);
   const [codeParts, setCodeParts] = useState<Set<string>>(new Set());
 
@@ -61,7 +62,6 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
         state: match.address.state,
         postcode: match.address.postcode,
         phone: match.phone,
-        fax: match.fax,
         email: match.email,
       });
     } else {
@@ -74,6 +74,10 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
     if (!council.lga) {
       const match = matchCouncilByAddress(v);
       if (match) selectCouncil(match.name);
+    }
+    if (!lotSectionDp) {
+      const lotDp = extractLotDpFromAddress(v);
+      if (lotDp) setLotSectionDp(lotDp);
     }
   }
 
@@ -96,12 +100,26 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
       <Section title="Project basics">
         <div>
           <label className={labelCls}>Property address</label>
-          <input name="address" required value={address} onChange={(e) => handleAddressChange(e.target.value)} placeholder="e.g. 12 Example Street, Suburb NSW 2000" className={inputCls} />
+          <input
+            name="address"
+            required
+            value={address}
+            onChange={(e) => handleAddressChange(e.target.value)}
+            placeholder="e.g. Lot 12 DP123456, 12 Example Street, Suburb NSW 2000"
+            className={inputCls}
+          />
           {council.lga && <div className="text-[11px] text-teal-700 mt-1">Council: {council.lga} — auto-matched from the address, edit below if wrong.</div>}
         </div>
         <div>
           <label className={labelCls}>Lot / Section / DP</label>
-          <input name="lotSectionDp" placeholder="e.g. 12/-/DP12345" className={inputCls} />
+          <input
+            name="lotSectionDp"
+            value={lotSectionDp}
+            onChange={(e) => setLotSectionDp(e.target.value)}
+            placeholder="e.g. 12/-/DP12345"
+            className={inputCls}
+          />
+          <div className="text-[11px] text-slate-400 mt-1">Filled in automatically if the address includes &ldquo;Lot ... DP ...&rdquo; — edit if wrong.</div>
         </div>
         <div>
           <label className={labelCls}>Scope of works</label>
@@ -218,12 +236,12 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
           </div>
           <div>
             <label className={labelCls}>BCA / NCC version</label>
-            <select name="bcaVersion" className={inputCls} defaultValue="">
-              <option value="">—</option>
+            <input name="bcaVersion" list="bca-version-list" placeholder="e.g. NCC 2022 Amendment 2" className={inputCls} />
+            <datalist id="bca-version-list">
               {BCA_VERSIONS.map((v) => (
-                <option key={v}>{v}</option>
+                <option key={v} value={v} />
               ))}
-            </select>
+            </datalist>
           </div>
         </div>
       </Section>
@@ -247,14 +265,10 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
             <input name="contact_surname" className={inputCls} />
           </div>
         </div>
-        <div className="grid sm:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-3 gap-4">
           <div>
             <label className={labelCls}>Phone</label>
             <input name="contact_phone" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Fax</label>
-            <input name="contact_fax" className={inputCls} />
           </div>
           <div>
             <label className={labelCls}>Mobile</label>
@@ -370,9 +384,8 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
             <option key={s}>{s}</option>
           ))}
         </select>
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           <input value={council.phone} onChange={(e) => setCouncil((p) => ({ ...p, phone: e.target.value }))} placeholder="Phone" className={inputCls} />
-          <input value={council.fax} onChange={(e) => setCouncil((p) => ({ ...p, fax: e.target.value }))} placeholder="Fax" className={inputCls} />
           <input value={council.email} onChange={(e) => setCouncil((p) => ({ ...p, email: e.target.value }))} placeholder="Email" className={inputCls} />
         </div>
         <input type="hidden" name="council_streetNumber" value={council.streetNumber} />
@@ -381,7 +394,6 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
         <input type="hidden" name="council_state" value={council.state} />
         <input type="hidden" name="council_postcode" value={council.postcode} />
         <input type="hidden" name="council_phone" value={council.phone} />
-        <input type="hidden" name="council_fax" value={council.fax} />
         <input type="hidden" name="council_email" value={council.email} />
       </Section>
 
@@ -439,7 +451,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
         </div>
         <div>
           <label className={labelCls}>Effective height (m)</label>
-          <input type="number" name="effectiveHeight" className={inputCls} />
+          <input type="number" step="any" name="effectiveHeight" className={inputCls} />
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>

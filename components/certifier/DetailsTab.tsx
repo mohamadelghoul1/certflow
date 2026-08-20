@@ -36,7 +36,6 @@ type CouncilState = {
   state: string;
   postcode: string;
   phone: string;
-  fax: string;
   email: string;
 };
 
@@ -64,7 +63,6 @@ export function DetailsTab({
     state: d.council?.address?.state || "NSW",
     postcode: d.council?.address?.postcode || "",
     phone: d.council?.contact?.phone || "",
-    fax: d.council?.contact?.fax || "",
     email: d.council?.contact?.email || "",
   });
   const [codeParts, setCodeParts] = useState<Set<string>>(new Set(d.certificateDetails?.codeParts || []));
@@ -80,7 +78,6 @@ export function DetailsTab({
         state: match.address.state,
         postcode: match.address.postcode,
         phone: match.phone,
-        fax: match.fax,
         email: match.email,
       });
     } else {
@@ -124,12 +121,12 @@ export function DetailsTab({
             </div>
             <div>
               <label className={labelCls}>BCA / NCC version</label>
-              <select name="bcaVersion" defaultValue={d.bcaVersion || ""} className={inputCls}>
-                <option value="">—</option>
+              <input name="bcaVersion" list="bca-version-list-edit" defaultValue={d.bcaVersion || ""} placeholder="e.g. NCC 2022 Amendment 2" className={inputCls} />
+              <datalist id="bca-version-list-edit">
                 {BCA_VERSIONS.map((v) => (
-                  <option key={v}>{v}</option>
+                  <option key={v} value={v} />
                 ))}
-              </select>
+              </datalist>
             </div>
           </div>
         </Section>
@@ -153,14 +150,10 @@ export function DetailsTab({
               <input name="contact_surname" defaultValue={d.contact?.surname || ""} className={inputCls} />
             </div>
           </div>
-          <div className="grid sm:grid-cols-4 gap-4">
+          <div className="grid sm:grid-cols-3 gap-4">
             <div>
               <label className={labelCls}>Phone</label>
               <input name="contact_phone" defaultValue={d.contact?.phone || ""} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Fax</label>
-              <input name="contact_fax" defaultValue={d.contact?.fax || ""} className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>Mobile</label>
@@ -286,9 +279,8 @@ export function DetailsTab({
               <option key={s}>{s}</option>
             ))}
           </select>
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             <input value={council.phone} onChange={(e) => setCouncil((p) => ({ ...p, phone: e.target.value }))} placeholder="Phone" className={inputCls} />
-            <input value={council.fax} onChange={(e) => setCouncil((p) => ({ ...p, fax: e.target.value }))} placeholder="Fax" className={inputCls} />
             <input value={council.email} onChange={(e) => setCouncil((p) => ({ ...p, email: e.target.value }))} placeholder="Email" className={inputCls} />
           </div>
           <input type="hidden" name="council_streetNumber" value={council.streetNumber} />
@@ -297,7 +289,6 @@ export function DetailsTab({
           <input type="hidden" name="council_state" value={council.state} />
           <input type="hidden" name="council_postcode" value={council.postcode} />
           <input type="hidden" name="council_phone" value={council.phone} />
-          <input type="hidden" name="council_fax" value={council.fax} />
           <input type="hidden" name="council_email" value={council.email} />
         </Section>
 
@@ -355,7 +346,7 @@ export function DetailsTab({
           </div>
           <div>
             <label className={labelCls}>Effective height (m)</label>
-            <input type="number" name="effectiveHeight" defaultValue={d.proposal?.effectiveHeight || ""} className={inputCls} />
+            <input type="number" step="any" name="effectiveHeight" defaultValue={d.proposal?.effectiveHeight || ""} className={inputCls} />
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>

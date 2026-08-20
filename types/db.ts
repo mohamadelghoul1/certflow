@@ -88,11 +88,11 @@ export type JobDetails = {
   projectNumber?: string;
   zoning?: string;
   bcaVersion?: string;
-  contact?: { nameOrCompany?: string; title?: string; givenNames?: string; surname?: string; phone?: string; fax?: string; mobile?: string; email?: string };
+  contact?: { nameOrCompany?: string; title?: string; givenNames?: string; surname?: string; phone?: string; mobile?: string; email?: string };
   applicantAddress?: { streetNumber?: string; street?: string; suburb?: string; state?: string; postcode?: string };
   ownerSameAsApplicant?: boolean;
   owner?: { name?: string; address?: Record<string, string>; phone?: string };
-  council?: { lga?: string; address?: Record<string, string>; contact?: { phone?: string; fax?: string; email?: string } };
+  council?: { lga?: string; address?: Record<string, string>; contact?: { phone?: string; email?: string } };
   proposal?: {
     classifications?: string[];
     constructionType?: string;

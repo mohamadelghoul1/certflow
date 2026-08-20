@@ -43,7 +43,6 @@ function extractJobDetails(formData: FormData, pathway: string): JobDetails {
       givenNames: String(formData.get("contact_givenNames") || ""),
       surname: String(formData.get("contact_surname") || ""),
       phone: String(formData.get("contact_phone") || ""),
-      fax: String(formData.get("contact_fax") || ""),
       mobile: String(formData.get("contact_mobile") || ""),
       email: String(formData.get("contact_email") || ""),
     },
@@ -77,7 +76,6 @@ function extractJobDetails(formData: FormData, pathway: string): JobDetails {
       },
       contact: {
         phone: String(formData.get("council_phone") || ""),
-        fax: String(formData.get("council_fax") || ""),
         email: String(formData.get("council_email") || ""),
       },
     },
