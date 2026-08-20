@@ -93,7 +93,7 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
   const canApprove = item.status === "submitted" && unresolvedCount(item) === 0;
 
   return (
-    <div className="px-4 py-3.5 hover:bg-slate-50/60">
+    <div className="px-4 py-3.5 hover:bg-blue-50 transition-colors">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <EditableChecklistItemHeader itemId={item.id} jobId={jobId} title={item.title} description={item.description || ""} version={item.version} statusDot={status.dot} />
