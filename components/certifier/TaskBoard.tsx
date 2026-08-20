@@ -2,7 +2,7 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 import { createTaskList, deleteTaskList, moveTaskList, addTask, toggleTaskComplete, updateTaskText, deleteTask } from "@/lib/actions/tasks";
-import { Plus, X, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, X, Trash2, ChevronLeft, ChevronRight, MoreVertical } from "lucide-react";
 import type { TaskList, ManualTask } from "@/types/db";
 
 type ListWithTasks = TaskList & { tasks: ManualTask[] };
@@ -95,6 +95,7 @@ function TaskListColumn({
 }) {
   const [, startTransition] = useTransition();
   const [tasks, dispatch] = useOptimistic(list.tasks, tasksReducer);
+  const [menuOpen, setMenuOpen] = useState(false);
   const incomplete = tasks.filter((t) => !t.completed);
   const completed = tasks.filter((t) => t.completed);
 
@@ -170,18 +171,35 @@ function TaskListColumn({
         >
           <ChevronRight size={14} />
         </button>
-        <button
-          onClick={() => {
-            if (confirm(`Delete "${list.title}" and all ${list.tasks.length} task${list.tasks.length === 1 ? "" : "s"} in it? This can't be undone.`)) {
-              const fd = new FormData();
-              fd.set("list_id", list.id);
-              deleteTaskList(fd);
-            }
-          }}
-          className="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 shrink-0"
-        >
-          <Trash2 size={13} />
-        </button>
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="List options"
+            className="p-1 rounded text-slate-300 hover:text-slate-600 hover:bg-slate-100"
+          >
+            <MoreVertical size={14} />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-full mt-1 z-20 w-36 bg-white border border-slate-200 rounded-md shadow-lg py-1">
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    if (confirm(`Delete "${list.title}" and all ${list.tasks.length} task${list.tasks.length === 1 ? "" : "s"} in it? This can't be undone.`)) {
+                      const fd = new FormData();
+                      fd.set("list_id", list.id);
+                      deleteTaskList(fd);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 size={13} /> Delete list
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="px-3 pt-2 pb-1">
@@ -258,7 +276,12 @@ function TaskRow({ task, onToggle, onEdit, onDelete }: { task: ManualTask; onTog
 
   if (editing) {
     return (
-      <div className="rounded-md border border-teal-200 bg-teal-50/40 px-2 py-1.5 space-y-1.5">
+      <div
+        className="rounded-md border border-teal-200 bg-teal-50/40 px-2 py-1.5 space-y-1.5"
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) save();
+        }}
+      >
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
