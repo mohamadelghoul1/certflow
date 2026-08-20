@@ -76,7 +76,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             </form>
           )}
           {quote.linked_job_id && (
-            <Link href={`/jobs/${quote.linked_job_id}`} className="flex items-center gap-1.5 px-3 py-2 text-sm text-emerald-700 font-medium hover:underline">
+            <Link href={`/jobs/${quote.linked_job_id}?tab=pathway`} className="flex items-center gap-1.5 px-3 py-2 text-sm text-emerald-700 font-medium hover:underline">
               <Check size={14} /> View project
             </Link>
           )}

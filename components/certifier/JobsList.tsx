@@ -101,7 +101,7 @@ export function JobsList({ jobs, certifiers }: { jobs: JobRow[]; certifiers: { i
             {filtered.map((j) => (
               <tr key={j.id} className="border-t border-slate-100 hover:bg-teal-50/60 transition-colors">
                 <td className="px-0 py-0 align-top" colSpan={2}>
-                  <Link href={`/jobs/${j.id}`} className="flex items-center justify-between px-5 py-4">
+                  <Link href={`/jobs/${j.id}?tab=pathway`} className="flex items-center justify-between px-5 py-4">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-teal-900">{j.address}</span>

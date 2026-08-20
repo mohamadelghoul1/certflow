@@ -19,6 +19,7 @@ export function NavBar({ firmName, recentJobs, recentQuotes }: { firmName: strin
           createHref="/jobs/new"
           createLabel="New project"
           itemHrefBase="/jobs"
+          itemHrefSuffix="?tab=pathway"
         />
         <NavDropdown
           label="Quotes"

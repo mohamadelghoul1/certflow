@@ -7,3 +7,25 @@
 body {
   background: #f8fafc;
 }
+
+/* Universal "pressed" feedback — a brief green ring + slight press-down on
+   every button, link, checkbox, and disclosure toggle in the app, so it's
+   always visible that a tap/click registered, even before its effect
+   (a save, a navigation) shows up. Transition duration is longer on the
+   way out than a plain :active would give, so the flash is still visible
+   even on a very quick tap. */
+button:not(:disabled),
+a,
+summary,
+input[type="checkbox"],
+input[type="radio"] {
+  transition: box-shadow 200ms ease-out, transform 100ms ease-out;
+}
+button:not(:disabled):active,
+a:active,
+summary:active,
+input[type="checkbox"]:active,
+input[type="radio"]:active {
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.55);
+  transform: scale(0.97);
+}

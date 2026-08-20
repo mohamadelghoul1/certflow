@@ -8,6 +8,7 @@ import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { CertificatesPanel } from "@/components/certifier/CertificatesPanel";
 import { OcPanel } from "@/components/certifier/OcPanel";
 import { InspectionsPanel } from "@/components/certifier/InspectionsPanel";
+import { JobTabs } from "@/components/certifier/JobTabs";
 import type { Job } from "@/types/db";
 
 function tabsFor(pathway: "CDC" | "CC") {
@@ -72,57 +73,50 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
         </div>
       </div>
 
-      <div className="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
-        {tabsFor(job.pathway).map((t) => {
-          let progress: string | null = null;
-          if (t.key === "pathway") progress = checklistProgress((pathwayChecklist?.checklist_items as never[]) || []);
-          if (t.key === "noc") progress = checklistProgress((nocChecklist?.checklist_items as never[]) || []);
-          if (t.key === "oc") progress = checklistProgress((ocChecklist?.checklist_items as never[]) || []);
-          return (
-            <Link
-              key={t.key}
-              href={`/jobs/${id}?tab=${t.key}`}
-              className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 ${tab === t.key ? "border-teal-800 text-teal-900" : "border-transparent text-slate-500 hover:text-teal-800"}`}
-            >
-              {t.label}
-              {progress && <span className="ml-1 text-xs font-normal text-slate-400">{progress}</span>}
-            </Link>
-          );
-        })}
-      </div>
-
-      {tab === "details" && <DetailsTab job={typedJob} conditions={conditions || []} clients={clients || []} sharedClients={sharedClients} />}
-
-      {tab === "pathway" && pathwayChecklist && (
-        <CertificatesPanel
-          job={typedJob}
-          firmId={profile.firm_id}
-          pathwayChecklistId={pathwayChecklist.id}
-          pathwayItems={(pathwayChecklist.checklist_items as never[]) || []}
-          certifiers={certifiers || []}
-          modifications={modificationsWithChecklist as never[]}
-          library={libraries[job.pathway]}
-          versions={(pathwayVersions as never[]) || []}
-        />
-      )}
-
-      {tab === "noc" && nocChecklist && (
-        <div className="bg-white rounded-lg border border-slate-200 p-5">
-          <ChecklistSection jobId={id} firmId={profile.firm_id} checklistId={nocChecklist.id} label="Notice of Commencement" library={libraries.NOC} items={(nocChecklist.checklist_items as never[]) || []} />
-        </div>
-      )}
-
-      {tab === "inspections" && (
-        <div className="bg-white rounded-lg border border-slate-200 p-5">
-          <InspectionsPanel jobId={id} firmId={profile.firm_id} pathway={job.pathway} pathwayGenerated={job.pathway_generated} inspections={(inspections as never[]) || []} certifiers={certifiers || []} />
-        </div>
-      )}
-
-      {tab === "oc" && ocChecklist && (
-        <div className="bg-white rounded-lg border border-slate-200 p-5">
-          <OcPanel job={typedJob} firmId={profile.firm_id} checklistId={ocChecklist.id} items={(ocChecklist.checklist_items as never[]) || []} certifiers={certifiers || []} ocRecords={ocRecords || []} library={libraries.OC} />
-        </div>
-      )}
+      <JobTabs
+        initialTab={tab}
+        tabs={tabsFor(job.pathway).map((t) => ({
+          ...t,
+          progress:
+            t.key === "pathway"
+              ? checklistProgress((pathwayChecklist?.checklist_items as never[]) || [])
+              : t.key === "noc"
+              ? checklistProgress((nocChecklist?.checklist_items as never[]) || [])
+              : t.key === "oc"
+              ? checklistProgress((ocChecklist?.checklist_items as never[]) || [])
+              : null,
+        }))}
+        content={{
+          details: <DetailsTab job={typedJob} conditions={conditions || []} clients={clients || []} sharedClients={sharedClients} />,
+          pathway: pathwayChecklist ? (
+            <CertificatesPanel
+              job={typedJob}
+              firmId={profile.firm_id}
+              pathwayChecklistId={pathwayChecklist.id}
+              pathwayItems={(pathwayChecklist.checklist_items as never[]) || []}
+              certifiers={certifiers || []}
+              modifications={modificationsWithChecklist as never[]}
+              library={libraries[job.pathway]}
+              versions={(pathwayVersions as never[]) || []}
+            />
+          ) : null,
+          noc: nocChecklist ? (
+            <div className="bg-white rounded-lg border border-slate-200 p-5">
+              <ChecklistSection jobId={id} firmId={profile.firm_id} checklistId={nocChecklist.id} label="Notice of Commencement" library={libraries.NOC} items={(nocChecklist.checklist_items as never[]) || []} />
+            </div>
+          ) : null,
+          inspections: (
+            <div className="bg-white rounded-lg border border-slate-200 p-5">
+              <InspectionsPanel jobId={id} firmId={profile.firm_id} pathway={job.pathway} pathwayGenerated={job.pathway_generated} inspections={(inspections as never[]) || []} certifiers={certifiers || []} />
+            </div>
+          ),
+          oc: ocChecklist ? (
+            <div className="bg-white rounded-lg border border-slate-200 p-5">
+              <OcPanel job={typedJob} firmId={profile.firm_id} checklistId={ocChecklist.id} items={(ocChecklist.checklist_items as never[]) || []} certifiers={certifiers || []} ocRecords={ocRecords || []} library={libraries.OC} />
+            </div>
+          ) : null,
+        }}
+      />
     </div>
   );
 }
