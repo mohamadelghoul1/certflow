@@ -120,6 +120,8 @@ export type JobDetails = {
   };
 };
 
+export type CriticalStageInspection = { id: string; stage: string; inspector: string; enabled: boolean };
+
 export type Job = {
   id: string;
   firm_id: string;
@@ -131,7 +133,7 @@ export type Job = {
   status: "active" | "complete";
   client_id: string | null;
   details: JobDetails;
-  critical_stage_inspections: number[];
+  critical_stage_inspections: CriticalStageInspection[];
   council_letter_override: string | null;
   applicant_letter_override: string | null;
   pathway_generated: boolean;

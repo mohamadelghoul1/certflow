@@ -46,6 +46,13 @@ export const MANDATORY_CRITICAL_STAGE_INSPECTIONS = [
   { no: 6, stage: "After the building work has been completed & prior to any Occupation Certificate being issued in relation to the building", inspector: "Principal Certifier" },
 ];
 
+// Starting point for a new job's critical_stage_inspections — copied in as
+// plain per-job data (not a live reference to the list above), so each job
+// can freely add extra inspections or edit/remove these ones afterward.
+export function defaultCriticalStageInspections() {
+  return MANDATORY_CRITICAL_STAGE_INSPECTIONS.map((i) => ({ id: String(i.no), stage: i.stage, inspector: i.inspector, enabled: true }));
+}
+
 export const INSPECTION_LIBRARY = [
   { title: "Prior to CC/CDC", desc: "Site inspection prior to issue of CC or CDC." },
   { title: "Piers & Footings", desc: "Inspection of piers and footings prior to pour." },

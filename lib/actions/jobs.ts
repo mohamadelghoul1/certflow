@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { INSPECTION_LIBRARY, MANDATORY_CRITICAL_STAGE_INSPECTIONS, epiForCodeParts } from "@/lib/constants";
+import { INSPECTION_LIBRARY, defaultCriticalStageInspections, epiForCodeParts } from "@/lib/constants";
 import { todayISO } from "@/lib/business";
 import { notifyJobClient } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
-import type { JobDetails } from "@/types/db";
+import type { JobDetails, CriticalStageInspection } from "@/types/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Not exported — a plain helper, not a server action — even though this
@@ -126,7 +126,7 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
       assigned_certifier_id: certifierId,
       client_id: clientId,
       details: extractJobDetails(formData, pathway),
-      critical_stage_inspections: MANDATORY_CRITICAL_STAGE_INSPECTIONS.map((i) => i.no),
+      critical_stage_inspections: defaultCriticalStageInspections(),
     })
     .select("id")
     .single();
@@ -702,14 +702,56 @@ export async function updateApplicantLetter(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+async function getCriticalStageInspections(supabase: SupabaseClient, jobId: string): Promise<CriticalStageInspection[]> {
+  const { data: job } = await supabase.from("jobs").select("critical_stage_inspections").eq("id", jobId).single();
+  return (job?.critical_stage_inspections as CriticalStageInspection[]) || [];
+}
+
 export async function toggleCriticalStageInspection(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
-  const no = Number(formData.get("no"));
-  const { data: job } = await supabase.from("jobs").select("critical_stage_inspections").eq("id", jobId).single();
-  const current: number[] = job?.critical_stage_inspections || [];
-  const next = current.includes(no) ? current.filter((n) => n !== no) : [...current, no].sort((a, b) => a - b);
+  const id = String(formData.get("id"));
+  const current = await getCriticalStageInspections(supabase, jobId);
+  const next = current.map((i) => (i.id === id ? { ...i, enabled: !i.enabled } : i));
+  await supabase.from("jobs").update({ critical_stage_inspections: next }).eq("id", jobId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function updateCriticalStageInspection(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const id = String(formData.get("id"));
+  const stage = String(formData.get("stage") || "").trim();
+  const inspector = String(formData.get("inspector") || "").trim();
+  if (!stage) return;
+  const current = await getCriticalStageInspections(supabase, jobId);
+  const next = current.map((i) => (i.id === id ? { ...i, stage, inspector } : i));
+  await supabase.from("jobs").update({ critical_stage_inspections: next }).eq("id", jobId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function addCriticalStageInspection(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const stage = String(formData.get("stage") || "").trim();
+  const inspector = String(formData.get("inspector") || "").trim();
+  if (!stage) return;
+  const current = await getCriticalStageInspections(supabase, jobId);
+  const next = [...current, { id: crypto.randomUUID(), stage, inspector, enabled: true }];
+  await supabase.from("jobs").update({ critical_stage_inspections: next }).eq("id", jobId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function removeCriticalStageInspection(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const id = String(formData.get("id"));
+  const current = await getCriticalStageInspections(supabase, jobId);
+  const next = current.filter((i) => i.id !== id);
   await supabase.from("jobs").update({ critical_stage_inspections: next }).eq("id", jobId);
   revalidatePath(`/jobs/${jobId}`);
 }

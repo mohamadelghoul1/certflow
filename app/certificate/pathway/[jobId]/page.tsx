@@ -2,7 +2,6 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { formatISODate, pathwayCertRef, calcCdcLapseDate } from "@/lib/business";
-import { MANDATORY_CRITICAL_STAGE_INSPECTIONS } from "@/lib/constants";
 import { signedUrl } from "@/lib/storage";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import type { Firm, Job } from "@/types/db";
@@ -104,7 +103,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
   const d = job.details || {};
   const issuedDate = formatISODate(job.pathway_generated_date);
   const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "Applicant";
-  const selectedInspections = MANDATORY_CRITICAL_STAGE_INSPECTIONS.filter((r) => (job.critical_stage_inspections || []).includes(r.no));
+  const selectedInspections = (job.critical_stage_inspections || []).filter((r) => r.enabled);
 
   const councilBody = (
     job.council_letter_override ||
@@ -403,9 +402,9 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
                 </tr>
               </thead>
               <tbody>
-                {selectedInspections.map((r) => (
-                  <tr key={r.no}>
-                    <td className="border border-slate-300 px-3 py-1.5">{r.no}.</td>
+                {selectedInspections.map((r, idx) => (
+                  <tr key={r.id}>
+                    <td className="border border-slate-300 px-3 py-1.5">{idx + 1}.</td>
                     <td className="border border-slate-300 px-3 py-1.5">{r.stage}</td>
                     <td className="border border-slate-300 px-3 py-1.5">{r.inspector}</td>
                   </tr>

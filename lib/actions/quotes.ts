@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { defaultScopeOfWorks, MANDATORY_CRITICAL_STAGE_INSPECTIONS } from "@/lib/constants";
+import { defaultScopeOfWorks, defaultCriticalStageInspections } from "@/lib/constants";
 import { INSPECTION_LIBRARY } from "@/lib/constants";
 import type { ActionState } from "@/lib/actions/auth";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -186,7 +186,7 @@ export async function generateJobFromQuote(formData: FormData) {
       pathway: quote.pathway,
       assigned_certifier_id: quote.certifier_id,
       client_id: quote.client_id,
-      critical_stage_inspections: MANDATORY_CRITICAL_STAGE_INSPECTIONS.map((i) => i.no),
+      critical_stage_inspections: defaultCriticalStageInspections(),
       details: {
         contact: { nameOrCompany: applicant?.name || "", email: applicant?.email || "", phone: applicant?.phone || "" },
         council: { lga: quote.council_lga || "" },

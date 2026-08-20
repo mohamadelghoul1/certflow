@@ -11,7 +11,6 @@ import {
   addClientAndShare,
   updateCouncilLetter,
   updateApplicantLetter,
-  toggleCriticalStageInspection,
 } from "@/lib/actions/jobs";
 import type { ActionState } from "@/lib/actions/auth";
 import {
@@ -19,13 +18,13 @@ import {
   BUILDING_CLASSIFICATIONS,
   CLIENT_TYPES,
   CONSTRUCTION_TYPES,
-  MANDATORY_CRITICAL_STAGE_INSPECTIONS,
   NSW_STATE,
   SEPP_CODE_PARTS,
   COUNCIL_DIRECTORY,
   epiForCodeParts,
 } from "@/lib/constants";
 import { formatISODate } from "@/lib/business";
+import { CriticalStageInspections } from "@/components/certifier/CriticalStageInspections";
 import type { Job, ConditionOfConsent, ClientContact } from "@/types/db";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
@@ -504,26 +503,11 @@ export function DetailsTab({
 
       <div className="bg-white rounded-lg border border-slate-200 p-5">
         <div className="font-bold text-teal-900 mb-1">Critical stage inspections</div>
-        <p className="text-xs text-slate-400 mb-3">Which of the mandatory critical stage inspections apply to this project — shown on the Mandatory Inspections Notice in the certificate package.</p>
-        <div className="space-y-2">
-          {MANDATORY_CRITICAL_STAGE_INSPECTIONS.map((insp) => (
-            <form action={toggleCriticalStageInspection} key={insp.no}>
-              <input type="hidden" name="job_id" value={job.id} />
-              <input type="hidden" name="no" value={insp.no} />
-              <label className="flex items-start gap-2 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  defaultChecked={job.critical_stage_inspections.includes(insp.no)}
-                  onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                  className="mt-0.5 accent-teal-700"
-                />
-                <span>
-                  {insp.no}. {insp.stage} <span className="text-slate-400">({insp.inspector})</span>
-                </span>
-              </label>
-            </form>
-          ))}
-        </div>
+        <p className="text-xs text-slate-400 mb-3">
+          Which critical stage inspections apply to this project — shown on the Mandatory Inspections Notice in the certificate package. Click one to edit its wording, or add extra
+          inspections specific to this job.
+        </p>
+        <CriticalStageInspections jobId={job.id} items={job.critical_stage_inspections} />
       </div>
 
       <div className="bg-white rounded-lg border border-slate-200 p-5">
