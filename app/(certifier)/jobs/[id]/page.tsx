@@ -121,7 +121,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
             <ChecklistSection jobId={id} firmId={profile.firm_id} checklistId={nocChecklist.id} label="Notice of Commencement" library={libraries.NOC} items={(nocChecklist.checklist_items as never[]) || []} />
           ) : null,
           inspections: (
-            <InspectionsPanel jobId={id} firmId={profile.firm_id} pathway={job.pathway} pathwayGenerated={job.pathway_generated} inspections={(inspections as never[]) || []} certifiers={certifiers || []} />
+            <InspectionsPanel jobId={id} firmId={profile.firm_id} inspections={(inspections as never[]) || []} certifiers={certifiers || []} />
           ),
           oc: ocChecklist ? (
             <OcPanel job={typedJob} firmId={profile.firm_id} checklistId={ocChecklist.id} items={(ocChecklist.checklist_items as never[]) || []} certifiers={certifiers || []} ocRecords={ocRecords || []} library={libraries.OC} />

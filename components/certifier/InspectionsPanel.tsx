@@ -40,22 +40,14 @@ function OutcomeIcon({ outcome, size }: { outcome: string; size: number }) {
 export async function InspectionsPanel({
   jobId,
   firmId,
-  pathway,
-  pathwayGenerated,
   inspections,
   certifiers,
 }: {
   jobId: string;
   firmId: string;
-  pathway: "CDC" | "CC";
-  pathwayGenerated: boolean;
   inspections: InspectionWithDefects[];
   certifiers: Certifier[];
 }) {
-  if (!pathwayGenerated) {
-    return <div className="text-sm text-muted">Inspections open once the {pathway} is issued.</div>;
-  }
-
   return (
     <div className="space-y-4">
       {inspections.map((insp) => (
