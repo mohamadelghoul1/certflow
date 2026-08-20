@@ -172,7 +172,12 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   const jobId = String(formData.get("job_id"));
   const pathway = String(formData.get("pathway") || "CDC");
 
+  // Determination date isn't editable from this form — it's set
+  // automatically when the certificate is issued (see issuePathwayCertificate)
+  // — so carry the existing value forward instead of the form wiping it.
+  const { data: existingJob } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
   const details = extractJobDetails(formData, pathway);
+  details.certificateDetails!.determinationDate = existingJob?.details?.certificateDetails?.determinationDate || "";
 
   await supabase.from("jobs").update({ details }).eq("id", jobId).eq("firm_id", profile.firm_id);
   revalidatePath(`/jobs/${jobId}`);
@@ -429,7 +434,7 @@ export async function issuePathwayCertificate(_prev: ActionState, formData: Form
   const certifierId = String(formData.get("certifier_id") || "");
   if (!certifierId) return { error: "Select a certifier before issuing." };
 
-  const { data: job } = await supabase.from("jobs").select("id").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  const { data: job } = await supabase.from("jobs").select("id, details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
   if (!job) return { error: "Project not found." };
 
   const { data: existing } = await supabase.from("pathway_certificate_versions").select("version").eq("job_id", jobId).order("version", { ascending: false }).limit(1);
@@ -445,6 +450,14 @@ export async function issuePathwayCertificate(_prev: ActionState, formData: Form
   if (error || !newVersion) return { error: error?.message || "Could not issue certificate." };
 
   await mirrorVisiblePathwayVersion(supabase, jobId, newVersion);
+
+  // Date of determination = the date this (or the latest re-issued)
+  // certificate is generated — no separate manual entry needed.
+  const details = (job.details || {}) as JobDetails;
+  await supabase
+    .from("jobs")
+    .update({ details: { ...details, certificateDetails: { ...details.certificateDetails, determinationDate: generatedDate } } })
+    .eq("id", jobId);
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
 }

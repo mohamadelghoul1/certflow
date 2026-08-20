@@ -251,10 +251,12 @@ export function DetailsTab({
               </div>
             </>
           )}
-          <div>
-            <label className={labelCls}>Determination date</label>
-            <input type="date" name="determinationDate" defaultValue={d.certificateDetails?.determinationDate || ""} className={inputCls} />
-          </div>
+          {d.certificateDetails?.determinationDate && (
+            <div className="text-xs text-slate-500">
+              Date of determination: <span className="font-medium text-slate-700">{formatISODate(d.certificateDetails.determinationDate)}</span> — set automatically when the{" "}
+              {job.pathway} is issued.
+            </div>
+          )}
         </Section>
 
         <Section title="Council">
