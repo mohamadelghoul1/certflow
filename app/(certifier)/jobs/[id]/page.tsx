@@ -27,11 +27,20 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
 
-  const { data: job } = await supabase.from("jobs").select("*").eq("id", id).eq("firm_id", profile.firm_id).single();
-  if (!job) notFound();
-  const typedJob = job as Job;
-
-  const [{ data: checklists }, { data: modifications }, { data: ocRecords }, { data: inspections }, { data: conditions }, { data: certifiers }, { data: clients }, { data: libraryItems }, { data: pathwayVersions }] = await Promise.all([
+  const [
+    { data: job },
+    { data: checklists },
+    { data: modifications },
+    { data: ocRecords },
+    { data: inspections },
+    { data: conditions },
+    { data: certifiers },
+    { data: clients },
+    { data: libraryItems },
+    { data: pathwayVersions },
+    { data: sharedAccessRows },
+  ] = await Promise.all([
+    supabase.from("jobs").select("*").eq("id", id).eq("firm_id", profile.firm_id).single(),
     supabase.from("checklists").select("id, kind, modification_id, checklist_items(*, amendments(*))").eq("job_id", id),
     supabase.from("modifications").select("*").eq("job_id", id).order("created_at"),
     supabase.from("oc_records").select("*").eq("job_id", id).order("created_at"),
@@ -41,9 +50,10 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     supabase.from("clients").select("*").eq("firm_id", profile.firm_id).order("name"),
     supabase.from("document_library_items").select("*").eq("firm_id", profile.firm_id).order("sort_order"),
     supabase.from("pathway_certificate_versions").select("*").eq("job_id", id).order("version", { ascending: false }),
+    supabase.from("job_shared_access").select("client_id, clients(id, name, type)").eq("job_id", id),
   ]);
-
-  const { data: sharedAccessRows } = await supabase.from("job_shared_access").select("client_id, clients(id, name, type)").eq("job_id", id);
+  if (!job) notFound();
+  const typedJob = job as Job;
   const sharedClients = (sharedAccessRows || []).map((r) => r.clients).filter(Boolean) as unknown as { id: string; name: string; type: string }[];
 
   const libraries: Record<string, { title: string; description: string | null; category: string | null }[]> = { CDC: [], CC: [], NOC: [], OC: [] };
