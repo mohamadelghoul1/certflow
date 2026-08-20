@@ -1,11 +1,23 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { updateJobDetails, addCondition, removeCondition, assignJobClient, addSharedAccess, removeSharedAccess, updateCouncilLetter, updateApplicantLetter, toggleCriticalStageInspection } from "@/lib/actions/jobs";
+import {
+  updateJobDetails,
+  addCondition,
+  removeCondition,
+  assignJobClient,
+  addSharedAccess,
+  removeSharedAccess,
+  addClientAndShare,
+  updateCouncilLetter,
+  updateApplicantLetter,
+  toggleCriticalStageInspection,
+} from "@/lib/actions/jobs";
 import type { ActionState } from "@/lib/actions/auth";
 import {
   BCA_VERSIONS,
   BUILDING_CLASSIFICATIONS,
+  CLIENT_TYPES,
   CONSTRUCTION_TYPES,
   MANDATORY_CRITICAL_STAGE_INSPECTIONS,
   NSW_STATE,
@@ -68,6 +80,8 @@ export function DetailsTab({
   const [codeParts, setCodeParts] = useState<Set<string>>(new Set(d.certificateDetails?.codeParts || []));
   const [shareClientId, setShareClientId] = useState("");
   const availableToShare = clients.filter((c) => c.id !== job.client_id && !sharedClients.some((s) => s.id === c.id));
+  const [addingNewClient, setAddingNewClient] = useState(false);
+  const [addClientState, addClientAction, addClientPending] = useActionState<ActionState, FormData>(addClientAndShare, undefined);
 
   function selectCouncil(name: string) {
     const match = COUNCIL_DIRECTORY.find((c) => c.name === name);
@@ -104,6 +118,14 @@ export function DetailsTab({
     }
     wasPending.current = pending;
   }, [pending, state]);
+
+  const wasAddClientPending = useRef(false);
+  useEffect(() => {
+    if (wasAddClientPending.current && !addClientPending && !addClientState?.error) {
+      setAddingNewClient(false);
+    }
+    wasAddClientPending.current = addClientPending;
+  }, [addClientPending, addClientState]);
 
   return (
     <div className="space-y-6">
@@ -394,7 +416,7 @@ export function DetailsTab({
             ))}
           </select>
         </form>
-        <p className="text-xs text-slate-400 mt-2">Add clients under Settings, then assign one here to give them portal access to this project.</p>
+        <p className="text-xs text-slate-400 mt-2">Assign an existing client for portal access, or add a new one under Settings.</p>
 
         <div className="mt-4 pt-4 border-t border-slate-100">
           <div className="text-xs font-semibold text-slate-500 mb-2">Additional shared access (e.g. the owner, alongside the primary contact)</div>
@@ -413,11 +435,11 @@ export function DetailsTab({
             ))}
             {sharedClients.length === 0 && <div className="text-xs text-slate-400">No additional people have access yet.</div>}
           </div>
-          {availableToShare.length > 0 ? (
-            <form action={addSharedAccess} onSubmit={() => setShareClientId("")} className="flex items-center gap-2">
+          {availableToShare.length > 0 && (
+            <form action={addSharedAccess} onSubmit={() => setShareClientId("")} className="flex items-center gap-2 mb-2">
               <input type="hidden" name="job_id" value={job.id} />
               <select name="client_id" value={shareClientId} onChange={(e) => setShareClientId(e.target.value)} className={inputCls}>
-                <option value="">— Select a client to add —</option>
+                <option value="">— Select an existing client —</option>
                 {availableToShare.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} ({c.type})
@@ -431,10 +453,51 @@ export function DetailsTab({
                 Add
               </button>
             </form>
+          )}
+
+          {addingNewClient ? (
+            <form action={addClientAction} className="border border-slate-200 rounded-md p-3 space-y-2 mt-2">
+              <input type="hidden" name="job_id" value={job.id} />
+              <div className="grid sm:grid-cols-2 gap-2">
+                <div>
+                  <label className={labelCls}>Name</label>
+                  <input name="name" required autoFocus className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Type</label>
+                  <select name="type" defaultValue="Owner" className={inputCls}>
+                    {CLIENT_TYPES.map((t) => (
+                      <option key={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Company</label>
+                  <input name="company" className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Phone</label>
+                  <input name="phone" className={inputCls} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelCls}>Email (needed to invite them to the portal)</label>
+                  <input type="email" name="email" className={inputCls} />
+                </div>
+              </div>
+              {addClientState?.error && <div className="text-xs text-red-600">{addClientState.error}</div>}
+              <div className="flex gap-2">
+                <button disabled={addClientPending} className="px-3 py-1.5 rounded-md bg-teal-800 text-white text-xs font-semibold hover:bg-teal-900 disabled:opacity-60">
+                  {addClientPending ? "Adding…" : "Add & share access"}
+                </button>
+                <button type="button" onClick={() => setAddingNewClient(false)} className="px-3 py-1.5 rounded-md text-xs text-slate-600 hover:bg-slate-50">
+                  Cancel
+                </button>
+              </div>
+            </form>
           ) : (
-            <div className="text-xs text-slate-400">
-              {clients.length === 0 ? "Add clients under Settings first, then come back here to share access." : "Every client already has access to this project."}
-            </div>
+            <button type="button" onClick={() => setAddingNewClient(true)} className="text-xs font-medium text-teal-800 hover:underline">
+              + Add a new client and share access
+            </button>
           )}
         </div>
       </div>

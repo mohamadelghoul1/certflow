@@ -635,6 +635,35 @@ export async function assignJobClient(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// Lets the certifier create a brand-new client contact and grant them
+// shared access to this job in one step, instead of having to go to
+// Settings -> Clients first and then come back here to share access.
+export async function addClientAndShare(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const name = String(formData.get("name") || "").trim();
+  if (!name) return { error: "Name is required." };
+
+  const { data: newClient, error } = await supabase
+    .from("clients")
+    .insert({
+      firm_id: profile.firm_id,
+      name,
+      type: String(formData.get("type") || "Other"),
+      company: String(formData.get("company") || ""),
+      email: String(formData.get("email") || ""),
+      phone: String(formData.get("phone") || ""),
+    })
+    .select("id")
+    .single();
+  if (error || !newClient) return { error: error?.message || "Could not add client." };
+
+  await supabase.from("job_shared_access").insert({ job_id: jobId, client_id: newClient.id });
+  revalidatePath(`/jobs/${jobId}`);
+  return undefined;
+}
+
 export async function addSharedAccess(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
