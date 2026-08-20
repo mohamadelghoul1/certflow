@@ -66,6 +66,8 @@ export function DetailsTab({
     email: d.council?.contact?.email || "",
   });
   const [codeParts, setCodeParts] = useState<Set<string>>(new Set(d.certificateDetails?.codeParts || []));
+  const [shareClientId, setShareClientId] = useState("");
+  const availableToShare = clients.filter((c) => c.id !== job.client_id && !sharedClients.some((s) => s.id === c.id));
 
   function selectCouncil(name: string) {
     const match = COUNCIL_DIRECTORY.find((c) => c.name === name);
@@ -411,20 +413,29 @@ export function DetailsTab({
             ))}
             {sharedClients.length === 0 && <div className="text-xs text-slate-400">No additional people have access yet.</div>}
           </div>
-          <form action={addSharedAccess} className="flex items-center gap-2">
-            <input type="hidden" name="job_id" value={job.id} />
-            <select name="client_id" defaultValue="" className={inputCls}>
-              <option value="">— Select a client to add —</option>
-              {clients
-                .filter((c) => c.id !== job.client_id && !sharedClients.some((s) => s.id === c.id))
-                .map((c) => (
+          {availableToShare.length > 0 ? (
+            <form action={addSharedAccess} onSubmit={() => setShareClientId("")} className="flex items-center gap-2">
+              <input type="hidden" name="job_id" value={job.id} />
+              <select name="client_id" value={shareClientId} onChange={(e) => setShareClientId(e.target.value)} className={inputCls}>
+                <option value="">— Select a client to add —</option>
+                {availableToShare.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} ({c.type})
                   </option>
                 ))}
-            </select>
-            <button className="px-3 py-2 rounded-md bg-teal-800 text-white text-xs font-semibold hover:bg-teal-900 shrink-0">Add</button>
-          </form>
+              </select>
+              <button
+                disabled={!shareClientId}
+                className="px-3 py-2 rounded-md bg-teal-800 text-white text-xs font-semibold hover:bg-teal-900 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Add
+              </button>
+            </form>
+          ) : (
+            <div className="text-xs text-slate-400">
+              {clients.length === 0 ? "Add clients under Settings first, then come back here to share access." : "Every client already has access to this project."}
+            </div>
+          )}
         </div>
       </div>
 
