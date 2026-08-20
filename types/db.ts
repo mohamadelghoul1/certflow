@@ -11,6 +11,7 @@ export type Firm = {
   phone: string | null;
   email: string | null;
   website: string | null;
+  logo_url: string | null;
 };
 
 export type Certifier = {
@@ -117,6 +118,10 @@ export type JobDetails = {
     codeParts?: string[];
     determinationDate?: string;
     lapseDate?: string;
+    // Free-text, one reference per line — DA numbers, Notice of
+    // Determination, or any other consent reference that doesn't fit a
+    // fixed field. Shown on generated documents as its own line each.
+    consentReferences?: string;
   };
 };
 

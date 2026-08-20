@@ -192,8 +192,11 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-4">
-        <Link href={`/jobs/${jobId}/inspections/${insp.id}/report`} className="text-xs font-semibold text-secondary hover:underline">
-          Generate inspection report
+        <Link
+          href={`/jobs/${jobId}/inspections/${insp.id}/report`}
+          className="text-sm font-semibold text-white bg-secondary hover:opacity-90 px-4 py-2 rounded-full"
+        >
+          Generate Inspection Report
         </Link>
         {reportUrl && (
           <a href={reportUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">

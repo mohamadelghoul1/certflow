@@ -24,6 +24,7 @@ export default async function SettingsPage() {
       }
     })
   );
+  const logoUrl = firm?.logo_url ? (await signedUrl(firm.logo_url)) || undefined : undefined;
 
   return (
     <div className="space-y-8 max-w-3xl">
@@ -32,7 +33,7 @@ export default async function SettingsPage() {
       <section className="bg-white rounded-lg border border-slate-200">
         <div className="px-5 py-3 border-b border-slate-100 font-bold text-teal-900">Firm details</div>
         <div className="p-5">
-          <FirmForm firm={firm} />
+          <FirmForm firm={firm} logoUrl={logoUrl} />
         </div>
       </section>
 

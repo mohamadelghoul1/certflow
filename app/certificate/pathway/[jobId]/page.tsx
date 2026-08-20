@@ -4,31 +4,14 @@ import { notFound } from "next/navigation";
 import { formatISODate, pathwayCertRef, calcCdcLapseDate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
-import type { Firm, Job } from "@/types/db";
+import { DocumentHeader } from "@/components/certifier/DocumentHeader";
+import type { Job } from "@/types/db";
 
 function formatAddress(a?: Record<string, string> | null) {
   if (!a) return "—";
   const parts = [a.streetNumber, a.street].filter(Boolean).join(" ");
   const rest = [a.suburb, a.state, a.postcode].filter(Boolean).join(" ");
   return [parts, rest].filter(Boolean).join(", ") || "—";
-}
-
-function Letterhead({ firm }: { firm: Firm | null }) {
-  return (
-    <div className="flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-6">
-      <div>
-        <div className="text-lg font-black tracking-tight">{firm?.name}</div>
-        <div className="text-[11px] text-slate-500">PTY LTD</div>
-        <div className="text-xs text-slate-500 mt-1">ABN: {firm?.abn}</div>
-      </div>
-      <div className="text-right text-xs text-slate-600 leading-relaxed">
-        <div>Postal: {firm?.postal_address}</div>
-        <div>Office: {firm?.office_address}</div>
-        <div>(p): {firm?.phone}</div>
-        <div>(e): {firm?.email}</div>
-      </div>
-    </div>
-  );
 }
 
 function CertRow({ label, value }: { label: string; value?: string | null }) {
@@ -73,6 +56,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
     job.pathway_issued_by ? supabase.from("certifiers").select("*").eq("id", job.pathway_issued_by).single().then((r) => r.data) : Promise.resolve(null),
   ]);
   const signatureUrl = issuedBy?.signature_url ? await signedUrl(issuedBy.signature_url) : null;
+  const logoUrl = firm?.logo_url ? await signedUrl(firm.logo_url) : null;
 
   const pathwayChecklist = (checklists || []).find((c) => c.kind === "pathway");
   const nocChecklist = (checklists || []).find((c) => c.kind === "noc");
@@ -139,7 +123,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
 
         {/* 1. Council letter */}
         <Section>
-          <Letterhead firm={firm} />
+          <DocumentHeader firm={firm} logoUrl={logoUrl} />
           <div className="text-sm space-y-4">
             <div className="flex justify-between">
               <div>Our reference: {projRef}</div>
@@ -179,7 +163,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
 
         {/* 2. Applicant letter */}
         <Section>
-          <Letterhead firm={firm} />
+          <DocumentHeader firm={firm} logoUrl={logoUrl} />
           <div className="text-sm space-y-4">
             <div className="flex justify-between">
               <div>Our reference: {projRef}</div>
@@ -321,7 +305,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
 
         {/* 4. Mandatory inspections notice */}
         <Section>
-          <Letterhead firm={firm} />
+          <DocumentHeader firm={firm} logoUrl={logoUrl} />
           <div className="text-sm space-y-3">
             <div className="text-base font-bold">NOTICE TO APPLICANT OF MANDATORY CRITICAL STAGE INSPECTIONS</div>
             <div className="text-xs text-slate-500">

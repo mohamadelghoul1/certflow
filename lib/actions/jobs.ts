@@ -102,6 +102,7 @@ function extractJobDetails(formData: FormData, pathway: string): JobDetails {
       relevantPartOfCode,
       codeParts,
       determinationDate: String(formData.get("determinationDate") || ""),
+      consentReferences: String(formData.get("consentReferences") || ""),
     },
   };
 }

@@ -372,6 +372,10 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
           <label className={labelCls}>NSW Planning Portal ref number</label>
           <input name="planningPortalRef" placeholder="e.g. CDC-331766" className={inputCls} />
         </div>
+        <div>
+          <label className={labelCls}>Other consent references (DA / Modification / Notice of Determination — one per line)</label>
+          <textarea name="consentReferences" rows={2} placeholder={"e.g. REV2021/0004\nMOD2024/0395"} className={inputCls} />
+        </div>
         {pathway === "CDC" ? (
           <div>
             <label className={labelCls}>Relevant part of code — tick every part of SEPP 2008 this CDC relies on</label>

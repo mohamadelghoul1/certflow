@@ -86,6 +86,21 @@ export async function removeCertifierSignature(formData: FormData) {
   revalidatePath("/settings");
 }
 
+export async function updateFirmLogo(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const filePath = String(formData.get("file_path"));
+  await supabase.from("firms").update({ logo_url: filePath }).eq("id", profile.firm_id);
+  revalidatePath("/settings");
+}
+
+export async function removeFirmLogo() {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  await supabase.from("firms").update({ logo_url: null }).eq("id", profile.firm_id);
+  revalidatePath("/settings");
+}
+
 export async function addClient(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { formatISODate, pathwayCertRef } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
+import { DocumentHeader } from "@/components/certifier/DocumentHeader";
 import type { Firm, Job, Defect, InspectionPhoto, Certifier } from "@/types/db";
 
 function formatAddress(a?: Record<string, string> | null) {
@@ -13,21 +14,34 @@ function formatAddress(a?: Record<string, string> | null) {
   return [parts, rest].filter(Boolean).join(", ") || "—";
 }
 
+// Skips the row entirely rather than showing an empty "—" line, per the
+// existing report format's convention of not leaving blank fields visible.
 function CertRow({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
   return (
     <tr className="align-top">
       <td className="py-1.5 pr-4 text-sm font-semibold text-slate-800 whitespace-nowrap w-1/3">{label}</td>
-      <td className="py-1.5 text-sm text-slate-700">{value || "—"}</td>
+      <td className="py-1.5 text-sm text-slate-700">{value}</td>
     </tr>
   );
 }
 
-const OUTCOME_RESULT: Record<string, string> = {
-  passed: "PASSED",
-  failed: "FAILED",
-  passed_subject_to: "PASSED SUBJECT TO CONDITIONS",
-  pending: "PENDING",
-};
+// Same as CertRow, but the value can be several references on their own
+// lines (e.g. multiple DA numbers) instead of a single string.
+function CertRowMultiline({ label, lines }: { label: string; lines: string[] }) {
+  if (lines.length === 0) return null;
+  return (
+    <tr className="align-top">
+      <td className="py-1.5 pr-4 text-sm font-semibold text-slate-800 whitespace-nowrap w-1/3">{label}</td>
+      <td className="py-1.5 text-sm text-slate-700">
+        {lines.map((line, i) => (
+          <div key={i}>{line}</div>
+        ))}
+      </td>
+    </tr>
+  );
+}
+
 const OUTCOME_TEXT: Record<string, string> = {
   passed: "Satisfactory — no issues identified",
   passed_subject_to: "Satisfactory (minor issues) subject to documents/conditions being provided",
@@ -48,9 +62,10 @@ export default async function InspectionReportPage({ params }: { params: Promise
   if (!rawJob) notFound();
   const job = rawJob as Job;
 
-  const [{ data: rawInspection }, { data: firm }] = await Promise.all([
+  const [{ data: rawInspection }, { data: firm }, { data: versions }] = await Promise.all([
     supabase.from("inspections").select("*, defects(*), inspection_photos(*)").eq("id", inspectionId).eq("job_id", jobId).single(),
     supabase.from("firms").select("*").eq("id", profile.firm_id).single(),
+    supabase.from("pathway_certificate_versions").select("version").eq("job_id", jobId).order("version"),
   ]);
   if (!rawInspection) notFound();
   const inspection = rawInspection as { id: string; title: string; date: string | null; outcome: string; inspector_certifier_id: string | null; defects: Defect[]; inspection_photos: InspectionPhoto[] };
@@ -60,28 +75,31 @@ export default async function InspectionReportPage({ params }: { params: Promise
     ? ((await supabase.from("certifiers").select("*").eq("id", inspection.inspector_certifier_id).single()).data as Certifier | null)
     : null;
   const signatureUrl = inspector?.signature_url ? await signedUrl(inspector.signature_url) : null;
+  const logoUrl = firmData?.logo_url ? await signedUrl(firmData.logo_url) : null;
   const photoUrls = await Promise.all(inspection.inspection_photos.map((p) => signedUrl(p.file_path)));
 
   const d = job.details || {};
   const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "—";
   const certRef = job.pathway_generated ? pathwayCertRef(job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version) : d.projectNumber || job.id.slice(0, 8).toUpperCase();
 
+  // Every certificate version issued for this job (a job can be re-issued,
+  // e.g. after a modification), joined so multiple certificate numbers show
+  // on the same line the way the original report does.
+  const certNumbers = (versions || []).map((v) => pathwayCertRef(job.pathway, d.projectNumber || job.id.slice(0, 8), v.version)).join(", ");
+  const consentRefLines = (d.certificateDetails?.consentReferences || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  // The results table is built from an array so a future report covering
+  // several inspection areas in one visit just means feeding in more rows —
+  // today that's always this one inspection.
+  const resultsRows = [inspection];
+
   return (
     <CertificatePackage backHref={`/jobs/${jobId}?tab=inspections`} filename={`Inspection-Report-${inspection.title.replace(/\s+/g, "-")}.doc`}>
       <div className="max-w-2xl mx-auto p-8 bg-white text-slate-900 print:max-w-none">
-        <div className="flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-6">
-          <div>
-            <div className="text-lg font-black tracking-tight">{firmData?.name}</div>
-            <div className="text-[11px] text-slate-500">PTY LTD</div>
-            <div className="text-xs text-slate-500 mt-1">ABN: {firmData?.abn}</div>
-          </div>
-          <div className="text-right text-xs text-slate-600 leading-relaxed">
-            <div>Postal: {firmData?.postal_address}</div>
-            <div>Office: {firmData?.office_address}</div>
-            <div>(p): {firmData?.phone}</div>
-            <div>(e): {firmData?.email}</div>
-          </div>
-        </div>
+        <DocumentHeader firm={firmData} logoUrl={logoUrl} />
 
         <h1 className="text-lg font-bold">
           INSPECTION REPORT – {certRef} – {inspection.title}
@@ -94,6 +112,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
             <CertRow label="Applicant:" value={applicantName} />
             <CertRow label="Address:" value={formatAddress(d.applicantAddress)} />
             <CertRow label="Phone:" value={d.contact?.phone || d.contact?.mobile} />
+            <CertRow label="Email:" value={d.contact?.email} />
           </tbody>
         </table>
 
@@ -101,8 +120,11 @@ export default async function InspectionReportPage({ params }: { params: Promise
         <table className="w-full mb-4">
           <tbody>
             <CertRow label="Local Government Area:" value={d.council?.lga} />
-            <CertRow label="Development Application (if applicable):" value={d.certificateDetails?.planningPortalRef} />
-            <CertRow label={`${job.pathway === "CDC" ? "Complying Development Certificate" : "Construction Certificate"} Number`} value={certRef} />
+            <CertRowMultiline label="Development Applications (if applicable):" lines={consentRefLines} />
+            <CertRow
+              label={`${job.pathway === "CDC" ? "Complying Development Certificate" : "Construction Certificate"} Number`}
+              value={certNumbers}
+            />
           </tbody>
         </table>
 
@@ -127,10 +149,10 @@ export default async function InspectionReportPage({ params }: { params: Promise
 
         <div className="text-sm font-bold mb-1">INSPECTION RESULTS</div>
         <div className="text-xs text-slate-500 mb-2">
-          We have attended the above property and completed an inspection. The area inspected and the overall outcome of the inspection are listed below,
+          We have attended the above property and completed an inspection. The areas inspected and the overall outcome of the inspection are listed below,
           together with any specific defects noted or documents required.
         </div>
-        <table className="w-full mb-4 border border-slate-300 text-sm">
+        <table className="w-full mb-4 border border-slate-300 text-sm break-inside-avoid">
           <thead>
             <tr className="bg-slate-100">
               <th className="text-left font-semibold px-3 py-1.5 border border-slate-300">Inspection Area</th>
@@ -139,17 +161,21 @@ export default async function InspectionReportPage({ params }: { params: Promise
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="px-3 py-1.5 border border-slate-300">1. {inspection.title}</td>
-              <td className="px-3 py-1.5 border border-slate-300">{OUTCOME_TEXT[inspection.outcome] || "Pending"}</td>
-              <td className="px-3 py-1.5 border border-slate-300">{REINSPECTION_TEXT[inspection.outcome] || "No re-inspections required for this inspection."}</td>
-            </tr>
+            {resultsRows.map((r, i) => (
+              <tr key={r.id}>
+                <td className="px-3 py-1.5 border border-slate-300">
+                  {i + 1}. {r.title}
+                </td>
+                <td className="px-3 py-1.5 border border-slate-300">{OUTCOME_TEXT[r.outcome] || "Pending"}</td>
+                <td className="px-3 py-1.5 border border-slate-300">{REINSPECTION_TEXT[r.outcome] || "No re-inspections required for this inspection."}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
         <div className="text-sm font-bold mb-1">REQUIRED DOCUMENTS</div>
         {inspection.defects.length === 0 ? (
-          <div className="text-sm text-slate-400 italic mb-4">None.</div>
+          <div className="text-sm text-slate-400 italic mb-4">No further documents are required.</div>
         ) : (
           <ol className="list-decimal pl-5 text-sm text-slate-700 space-y-0.5 mb-4">
             {inspection.defects.map((d2) => (
@@ -160,15 +186,17 @@ export default async function InspectionReportPage({ params }: { params: Promise
           </ol>
         )}
 
-        <div className="text-sm font-bold border-b border-slate-300 pb-1 mb-2 mt-6">SIGNED BY:</div>
-        {signatureUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={signatureUrl} alt={`${inspector?.name} signature`} className="h-14 mb-1" data-stamp />
-        ) : (
-          <div className="pt-10 border-b border-slate-400 w-56" data-stamp />
-        )}
-        <div className="text-sm">{inspector?.name || "—"} – Inspector</div>
-        <div className="text-sm text-slate-500">{formatISODate(inspection.date)}</div>
+        <div className="text-sm font-bold border-b border-slate-300 pb-1 mb-2 mt-6 break-inside-avoid">SIGNED BY:</div>
+        <div className="break-inside-avoid">
+          {signatureUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={signatureUrl} alt={`${inspector?.name} signature`} className="h-14 mb-1" data-stamp />
+          ) : (
+            <div className="pt-10 border-b border-slate-400 w-56" data-stamp />
+          )}
+          <div className="text-sm">{inspector?.name || "—"} – Inspector</div>
+          <div className="text-sm text-slate-500">{formatISODate(inspection.date)}</div>
+        </div>
 
         <div className="flex justify-between text-[11px] text-slate-400 border-t border-slate-200 mt-8 pt-2">
           <span>Project No.: {certRef}</span>
@@ -177,26 +205,14 @@ export default async function InspectionReportPage({ params }: { params: Promise
 
         {inspection.inspection_photos.length > 0 && (
           <div className="pt-8 print:break-before-page">
-            <div className="flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-6">
-              <div>
-                <div className="text-lg font-black tracking-tight">{firmData?.name}</div>
-                <div className="text-[11px] text-slate-500">PTY LTD</div>
-                <div className="text-xs text-slate-500 mt-1">ABN: {firmData?.abn}</div>
-              </div>
-              <div className="text-right text-xs text-slate-600 leading-relaxed">
-                <div>Postal: {firmData?.postal_address}</div>
-                <div>Office: {firmData?.office_address}</div>
-                <div>(p): {firmData?.phone}</div>
-                <div>(e): {firmData?.email}</div>
-              </div>
-            </div>
+            <DocumentHeader firm={firmData} logoUrl={logoUrl} />
             <h2 className="text-lg font-bold mb-1">PHOTOGRAPHIC EVIDENCE</h2>
             <div className="text-sm text-slate-500 mb-4">
               {inspection.title} – {certRef}
             </div>
             <div className="grid grid-cols-2 gap-4">
               {inspection.inspection_photos.map((p, i) => (
-                <div key={p.id}>
+                <div key={p.id} className="break-inside-avoid">
                   {photoUrls[i] && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={photoUrls[i]!} alt={p.caption || "Inspection photo"} className="w-full aspect-[4/3] object-cover rounded-md border border-slate-300" />

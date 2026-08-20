@@ -8,6 +8,8 @@ import {
   removeCertifier,
   updateCertifierSignature,
   removeCertifierSignature,
+  updateFirmLogo,
+  removeFirmLogo,
   addClient,
   updateClient,
   removeClient,
@@ -21,10 +23,29 @@ import { ActionUpload } from "@/components/certifier/ActionUpload";
 const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
 const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
 
-export function FirmForm({ firm }: { firm: Firm | null }) {
+export function FirmForm({ firm, logoUrl }: { firm: Firm | null; logoUrl?: string }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateFirm, undefined);
   return (
-    <form action={formAction} className="space-y-4">
+    <div className="space-y-4">
+      <div>
+        <label className={labelCls}>Firm logo</label>
+        <div className="flex items-center gap-3">
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt="Firm logo" className="h-14 border border-slate-100 rounded bg-white px-2 py-1" />
+          ) : (
+            <span className="text-xs text-slate-400">No logo uploaded — shown on generated certificates and reports once added.</span>
+          )}
+          <ActionUpload action={updateFirmLogo} fields={{}} pathPrefix={`${firm?.id || "firm"}/logo`} label={logoUrl ? "Replace logo" : "Upload logo"} />
+          {logoUrl && (
+            <form action={removeFirmLogo}>
+              <button className="text-xs text-red-500 hover:underline">Remove</button>
+            </form>
+          )}
+        </div>
+      </div>
+
+      <form action={formAction} className="space-y-4">
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Firm name</label>
@@ -59,7 +80,8 @@ export function FirmForm({ firm }: { firm: Firm | null }) {
       <button disabled={pending} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900 disabled:opacity-60">
         {pending ? "Saving…" : "Save firm details"}
       </button>
-    </form>
+      </form>
+    </div>
   );
 }
 
