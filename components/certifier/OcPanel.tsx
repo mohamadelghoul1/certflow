@@ -32,11 +32,11 @@ export async function OcPanel({
   return (
     <div className="space-y-6">
       <div>
-        <div className="text-sm font-semibold text-teal-900 mb-2">OC checklist</div>
+        <div className="text-sm font-semibold text-heading mb-2">OC checklist</div>
         <ChecklistSection jobId={job.id} firmId={firmId} checklistId={checklistId} label="Occupation Certificate" library={library} items={items} />
       </div>
 
-      {!job.pathway_generated && <div className="text-xs text-slate-400">Occupation Certificates can&apos;t be issued until the {job.pathway} is issued.</div>}
+      {!job.pathway_generated && <div className="text-xs text-muted">Occupation Certificates can&apos;t be issued until the {job.pathway} is issued.</div>}
 
       {job.pathway_generated && complete && <IssueOcForm jobId={job.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} />}
 
@@ -49,13 +49,13 @@ export async function OcPanel({
       {hasWhole && job.status !== "complete" && (
         <form action={markJobComplete}>
           <input type="hidden" name="job_id" value={job.id} />
-          <button className="text-xs font-semibold text-white bg-teal-800 hover:bg-teal-900 px-3 py-1.5 rounded-md">Mark project complete</button>
+          <button className="text-sm font-medium text-white bg-secondary hover:opacity-90 px-4 py-1.5 rounded-full">Mark project complete</button>
         </form>
       )}
       {job.status === "complete" && (
         <form action={reopenJob}>
           <input type="hidden" name="job_id" value={job.id} />
-          <button className="text-xs text-slate-500 hover:underline">Reopen project</button>
+          <button className="text-xs text-muted hover:underline">Reopen project</button>
         </form>
       )}
     </div>
@@ -66,16 +66,16 @@ async function OcRecordCard({ record, job, firmId, certifiers }: { record: OcRec
   const issuedBy = certifiers.find((c) => c.id === record.issued_by);
   const approvalUrl = await signedUrl(record.approval_file_path);
   return (
-    <div className="border border-slate-200 rounded-md p-4">
-      <div className="text-sm font-semibold text-teal-900">
+    <div className="card-lift border border-line rounded-xl p-6 shadow-sm bg-white">
+      <div className="text-base font-semibold text-heading">
         {record.type === "whole" ? "Whole OC" : "Partial OC"} {record.description ? `— ${record.description}` : ""}
       </div>
-      <div className="text-xs text-slate-500 mt-0.5">
+      <div className="text-xs text-muted mt-0.5">
         Issued {formatISODate(record.generated_date)} by {issuedBy?.name || "—"}
       </div>
       <div className="mt-3 flex items-center gap-4">
         {approvalUrl && (
-          <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-800 hover:underline">
+          <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
             View signed approval
           </a>
         )}
@@ -90,7 +90,7 @@ async function OcRecordCard({ record, job, firmId, certifiers }: { record: OcRec
             <input type="hidden" name="job_id" value={job.id} />
             <input type="hidden" name="subject" value="Occupation Certificate issued" />
             <input type="hidden" name="message" value={`Your ${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate has been issued and is now available to view in your portal.`} />
-            <button className="text-xs font-semibold text-teal-800 hover:underline">Notify client</button>
+            <button className="text-xs font-semibold text-secondary hover:underline">Notify client</button>
           </form>
         )}
         <form action={reportOcToPortal}>

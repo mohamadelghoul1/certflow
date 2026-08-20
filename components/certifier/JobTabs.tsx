@@ -19,19 +19,21 @@ export function JobTabs({ tabs, initialTab, content }: { tabs: TabMeta[]; initia
 
   return (
     <div>
-      <div className="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => select(t.key)}
-            className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 ${
-              active === t.key ? "border-teal-800 text-teal-900" : "border-transparent text-slate-500 hover:text-teal-800"
-            }`}
-          >
-            {t.label}
-            {t.progress && <span className="ml-1 text-xs font-normal text-slate-400">{t.progress}</span>}
-          </button>
-        ))}
+      <div className="mb-8 overflow-x-auto">
+        <div className="inline-flex gap-1 bg-slate-100 rounded-full p-1">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => select(t.key)}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                active === t.key ? "bg-white text-heading shadow-sm" : "text-muted hover:text-heading"
+              }`}
+            >
+              {t.label}
+              {t.progress && <span className="ml-1.5 text-xs font-normal opacity-70">{t.progress}</span>}
+            </button>
+          ))}
+        </div>
       </div>
       {tabs.map((t) => (
         <div key={t.key} hidden={active !== t.key}>

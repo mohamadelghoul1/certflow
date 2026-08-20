@@ -36,21 +36,21 @@ export async function CertificatesPanel({
   return (
     <div className="space-y-6">
       <div>
-        <div className="text-sm font-semibold text-teal-900 mb-2">{job.pathway} checklist</div>
+        <div className="text-sm font-semibold text-heading mb-2">{job.pathway} checklist</div>
         <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} label={job.pathway} library={library} items={pathwayItems} />
       </div>
 
-      <div className="border border-slate-200 rounded-md p-4">
+      <div className="border border-line rounded-xl p-6 shadow-sm bg-white">
         <div className="flex items-center justify-between mb-1">
-          <div className="text-sm font-semibold text-teal-900">{job.pathway}</div>
-          {!complete && !job.pathway_generated && <span className="text-xs text-slate-400">Checklist not yet complete</span>}
+          <div className="text-base font-semibold text-heading">{job.pathway}</div>
+          {!complete && !job.pathway_generated && <span className="text-xs text-muted">Checklist not yet complete</span>}
           {job.pathway_generated && (
-            <Link href={`/certificate/pathway/${job.id}`} target="_blank" className="text-xs font-semibold text-teal-800 hover:underline shrink-0">
+            <Link href={`/certificate/pathway/${job.id}`} target="_blank" className="text-xs font-semibold text-secondary hover:underline shrink-0">
               View certificate document →
             </Link>
           )}
         </div>
-        <p className="text-xs text-slate-400 mb-1">
+        <p className="text-xs text-muted mb-1">
           Regenerating keeps every earlier version below — nothing is overwritten. Pick which one clients see, or delete a version issued by mistake.
         </p>
 
@@ -69,7 +69,7 @@ export async function CertificatesPanel({
                 <input type="hidden" name="job_id" value={job.id} />
                 <input type="hidden" name="subject" value="Certificate issued" />
                 <input type="hidden" name="message" value="Your certificate has been issued and is now available to view in your portal." />
-                <button className="text-xs font-semibold text-teal-800 hover:underline">Notify client</button>
+                <button className="text-xs font-semibold text-secondary hover:underline">Notify client</button>
               </form>
             )}
           </div>
@@ -86,7 +86,7 @@ export async function CertificatesPanel({
 
       {job.pathway_generated && (
         <div>
-          <div className="text-sm font-semibold text-teal-900 mb-2">Modifications</div>
+          <div className="text-sm font-semibold text-heading mb-2">Modifications</div>
           <div className="space-y-4">
             {modifications.map((m) => (
               <ModificationCard key={m.id} mod={m} job={job} firmId={firmId} certifiers={certifiers} library={library} />
@@ -94,8 +94,8 @@ export async function CertificatesPanel({
             <form action={startModification} className="flex items-center gap-2">
               <input type="hidden" name="job_id" value={job.id} />
               <input type="hidden" name="pathway" value={job.pathway} />
-              <input name="reason" placeholder="Reason for modification…" className="flex-1 px-2 py-1.5 rounded border border-slate-200 text-xs" />
-              <button className="text-xs font-semibold text-teal-800 hover:underline">Start a modified {job.pathway}</button>
+              <input name="reason" placeholder="Reason for modification…" className="flex-1 px-2 py-1.5 rounded border border-line text-xs" />
+              <button className="text-xs font-semibold text-secondary hover:underline">Start a modified {job.pathway}</button>
             </form>
           </div>
         </div>
@@ -110,13 +110,13 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
   const ref = pathwayCertRef(job.pathway, job.details?.projectNumber || job.id.slice(0, 8), version.version);
 
   return (
-    <div className={`border rounded-md p-3 ${version.visible_to_client ? "border-emerald-300 bg-emerald-50/40" : "border-slate-200"}`}>
+    <div className={`border rounded-xl p-4 ${version.visible_to_client ? "border-emerald-300 bg-emerald-50/40" : "border-line bg-white"}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold text-teal-900">
+          <div className="text-sm font-semibold text-heading">
             v{version.version} — {ref}
           </div>
-          <div className="text-xs text-slate-500 mt-0.5">
+          <div className="text-xs text-muted mt-0.5">
             Issued {formatISODate(version.generated_date)} by {issuedBy?.name || "—"}
           </div>
         </div>
@@ -126,13 +126,13 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
           <form action={setVisiblePathwayVersion}>
             <input type="hidden" name="job_id" value={job.id} />
             <input type="hidden" name="version_id" value={version.id} />
-            <button className="text-[11px] font-semibold text-teal-800 hover:underline shrink-0">Show this to client instead</button>
+            <button className="text-[11px] font-semibold text-secondary hover:underline shrink-0">Show this to client instead</button>
           </form>
         )}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         {approvalUrl && (
-          <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-800 hover:underline">
+          <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
             View signed approval
           </a>
         )}
@@ -154,9 +154,9 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
   const approvalUrl = await signedUrl(mod.approval_file_path);
 
   return (
-    <div className="border border-slate-200 rounded-md p-4">
-      <div className="text-sm font-semibold text-teal-900">Modification {mod.reason ? `— ${mod.reason}` : ""}</div>
-      <div className="text-xs text-slate-500 mt-0.5">{mod.generated ? `Issued ${formatISODate(mod.generated_date)} by ${issuedBy?.name || "—"} (v${mod.version})` : "Checklist in progress"}</div>
+    <div className="border border-line rounded-xl p-6 shadow-sm bg-white">
+      <div className="text-base font-semibold text-heading">Modification {mod.reason ? `— ${mod.reason}` : ""}</div>
+      <div className="text-xs text-muted mt-0.5">{mod.generated ? `Issued ${formatISODate(mod.generated_date)} by ${issuedBy?.name || "—"} (v${mod.version})` : "Checklist in progress"}</div>
 
       {mod.checklistId && (
         <div className="mt-3">
@@ -169,7 +169,7 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
       {mod.generated && (
         <div className="mt-3 flex items-center gap-4">
           {approvalUrl && (
-            <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-800 hover:underline">
+            <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
               View signed approval
             </a>
           )}
@@ -184,7 +184,7 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
               <input type="hidden" name="job_id" value={job.id} />
               <input type="hidden" name="subject" value="Modified certificate issued" />
               <input type="hidden" name="message" value="A modified certificate has been issued and is now available to view in your portal." />
-              <button className="text-xs font-semibold text-teal-800 hover:underline">Notify client</button>
+              <button className="text-xs font-semibold text-secondary hover:underline">Notify client</button>
             </form>
           )}
         </div>

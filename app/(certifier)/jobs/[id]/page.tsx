@@ -73,14 +73,21 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
 
   return (
     <div>
-      <div className="mb-6">
-        <Link href="/jobs" className="text-xs text-slate-400 hover:text-teal-800">
+      <div className="mb-8">
+        <Link href="/jobs" className="text-xs text-muted hover:text-secondary">
           ← All projects
         </Link>
-        <h1 className="text-xl font-bold text-teal-900 mt-1">{job.address}</h1>
-        <div className="text-sm text-slate-500">
-          {job.pathway} · {job.description} · <span className={job.status === "complete" ? "text-emerald-700 font-medium" : ""}>{job.status === "complete" ? "Complete" : "Active"}</span>
+        <div className="flex items-center gap-3 flex-wrap mt-1.5">
+          <h1 className="text-[28px] font-bold text-heading tracking-tight">{job.address}</h1>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              job.status === "complete" ? "bg-emerald-50 text-accent" : "bg-blue-50 text-secondary"
+            }`}
+          >
+            {job.pathway} · {job.status === "complete" ? "Complete" : "Active"}
+          </span>
         </div>
+        <div className="text-sm text-muted mt-1">{job.description}</div>
       </div>
 
       <JobTabs
@@ -111,19 +118,13 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
             />
           ) : null,
           noc: nocChecklist ? (
-            <div className="bg-white rounded-lg border border-slate-200 p-5">
-              <ChecklistSection jobId={id} firmId={profile.firm_id} checklistId={nocChecklist.id} label="Notice of Commencement" library={libraries.NOC} items={(nocChecklist.checklist_items as never[]) || []} />
-            </div>
+            <ChecklistSection jobId={id} firmId={profile.firm_id} checklistId={nocChecklist.id} label="Notice of Commencement" library={libraries.NOC} items={(nocChecklist.checklist_items as never[]) || []} />
           ) : null,
           inspections: (
-            <div className="bg-white rounded-lg border border-slate-200 p-5">
-              <InspectionsPanel jobId={id} firmId={profile.firm_id} pathway={job.pathway} pathwayGenerated={job.pathway_generated} inspections={(inspections as never[]) || []} certifiers={certifiers || []} />
-            </div>
+            <InspectionsPanel jobId={id} firmId={profile.firm_id} pathway={job.pathway} pathwayGenerated={job.pathway_generated} inspections={(inspections as never[]) || []} certifiers={certifiers || []} />
           ),
           oc: ocChecklist ? (
-            <div className="bg-white rounded-lg border border-slate-200 p-5">
-              <OcPanel job={typedJob} firmId={profile.firm_id} checklistId={ocChecklist.id} items={(ocChecklist.checklist_items as never[]) || []} certifiers={certifiers || []} ocRecords={ocRecords || []} library={libraries.OC} />
-            </div>
+            <OcPanel job={typedJob} firmId={profile.firm_id} checklistId={ocChecklist.id} items={(ocChecklist.checklist_items as never[]) || []} certifiers={certifiers || []} ocRecords={ocRecords || []} library={libraries.OC} />
           ) : null,
         }}
       />

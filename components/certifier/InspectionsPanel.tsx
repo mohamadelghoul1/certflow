@@ -18,16 +18,24 @@ import {
 import { notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { AutoSubmitSelect } from "@/components/certifier/AutoSubmitSelect";
+import { CheckCircle2, XCircle, AlertTriangle, Clock } from "lucide-react";
 import type { Inspection, Defect, InspectionPhoto, Certifier } from "@/types/db";
 
 type InspectionWithDefects = Inspection & { defects: Defect[]; inspection_photos: InspectionPhoto[] };
 
 const OUTCOME_META: Record<string, { label: string; style: string }> = {
   pending: { label: "Pending", style: "bg-slate-100 text-slate-600" },
-  passed: { label: "Passed", style: "bg-emerald-50 text-emerald-700" },
+  passed: { label: "Passed", style: "bg-emerald-50 text-accent" },
   failed: { label: "Failed", style: "bg-red-50 text-red-700" },
   passed_subject_to: { label: "Passed subject to", style: "bg-amber-50 text-amber-700" },
 };
+
+function OutcomeIcon({ outcome, size }: { outcome: string; size: number }) {
+  if (outcome === "passed") return <CheckCircle2 size={size} />;
+  if (outcome === "failed") return <XCircle size={size} />;
+  if (outcome === "passed_subject_to") return <AlertTriangle size={size} />;
+  return <Clock size={size} />;
+}
 
 export async function InspectionsPanel({
   jobId,
@@ -45,11 +53,11 @@ export async function InspectionsPanel({
   certifiers: Certifier[];
 }) {
   if (!pathwayGenerated) {
-    return <div className="text-sm text-slate-400">Inspections open once the {pathway} is issued.</div>;
+    return <div className="text-sm text-muted">Inspections open once the {pathway} is issued.</div>;
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {inspections.map((insp) => (
         <InspectionRow key={insp.id} insp={insp} jobId={jobId} firmId={firmId} certifiers={certifiers} />
       ))}
@@ -71,16 +79,18 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
   const photoUrls = await Promise.all(photos.map((p) => signedUrl(p.file_path)));
 
   return (
-    <div className="border border-slate-200 rounded-md p-4">
+    <div className="card-lift border border-line rounded-xl p-6 shadow-sm bg-white">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold text-teal-900">{insp.title}</div>
-          <div className="text-xs text-slate-500">{insp.description}</div>
+          <div className="text-base font-semibold text-heading">{insp.title}</div>
+          <div className="text-sm text-muted mt-0.5">{insp.description}</div>
           {insp.booked_by_client && !insp.confirmed && (
             <div className="text-xs text-amber-700 font-medium mt-1">Booked by client for {formatISODate(insp.date)} — needs confirmation</div>
           )}
         </div>
-        <span className={`px-2 py-0.5 rounded text-[11px] font-semibold shrink-0 ${meta.style}`}>{meta.label}</span>
+        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${meta.style}`}>
+          <OutcomeIcon outcome={insp.outcome} size={12} /> {meta.label}
+        </span>
       </div>
 
       <div className="mt-3 grid sm:grid-cols-3 gap-2 items-end">
@@ -88,21 +98,21 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
           <input type="hidden" name="inspection_id" value={insp.id} />
           <input type="hidden" name="job_id" value={jobId} />
           <div className="flex-1">
-            <label className="block text-[11px] text-slate-400 mb-1">Date</label>
-            <input type="date" name="date" defaultValue={insp.date || ""} className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs" />
+            <label className="block text-[11px] text-muted mb-1">Date</label>
+            <input type="date" name="date" defaultValue={insp.date || ""} className="w-full px-2 py-1.5 rounded border border-line text-xs" />
             {dateOnWeekend && <div className="text-[11px] text-amber-700 mt-1">⚠ falls on a weekend</div>}
           </div>
-          <button className="text-xs text-teal-800 hover:underline pb-1.5">Save</button>
+          <button className="text-xs text-secondary hover:underline pb-1.5">Save</button>
         </form>
 
         <div>
-          <label className="block text-[11px] text-slate-400 mb-1">Inspector</label>
+          <label className="block text-[11px] text-muted mb-1">Inspector</label>
           <AutoSubmitSelect
             action={assignInspector}
             hidden={{ inspection_id: insp.id, job_id: jobId }}
             name="certifier_id"
             defaultValue={insp.inspector_certifier_id || ""}
-            className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+            className="w-full px-2 py-1.5 rounded border border-line text-xs"
           >
             <option value="">— Select —</option>
             {certifiers.map((c) => (
@@ -114,13 +124,13 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
         </div>
 
         <div>
-          <label className="block text-[11px] text-slate-400 mb-1">Outcome</label>
+          <label className="block text-[11px] text-muted mb-1">Outcome</label>
           <AutoSubmitSelect
             action={recordOutcome}
             hidden={{ inspection_id: insp.id, job_id: jobId }}
             name="outcome"
             defaultValue={insp.outcome}
-            className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+            className="w-full px-2 py-1.5 rounded border border-line text-xs"
           >
             <option value="pending">Pending</option>
             <option value="passed">Passed</option>
@@ -141,7 +151,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
       {needsDefect && (
         <div className="mt-3 space-y-2">
           {insp.defects.map((d) => (
-            <div key={d.id} className={`text-xs rounded-md px-3 py-2 flex items-start justify-between gap-3 ${d.resolved ? "bg-slate-50 text-slate-400 line-through" : "bg-amber-50 text-amber-800"}`}>
+            <div key={d.id} className={`text-xs rounded-md px-3 py-2 flex items-start justify-between gap-3 ${d.resolved ? "bg-slate-50 text-muted line-through" : "bg-amber-50 text-amber-800"}`}>
               <span>{d.text}</span>
               {!d.resolved && (
                 <form action={resolveDefect} className="shrink-0">
@@ -155,27 +165,27 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
           <form action={addDefect} className="flex gap-2">
             <input type="hidden" name="inspection_id" value={insp.id} />
             <input type="hidden" name="job_id" value={jobId} />
-            <input name="text" placeholder="Add a defect / condition…" className="flex-1 px-2 py-1.5 rounded border border-slate-200 text-xs" />
+            <input name="text" placeholder="Add a defect / condition…" className="flex-1 px-2 py-1.5 rounded border border-line text-xs" />
             <button className="text-xs font-semibold text-amber-700 hover:underline">Add</button>
           </form>
         </div>
       )}
 
       <div className="mt-3">
-        <div className="text-[11px] font-semibold text-slate-500 mb-1.5">Photos</div>
+        <div className="text-[11px] font-semibold text-muted mb-1.5">Photos</div>
         {photos.length > 0 && (
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
             {photos.map((p, idx) => (
               <div key={p.id} className="space-y-1">
                 {photoUrls[idx] && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photoUrls[idx]!} alt={p.caption || "Inspection photo"} className="w-full aspect-[4/3] object-cover rounded-md border border-slate-200" />
+                  <img src={photoUrls[idx]!} alt={p.caption || "Inspection photo"} className="w-full aspect-[4/3] object-cover rounded-md border border-line" />
                 )}
                 <form action={setPhotoCaption} className="flex gap-1">
                   <input type="hidden" name="photo_id" value={p.id} />
                   <input type="hidden" name="job_id" value={jobId} />
-                  <input name="caption" defaultValue={p.caption || ""} placeholder="Caption" className="flex-1 min-w-0 px-1.5 py-1 rounded border border-slate-200 text-[11px]" />
-                  <button className="text-[11px] text-teal-800 hover:underline shrink-0">Save</button>
+                  <input name="caption" defaultValue={p.caption || ""} placeholder="Caption" className="flex-1 min-w-0 px-1.5 py-1 rounded border border-line text-[11px]" />
+                  <button className="text-[11px] text-secondary hover:underline shrink-0">Save</button>
                 </form>
                 <form action={removePhoto}>
                   <input type="hidden" name="photo_id" value={p.id} />
@@ -190,11 +200,11 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-4">
-        <Link href={`/jobs/${jobId}/inspections/${insp.id}/report`} className="text-xs font-semibold text-teal-800 hover:underline">
+        <Link href={`/jobs/${jobId}/inspections/${insp.id}/report`} className="text-xs font-semibold text-secondary hover:underline">
           Generate inspection report
         </Link>
         {reportUrl && (
-          <a href={reportUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-800 hover:underline">
+          <a href={reportUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
             View uploaded report
           </a>
         )}
@@ -211,7 +221,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
               <input type="hidden" name="job_id" value={jobId} />
               <input type="hidden" name="subject" value="Inspection report available" />
               <input type="hidden" name="message" value={`The report for your ${insp.title} inspection is now available in your portal.`} />
-              <button className="text-xs font-semibold text-teal-800 hover:underline">Notify client</button>
+              <button className="text-xs font-semibold text-secondary hover:underline">Notify client</button>
             </form>
           </>
         )}
