@@ -1,8 +1,8 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
-import { createTaskList, renameTaskList, deleteTaskList, addTask, toggleTaskComplete, updateTaskText, deleteTask } from "@/lib/actions/tasks";
-import { Plus, X, Trash2, GripVertical } from "lucide-react";
+import { createTaskList, deleteTaskList, moveTaskList, addTask, toggleTaskComplete, updateTaskText, deleteTask } from "@/lib/actions/tasks";
+import { Plus, X, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import type { TaskList, ManualTask } from "@/types/db";
 
 type ListWithTasks = TaskList & { tasks: ManualTask[] };
@@ -26,6 +26,15 @@ function tasksReducer(state: ManualTask[], action: TaskAction): ManualTask[] {
   }
 }
 
+function moveReducer(state: ListWithTasks[], action: { id: string; direction: "left" | "right" }): ListWithTasks[] {
+  const idx = state.findIndex((l) => l.id === action.id);
+  const swapIdx = action.direction === "left" ? idx - 1 : idx + 1;
+  if (idx === -1 || swapIdx < 0 || swapIdx >= state.length) return state;
+  const next = [...state];
+  [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
+  return next;
+}
+
 function formatCompletedAt(iso: string) {
   return new Date(iso).toLocaleString("en-AU", { day: "2-digit", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
 }
@@ -42,11 +51,30 @@ function formatDuration(startIso: string, endIso: string) {
 }
 
 export function TaskBoard({ lists }: { lists: ListWithTasks[] }) {
+  const [order, dispatchOrder] = useOptimistic(lists, moveReducer);
+  const [, startTransition] = useTransition();
+
+  function handleMove(id: string, direction: "left" | "right") {
+    startTransition(async () => {
+      dispatchOrder({ id, direction });
+      const fd = new FormData();
+      fd.set("list_id", id);
+      fd.set("direction", direction);
+      await moveTaskList(fd);
+    });
+  }
+
   return (
     <div className="w-full overflow-x-auto pb-2">
       <div className="flex gap-4 min-w-max px-1">
-        {lists.map((l) => (
-          <TaskListColumn key={l.id} list={l} />
+        {order.map((l, i) => (
+          <TaskListColumn
+            key={l.id}
+            list={l}
+            canMoveLeft={i > 0}
+            canMoveRight={i < order.length - 1}
+            onMove={(direction) => handleMove(l.id, direction)}
+          />
         ))}
         <NewListColumn />
       </div>
@@ -54,24 +82,21 @@ export function TaskBoard({ lists }: { lists: ListWithTasks[] }) {
   );
 }
 
-function TaskListColumn({ list }: { list: ListWithTasks }) {
-  const [title, setTitle] = useState(list.title);
+function TaskListColumn({
+  list,
+  canMoveLeft,
+  canMoveRight,
+  onMove,
+}: {
+  list: ListWithTasks;
+  canMoveLeft: boolean;
+  canMoveRight: boolean;
+  onMove: (direction: "left" | "right") => void;
+}) {
   const [, startTransition] = useTransition();
   const [tasks, dispatch] = useOptimistic(list.tasks, tasksReducer);
   const incomplete = tasks.filter((t) => !t.completed);
   const completed = tasks.filter((t) => t.completed);
-
-  function saveTitle() {
-    const trimmed = title.trim();
-    if (!trimmed || trimmed === list.title) {
-      setTitle(list.title);
-      return;
-    }
-    const fd = new FormData();
-    fd.set("list_id", list.id);
-    fd.set("title", trimmed);
-    renameTaskList(fd);
-  }
 
   function handleAdd(text: string) {
     const task: ManualTask = {
@@ -127,15 +152,24 @@ function TaskListColumn({ list }: { list: ListWithTasks }) {
 
   return (
     <div className="w-72 shrink-0 bg-white rounded-lg border border-slate-200 flex flex-col max-h-[70vh]">
-      <div className="flex items-center gap-1 px-3 py-2.5 border-b border-slate-100">
-        <GripVertical size={13} className="text-slate-300 shrink-0" />
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={saveTitle}
-          onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
-          className="flex-1 min-w-0 text-sm font-semibold text-teal-900 outline-none bg-transparent rounded px-1 -mx-1 focus:bg-slate-50"
-        />
+      <div className="flex items-center gap-0.5 px-3 py-2.5 border-b border-slate-100">
+        <span className="flex-1 min-w-0 text-sm font-semibold text-teal-900 truncate px-1 -mx-1">{list.title}</span>
+        <button
+          onClick={() => onMove("left")}
+          disabled={!canMoveLeft}
+          aria-label="Move list left"
+          className="p-1 rounded text-slate-300 hover:text-teal-700 hover:bg-teal-50 shrink-0 disabled:opacity-0 disabled:pointer-events-none"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <button
+          onClick={() => onMove("right")}
+          disabled={!canMoveRight}
+          aria-label="Move list right"
+          className="p-1 rounded text-slate-300 hover:text-teal-700 hover:bg-teal-50 shrink-0 disabled:opacity-0 disabled:pointer-events-none"
+        >
+          <ChevronRight size={14} />
+        </button>
         <button
           onClick={() => {
             if (confirm(`Delete "${list.title}" and all ${list.tasks.length} task${list.tasks.length === 1 ? "" : "s"} in it? This can't be undone.`)) {

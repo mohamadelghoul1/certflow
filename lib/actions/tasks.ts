@@ -14,13 +14,22 @@ export async function createTaskList(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-export async function renameTaskList(formData: FormData) {
+export async function moveTaskList(formData: FormData) {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const listId = String(formData.get("list_id"));
-  const title = String(formData.get("title") || "").trim();
-  if (!title) return;
-  await supabase.from("task_lists").update({ title }).eq("id", listId).eq("firm_id", profile.firm_id);
+  const direction = String(formData.get("direction"));
+  const { data: lists } = await supabase.from("task_lists").select("id, sort_order").eq("firm_id", profile.firm_id).order("sort_order");
+  if (!lists) return;
+  const idx = lists.findIndex((l) => l.id === listId);
+  const swapIdx = direction === "left" ? idx - 1 : idx + 1;
+  if (idx === -1 || swapIdx < 0 || swapIdx >= lists.length) return;
+  const a = lists[idx];
+  const b = lists[swapIdx];
+  await Promise.all([
+    supabase.from("task_lists").update({ sort_order: b.sort_order }).eq("id", a.id),
+    supabase.from("task_lists").update({ sort_order: a.sort_order }).eq("id", b.id),
+  ]);
   revalidatePath("/dashboard");
 }
 
