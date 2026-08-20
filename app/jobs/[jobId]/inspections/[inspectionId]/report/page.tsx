@@ -97,11 +97,12 @@ export default async function InspectionReportPage({ params }: { params: Promise
           </tbody>
         </table>
 
-        <div className="text-sm font-bold border-b border-slate-300 pb-1 mb-2">COMPLYING DEVELOPMENT CONSENTS</div>
+        <div className="text-sm font-bold border-b border-slate-300 pb-1 mb-2">RELEVANT CONSENTS</div>
         <table className="w-full mb-4">
           <tbody>
             <CertRow label="Local Government Area:" value={d.council?.lga} />
-            <CertRow label={`${job.pathway} Number`} value={certRef} />
+            <CertRow label="Development Application (if applicable):" value={d.certificateDetails?.planningPortalRef} />
+            <CertRow label={`${job.pathway === "CDC" ? "Complying Development Certificate" : "Construction Certificate"} Number`} value={certRef} />
           </tbody>
         </table>
 
