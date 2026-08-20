@@ -22,23 +22,18 @@ export default async function DashboardPage() {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
 
-  const { data: jobs } = await supabase
-    .from("jobs")
-    .select(
-      "id, address, description, pathway, details, " +
-        "checklists(kind, checklist_items(status, amendments(resolved))), " +
-        "inspections(id, title, date, outcome, booked_by_client, confirmed)"
-    )
-    .eq("firm_id", profile.firm_id)
-    .eq("status", "active")
-    .returns<DashboardJob[]>();
-
-  const { data: certifiers } = await supabase
-    .from("certifiers")
-    .select("id, name, pi_insurance_expiry, registration_expiry")
-    .eq("firm_id", profile.firm_id);
-
-  const [{ data: taskLists }, { data: manualTasks }] = await Promise.all([
+  const [{ data: jobs }, { data: certifiers }, { data: taskLists }, { data: manualTasks }] = await Promise.all([
+    supabase
+      .from("jobs")
+      .select(
+        "id, address, description, pathway, details, " +
+          "checklists(kind, checklist_items(status, amendments(resolved))), " +
+          "inspections(id, title, date, outcome, booked_by_client, confirmed)"
+      )
+      .eq("firm_id", profile.firm_id)
+      .eq("status", "active")
+      .returns<DashboardJob[]>(),
+    supabase.from("certifiers").select("id, name, pi_insurance_expiry, registration_expiry").eq("firm_id", profile.firm_id),
     supabase.from("task_lists").select("*").eq("firm_id", profile.firm_id).order("sort_order"),
     supabase.from("manual_tasks").select("*, task_lists!inner(firm_id)").eq("task_lists.firm_id", profile.firm_id).order("sort_order"),
   ]);
