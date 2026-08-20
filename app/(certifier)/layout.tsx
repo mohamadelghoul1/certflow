@@ -12,9 +12,10 @@ export default async function CertifierLayout({ children }: { children: React.Re
   ]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-surface">
       <NavBar
         firmName={firm?.name || ""}
+        userName={profile.full_name || profile.email || "Certifier"}
         recentJobs={(recentJobs || []).map((j) => ({ id: j.id, title: j.address, subtitle: j.description || "" }))}
         recentQuotes={(recentQuotes || []).map((q) => ({ id: q.id, title: q.proposal_address || q.project_title || "Untitled quote", subtitle: q.project_title && q.proposal_address ? q.project_title : "" }))}
       />

@@ -1,15 +1,24 @@
 import Link from "next/link";
 import { signOut } from "@/lib/actions/auth";
 import { NavDropdown } from "@/components/certifier/NavDropdown";
+import { LogOut } from "lucide-react";
 
 type Item = { id: string; title: string; subtitle: string };
 
-export function NavBar({ firmName, recentJobs, recentQuotes }: { firmName: string; recentJobs: Item[]; recentQuotes: Item[] }) {
+function initialsOf(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmName: string; userName: string; recentJobs: Item[]; recentQuotes: Item[] }) {
   return (
-    <div className="flex items-center justify-between bg-slate-900 border-b border-amber-900/40 px-6">
+    <div className="flex items-center justify-between bg-primary px-6">
       <div className="flex items-center overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-        <Link href="/dashboard" className="font-serif font-bold tracking-wide text-lg py-4 pr-6 text-amber-300 shrink-0 whitespace-nowrap">
-          CERTFLOW
+        <Link href="/dashboard" className="flex items-center gap-2 py-4 pr-6 shrink-0 whitespace-nowrap">
+          <span className="w-7 h-7 rounded-md bg-secondary text-white text-xs font-bold flex items-center justify-center">CF</span>
+          <span className="font-semibold tracking-tight text-base text-white">CertFlow</span>
         </Link>
         <NavDropdown
           label="Projects"
@@ -30,20 +39,28 @@ export function NavBar({ firmName, recentJobs, recentQuotes }: { firmName: strin
           createLabel="New quote"
           itemHrefBase="/quotes"
         />
-        <Link href="/reports" className="py-4 px-3 text-sm font-semibold text-slate-200 hover:text-amber-300 shrink-0 whitespace-nowrap">
+        <Link href="/reports" className="py-4 px-3 text-sm font-medium text-slate-300 hover:text-white shrink-0 whitespace-nowrap">
           Reports
         </Link>
-        <Link href="/audit" className="py-4 px-3 text-sm font-semibold text-slate-200 hover:text-amber-300 shrink-0 whitespace-nowrap">
+        <Link href="/audit" className="py-4 px-3 text-sm font-medium text-slate-300 hover:text-white shrink-0 whitespace-nowrap">
           Audit
         </Link>
-        <Link href="/settings" className="py-4 px-3 text-sm font-semibold text-slate-200 hover:text-amber-300 shrink-0 whitespace-nowrap">
+        <Link href="/settings" className="py-4 px-3 text-sm font-medium text-slate-300 hover:text-white shrink-0 whitespace-nowrap">
           Settings
         </Link>
       </div>
-      <div className="flex items-center gap-4 shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         <span className="text-slate-400 text-xs hidden sm:inline">{firmName}</span>
+        <span
+          title={userName}
+          className="w-8 h-8 rounded-full bg-white/10 border border-white/10 text-white text-xs font-semibold flex items-center justify-center shrink-0"
+        >
+          {initialsOf(userName)}
+        </span>
         <form action={signOut}>
-          <button className="text-xs text-slate-400 hover:text-amber-300 py-4">Sign out</button>
+          <button aria-label="Sign out" title="Sign out" className="p-2 rounded-md text-slate-300 hover:text-white hover:bg-white/5">
+            <LogOut size={15} />
+          </button>
         </form>
       </div>
     </div>

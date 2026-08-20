@@ -152,14 +152,14 @@ function TaskListColumn({
   }
 
   return (
-    <div className="w-72 shrink-0 bg-white rounded-lg border border-slate-200 flex flex-col max-h-[70vh]">
-      <div className="flex items-center gap-0.5 px-3 py-2.5 border-b border-slate-100">
-        <span className="flex-1 min-w-0 text-sm font-semibold text-teal-900 truncate px-1 -mx-1">{list.title}</span>
+    <div className="card-lift w-72 shrink-0 bg-white rounded-xl border border-line shadow-sm flex flex-col max-h-[70vh]">
+      <div className="flex items-center gap-0.5 px-3 py-2.5 border-b border-line">
+        <span className="flex-1 min-w-0 text-sm font-semibold text-heading truncate px-1 -mx-1">{list.title}</span>
         <button
           onClick={() => onMove("left")}
           disabled={!canMoveLeft}
           aria-label="Move list left"
-          className="p-1 rounded text-slate-300 hover:text-teal-700 hover:bg-teal-50 shrink-0 disabled:opacity-0 disabled:pointer-events-none"
+          className="p-1 rounded text-slate-300 hover:text-secondary hover:bg-blue-50 shrink-0 disabled:opacity-0 disabled:pointer-events-none"
         >
           <ChevronLeft size={14} />
         </button>
@@ -167,7 +167,7 @@ function TaskListColumn({
           onClick={() => onMove("right")}
           disabled={!canMoveRight}
           aria-label="Move list right"
-          className="p-1 rounded text-slate-300 hover:text-teal-700 hover:bg-teal-50 shrink-0 disabled:opacity-0 disabled:pointer-events-none"
+          className="p-1 rounded text-slate-300 hover:text-secondary hover:bg-blue-50 shrink-0 disabled:opacity-0 disabled:pointer-events-none"
         >
           <ChevronRight size={14} />
         </button>
@@ -182,7 +182,7 @@ function TaskListColumn({
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-full mt-1 z-20 w-36 bg-white border border-slate-200 rounded-md shadow-lg py-1">
+              <div className="absolute right-0 top-full mt-1 z-20 w-36 bg-white border border-line rounded-md shadow-lg py-1">
                 <button
                   onClick={() => {
                     setMenuOpen(false);
@@ -244,7 +244,7 @@ function AddTaskForm({ onAdd }: { onAdd: (text: string) => void }) {
       }}
       className="flex items-center gap-1.5 text-sm text-slate-500"
     >
-      <button type="submit" aria-label="Add task" className="shrink-0 text-teal-700 hover:text-teal-900 p-0.5 -m-0.5">
+      <button type="submit" aria-label="Add task" className="shrink-0 text-secondary hover:opacity-80 p-0.5 -m-0.5">
         <Plus size={14} />
       </button>
       <input
@@ -277,7 +277,7 @@ function TaskRow({ task, onToggle, onEdit, onDelete }: { task: ManualTask; onTog
   if (editing) {
     return (
       <div
-        className="rounded-md border border-teal-200 bg-teal-50/40 px-2 py-1.5 space-y-1.5"
+        className="rounded-md border border-secondary/30 bg-blue-50/40 px-2 py-1.5 space-y-1.5"
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node)) save();
         }}
@@ -286,16 +286,16 @@ function TaskRow({ task, onToggle, onEdit, onDelete }: { task: ManualTask; onTog
           value={text}
           onChange={(e) => setText(e.target.value)}
           autoFocus
-          className="w-full text-sm outline-none bg-white rounded px-2 py-1 border border-slate-200"
+          className="w-full text-sm outline-none bg-white rounded px-2 py-1 border border-line"
         />
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Note (optional)"
-          className="w-full text-xs outline-none bg-white rounded px-2 py-1 border border-slate-200 placeholder-slate-400"
+          className="w-full text-xs outline-none bg-white rounded px-2 py-1 border border-line placeholder-slate-400"
         />
         <div className="flex gap-2">
-          <button onClick={save} className="text-xs font-semibold text-teal-800 hover:underline">
+          <button onClick={save} className="text-xs font-semibold text-secondary hover:underline">
             Save
           </button>
           <button
@@ -315,12 +315,12 @@ function TaskRow({ task, onToggle, onEdit, onDelete }: { task: ManualTask; onTog
 
   return (
     <div className="group flex items-start gap-2 px-1 py-1.5 rounded-md hover:bg-slate-50">
-      <input type="checkbox" checked={task.completed} onChange={onToggle} className="mt-0.5 accent-teal-700 shrink-0" />
+      <input type="checkbox" checked={task.completed} onChange={onToggle} className="mt-0.5 accent-secondary shrink-0" />
       <button onClick={() => setEditing(true)} className="flex-1 min-w-0 text-left">
         <div className={`text-sm ${task.completed ? "text-slate-400 line-through" : "text-slate-700"}`}>{task.text}</div>
         {task.note && <div className="text-xs text-slate-400 truncate">{task.note}</div>}
         {task.completed && task.completed_at && (
-          <div className="text-[11px] text-emerald-600 mt-0.5">
+          <div className="text-[11px] text-accent mt-0.5">
             Completed {formatCompletedAt(task.completed_at)} · took {formatDuration(task.created_at, task.completed_at)}
           </div>
         )}
@@ -353,7 +353,7 @@ function NewListColumn() {
     return (
       <button
         onClick={() => setAdding(true)}
-        className="w-72 shrink-0 h-11 flex items-center gap-1.5 px-3 rounded-lg border border-dashed border-slate-300 text-sm text-slate-500 hover:text-teal-800 hover:border-teal-300"
+        className="w-72 shrink-0 h-11 flex items-center gap-1.5 px-3 rounded-xl border border-dashed border-line text-sm text-muted hover:text-secondary hover:border-secondary/40"
       >
         <Plus size={14} /> Create new list
       </button>
@@ -361,17 +361,17 @@ function NewListColumn() {
   }
 
   return (
-    <div className="w-72 shrink-0 bg-white rounded-lg border border-slate-200 p-3">
+    <div className="w-72 shrink-0 bg-white rounded-xl border border-line shadow-sm p-3">
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && submit()}
         placeholder="List name"
         autoFocus
-        className="w-full text-sm outline-none bg-white rounded px-2 py-1.5 border border-slate-200 mb-2"
+        className="w-full text-sm outline-none bg-white rounded px-2 py-1.5 border border-line mb-2"
       />
       <div className="flex gap-2">
-        <button onClick={submit} className="text-xs font-semibold text-white bg-teal-800 hover:bg-teal-900 px-3 py-1.5 rounded-md">
+        <button onClick={submit} className="text-xs font-semibold text-white bg-secondary hover:opacity-90 px-3 py-1.5 rounded-md">
           Create list
         </button>
         <button

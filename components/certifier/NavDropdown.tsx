@@ -70,7 +70,7 @@ export function NavDropdown({
       <button
         ref={buttonRef}
         onClick={toggleOpen}
-        className={`flex items-center gap-1 py-4 px-3 text-sm font-semibold whitespace-nowrap shrink-0 ${open ? "text-amber-300" : "text-slate-200 hover:text-amber-300"}`}
+        className={`flex items-center gap-1 py-4 px-3 text-sm font-medium whitespace-nowrap shrink-0 ${open ? "text-white" : "text-slate-300 hover:text-white"}`}
       >
         {label}
         <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
@@ -80,12 +80,12 @@ export function NavDropdown({
           <div
             ref={panelRef}
             style={{ position: "fixed", top: pos.top, left: pos.left }}
-            className="z-50 w-72 bg-white rounded-b-lg shadow-xl border border-slate-200 overflow-hidden"
+            className="z-50 w-72 bg-white rounded-b-lg shadow-xl border border-line overflow-hidden"
           >
             <Link
               href={createHref}
               onClick={() => setOpen(false)}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-teal-800 hover:bg-slate-50 border-b border-slate-100"
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-secondary hover:bg-slate-50 border-b border-slate-100"
             >
               <Plus size={14} /> {createLabel}
             </Link>
@@ -100,7 +100,7 @@ export function NavDropdown({
               </div>
             )}
             {items.length === 0 && <div className="px-4 py-3 text-xs text-slate-400">Nothing yet.</div>}
-            <Link href={viewAllHref} onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm font-semibold text-teal-800 hover:bg-slate-50 border-t border-slate-100">
+            <Link href={viewAllHref} onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm font-semibold text-secondary hover:bg-slate-50 border-t border-slate-100">
               {viewAllLabel} →
             </Link>
           </div>,

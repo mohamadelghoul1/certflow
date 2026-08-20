@@ -5,7 +5,7 @@ import { getAuditEvents } from "@/lib/reporting";
 import Link from "next/link";
 import { DashboardSearch } from "@/components/certifier/DashboardSearch";
 import { TaskBoard } from "@/components/certifier/TaskBoard";
-import { AlertTriangle, Building2, CalendarCheck, ClipboardCheck, Activity, CalendarClock } from "lucide-react";
+import { AlertTriangle, Building2, CalendarCheck, ClipboardCheck, Activity, CalendarClock, ShieldCheck, Inbox } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { TaskList, ManualTask } from "@/types/db";
 
@@ -13,15 +13,31 @@ type Task = { priority: "High" | "Medium" | "Low"; text: string; jobId: string |
 
 function StatCard({ icon: Icon, label, value, href, linkLabel }: { icon: LucideIcon; label: string; value: number; href: string; linkLabel: string }) {
   return (
-    <Link href={href} className="block rounded-lg border border-slate-200 bg-white p-4 hover:border-teal-300 hover:shadow-sm transition-all">
+    <Link href={href} className="card-lift block rounded-xl border border-line bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-500">{label}</span>
-        <Icon size={16} className="text-teal-700" />
+        <span className="text-sm font-medium text-muted">{label}</span>
+        <Icon size={18} strokeWidth={1.5} className="text-secondary" />
       </div>
-      <div className="text-3xl font-bold text-teal-900 mt-2">{value}</div>
-      <div className="text-xs text-teal-700 font-medium mt-1">{linkLabel} →</div>
+      <div className="text-4xl font-bold text-heading mt-3">{value}</div>
+      <div className="text-xs text-secondary font-medium mt-2">{linkLabel} →</div>
     </Link>
   );
+}
+
+function EmptyPanel({ icon: Icon, message }: { icon: LucideIcon; message: string }) {
+  return (
+    <div className="px-4 py-10 flex flex-col items-center text-center">
+      <Icon size={34} strokeWidth={1.25} className="text-slate-300 mb-2" />
+      <div className="text-sm text-muted">{message}</div>
+    </div>
+  );
+}
+
+function getGreeting() {
+  const hour = Number(new Date().toLocaleString("en-US", { timeZone: "Australia/Sydney", hour: "numeric", hour12: false }));
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
 }
 
 type DashboardJob = {
@@ -144,77 +160,89 @@ export default async function DashboardPage() {
   const nextInspections = upcomingInspections.slice(0, 5);
 
   const recentActivity = [...auditEvents].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).slice(0, 6);
+  const firstName = (profile.full_name || profile.email || "there").split(/[\s@]/)[0];
 
   return (
     <div className="px-2 sm:px-4 py-10 max-w-5xl mx-auto">
-      <div className="max-w-lg mx-auto">
+      <div className="mb-8">
+        <h1 className="text-[28px] font-bold text-heading tracking-tight">Dashboard</h1>
+        <p className="text-muted mt-1">
+          {getGreeting()}, {firstName}. Here&rsquo;s what&rsquo;s happening today.
+        </p>
+      </div>
+
+      <div className="max-w-lg">
         <DashboardSearch jobs={(jobs || []).map((p) => ({ id: p.id, address: p.address, description: p.description || "", pathway: p.pathway }))} />
       </div>
 
-      <div className="mt-10 grid sm:grid-cols-3 gap-4">
+      <div className="mt-10 grid sm:grid-cols-3 gap-5">
         <StatCard icon={Building2} label="Active Projects" value={(jobs || []).length} href="/jobs" linkLabel="View all projects" />
         <StatCard icon={CalendarCheck} label="Inspections This Week" value={inspectionsThisWeekCount} href="/jobs" linkLabel="View projects" />
         <StatCard icon={ClipboardCheck} label="Approvals Due" value={approvalsDueCount} href="/jobs" linkLabel="Review submissions" />
       </div>
 
-      {tasks.length > 0 ? (
-        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50/40 overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-amber-100">
-            <AlertTriangle size={14} className="text-amber-600" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-amber-800">Needs your attention</span>
+      <div className="mt-8">
+        {tasks.length > 0 ? (
+          <div className="rounded-xl border border-line bg-white shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-line">
+              <AlertTriangle size={15} className="text-amber-500" />
+              <span className="text-sm font-semibold text-heading">Needs your attention</span>
+            </div>
+            <div>
+              {tasks.slice(0, 8).map((t, i) => {
+                const dot = t.priority === "High" ? "bg-red-500" : t.priority === "Medium" ? "bg-amber-500" : "bg-slate-400";
+                return (
+                  <Link key={i} href={t.href} className="block px-5 py-3 border-t border-slate-100 first:border-t-0 hover:bg-slate-50 flex items-start gap-3">
+                    <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+                    <div className="text-sm text-slate-700">{t.text}</div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-          <div className="bg-white">
-            {tasks.slice(0, 8).map((t, i) => {
-              const dot = t.priority === "High" ? "bg-red-500" : t.priority === "Medium" ? "bg-amber-500" : "bg-slate-400";
-              return (
-                <Link key={i} href={t.href} className="block px-4 py-3 border-t border-slate-100 first:border-t-0 hover:bg-slate-50 flex items-start gap-3">
-                  <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
-                  <div className="text-sm text-slate-700">{t.text}</div>
-                </Link>
-              );
-            })}
+        ) : (
+          <div className="rounded-xl border border-line bg-white shadow-sm">
+            <EmptyPanel icon={ShieldCheck} message="All clear — no pending actions at the moment." />
           </div>
-        </div>
-      ) : (
-        <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50/40 px-4 py-3 text-sm text-emerald-700">Nothing needs your attention right now.</div>
-      )}
+        )}
+      </div>
 
-      <div className="mt-6 grid lg:grid-cols-2 gap-4">
-        <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100">
-            <Activity size={14} className="text-teal-700" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Recent Activity</span>
+      <div className="mt-6 grid lg:grid-cols-2 gap-5">
+        <div className="rounded-xl border border-line bg-white shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-line">
+            <Activity size={15} className="text-secondary" />
+            <span className="text-sm font-semibold text-heading">Recent Activity</span>
           </div>
           {recentActivity.length === 0 ? (
-            <div className="px-4 py-6 text-center text-sm text-slate-400">No activity yet.</div>
+            <EmptyPanel icon={Inbox} message="No activity yet." />
           ) : (
             recentActivity.map((e, i) => (
-              <div key={i} className="flex items-start justify-between gap-3 px-4 py-3 border-t border-slate-100 first:border-t-0">
+              <div key={i} className="flex items-start justify-between gap-3 px-5 py-3 border-t border-slate-100 first:border-t-0">
                 <div className="min-w-0">
                   <div className="text-sm text-slate-700 truncate">{e.action}</div>
-                  <div className="text-xs text-slate-400 truncate">{e.address}</div>
+                  <div className="text-xs text-muted truncate">{e.address}</div>
                 </div>
-                <div className="text-xs text-slate-400 shrink-0 whitespace-nowrap">{formatISODate(e.date)}</div>
+                <div className="text-xs text-muted shrink-0 whitespace-nowrap">{formatISODate(e.date)}</div>
               </div>
             ))
           )}
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100">
-            <CalendarClock size={14} className="text-teal-700" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Upcoming Inspections</span>
+        <div className="rounded-xl border border-line bg-white shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-line">
+            <CalendarClock size={15} className="text-secondary" />
+            <span className="text-sm font-semibold text-heading">Upcoming Inspections</span>
           </div>
           {nextInspections.length === 0 ? (
-            <div className="px-4 py-6 text-center text-sm text-slate-400">Nothing booked.</div>
+            <EmptyPanel icon={CalendarClock} message="Nothing booked." />
           ) : (
             nextInspections.map((u, i) => (
-              <Link key={i} href={`/jobs/${u.jobId}?tab=inspections`} className="flex items-start justify-between gap-3 px-4 py-3 border-t border-slate-100 first:border-t-0 hover:bg-slate-50">
+              <Link key={i} href={`/jobs/${u.jobId}?tab=inspections`} className="flex items-start justify-between gap-3 px-5 py-3 border-t border-slate-100 first:border-t-0 hover:bg-slate-50">
                 <div className="min-w-0">
                   <div className="text-sm text-slate-700 truncate">{u.title}</div>
-                  <div className="text-xs text-slate-400 truncate">{u.address}</div>
+                  <div className="text-xs text-muted truncate">{u.address}</div>
                 </div>
-                <div className="text-xs font-medium text-teal-700 shrink-0 whitespace-nowrap">{formatISODate(u.date)}</div>
+                <div className="text-xs font-medium text-secondary shrink-0 whitespace-nowrap">{formatISODate(u.date)}</div>
               </Link>
             ))
           )}
@@ -222,16 +250,16 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mt-10">
-        <div className="text-[11px] tracking-[0.15em] uppercase text-slate-500 mb-2 px-1">Tasks</div>
+        <h2 className="text-lg font-semibold text-heading mb-3">Tasks</h2>
         {listsWithTasks.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-3 px-1">
+          <div className="flex flex-wrap gap-2 mb-3">
             {listsWithTasks.map((l) => {
               const open = l.tasks.filter((t) => !t.completed).length;
               return (
                 <span
                   key={l.id}
                   className={`px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
-                    open > 0 ? "bg-white border-teal-200 text-teal-800" : "bg-slate-50 border-slate-200 text-slate-400"
+                    open > 0 ? "bg-white border-secondary/30 text-secondary" : "bg-slate-50 border-line text-muted"
                   }`}
                 >
                   {open} {l.title}
