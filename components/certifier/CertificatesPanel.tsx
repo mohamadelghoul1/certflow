@@ -1,6 +1,6 @@
 import { formatISODate, stageComplete, resolvePathwayCertRef } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { reportPathwayToPortal, setVisiblePathwayVersion, startModification, uploadModificationApproval, notifyClientMessage, sendPathwayCertificateToClient } from "@/lib/actions/jobs";
+import { reportPathwayToPortal, setVisiblePathwayVersion, startModification, uploadModificationApproval, uploadPathwayApproval, notifyClientMessage, sendPathwayCertificateToClient } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { IssueCertificateForm, IssueModificationForm } from "@/components/certifier/IssueCertificateForm";
@@ -177,6 +177,16 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
             {!version.signed_at && <SignCertificateButton jobId={job.id} />}
           </>
         )}
+        {/* Closes the Export → edit in Word → bring it back loop on the card
+            itself, so the whole issue/review/sign flow stays in one place
+            instead of sending you to the document page just to upload.
+            Stays available after signing, for a late correction. */}
+        <ActionUpload
+          action={uploadPathwayApproval}
+          fields={{ job_id: job.id, version_id: version.id }}
+          pathPrefix={`${firmId}/${job.id}/certificates/pathway/${version.id}`}
+          label={version.approval_uploaded ? "Replace edited copy" : "Upload edited copy"}
+        />
         {approvalUrl && (
           <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
             View uploaded copy
