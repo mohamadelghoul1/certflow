@@ -1,12 +1,13 @@
 import { displayStatus, unresolvedCount } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { approveItem, reopenItem, toggleStamping, updateItemMeta, certifierUploadItem, removeChecklistItem, notifyClientOfChecklist } from "@/lib/actions/jobs";
+import { approveItem, reopenItem, updateItemMeta, certifierUploadItem, notifyClientOfChecklist } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
+import { StampToggle } from "@/components/certifier/StampToggle";
 import { EditableChecklistItemHeader } from "@/components/certifier/EditableChecklistItemHeader";
 import { AmendmentsList } from "@/components/certifier/AmendmentsList";
-import { CheckCircle2, Clock, AlertTriangle, Circle, RotateCcw, Stamp, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Circle, RotateCcw, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
 import type { ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -180,18 +181,7 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
           pathPrefix={`${firmId}/${jobId}/checklist/${item.id}`}
           label="Upload on client's behalf"
         />
-        <form action={toggleStamping} className="inline">
-          <input type="hidden" name="item_id" value={item.id} />
-          <input type="hidden" name="job_id" value={jobId} />
-          <input type="hidden" name="value" value={(!item.requires_stamping).toString()} />
-          <button
-            className={`flex items-center gap-1.5 text-sm font-medium px-4 py-1.5 rounded-full border ${
-              item.requires_stamping ? "bg-amber-50 border-amber-200 text-amber-700" : "border-line text-muted hover:bg-slate-50"
-            }`}
-          >
-            <Stamp size={13} /> {item.requires_stamping ? "Stamp required" : "Stamp not required"}
-          </button>
-        </form>
+        <StampToggle itemId={item.id} jobId={jobId} requiresStamping={item.requires_stamping} />
       </div>
 
       <details className="mt-3">
