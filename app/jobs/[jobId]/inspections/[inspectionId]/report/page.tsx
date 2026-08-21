@@ -221,7 +221,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
         </div>
 
         {inspection.inspection_photos.length > 0 && (
-          <div className="pt-8 print:break-before-page">
+          <div className="pt-8 print:break-before-page" data-page-break="before">
             <DocumentHeader firm={firmData} logoUrl={logoUrl} />
             <h2 className="text-lg font-bold mb-1">PHOTOGRAPHIC EVIDENCE</h2>
             <div className="text-sm text-slate-500 mb-4">

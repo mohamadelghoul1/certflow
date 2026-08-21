@@ -25,7 +25,11 @@ function CertRow({ label, value }: { label: string; value?: string | null }) {
 }
 
 function Section({ children, last }: { children: React.ReactNode; last?: boolean }) {
-  return <div className={`bg-white p-10 mb-6 shadow-sm print:shadow-none print:mb-0 ${!last ? "print:break-after-page" : ""}`}>{children}</div>;
+  return (
+    <div className={`bg-white p-10 mb-6 shadow-sm print:shadow-none print:mb-0 ${!last ? "print:break-after-page" : ""}`} data-page-break={!last ? "after" : undefined}>
+      {children}
+    </div>
+  );
 }
 
 function SignatureLine({ signatureUrl, topPadding }: { signatureUrl: string | null; topPadding: string }) {
