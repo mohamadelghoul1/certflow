@@ -523,10 +523,6 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
         </div>
       </Section>
 
-      <Section title="Building description">
-        <textarea name="buildingDescription" rows={3} className={inputCls} />
-      </Section>
-
       {state?.error && <div className="text-sm text-red-600 mb-4">{state.error}</div>}
       <button disabled={pending} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900 disabled:opacity-60">
         {pending ? "Creating…" : "Create project"}

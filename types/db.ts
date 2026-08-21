@@ -109,7 +109,6 @@ export type JobDetails = {
     floorAreaNew?: string;
   };
   siteArea?: string;
-  buildingDescription?: string;
   certificateDetails?: {
     lotSectionDp?: string;
     planningPortalRef?: string;

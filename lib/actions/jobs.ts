@@ -94,7 +94,6 @@ function extractJobDetails(formData: FormData, pathway: string): JobDetails {
       floorAreaNew: String(formData.get("floorAreaNew") || ""),
     },
     siteArea: String(formData.get("siteArea") || ""),
-    buildingDescription: String(formData.get("buildingDescription") || ""),
     certificateDetails: {
       lotSectionDp: String(formData.get("lotSectionDp") || ""),
       planningPortalRef: String(formData.get("planningPortalRef") || ""),
@@ -182,9 +181,13 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   const details = extractJobDetails(formData, pathway);
   details.certificateDetails!.determinationDate = existingJob?.details?.certificateDetails?.determinationDate || "";
   const address = String(formData.get("address") || "");
+  const description = String(formData.get("description") || "");
 
-  await supabase.from("jobs").update({ details, address }).eq("id", jobId).eq("firm_id", profile.firm_id);
+  await supabase.from("jobs").update({ details, address, description }).eq("id", jobId).eq("firm_id", profile.firm_id);
   revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/pathway/${jobId}`);
+  revalidatePath("/certificate/oc/[jobId]/[ocId]", "page");
+  revalidatePath("/jobs/[jobId]/inspections/[inspectionId]/report", "page");
   return undefined;
 }
 
@@ -373,6 +376,7 @@ export async function addCondition(formData: FormData) {
   if (!text) return;
   await supabase.from("conditions_of_consent").insert({ job_id: jobId, text, date_added: todayISO() });
   revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/pathway/${jobId}`);
   void profile;
 }
 
@@ -383,6 +387,7 @@ export async function removeCondition(formData: FormData) {
   const conditionId = String(formData.get("condition_id"));
   await supabase.from("conditions_of_consent").delete().eq("id", conditionId);
   revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/pathway/${jobId}`);
 }
 
 export async function reopenItem(formData: FormData) {
@@ -826,6 +831,7 @@ export async function toggleCriticalStageInspection(formData: FormData) {
   const next = current.map((i) => (i.id === id ? { ...i, enabled: !i.enabled } : i));
   await supabase.from("jobs").update({ critical_stage_inspections: next }).eq("id", jobId);
   revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/pathway/${jobId}`);
 }
 
 export async function updateCriticalStageInspection(formData: FormData) {
@@ -840,6 +846,7 @@ export async function updateCriticalStageInspection(formData: FormData) {
   const next = current.map((i) => (i.id === id ? { ...i, stage, inspector } : i));
   await supabase.from("jobs").update({ critical_stage_inspections: next }).eq("id", jobId);
   revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/pathway/${jobId}`);
 }
 
 export async function addCriticalStageInspection(formData: FormData) {
@@ -853,6 +860,7 @@ export async function addCriticalStageInspection(formData: FormData) {
   const next = [...current, { id: crypto.randomUUID(), stage, inspector, enabled: true }];
   await supabase.from("jobs").update({ critical_stage_inspections: next }).eq("id", jobId);
   revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/pathway/${jobId}`);
 }
 
 export async function removeCriticalStageInspection(formData: FormData) {
@@ -864,4 +872,5 @@ export async function removeCriticalStageInspection(formData: FormData) {
   const next = current.filter((i) => i.id !== id);
   await supabase.from("jobs").update({ critical_stage_inspections: next }).eq("id", jobId);
   revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/pathway/${jobId}`);
 }

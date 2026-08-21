@@ -395,8 +395,9 @@ export function DetailsTab({
           </div>
         </Section>
 
-        <Section title="Building description">
-          <textarea name="buildingDescription" defaultValue={d.buildingDescription || ""} rows={2} className={inputCls} />
+        <Section title="Scope of works">
+          <p className="text-xs text-slate-400 -mt-2">Shown as &ldquo;Description of Building Works&rdquo; on the certificate and &ldquo;Scope of Building Works&rdquo; on the inspections notice.</p>
+          <textarea name="description" defaultValue={job.description || ""} rows={2} className={inputCls} />
         </Section>
 
         <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-100">
