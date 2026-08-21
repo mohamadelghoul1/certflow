@@ -350,7 +350,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
                   <CertRow label="Relevant Environmental Planning Instrument" value={cd.relevantInstrument} />
                   <CertRow label="Relevant Part of Code" value={cd.relevantPartOfCode} />
                   <CertRow label="Date of Determination:" value={formatISODate(cd.determinationDate)} />
-                  <CertRow label="Date of Lapse:" value={lapseDate} />
+                  <CertRow label="Date of Lapse:" value={/^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate} />
                 </>
               ) : (
                 <>
