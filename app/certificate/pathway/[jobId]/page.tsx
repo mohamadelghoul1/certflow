@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { formatISODate, pathwayCertRef, calcCdcLapseDate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
+import { signPathwayCertificate } from "@/lib/actions/jobs";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
 import type { Job } from "@/types/db";
@@ -55,7 +56,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
     supabase.from("conditions_of_consent").select("*").eq("job_id", jobId).order("created_at"),
     job.pathway_issued_by ? supabase.from("certifiers").select("*").eq("id", job.pathway_issued_by).single().then((r) => r.data) : Promise.resolve(null),
   ]);
-  const signatureUrl = issuedBy?.signature_url ? await signedUrl(issuedBy.signature_url) : null;
+  const signatureUrl = job.pathway_signed_at && issuedBy?.signature_url ? await signedUrl(issuedBy.signature_url) : null;
   const logoUrl = firm?.logo_url ? await signedUrl(firm.logo_url) : null;
 
   const pathwayChecklist = (checklists || []).find((c) => c.kind === "pathway");
@@ -115,7 +116,14 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
   ).split("\n\n");
 
   return (
-    <CertificatePackage backHref={`/jobs/${jobId}?tab=pathway`} filename={`${projRef}-Certificate-Package.doc`}>
+    <CertificatePackage
+      backHref={`/jobs/${jobId}?tab=pathway`}
+      filename={`${projRef}-Certificate-Package.doc`}
+      signed={!!job.pathway_signed_at}
+      signedLabel={`Signed ${formatISODate(job.pathway_signed_at)}`}
+      signAction={signPathwayCertificate}
+      signFields={{ job_id: jobId }}
+    >
       <div className="max-w-3xl mx-auto px-4 pb-10 print:px-0 print:max-w-none">
         <div className="text-xs text-slate-400 px-2 pb-2 print:hidden">
           1. Council letter · 2. Applicant letter · 3. Certificate &amp; schedule · 4. Mandatory inspections notice · 5. Checklist summary

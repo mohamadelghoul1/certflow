@@ -77,6 +77,16 @@ export async function uploadInspectionReport(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+export async function signInspectionReport(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const inspectionId = String(formData.get("inspection_id"));
+  const jobId = String(formData.get("job_id"));
+  await supabase.from("inspections").update({ report_signed_at: new Date().toISOString() }).eq("id", inspectionId);
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/jobs/${jobId}/inspections/${inspectionId}/report`);
+}
+
 export async function confirmBooking(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();

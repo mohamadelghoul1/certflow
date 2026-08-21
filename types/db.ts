@@ -144,6 +144,7 @@ export type Job = {
   pathway_generated: boolean;
   pathway_generated_date: string | null;
   pathway_issued_by: string | null;
+  pathway_signed_at: string | null;
   pathway_version: number;
   pathway_approval_uploaded: boolean;
   pathway_approval_date: string | null;
@@ -206,6 +207,7 @@ export type PathwayCertificateVersion = {
   version: number;
   generated_date: string;
   issued_by: string | null;
+  signed_at: string | null;
   approval_uploaded: boolean;
   approval_date: string | null;
   approval_file_path: string | null;
@@ -220,11 +222,13 @@ export type OcRecord = {
   description: string | null;
   generated_date: string | null;
   issued_by: string | null;
+  signed_at: string | null;
   approval_uploaded: boolean;
   approval_date: string | null;
   approval_file_path: string | null;
   portal_reported: boolean;
   portal_reported_date: string | null;
+  created_at: string;
 };
 
 export type Inspection = {
@@ -238,6 +242,7 @@ export type Inspection = {
   report_sent: boolean;
   report_sent_date: string | null;
   report_file_path: string | null;
+  report_signed_at: string | null;
   booked_by_client: boolean;
   confirmed: boolean;
   portal_reported: boolean;

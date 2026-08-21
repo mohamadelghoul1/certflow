@@ -397,7 +397,7 @@ export async function reopenItem(formData: FormData) {
 // dashboard tasks, and reports/audit all read those columns directly.
 // Keeping this in one place means only the "currently visible" version's
 // data ever has to be duplicated onto jobs.
-async function mirrorVisiblePathwayVersion(supabase: SupabaseClient, jobId: string, version: { version: number; generated_date: string; issued_by: string | null; approval_uploaded: boolean; approval_date: string | null; approval_file_path: string | null } | null) {
+async function mirrorVisiblePathwayVersion(supabase: SupabaseClient, jobId: string, version: { version: number; generated_date: string; issued_by: string | null; signed_at: string | null; approval_uploaded: boolean; approval_date: string | null; approval_file_path: string | null } | null) {
   if (!version) {
     await supabase
       .from("jobs")
@@ -405,6 +405,7 @@ async function mirrorVisiblePathwayVersion(supabase: SupabaseClient, jobId: stri
         pathway_generated: false,
         pathway_generated_date: null,
         pathway_issued_by: null,
+        pathway_signed_at: null,
         pathway_version: 0,
         pathway_approval_uploaded: false,
         pathway_approval_date: null,
@@ -421,6 +422,7 @@ async function mirrorVisiblePathwayVersion(supabase: SupabaseClient, jobId: stri
       pathway_generated: true,
       pathway_generated_date: version.generated_date,
       pathway_issued_by: version.issued_by,
+      pathway_signed_at: version.signed_at,
       pathway_version: version.version,
       pathway_approval_uploaded: version.approval_uploaded,
       pathway_approval_date: version.approval_date,
@@ -462,6 +464,25 @@ export async function issuePathwayCertificate(_prev: ActionState, formData: Form
     .eq("id", jobId);
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
+}
+
+// Separate from issuing: generating the certificate package no longer signs
+// it automatically, so the certifier can export it to Word to review/amend
+// first. Signing just stamps the currently-visible version with who/when —
+// it doesn't lock the checklist or letters from further edits.
+export async function signPathwayCertificate(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+
+  const { data: job } = await supabase.from("jobs").select("id, pathway_version").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return;
+
+  const signedAt = new Date().toISOString();
+  await supabase.from("pathway_certificate_versions").update({ signed_at: signedAt }).eq("job_id", jobId).eq("version", job.pathway_version);
+  await supabase.from("jobs").update({ pathway_signed_at: signedAt }).eq("id", jobId);
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/pathway/${jobId}`);
 }
 
 export async function reportPathwayToPortal(formData: FormData) {
@@ -591,6 +612,16 @@ export async function issueOc(_prev: ActionState, formData: FormData): Promise<A
   if (error) return { error: error.message };
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
+}
+
+export async function signOc(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const ocId = String(formData.get("oc_id"));
+  await supabase.from("oc_records").update({ signed_at: new Date().toISOString() }).eq("id", ocId);
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/oc/${jobId}/${ocId}`);
 }
 
 export async function reportOcToPortal(formData: FormData) {

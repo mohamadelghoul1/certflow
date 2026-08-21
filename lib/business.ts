@@ -133,6 +133,12 @@ export function pathwayCertRef(pathway: "CDC" | "CC", projectNumberOrId: string,
   return `${pathway}-${projectNumberOrId}/${String(version || 1).padStart(2, "0")}`;
 }
 
+// sequence = this OC's 1-based position among every OC issued for the job
+// (partial and whole together), oldest first.
+export function ocCertRef(projectNumberOrId: string, sequence: number) {
+  return `OC-${projectNumberOrId}/${String(sequence || 1).padStart(2, "0")}`;
+}
+
 // Build Brief §9: CDC/CC/OC issuance and critical stage inspections must be
 // reported to the NSW Planning Portal within 2 business days of the event.
 // Returns the ISO deadline date (business days only, weekends skipped).

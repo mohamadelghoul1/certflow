@@ -118,6 +118,7 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
           </div>
           <div className="text-xs text-muted mt-0.5">
             Issued {formatISODate(version.generated_date)} by {issuedBy?.name || "—"}
+            {version.signed_at ? ` · Signed ${formatISODate(version.signed_at)}` : " · Not yet signed"}
           </div>
         </div>
         {version.visible_to_client ? (

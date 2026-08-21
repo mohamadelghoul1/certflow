@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { formatISODate, pathwayCertRef } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
+import { signInspectionReport } from "@/lib/actions/inspections";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
 import type { Firm, Job, Defect, InspectionPhoto, Certifier } from "@/types/db";
@@ -68,13 +69,22 @@ export default async function InspectionReportPage({ params }: { params: Promise
     supabase.from("pathway_certificate_versions").select("version").eq("job_id", jobId).order("version"),
   ]);
   if (!rawInspection) notFound();
-  const inspection = rawInspection as { id: string; title: string; date: string | null; outcome: string; inspector_certifier_id: string | null; defects: Defect[]; inspection_photos: InspectionPhoto[] };
+  const inspection = rawInspection as {
+    id: string;
+    title: string;
+    date: string | null;
+    outcome: string;
+    inspector_certifier_id: string | null;
+    report_signed_at: string | null;
+    defects: Defect[];
+    inspection_photos: InspectionPhoto[];
+  };
   const firmData = firm as Firm | null;
 
   const inspector = inspection.inspector_certifier_id
     ? ((await supabase.from("certifiers").select("*").eq("id", inspection.inspector_certifier_id).single()).data as Certifier | null)
     : null;
-  const signatureUrl = inspector?.signature_url ? await signedUrl(inspector.signature_url) : null;
+  const signatureUrl = inspection.report_signed_at && inspector?.signature_url ? await signedUrl(inspector.signature_url) : null;
   const logoUrl = firmData?.logo_url ? await signedUrl(firmData.logo_url) : null;
   const photoUrls = await Promise.all(inspection.inspection_photos.map((p) => signedUrl(p.file_path)));
 
@@ -97,7 +107,14 @@ export default async function InspectionReportPage({ params }: { params: Promise
   const resultsRows = [inspection];
 
   return (
-    <CertificatePackage backHref={`/jobs/${jobId}?tab=inspections`} filename={`Inspection-Report-${inspection.title.replace(/\s+/g, "-")}.doc`}>
+    <CertificatePackage
+      backHref={`/jobs/${jobId}?tab=inspections`}
+      filename={`Inspection-Report-${inspection.title.replace(/\s+/g, "-")}.doc`}
+      signed={!!inspection.report_signed_at}
+      signedLabel={`Signed ${formatISODate(inspection.report_signed_at)}`}
+      signAction={signInspectionReport}
+      signFields={{ job_id: jobId, inspection_id: inspectionId }}
+    >
       <div className="max-w-2xl mx-auto p-8 bg-white text-slate-900 print:max-w-none">
         <DocumentHeader firm={firmData} logoUrl={logoUrl} />
 

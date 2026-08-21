@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatISODate, stageComplete } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { uploadOcApproval, reportOcToPortal, markJobComplete, reopenJob, notifyClientMessage } from "@/lib/actions/jobs";
@@ -67,11 +68,19 @@ async function OcRecordCard({ record, job, firmId, certifiers }: { record: OcRec
   const approvalUrl = await signedUrl(record.approval_file_path);
   return (
     <div className="card-lift border border-line rounded-xl p-6 shadow-sm bg-white">
-      <div className="text-base font-semibold text-heading">
-        {record.type === "whole" ? "Whole OC" : "Partial OC"} {record.description ? `— ${record.description}` : ""}
-      </div>
-      <div className="text-xs text-muted mt-0.5">
-        Issued {formatISODate(record.generated_date)} by {issuedBy?.name || "—"}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-base font-semibold text-heading">
+            {record.type === "whole" ? "Whole OC" : "Partial OC"} {record.description ? `— ${record.description}` : ""}
+          </div>
+          <div className="text-xs text-muted mt-0.5">
+            Issued {formatISODate(record.generated_date)} by {issuedBy?.name || "—"}
+            {record.signed_at ? ` · Signed ${formatISODate(record.signed_at)}` : " · Not yet signed"}
+          </div>
+        </div>
+        <Link href={`/certificate/oc/${job.id}/${record.id}`} target="_blank" className="text-xs font-semibold text-secondary hover:underline shrink-0">
+          {record.signed_at ? "View document →" : "Generate / sign document →"}
+        </Link>
       </div>
       <div className="mt-3 flex items-center gap-4">
         {approvalUrl && (

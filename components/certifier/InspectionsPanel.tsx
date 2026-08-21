@@ -196,8 +196,9 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
           href={`/jobs/${jobId}/inspections/${insp.id}/report`}
           className="text-sm font-semibold text-white bg-secondary hover:opacity-90 px-4 py-2 rounded-full"
         >
-          Generate Inspection Report
+          {insp.report_signed_at ? "View Inspection Report" : "Generate / Sign Inspection Report"}
         </Link>
+        {insp.report_signed_at && <span className="text-[11px] text-emerald-700">Signed {formatISODate(insp.report_signed_at)}</span>}
         {reportUrl && (
           <a href={reportUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
             View uploaded report
