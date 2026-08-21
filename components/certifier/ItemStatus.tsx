@@ -117,79 +117,90 @@ export function ItemStatusBadge() {
 // there was an approved document to stamp — which made it hard to tell
 // what, if anything, needed doing. Each state now offers only the actions
 // that make sense for it.
+//
+// "Upload on client's behalf" is the exception: it sits outside the state
+// branches and shows in every one of them. Stepping in for the client is
+// useful at any point — they haven't uploaded, they uploaded the wrong
+// file, or a corrected version turns up after approval — and scoping it
+// per-state is exactly how it went missing from the review step once
+// before. Uploading sets the item back to "submitted" and bumps its
+// version, so a replacement always gets looked at again rather than
+// silently inheriting the previous approval.
 export function ItemStatusActions({ itemId, jobId, firmId, requiresStamping }: { itemId: string; jobId: string; firmId: string; requiresStamping: boolean }) {
   const { status, amendments, approve, reopen } = useItemStatus();
   const [reviewing, setReviewing] = useState(false);
   const unresolved = unresolvedCount({ status, amendments });
 
-  const uploadOnBehalf = (
-    <ActionUpload action={certifierUploadItem} fields={{ item_id: itemId, job_id: jobId }} pathPrefix={`${firmId}/${jobId}/checklist/${itemId}`} label="Upload on client's behalf" />
-  );
-
-  // Done — the only things left are undoing it, and whether it needs stamping.
-  if (status === "approved") {
-    return (
-      <>
-        <button type="button" onClick={reopen} className="flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-slate-50">
-          <RotateCcw size={13} /> Reopen
-        </button>
-        <StampToggle itemId={itemId} jobId={jobId} requiresStamping={requiresStamping} />
-      </>
-    );
-  }
-
-  // Client has uploaded and nothing is outstanding — this is the one that
-  // needs a decision, so it leads with a single prompt rather than a row of
-  // buttons, and only opens up to Approve / Request modification once
-  // pressed. Keeps an accidental tap from approving a document outright.
-  if (status === "submitted" && unresolved === 0) {
-    if (!reviewing) {
+  function stateActions() {
+    // Done — the only things left are undoing it, and whether it needs stamping.
+    if (status === "approved") {
       return (
-        <button
-          type="button"
-          onClick={() => setReviewing(true)}
-          className="flex items-center gap-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 hover:bg-blue-100"
-        >
-          <Clock size={13} /> Client uploaded — awaiting review
-        </button>
+        <>
+          <button type="button" onClick={reopen} className="flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-slate-50">
+            <RotateCcw size={13} /> Reopen
+          </button>
+          <StampToggle itemId={itemId} jobId={jobId} requiresStamping={requiresStamping} />
+        </>
       );
     }
-    return (
-      <>
-        {/* Deliberately NOT green. Green means "approved" everywhere else in
-            the app, so a green Approve button on an unapproved document made
-            the card read as already approved. Dark = the action to take. */}
-        <button type="button" onClick={approve} className="flex items-center gap-1.5 text-sm font-medium text-white bg-primary hover:opacity-90 px-4 py-1.5 rounded-full">
-          <CheckCircle2 size={13} /> Approve
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setReviewing(false);
-            // Requesting a change *is* adding an amendment point — the
-            // mechanism already exists lower down the card, so this jumps
-            // to it rather than introducing a second way to say the same
-            // thing (which would then need its own resolve/track flow).
-            document.getElementById(`amendment-input-${itemId}`)?.focus();
-          }}
-          className="flex items-center gap-1.5 text-sm font-medium text-amber-800 border border-amber-300 rounded-full px-4 py-1.5 hover:bg-amber-50"
-        >
-          <AlertTriangle size={13} /> Request modification
-        </button>
-        <button type="button" onClick={() => setReviewing(false)} className="text-sm text-muted hover:underline px-2">
-          Cancel
-        </button>
-      </>
-    );
+
+    // Client has uploaded and nothing is outstanding — this is the one that
+    // needs a decision, so it leads with a single prompt rather than a row of
+    // buttons, and only opens up to Approve / Request modification once
+    // pressed. Keeps an accidental tap from approving a document outright.
+    if (status === "submitted" && unresolved === 0) {
+      if (!reviewing) {
+        return (
+          <button
+            type="button"
+            onClick={() => setReviewing(true)}
+            className="flex items-center gap-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 hover:bg-blue-100"
+          >
+            <Clock size={13} /> Client uploaded — awaiting review
+          </button>
+        );
+      }
+      return (
+        <>
+          {/* Deliberately NOT green. Green means "approved" everywhere else in
+              the app, so a green Approve button on an unapproved document made
+              the card read as already approved. Dark = the action to take. */}
+          <button type="button" onClick={approve} className="flex items-center gap-1.5 text-sm font-medium text-white bg-primary hover:opacity-90 px-4 py-1.5 rounded-full">
+            <CheckCircle2 size={13} /> Approve
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setReviewing(false);
+              // Requesting a change *is* adding an amendment point — the
+              // mechanism already exists lower down the card, so this jumps
+              // to it rather than introducing a second way to say the same
+              // thing (which would then need its own resolve/track flow).
+              document.getElementById(`amendment-input-${itemId}`)?.focus();
+            }}
+            className="flex items-center gap-1.5 text-sm font-medium text-amber-800 border border-amber-300 rounded-full px-4 py-1.5 hover:bg-amber-50"
+          >
+            <AlertTriangle size={13} /> Request modification
+          </button>
+          <button type="button" onClick={() => setReviewing(false)} className="text-sm text-muted hover:underline px-2">
+            Cancel
+          </button>
+        </>
+      );
+    }
+
+    // Nothing uploaded yet, or changes are outstanding — the ball is with
+    // the client, so there's nothing to decide here beyond the note.
+    if (unresolved > 0) {
+      return <span className="text-xs text-amber-700">Waiting on the client to address {unresolved} requested change{unresolved === 1 ? "" : "s"}.</span>;
+    }
+    return null;
   }
 
-  // Either nothing uploaded yet, or amendments are outstanding — in both
-  // cases the ball is with the client, so the only useful action is
-  // stepping in and uploading for them.
   return (
     <>
-      {unresolved > 0 && <span className="text-xs text-amber-700">Waiting on the client to address {unresolved} requested change{unresolved === 1 ? "" : "s"}.</span>}
-      {uploadOnBehalf}
+      {stateActions()}
+      <ActionUpload action={certifierUploadItem} fields={{ item_id: itemId, job_id: jobId }} pathPrefix={`${firmId}/${jobId}/checklist/${itemId}`} label="Upload on client's behalf" />
     </>
   );
 }
