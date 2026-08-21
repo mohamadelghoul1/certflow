@@ -158,11 +158,14 @@ export default async function InspectionReportPage({ params }: { params: Promise
 
         <div className="text-sm font-bold border-b border-slate-300 pb-1 mb-2 mt-6 break-inside-avoid">SIGNED BY:</div>
         <div className="break-inside-avoid">
+          {/* No ruled line under the signature — see SignatureLine in the
+              certificate pages for why. Unsigned, this is just the blank
+              gap the signature will fill. */}
           {signatureUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={signatureUrl} alt={`${inspector?.name} signature`} className="h-14 mb-1" data-stamp />
+            <img src={signatureUrl} alt={`${inspector?.name} signature`} className="h-20 mb-1" />
           ) : (
-            <div className="pt-10 border-b border-slate-400 w-56" data-stamp />
+            <div className="h-20" />
           )}
           <div className="text-sm">{inspector?.name || "—"} – Inspector</div>
           <div className="text-sm text-slate-500">{formatISODate(inspection.date)}</div>

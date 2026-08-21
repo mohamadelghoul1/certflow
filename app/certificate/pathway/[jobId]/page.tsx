@@ -69,17 +69,20 @@ function RefDateRow({ projRef, date }: { projRef: string; date: string }) {
   );
 }
 
+// No ruled line under the signature: an empty "sign here" rule reads as an
+// unfinished form field once a real signature is already sitting on top of
+// it. Unsigned, this is just the blank vertical gap the signature will fill
+// once the document is signed.
 function SignatureLine({ signatureUrl, topPadding }: { signatureUrl: string | null; topPadding: string }) {
   if (signatureUrl) {
     return (
-      <div className={topPadding} data-stamp>
+      <div className={topPadding}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={signatureUrl} alt="Signature" className="h-14 mb-1" />
-        <div className="border-b border-slate-400 w-56" />
+        <img src={signatureUrl} alt="Signature" className="h-20 mb-1" />
       </div>
     );
   }
-  return <div className={`${topPadding} border-b border-slate-400 w-56`} data-stamp />;
+  return <div className={`${topPadding} h-20`} />;
 }
 
 export default async function PathwayCertificatePage({ params }: { params: Promise<{ jobId: string }> }) {
