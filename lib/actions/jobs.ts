@@ -470,19 +470,30 @@ export async function issuePathwayCertificate(_prev: ActionState, formData: Form
 // it automatically, so the certifier can export it to Word to review/amend
 // first. Signing just stamps the currently-visible version with who/when —
 // it doesn't lock the checklist or letters from further edits.
-export async function signPathwayCertificate(formData: FormData) {
+export async function signPathwayCertificate(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
 
   const { data: job } = await supabase.from("jobs").select("id, pathway_version").eq("id", jobId).eq("firm_id", profile.firm_id).single();
-  if (!job) return;
+  if (!job) return { error: "Project not found." };
 
   const signedAt = new Date().toISOString();
-  await supabase.from("pathway_certificate_versions").update({ signed_at: signedAt }).eq("job_id", jobId).eq("version", job.pathway_version);
-  await supabase.from("jobs").update({ pathway_signed_at: signedAt }).eq("id", jobId);
+  const { error: versionError, data: updatedVersions } = await supabase
+    .from("pathway_certificate_versions")
+    .update({ signed_at: signedAt })
+    .eq("job_id", jobId)
+    .eq("version", job.pathway_version)
+    .select("id");
+  if (versionError) return { error: versionError.message };
+  if (!updatedVersions || updatedVersions.length === 0) return { error: "Could not find this certificate version to sign." };
+
+  const { error: jobError } = await supabase.from("jobs").update({ pathway_signed_at: signedAt }).eq("id", jobId);
+  if (jobError) return { error: jobError.message };
+
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pathway/${jobId}`);
+  return undefined;
 }
 
 export async function reportPathwayToPortal(formData: FormData) {
@@ -614,14 +625,17 @@ export async function issueOc(_prev: ActionState, formData: FormData): Promise<A
   return undefined;
 }
 
-export async function signOc(formData: FormData) {
+export async function signOc(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const ocId = String(formData.get("oc_id"));
-  await supabase.from("oc_records").update({ signed_at: new Date().toISOString() }).eq("id", ocId);
+  const { error, data } = await supabase.from("oc_records").update({ signed_at: new Date().toISOString() }).eq("id", ocId).select("id");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "Could not find this Occupation Certificate to sign." };
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/oc/${jobId}/${ocId}`);
+  return undefined;
 }
 
 export async function reportOcToPortal(formData: FormData) {

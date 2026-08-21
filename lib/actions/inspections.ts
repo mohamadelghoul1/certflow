@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { todayISO } from "@/lib/business";
+import type { ActionState } from "@/lib/actions/auth";
 
 export async function assignInspector(formData: FormData) {
   await requireProfile("certifier");
@@ -77,14 +78,17 @@ export async function uploadInspectionReport(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
-export async function signInspectionReport(formData: FormData) {
+export async function signInspectionReport(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireProfile("certifier");
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
-  await supabase.from("inspections").update({ report_signed_at: new Date().toISOString() }).eq("id", inspectionId);
+  const { error, data } = await supabase.from("inspections").update({ report_signed_at: new Date().toISOString() }).eq("id", inspectionId).select("id");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "Could not find this inspection to sign." };
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/jobs/${jobId}/inspections/${inspectionId}/report`);
+  return undefined;
 }
 
 export async function confirmBooking(formData: FormData) {

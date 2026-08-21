@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useActionState } from "react";
 import Link from "next/link";
+import type { ActionState } from "@/lib/actions/auth";
 
 // Word ignores the site's Tailwind stylesheet entirely (it isn't linked
 // into the exported file), so without this every exported doc would render
@@ -76,6 +77,37 @@ function applyPageBreaks(root: HTMLElement) {
   });
 }
 
+// Its own component (rather than inline in the toolbar) because useActionState
+// must run unconditionally, and signAction is only present for documents
+// that support signing.
+function SignButton({
+  signAction,
+  signFields,
+  signed,
+  signedLabel,
+}: {
+  signAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
+  signFields?: Record<string, string>;
+  signed?: boolean;
+  signedLabel?: string;
+}) {
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(signAction, undefined);
+  if (signed) {
+    return <span className="px-3 py-2 rounded-md bg-emerald-50 text-emerald-700 text-sm font-semibold">{signedLabel || "Signed"}</span>;
+  }
+  return (
+    <form action={formAction} className="flex items-center gap-2">
+      {Object.entries(signFields || {}).map(([k, v]) => (
+        <input key={k} type="hidden" name={k} value={v} />
+      ))}
+      <button disabled={pending} className="px-4 py-2 rounded-md bg-emerald-700 text-white text-sm font-semibold hover:bg-emerald-800 disabled:opacity-60">
+        {pending ? "Signing…" : "Sign"}
+      </button>
+      {state?.error && <span className="text-xs text-red-600">{state.error}</span>}
+    </form>
+  );
+}
+
 function downloadAsWordDoc(filename: string, innerHtml: string) {
   const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title></head><body>`;
   const footer = `</body></html>`;
@@ -117,7 +149,7 @@ export function CertificatePackage({
   children: React.ReactNode;
   signed?: boolean;
   signedLabel?: string;
-  signAction?: (formData: FormData) => Promise<void>;
+  signAction?: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
   signFields?: Record<string, string>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -147,17 +179,7 @@ export function CertificatePackage({
               Export as Word
             </button>
           )}
-          {signAction &&
-            (signed ? (
-              <span className="px-3 py-2 rounded-md bg-emerald-50 text-emerald-700 text-sm font-semibold">{signedLabel || "Signed"}</span>
-            ) : (
-              <form action={signAction}>
-                {Object.entries(signFields || {}).map(([k, v]) => (
-                  <input key={k} type="hidden" name={k} value={v} />
-                ))}
-                <button className="px-4 py-2 rounded-md bg-emerald-700 text-white text-sm font-semibold hover:bg-emerald-800">Sign</button>
-              </form>
-            ))}
+          {signAction && <SignButton signAction={signAction} signFields={signFields} signed={signed} signedLabel={signedLabel} />}
         </div>
       </div>
       {signAction && !signed && (
