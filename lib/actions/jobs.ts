@@ -619,6 +619,22 @@ export async function deletePathwayVersion(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+export async function deleteModification(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const modificationId = String(formData.get("modification_id"));
+
+  const { data: job } = await supabase.from("jobs").select("id").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return;
+
+  // The modification's checklist references it with "on delete cascade", and
+  // the checklist's items cascade from the checklist in turn — so this one
+  // delete takes the whole thing with it, no manual cleanup needed.
+  await supabase.from("modifications").delete().eq("id", modificationId).eq("job_id", jobId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
 export async function startModification(formData: FormData) {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();

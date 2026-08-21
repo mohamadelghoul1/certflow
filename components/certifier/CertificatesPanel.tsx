@@ -5,6 +5,7 @@ import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { IssueCertificateForm, IssueModificationForm } from "@/components/certifier/IssueCertificateForm";
 import { DeletePathwayVersionButton } from "@/components/certifier/DeletePathwayVersionButton";
+import { DeleteModificationButton } from "@/components/certifier/DeleteModificationButton";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
@@ -173,7 +174,14 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
       <summary className="flex items-start justify-between gap-3 p-6 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
         <div>
           <div className="text-base font-semibold text-heading">Modification {mod.reason ? `— ${mod.reason}` : ""}</div>
-          <div className="text-xs text-muted mt-0.5">{mod.generated ? `Issued ${formatISODate(mod.generated_date)} by ${issuedBy?.name || "—"} (v${mod.version})` : "Checklist in progress"}</div>
+          {/* Nothing under the title until there's something real to report:
+              an unissued modification is self-evidently still in progress, so
+              saying so just added a line of noise to every card. */}
+          {mod.generated && (
+            <div className="text-xs text-muted mt-0.5">
+              Issued {formatISODate(mod.generated_date)} by {issuedBy?.name || "—"} (v{mod.version})
+            </div>
+          )}
         </div>
         <ChevronDown className="w-5 h-5 shrink-0 text-muted transition-transform group-open:rotate-180" aria-hidden />
       </summary>
@@ -208,6 +216,10 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
             )}
           </div>
         )}
+
+        <div className="mt-4 pt-3 border-t border-line">
+          <DeleteModificationButton jobId={job.id} modificationId={mod.id} label={`Modification${mod.reason ? ` — ${mod.reason}` : ""}`} generated={mod.generated} />
+        </div>
       </div>
     </details>
   );
