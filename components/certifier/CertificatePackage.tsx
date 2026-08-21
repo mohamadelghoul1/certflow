@@ -328,6 +328,7 @@ export function CertificatePackage({
   uploadFields,
   uploadPathPrefix,
   uploadedUrl,
+  wordExportHref,
 }: {
   backHref: string;
   filename: string;
@@ -340,6 +341,19 @@ export function CertificatePackage({
   uploadFields?: Record<string, string>;
   uploadPathPrefix?: string;
   uploadedUrl?: string | null;
+  // When set, "Export as Word" downloads a genuine .docx built server-side
+  // (lib/docx/) instead of this component's own client-side HTML-cloning
+  // export. That older path disguises a plain HTML file as a .doc, which
+  // depends on Word's notoriously inconsistent legacy HTML importer — real
+  // exports surfaced page-break, table-border, font, and image-sizing bugs
+  // one at a time over many rounds, and one boundary case (a small table
+  // landing on the leftover space at the bottom of the previous page)
+  // never got fully resolved despite several targeted attempts. A real
+  // .docx has native, reliable page breaks and formatting instead of
+  // relying on Word's HTML-import quirks at all. Being migrated across
+  // document types incrementally — pages without this prop still use the
+  // old client-side export for now.
+  wordExportHref?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const canExportWord = !signAction || !signed;
@@ -371,7 +385,12 @@ export function CertificatePackage({
           <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">
             Print / Save as PDF
           </button>
-          {canExportWord && (
+          {canExportWord && wordExportHref && (
+            <a href={wordExportHref} className="px-4 py-2 rounded-md border border-teal-800 text-teal-800 text-sm font-semibold hover:bg-teal-50">
+              Export as Word
+            </a>
+          )}
+          {canExportWord && !wordExportHref && (
             <button onClick={exportWord} className="px-4 py-2 rounded-md border border-teal-800 text-teal-800 text-sm font-semibold hover:bg-teal-50">
               Export as Word
             </button>
