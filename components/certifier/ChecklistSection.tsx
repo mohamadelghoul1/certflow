@@ -5,7 +5,7 @@ import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
 import { StampToggle } from "@/components/certifier/StampToggle";
-import { ItemStatusProvider, ItemStatusBadge, ItemStatusActions } from "@/components/certifier/ItemStatus";
+import { ItemStatusProvider, ItemCard, ItemStatusBadge, ItemStatusActions } from "@/components/certifier/ItemStatus";
 import { EditableChecklistItemHeader } from "@/components/certifier/EditableChecklistItemHeader";
 import { AmendmentsList } from "@/components/certifier/AmendmentsList";
 import { CheckCircle2, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
@@ -104,7 +104,7 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
 
   return (
     <ItemStatusProvider itemId={item.id} jobId={jobId} status={item.status} amendments={item.amendments}>
-      <div className="card-lift rounded-xl border border-line bg-white shadow-sm p-6">
+      <ItemCard>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <span className="w-9 h-9 rounded-lg bg-slate-50 border border-line flex items-center justify-center shrink-0 mt-0.5">
@@ -156,7 +156,7 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
         </details>
 
         <AmendmentsList itemId={item.id} jobId={jobId} amendments={item.amendments} />
-      </div>
+      </ItemCard>
     </ItemStatusProvider>
   );
 }

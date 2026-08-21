@@ -65,6 +65,18 @@ export function ItemStatusProvider({
   );
 }
 
+// The item's card wrapper, tinted green once approved. Reading each badge
+// individually was the only way to tell approved from not; a whole-card
+// cue makes it obvious while scanning a long checklist, and it flips
+// instantly with the optimistic status like the badge and buttons do.
+export function ItemCard({ children }: { children: React.ReactNode }) {
+  const { status } = useItemStatus();
+  const approved = status === "approved";
+  return (
+    <div className={`card-lift rounded-xl border shadow-sm p-6 ${approved ? "border-accent/40 bg-emerald-50/40" : "border-line bg-white"}`}>{children}</div>
+  );
+}
+
 export function ItemStatusBadge() {
   const { status, amendments } = useItemStatus();
   const { dot, label } = displayStatus({ status, amendments });
@@ -102,9 +114,14 @@ export function ItemStatusActions() {
   const canApprove = status === "submitted" && unresolvedCount({ status, amendments }) === 0;
 
   if (canApprove) {
+    // Deliberately NOT green. Green means "approved" everywhere else in the
+    // app (the status badge, the completed progress bar), so a solid green
+    // Approve button sitting on an unapproved document made the card read
+    // as already approved at a glance. Dark = "this is the action to take",
+    // green = "this is done" — the two never overlap now.
     return (
-      <button type="button" onClick={approve} className="text-sm font-medium text-white bg-accent hover:opacity-90 px-4 py-1.5 rounded-full">
-        Approve
+      <button type="button" onClick={approve} className="flex items-center gap-1.5 text-sm font-medium text-white bg-primary hover:opacity-90 px-4 py-1.5 rounded-full">
+        <CheckCircle2 size={13} /> Approve
       </button>
     );
   }
