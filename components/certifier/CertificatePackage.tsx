@@ -114,10 +114,14 @@ function applyPageBreaks(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>("[data-page-break]").forEach((el) => {
     const before = el.getAttribute("data-page-break") === "before";
     el.style.setProperty(before ? "page-break-before" : "page-break-after", "always");
+    // setProperty() silently drops "mso-special-character" — the CSSOM
+    // rejects vendor-specific Microsoft Office property names that aren't
+    // in its known-properties list, even though they're perfectly valid to
+    // write as literal text inside a style attribute. Setting the whole
+    // attribute as a string bypasses that validation.
     const br = document.createElement("br");
     br.setAttribute("clear", "all");
-    br.style.setProperty("mso-special-character", "line-break");
-    br.style.setProperty("page-break-before", "always");
+    br.setAttribute("style", "mso-special-character:line-break;page-break-before:always");
     if (before) el.parentNode?.insertBefore(br, el);
     else el.insertAdjacentElement("afterend", br);
   });
