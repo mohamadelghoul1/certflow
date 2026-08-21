@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { formatISODate, pathwayCertRef, calcCdcLapseDate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { signPathwayCertificate } from "@/lib/actions/jobs";
+import { signPathwayCertificate, uploadPathwayApproval } from "@/lib/actions/jobs";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
 import type { Job } from "@/types/db";
@@ -13,6 +13,14 @@ function formatAddress(a?: Record<string, string> | null) {
   const parts = [a.streetNumber, a.street].filter(Boolean).join(" ");
   const rest = [a.suburb, a.state, a.postcode].filter(Boolean).join(" ");
   return [parts, rest].filter(Boolean).join(", ") || "—";
+}
+
+// Falls back to showing whatever was typed rather than "$NaN" if the
+// estimated cost field wasn't entered as a clean number.
+function formatCurrency(value?: string | null) {
+  if (!value) return null;
+  const parsed = Number(String(value).replace(/[^0-9.]/g, ""));
+  return Number.isFinite(parsed) && parsed > 0 ? `$${parsed.toLocaleString("en-AU", { minimumFractionDigits: 2 })}` : value;
 }
 
 // Every field row on the certificate/notice is a real table row (not a
@@ -39,9 +47,27 @@ function TableSectionHeading({ children }: { children: React.ReactNode }) {
 
 function Section({ children, last }: { children: React.ReactNode; last?: boolean }) {
   return (
-    <div className={`bg-white p-10 mb-6 shadow-sm print:shadow-none print:mb-0 ${!last ? "print:break-after-page" : ""}`} data-page-break={!last ? "after" : undefined}>
+    <div className={`bg-white p-8 mb-6 shadow-sm print:shadow-none print:mb-0 ${!last ? "print:break-after-page" : ""}`} data-page-break={!last ? "after" : undefined}>
       {children}
     </div>
+  );
+}
+
+// Our own footer (project number + firm website) — separate from, and no
+// substitute for, the browser's own print header/footer (page title + URL,
+// date/time), which the page itself has no way to turn off. That's a
+// setting in the print dialog (see "More settings" → uncheck "Headers and
+// footers"), not something CSS or JS on the page can control.
+function DocFooter({ projRef, website }: { projRef: string; website?: string | null }) {
+  return (
+    <table className="w-full text-[11px] text-slate-400 border-t border-slate-200 mt-6 pt-2">
+      <tbody>
+        <tr>
+          <td>Project No.: {projRef}</td>
+          <td className="text-right">{website}</td>
+        </tr>
+      </tbody>
+    </table>
   );
 }
 
@@ -82,14 +108,16 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
   if (!rawJob || !rawJob.pathway_generated) notFound();
   const job = rawJob as Job;
 
-  const [{ data: firm }, { data: conditions }, { data: issuedBy }, { data: checklists }, { data: inspections }] = await Promise.all([
+  const [{ data: firm }, { data: conditions }, { data: issuedBy }, { data: checklists }, { data: inspections }, { data: activeVersion }] = await Promise.all([
     supabase.from("firms").select("*").eq("id", profile.firm_id).single(),
     supabase.from("conditions_of_consent").select("*").eq("job_id", jobId).order("created_at"),
-    job.pathway_issued_by ? supabase.from("certifiers").select("*").eq("id", job.pathway_issued_by).single().then((r) => r.data) : Promise.resolve(null),
+    job.pathway_issued_by ? supabase.from("certifiers").select("*").eq("id", job.pathway_issued_by).single() : Promise.resolve({ data: null }),
     supabase.from("checklists").select("id, kind, checklist_items(*)").eq("job_id", jobId),
     supabase.from("inspections").select("outcome").eq("job_id", jobId),
+    supabase.from("pathway_certificate_versions").select("id").eq("job_id", jobId).eq("version", job.pathway_version).single(),
   ]);
   const signatureUrl = job.pathway_signed_at && issuedBy?.signature_url ? await signedUrl(issuedBy.signature_url) : null;
+  const uploadedApprovalUrl = job.pathway_approval_uploaded ? await signedUrl(job.pathway_approval_file_path) : null;
   const logoUrl = firm?.logo_url ? await signedUrl(firm.logo_url) : null;
 
   const pathwayChecklist = (checklists || []).find((c) => c.kind === "pathway");
@@ -154,16 +182,31 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
       signedLabel={`Signed ${formatISODate(job.pathway_signed_at)}`}
       signAction={signPathwayCertificate}
       signFields={{ job_id: jobId }}
+      uploadAction={activeVersion ? uploadPathwayApproval : undefined}
+      uploadFields={activeVersion ? { job_id: jobId, version_id: activeVersion.id } : undefined}
+      uploadPathPrefix={`${profile.firm_id}/${jobId}/certificates/pathway/${activeVersion?.id || "current"}`}
+      uploadedUrl={uploadedApprovalUrl}
     >
       <div className="max-w-3xl mx-auto px-4 pb-10 print:px-0 print:max-w-none">
         <div className="text-xs text-slate-400 px-2 pb-2 print:hidden">
           1. Council letter · 2. Applicant letter · 3. Certificate · 4. Mandatory inspections notice · 5. Checklist summary
         </div>
+        {!issuedBy && (
+          <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2 mx-2 mb-3 print:hidden">
+            No certifier is recorded as having issued this version — the certifier&apos;s name, registration details, and signature will show as blank on
+            every page below. Re-issue or regenerate the certificate and select a certifier.
+          </div>
+        )}
+        {issuedBy && job.pathway_signed_at && !issuedBy.signature_url && (
+          <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mx-2 mb-3 print:hidden">
+            Signed, but {issuedBy.name} has no signature image on file — the signature line will stay blank. Upload one in Settings → Certifiers.
+          </div>
+        )}
 
         {/* 1. Council letter */}
         <Section>
           <DocumentHeader firm={firm} logoUrl={logoUrl} />
-          <div className="text-sm space-y-4">
+          <div className="text-sm space-y-3">
             <RefDateRow projRef={projRef} date={issuedDate} />
             <div>
               The General Manager
@@ -206,17 +249,18 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               </ul>
             </div>
             <div className="pt-4">Yours sincerely,</div>
-            <SignatureLine signatureUrl={signatureUrl} topPadding="pt-10" />
+            <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
             <div>{issuedBy?.name || "—"}</div>
             <div className="text-xs text-slate-500">Registered Certifier / {issuedBy?.registration_no}</div>
             <div className="text-xs text-slate-500">{firm?.name} Pty Ltd</div>
           </div>
+          <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
 
         {/* 2. Applicant letter */}
         <Section>
           <DocumentHeader firm={firm} logoUrl={logoUrl} />
-          <div className="text-sm space-y-4">
+          <div className="text-sm space-y-3">
             <RefDateRow projRef={projRef} date={issuedDate} />
             <div>
               {applicantName}
@@ -249,11 +293,12 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               </ul>
             </div>
             <div className="pt-4">Yours sincerely,</div>
-            <SignatureLine signatureUrl={signatureUrl} topPadding="pt-10" />
+            <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
             <div>{issuedBy?.name || "—"}</div>
             <div className="text-xs text-slate-500">Registered Certifier / {issuedBy?.registration_no}</div>
             <div className="text-xs text-slate-500">{firm?.name} Pty Ltd</div>
           </div>
+          <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
 
         {/* 3. Certificate */}
@@ -328,7 +373,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               <CertRow label="Description of Building Works:" value={job.description} />
               <CertRow
                 label={isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)"}
-                value={d.proposal?.estimatedCost ? `$${Number(d.proposal.estimatedCost).toLocaleString("en-AU", { minimumFractionDigits: 2 })}` : null}
+                value={formatCurrency(d.proposal?.estimatedCost)}
               />
               <CertRow label={isCdc ? "Attachments" : "Attachments:"} value="Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon" />
               {isCdc && (
@@ -394,6 +439,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               ? "N.B. Prior to the commencement of work section 6.6 of the Environment Planning and Assessment Act 1979 must be satisfied."
               : "N.B Prior to the commencement of work Sections 4.19, 6.6, 6.7, 6.12, 6.13, 6.14 of the Environment Planning and Assessment Act 1979 must be satisfied."}
           </p>
+          <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
 
         {/* 4. Mandatory inspections notice */}
@@ -493,6 +539,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               </tbody>
             </table>
           </div>
+          <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
 
         {/* 5. Checklist summary */}

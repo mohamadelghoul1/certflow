@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { formatISODate, stageComplete } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { uploadOcApproval, reportOcToPortal, markJobComplete, reopenJob, notifyClientMessage, sendOcToClient } from "@/lib/actions/jobs";
-import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { reportOcToPortal, markJobComplete, reopenJob, notifyClientMessage, sendOcToClient } from "@/lib/actions/jobs";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { IssueOcForm } from "@/components/certifier/IssueOcForm";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
@@ -64,7 +63,7 @@ export async function OcPanel({
   );
 }
 
-async function OcRecordCard({ record, job, firmId, certifiers }: { record: OcRecord; job: Job; firmId: string; certifiers: Certifier[] }) {
+async function OcRecordCard({ record, job, certifiers }: { record: OcRecord; job: Job; firmId: string; certifiers: Certifier[] }) {
   const issuedBy = certifiers.find((c) => c.id === record.issued_by);
   const approvalUrl = await signedUrl(record.approval_file_path);
   return (
@@ -87,15 +86,9 @@ async function OcRecordCard({ record, job, firmId, certifiers }: { record: OcRec
       <div className="mt-3 flex items-center gap-4 flex-wrap">
         {approvalUrl && (
           <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
-            View signed approval
+            View uploaded copy
           </a>
         )}
-        <ActionUpload
-          action={uploadOcApproval}
-          fields={{ job_id: job.id, oc_id: record.id }}
-          pathPrefix={`${firmId}/${job.id}/certificates/oc/${record.id}`}
-          label={record.approval_uploaded ? "Replace signed approval" : "Upload signed approval"}
-        />
         {!record.sent_to_client && (
           <SendToClientButton
             action={sendOcToClient}

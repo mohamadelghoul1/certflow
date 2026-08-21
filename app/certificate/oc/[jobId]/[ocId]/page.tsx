@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { formatISODate, pathwayCertRef, ocCertRef } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { signOc } from "@/lib/actions/jobs";
+import { signOc, uploadOcApproval } from "@/lib/actions/jobs";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
 import type { Job, OcRecord } from "@/types/db";
@@ -26,9 +26,22 @@ function CertRow({ label, value }: { label: string; value?: string | null }) {
 
 function Section({ children, last }: { children: React.ReactNode; last?: boolean }) {
   return (
-    <div className={`bg-white p-10 mb-6 shadow-sm print:shadow-none print:mb-0 ${!last ? "print:break-after-page" : ""}`} data-page-break={!last ? "after" : undefined}>
+    <div className={`bg-white p-8 mb-6 shadow-sm print:shadow-none print:mb-0 ${!last ? "print:break-after-page" : ""}`} data-page-break={!last ? "after" : undefined}>
       {children}
     </div>
+  );
+}
+
+function DocFooter({ projRef, website }: { projRef: string; website?: string | null }) {
+  return (
+    <table className="w-full text-[11px] text-slate-400 border-t border-slate-200 mt-6 pt-2">
+      <tbody>
+        <tr>
+          <td>Project No.: {projRef}</td>
+          <td className="text-right">{website}</td>
+        </tr>
+      </tbody>
+    </table>
   );
 }
 
@@ -85,6 +98,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
   const d = job.details || {};
   const issuedDate = formatISODate(record.generated_date);
   const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "Applicant";
+  const uploadedApprovalUrl = record.approval_uploaded ? await signedUrl(record.approval_file_path) : null;
 
   return (
     <CertificatePackage
@@ -94,14 +108,29 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
       signedLabel={`Signed ${formatISODate(record.signed_at)}`}
       signAction={signOc}
       signFields={{ job_id: jobId, oc_id: ocId }}
+      uploadAction={uploadOcApproval}
+      uploadFields={{ job_id: jobId, oc_id: ocId }}
+      uploadPathPrefix={`${profile.firm_id}/${jobId}/certificates/oc/${ocId}`}
+      uploadedUrl={uploadedApprovalUrl}
     >
       <div className="max-w-3xl mx-auto px-4 pb-10 print:px-0 print:max-w-none">
         <div className="text-xs text-slate-400 px-2 pb-2 print:hidden">1. Council letter · 2. Applicant/owner letter · 3. Occupation Certificate &amp; schedule</div>
+        {!issuedBy && (
+          <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2 mx-2 mb-3 print:hidden">
+            No certifier is recorded as having issued this OC — the certifier&apos;s name, registration details, and signature will show as blank on every
+            page below. Re-issue and select a certifier.
+          </div>
+        )}
+        {issuedBy && record.signed_at && !issuedBy.signature_url && (
+          <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mx-2 mb-3 print:hidden">
+            Signed, but {issuedBy.name} has no signature image on file — the signature line will stay blank. Upload one in Settings → Certifiers.
+          </div>
+        )}
 
         {/* 1. Council letter */}
         <Section>
           <DocumentHeader firm={firm} logoUrl={logoUrl} />
-          <div className="text-sm space-y-4">
+          <div className="text-sm space-y-3">
             <table className="w-full text-sm">
               <tbody>
                 <tr>
@@ -131,17 +160,18 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
               the above premises, relying on {job.pathway} No. {consentRef}. Please find enclosed a copy for your records.
             </div>
             <div className="pt-4">Yours sincerely,</div>
-            <SignatureLine signatureUrl={signatureUrl} topPadding="pt-10" />
+            <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
             <div>{issuedBy?.name || "—"}</div>
             <div className="text-xs text-slate-500">Registered Certifier / {issuedBy?.registration_no}</div>
             <div className="text-xs text-slate-500">{firm?.name} Pty Ltd</div>
           </div>
+          <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
 
         {/* 2. Applicant/owner letter */}
         <Section>
           <DocumentHeader firm={firm} logoUrl={logoUrl} />
-          <div className="text-sm space-y-4">
+          <div className="text-sm space-y-3">
             <table className="w-full text-sm">
               <tbody>
                 <tr>
@@ -170,11 +200,12 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
             </div>
             <div>Please retain this certificate, as it authorises {record.type === "whole" ? "occupation and use of the building" : "occupation and use of the part of the building described below"}.</div>
             <div className="pt-4">Yours sincerely,</div>
-            <SignatureLine signatureUrl={signatureUrl} topPadding="pt-10" />
+            <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
             <div>{issuedBy?.name || "—"}</div>
             <div className="text-xs text-slate-500">Registered Certifier / {issuedBy?.registration_no}</div>
             <div className="text-xs text-slate-500">{firm?.name} Pty Ltd</div>
           </div>
+          <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
 
         {/* 3. Occupation Certificate & schedule */}
@@ -260,6 +291,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
               <div className="text-slate-500 mt-1">Issued {issuedDate}</div>
             </div>
           </div>
+          <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
       </div>
     </CertificatePackage>

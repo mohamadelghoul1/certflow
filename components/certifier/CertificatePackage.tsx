@@ -2,6 +2,7 @@
 
 import { useRef, useActionState } from "react";
 import Link from "next/link";
+import { ActionUpload } from "@/components/certifier/ActionUpload";
 import type { ActionState } from "@/lib/actions/auth";
 
 // Word ignores the site's Tailwind stylesheet entirely (it isn't linked
@@ -145,6 +146,13 @@ function downloadAsWordDoc(filename: string, innerHtml: string) {
 // gating) — this component only renders the Sign button/banner. Once
 // signed, "Export as Word" is hidden — the document is final at that point,
 // so re-exporting an editable copy no longer makes sense.
+//
+// uploadAction (optional) is the answer to "how do I get my Word edits back
+// into CertFlow": there is no live connection between a downloaded file
+// open in Word and this page — Word can't notify a website when you press
+// Save. Exporting, editing, and re-uploading the finished file here is the
+// actual mechanism, so it lives right next to Export/Sign instead of buried
+// elsewhere in the app.
 export function CertificatePackage({
   backHref,
   filename,
@@ -153,6 +161,10 @@ export function CertificatePackage({
   signedLabel,
   signAction,
   signFields,
+  uploadAction,
+  uploadFields,
+  uploadPathPrefix,
+  uploadedUrl,
 }: {
   backHref: string;
   filename: string;
@@ -161,6 +173,10 @@ export function CertificatePackage({
   signedLabel?: string;
   signAction?: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
   signFields?: Record<string, string>;
+  uploadAction?: (formData: FormData) => Promise<void>;
+  uploadFields?: Record<string, string>;
+  uploadPathPrefix?: string;
+  uploadedUrl?: string | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const canExportWord = !signAction || !signed;
@@ -192,6 +208,17 @@ export function CertificatePackage({
           {signAction && <SignButton signAction={signAction} signFields={signFields} signed={signed} signedLabel={signedLabel} />}
         </div>
       </div>
+      {uploadAction && uploadPathPrefix && (
+        <div className="max-w-3xl mx-auto px-4 print:hidden -mt-3 mb-4 flex items-center gap-3 flex-wrap">
+          <span className="text-xs text-slate-500">Edited this in Word and want your changes reflected here? Upload the finished file:</span>
+          <ActionUpload action={uploadAction} fields={uploadFields || {}} pathPrefix={uploadPathPrefix} label={uploadedUrl ? "Replace uploaded copy" : "Upload edited/signed copy"} />
+          {uploadedUrl && (
+            <a href={uploadedUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
+              View uploaded copy
+            </a>
+          )}
+        </div>
+      )}
       {signAction && !signed && (
         <div className="max-w-3xl mx-auto px-4 print:hidden -mt-3 mb-4">
           <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">

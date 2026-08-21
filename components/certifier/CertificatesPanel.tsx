@@ -1,6 +1,6 @@
 import { formatISODate, stageComplete, pathwayCertRef } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { reportPathwayToPortal, uploadPathwayApproval, setVisiblePathwayVersion, startModification, uploadModificationApproval, notifyClientMessage, sendPathwayCertificateToClient } from "@/lib/actions/jobs";
+import { reportPathwayToPortal, setVisiblePathwayVersion, startModification, uploadModificationApproval, notifyClientMessage, sendPathwayCertificateToClient } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { IssueCertificateForm, IssueModificationForm } from "@/components/certifier/IssueCertificateForm";
@@ -147,15 +147,9 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
       <div className="mt-2 flex flex-wrap items-center gap-3">
         {approvalUrl && (
           <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
-            View signed approval
+            View uploaded copy
           </a>
         )}
-        <ActionUpload
-          action={uploadPathwayApproval}
-          fields={{ job_id: job.id, version_id: version.id }}
-          pathPrefix={`${firmId}/${job.id}/certificates/pathway/${version.id}`}
-          label={version.approval_uploaded ? "Replace signed approval" : "Upload signed approval"}
-        />
         <DeletePathwayVersionButton jobId={job.id} versionId={version.id} versionLabel={`v${version.version}`} />
       </div>
     </div>
