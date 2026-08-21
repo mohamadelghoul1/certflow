@@ -111,6 +111,22 @@ function inlineComputedStyles(live: Element, clone: Element) {
       if (prop === "font-family") return `font-family:${toWordSafeFont(value)}`;
       return `${prop}:${COLOR_PROPS.has(prop) ? toWordSafeColor(value) : value}`;
     });
+    // The border="0" attribute alone didn't stop Word: it still applies its
+    // own default "Table Grid" style to an imported table (visible borders
+    // on every cell) unless told otherwise in Word's own vocabulary. A
+    // plain CSS "border: none" doesn't carry enough weight to override that
+    // built-in style once Word's DOCX conversion has assigned it — Word's
+    // table-style system was designed around Word's own style priority
+    // rules, not the browser's cascade. mso-border-*-alt:none is the
+    // MS-Office-specific way of saying "no border" that actually wins
+    // against that default. Every side whose real CSS border is 0 gets one
+    // — sides that have a genuine border (the bordered "details" tables)
+    // are left alone so their border keeps showing.
+    for (const side of ["top", "right", "bottom", "left"]) {
+      if (computed.getPropertyValue(`border-${side}-width`) === "0px") {
+        declarations.push(`mso-border-${side}-alt:none`);
+      }
+    }
     // Table layout is the one place a computed "width" is safe to inline:
     // unlike a flex/grid child's width (a viewport-relative pixel value
     // that only meant something in the browser's flex context — the cause
@@ -252,7 +268,15 @@ async function inlineImages(root: HTMLElement) {
 }
 
 function downloadAsWordDoc(filename: string, innerHtml: string) {
-  const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title></head><body>`;
+  // Belt-and-braces alongside the per-cell mso-border-*-alt declarations
+  // above: a bare tag-selector default in <head><style> is what Word's own
+  // HTML importer normally reads its table-style baseline from, so this is
+  // the first thing checked before Word decides whether to fall back to
+  // its built-in "Table Grid" borders. Any table that genuinely wants a
+  // border (styled with an explicit inline border-*-width) still shows it
+  // — inline styles win over this bare-tag default either way.
+  const style = `<style>table{border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;}td,th{border:none;mso-border-alt:none;}</style>`;
+  const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title>${style}</head><body>`;
   const footer = `</body></html>`;
   const blob = new Blob(["﻿", header + innerHtml + footer], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
