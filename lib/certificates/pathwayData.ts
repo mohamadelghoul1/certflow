@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { signedUrl } from "@/lib/storage";
-import { formatISODate, pathwayCertRef, calcCdcLapseDate } from "@/lib/business";
+import { formatISODate, resolvePathwayCertRef, calcCdcLapseDate } from "@/lib/business";
 import type { Job, Firm, Certifier, ConditionOfConsent, CriticalStageInspection, JobDetails } from "@/types/db";
 
 export function formatAddress(a?: Record<string, string> | null) {
@@ -77,7 +77,7 @@ export async function getPathwayCertificateData(jobId: string, firmId: string): 
     job.pathway_issued_by ? supabase.from("certifiers").select("*").eq("id", job.pathway_issued_by).single() : Promise.resolve({ data: null }),
     supabase.from("checklists").select("id, kind, checklist_items(*)").eq("job_id", jobId),
     supabase.from("inspections").select("outcome").eq("job_id", jobId),
-    supabase.from("pathway_certificate_versions").select("id").eq("job_id", jobId).eq("version", job.pathway_version).single(),
+    supabase.from("pathway_certificate_versions").select("id, cert_ref").eq("job_id", jobId).eq("version", job.pathway_version).single(),
   ]);
   const signatureUrl = job.pathway_signed_at && issuedBy?.signature_url ? await signedUrl(issuedBy.signature_url) : null;
   const uploadedApprovalUrl = job.pathway_approval_uploaded ? await signedUrl(job.pathway_approval_file_path) : null;
@@ -99,7 +99,7 @@ export async function getPathwayCertificateData(jobId: string, firmId: string): 
     (inspections || []).map((i) => i.outcome)
   );
 
-  const ref = pathwayCertRef(job.pathway, job.details?.projectNumber || job.id.slice(0, 8), job.pathway_version);
+  const ref = resolvePathwayCertRef(activeVersion?.cert_ref, job.pathway, job.details?.projectNumber || job.id.slice(0, 8), job.pathway_version);
   const projRef = ref.split("/")[0];
   const isCdc = job.pathway === "CDC";
   const pathwayFull = isCdc ? "Complying Development Certificate" : "Construction Certificate";

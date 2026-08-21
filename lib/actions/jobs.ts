@@ -619,6 +619,29 @@ export async function deletePathwayVersion(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// Overrides the auto-generated certificate reference for one version / one
+// OC record. Blank clears the override, putting it back on the generated
+// {PATHWAY}-{project number}/{version} form.
+export async function renameCertRef(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const kind = String(formData.get("kind"));
+  const recordId = String(formData.get("record_id"));
+  const certRef = String(formData.get("cert_ref") || "").trim() || null;
+
+  const { data: job } = await supabase.from("jobs").select("id").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return;
+
+  const table = kind === "oc" ? "oc_records" : "pathway_certificate_versions";
+  await supabase.from(table).update({ cert_ref: certRef }).eq("id", recordId).eq("job_id", jobId);
+
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/pathway/${jobId}`);
+  revalidatePath("/certificate/oc/[jobId]/[ocId]", "page");
+  revalidatePath("/jobs/[jobId]/inspections/[inspectionId]/report", "page");
+}
+
 export async function deleteModification(formData: FormData) {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();

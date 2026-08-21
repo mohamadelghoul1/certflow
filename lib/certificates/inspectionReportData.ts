@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { signedUrl } from "@/lib/storage";
-import { pathwayCertRef } from "@/lib/business";
+import { resolvePathwayCertRef } from "@/lib/business";
 import type { Job, Firm, Defect, InspectionPhoto, Certifier, JobDetails } from "@/types/db";
 
 export type InspectionRecord = {
@@ -43,7 +43,7 @@ export async function getInspectionReportData(jobId: string, inspectionId: strin
   const [{ data: rawInspection }, { data: firm }, { data: versions }] = await Promise.all([
     supabase.from("inspections").select("*, defects(*), inspection_photos(*)").eq("id", inspectionId).eq("job_id", jobId).single(),
     supabase.from("firms").select("*").eq("id", firmId).single(),
-    supabase.from("pathway_certificate_versions").select("version").eq("job_id", jobId).order("version"),
+    supabase.from("pathway_certificate_versions").select("version, cert_ref").eq("job_id", jobId).order("version"),
   ]);
   if (!rawInspection) return null;
   const inspection = rawInspection as InspectionRecord;
@@ -55,9 +55,10 @@ export async function getInspectionReportData(jobId: string, inspectionId: strin
 
   const d = job.details || {};
   const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "—";
-  const certRef = job.pathway_generated ? pathwayCertRef(job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version) : d.projectNumber || job.id.slice(0, 8).toUpperCase();
+  const activeVersion = (versions || []).find((v) => v.version === job.pathway_version);
+  const certRef = job.pathway_generated ? resolvePathwayCertRef(activeVersion?.cert_ref, job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version) : d.projectNumber || job.id.slice(0, 8).toUpperCase();
 
-  const certNumbers = (versions || []).map((v) => pathwayCertRef(job.pathway, d.projectNumber || job.id.slice(0, 8), v.version)).join(", ");
+  const certNumbers = (versions || []).map((v) => resolvePathwayCertRef(v.cert_ref, job.pathway, d.projectNumber || job.id.slice(0, 8), v.version)).join(", ");
   const consentRefLines = (d.certificateDetails?.consentReferences || "")
     .split("\n")
     .map((l) => l.trim())

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { signedUrl } from "@/lib/storage";
-import { formatISODate, pathwayCertRef, ocCertRef } from "@/lib/business";
+import { formatISODate, resolvePathwayCertRef, resolveOcCertRef } from "@/lib/business";
 import type { Job, Firm, OcRecord, JobDetails } from "@/types/db";
 
 type OcChecklistItem = { id: string; title: string; status: string; revision: string | null; document_date: string | null; prepared_by: string | null };
@@ -34,10 +34,11 @@ export async function getOcCertificateData(jobId: string, ocId: string, firmId: 
   if (!rawJob) return null;
   const job = rawJob as Job;
 
-  const [{ data: firm }, { data: allOcRecords }, { data: checklists }] = await Promise.all([
+  const [{ data: firm }, { data: allOcRecords }, { data: checklists }, { data: activePathwayVersion }] = await Promise.all([
     supabase.from("firms").select("*").eq("id", firmId).single(),
     supabase.from("oc_records").select("*").eq("job_id", jobId).order("created_at"),
     supabase.from("checklists").select("id, kind, checklist_items(*)").eq("job_id", jobId),
+    supabase.from("pathway_certificate_versions").select("cert_ref").eq("job_id", jobId).eq("version", job.pathway_version).maybeSingle(),
   ]);
   const record = (allOcRecords || []).find((r) => r.id === ocId) as OcRecord | undefined;
   if (!record) return null;
@@ -52,10 +53,10 @@ export async function getOcCertificateData(jobId: string, ocId: string, firmId: 
   const allItems = ((ocChecklist?.checklist_items as never[]) || []) as OcChecklistItem[];
   const approvedItems = allItems.filter((i) => i.status === "approved");
 
-  const ref = ocCertRef(job.details?.projectNumber || job.id.slice(0, 8), sequence);
+  const ref = resolveOcCertRef(record.cert_ref, job.details?.projectNumber || job.id.slice(0, 8), sequence);
   const projRef = ref.split("/")[0];
   const typeLabel = record.type === "whole" ? "Whole Occupation Certificate" : "Partial Occupation Certificate";
-  const consentRef = job.pathway_generated ? pathwayCertRef(job.pathway, job.details?.projectNumber || job.id.slice(0, 8), job.pathway_version) : job.details?.projectNumber || "—";
+  const consentRef = job.pathway_generated ? resolvePathwayCertRef(activePathwayVersion?.cert_ref, job.pathway, job.details?.projectNumber || job.id.slice(0, 8), job.pathway_version) : job.details?.projectNumber || "—";
   const d = job.details || {};
   const issuedDate = formatISODate(record.generated_date);
   const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "Applicant";

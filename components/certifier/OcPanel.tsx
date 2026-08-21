@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { formatISODate, stageComplete } from "@/lib/business";
+import { formatISODate, stageComplete, resolveOcCertRef } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { reportOcToPortal, markJobComplete, reopenJob, notifyClientMessage, sendOcToClient } from "@/lib/actions/jobs";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { IssueOcForm } from "@/components/certifier/IssueOcForm";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import { Download } from "lucide-react";
+import { EditableCertRef } from "@/components/certifier/EditableCertRef";
 import type { Job, Certifier, OcRecord, ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -43,8 +44,8 @@ export async function OcPanel({
       {job.pathway_generated && complete && <IssueOcForm jobId={job.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} />}
 
       <div className="space-y-3">
-        {ocRecords.map((r) => (
-          <OcRecordCard key={r.id} record={r} job={job} firmId={firmId} certifiers={certifiers} />
+        {ocRecords.map((r, i) => (
+          <OcRecordCard key={r.id} record={r} sequence={i + 1} job={job} firmId={firmId} certifiers={certifiers} />
         ))}
       </div>
 
@@ -64,8 +65,9 @@ export async function OcPanel({
   );
 }
 
-async function OcRecordCard({ record, job, certifiers }: { record: OcRecord; job: Job; firmId: string; certifiers: Certifier[] }) {
+async function OcRecordCard({ record, sequence, job, certifiers }: { record: OcRecord; sequence: number; job: Job; firmId: string; certifiers: Certifier[] }) {
   const issuedBy = certifiers.find((c) => c.id === record.issued_by);
+  const ref = resolveOcCertRef(record.cert_ref, job.details?.projectNumber || job.id.slice(0, 8), sequence);
   const approvalUrl = await signedUrl(record.approval_file_path);
   return (
     <div className="card-lift border border-line rounded-xl p-6 shadow-sm bg-white">
@@ -73,6 +75,9 @@ async function OcRecordCard({ record, job, certifiers }: { record: OcRecord; job
         <div>
           <div className="text-base font-semibold text-heading">
             {record.type === "whole" ? "Whole OC" : "Partial OC"} {record.description ? `— ${record.description}` : ""}
+          </div>
+          <div className="text-xs font-semibold text-heading mt-0.5">
+            <EditableCertRef jobId={job.id} recordId={record.id} kind="oc" currentRef={ref} isCustom={!!record.cert_ref} />
           </div>
           <div className="text-xs text-muted mt-0.5">
             Issued {formatISODate(record.generated_date)} by {issuedBy?.name || "—"}

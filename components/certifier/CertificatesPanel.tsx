@@ -1,4 +1,4 @@
-import { formatISODate, stageComplete, pathwayCertRef } from "@/lib/business";
+import { formatISODate, stageComplete, resolvePathwayCertRef } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { reportPathwayToPortal, setVisiblePathwayVersion, startModification, uploadModificationApproval, notifyClientMessage, sendPathwayCertificateToClient } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
@@ -7,6 +7,7 @@ import { IssueCertificateForm, IssueModificationForm } from "@/components/certif
 import { DeletePathwayVersionButton } from "@/components/certifier/DeletePathwayVersionButton";
 import { DeleteModificationButton } from "@/components/certifier/DeleteModificationButton";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
+import { EditableCertRef } from "@/components/certifier/EditableCertRef";
 import Link from "next/link";
 import { ChevronDown, Download } from "lucide-react";
 import type { Job, Certifier, Modification, ChecklistItem, Amendment, PathwayCertificateVersion } from "@/types/db";
@@ -120,14 +121,14 @@ export async function CertificatesPanel({
 async function PathwayVersionCard({ version, job, firmId, certifiers }: { version: PathwayCertificateVersion; job: Job; firmId: string; certifiers: Certifier[] }) {
   const issuedBy = certifiers.find((c) => c.id === version.issued_by);
   const approvalUrl = await signedUrl(version.approval_file_path);
-  const ref = pathwayCertRef(job.pathway, job.details?.projectNumber || job.id.slice(0, 8), version.version);
+  const ref = resolvePathwayCertRef(version.cert_ref, job.pathway, job.details?.projectNumber || job.id.slice(0, 8), version.version);
 
   return (
     <div className={`border rounded-xl p-4 ${version.visible_to_client ? "border-emerald-300 bg-emerald-50/40" : "border-line bg-white"}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-heading">
-            v{version.version} — {ref}
+            v{version.version} — <EditableCertRef jobId={job.id} recordId={version.id} kind="pathway" currentRef={ref} isCustom={!!version.cert_ref} />
           </div>
           <div className="text-xs text-muted mt-0.5">
             Issued {formatISODate(version.generated_date)} by {issuedBy?.name || "—"}

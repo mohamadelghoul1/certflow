@@ -208,6 +208,7 @@ export type Modification = {
 };
 
 export type PathwayCertificateVersion = {
+  cert_ref: string | null;
   id: string;
   job_id: string;
   version: number;
@@ -224,6 +225,7 @@ export type PathwayCertificateVersion = {
 };
 
 export type OcRecord = {
+  cert_ref: string | null;
   id: string;
   job_id: string;
   type: "partial" | "whole";

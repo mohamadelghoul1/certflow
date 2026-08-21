@@ -133,10 +133,24 @@ export function pathwayCertRef(pathway: "CDC" | "CC", projectNumberOrId: string,
   return `${pathway}-${projectNumberOrId}/${String(version || 1).padStart(2, "0")}`;
 }
 
+// A certifier can override the generated reference per version / per OC
+// record (see migration 0012). Everything that displays or prints a
+// reference goes through these so a custom one is honoured consistently —
+// on the cards, the certificates, the letters and the inspection reports —
+// rather than only in the one place it was typed. Blank or whitespace-only
+// falls back to the generated reference.
+export function resolvePathwayCertRef(customRef: string | null | undefined, pathway: "CDC" | "CC", projectNumberOrId: string, version: number) {
+  return customRef?.trim() || pathwayCertRef(pathway, projectNumberOrId, version);
+}
+
 // sequence = this OC's 1-based position among every OC issued for the job
 // (partial and whole together), oldest first.
 export function ocCertRef(projectNumberOrId: string, sequence: number) {
   return `OC-${projectNumberOrId}/${String(sequence || 1).padStart(2, "0")}`;
+}
+
+export function resolveOcCertRef(customRef: string | null | undefined, projectNumberOrId: string, sequence: number) {
+  return customRef?.trim() || ocCertRef(projectNumberOrId, sequence);
 }
 
 // Build Brief §9: CDC/CC/OC issuance and critical stage inspections must be
