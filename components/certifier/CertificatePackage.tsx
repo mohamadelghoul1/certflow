@@ -196,6 +196,23 @@ function inlineComputedStyles(live: Element, clone: Element) {
 // single <br> is the one mechanism confirmed clean and reliable across
 // many rounds of real exports — deliberately not "reinforcing" it further.
 function applyPageBreaks(root: HTMLElement) {
+  // Isolated to this document's very first section boundary specifically —
+  // every later break in the same file lands cleanly, confirmed across
+  // several real exports — its letterhead table keeps getting squeezed
+  // onto the leftover space at the bottom of page 1 instead of starting
+  // page 2 fresh. The one thing unique to that boundary is that it's the
+  // very first page-break marker Word encounters in the whole document.
+  // Giving it something real to sit after, instead of being the first
+  // element in the file outright, is a targeted test of that theory — it
+  // doesn't touch the mechanism used at every other (already-working)
+  // boundary.
+  const firstBreak = root.querySelector("[data-page-break]");
+  if (firstBreak && firstBreak.previousElementSibling === null) {
+    const spacer = document.createElement("p");
+    spacer.setAttribute("style", "font-size:1px;line-height:1px;margin:0;padding:0;mso-hide:all");
+    spacer.innerHTML = "&nbsp;";
+    firstBreak.parentElement?.insertBefore(spacer, firstBreak);
+  }
   root.querySelectorAll<HTMLElement>("[data-page-break]").forEach((el) => {
     const before = el.getAttribute("data-page-break") === "before";
     const br = document.createElement("br");
