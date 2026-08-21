@@ -8,8 +8,9 @@ import { DeletePathwayVersionButton } from "@/components/certifier/DeletePathway
 import { DeleteModificationButton } from "@/components/certifier/DeleteModificationButton";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import { EditableCertRef } from "@/components/certifier/EditableCertRef";
+import { SignCertificateButton } from "@/components/certifier/SignCertificateButton";
 import Link from "next/link";
-import { ChevronDown, Download } from "lucide-react";
+import { ChevronDown, Download, FileText, Printer, CheckCircle2 } from "lucide-react";
 import type { Job, Certifier, Modification, ChecklistItem, Amendment, PathwayCertificateVersion } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -48,11 +49,6 @@ export async function CertificatesPanel({
         <div className="flex items-center justify-between mb-1">
           <div className="text-base font-semibold text-heading">{job.pathway}</div>
           {!complete && !job.pathway_generated && <span className="text-xs text-muted">Checklist not yet complete</span>}
-          {job.pathway_generated && (
-            <Link href={`/certificate/pathway/${job.id}`} target="_blank" className="text-xs font-semibold text-secondary hover:underline shrink-0">
-              View certificate document →
-            </Link>
-          )}
         </div>
         <p className="text-xs text-muted mb-1">
           Regenerating keeps every earlier version below — nothing is overwritten. Pick which one is active, or delete a version issued by mistake. A
@@ -124,7 +120,7 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
   const ref = resolvePathwayCertRef(version.cert_ref, job.pathway, job.details?.projectNumber || job.id.slice(0, 8), version.version);
 
   return (
-    <div className={`border rounded-xl p-4 ${version.visible_to_client ? "border-emerald-300 bg-emerald-50/40" : "border-line bg-white"}`}>
+    <div className={`border rounded-xl p-4 ${version.signed_at ? "border-accent/40 bg-emerald-50/40" : "border-line bg-white"}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-heading">
@@ -136,27 +132,50 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
             {version.sent_to_client ? ` · Sent to client ${formatISODate(version.sent_to_client_date)}` : " · Not sent to client"}
           </div>
         </div>
-        {version.visible_to_client ? (
-          <span className="text-[11px] font-semibold text-emerald-700 shrink-0">Active version</span>
-        ) : (
-          <form action={setVisiblePathwayVersion}>
-            <input type="hidden" name="job_id" value={job.id} />
-            <input type="hidden" name="version_id" value={version.id} />
-            <button className="text-[11px] font-semibold text-secondary hover:underline shrink-0">Make this the active version</button>
-          </form>
-        )}
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          {/* Green means approved, consistently with the checklist items —
+              and a certificate is only approved once it's been signed. The
+              active-version marker is a separate idea (which version the
+              client sees), so it reads as a plain tag rather than competing
+              for the same colour. */}
+          {version.signed_at ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent">
+              <CheckCircle2 size={12} /> Approved
+            </span>
+          ) : (
+            <span className="text-[11px] font-semibold text-muted">Not yet signed</span>
+          )}
+          {version.visible_to_client ? (
+            <span className="text-[11px] text-muted">Active version</span>
+          ) : (
+            <form action={setVisiblePathwayVersion}>
+              <input type="hidden" name="job_id" value={job.id} />
+              <input type="hidden" name="version_id" value={version.id} />
+              <button className="text-[11px] font-semibold text-secondary hover:underline">Make this the active version</button>
+            </form>
+          )}
+        </div>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-3">
-        {/* Only on the active version: the .docx route renders whichever
-            version the job currently points at, so offering this on an older
-            card would quietly hand over the wrong document. It matters most
-            once signed — the document page hides its own Export as Word at
-            that point, which left no way at all to download the final
-            approved certificate. */}
+      <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-3">
+        {/* Everything that renders a document is limited to the active
+            version: all three routes build from whichever version the job
+            currently points at, so offering them on an older card would
+            quietly produce the wrong document. Export stays available after
+            signing — the document page hides its own Export at that point,
+            which otherwise left no way to download the final approval. */}
         {version.visible_to_client && (
-          <a href={`/api/certificate/pathway/${job.id}/word`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
-            <Download size={12} /> Download Word
-          </a>
+          <>
+            <Link href={`/certificate/pathway/${job.id}`} target="_blank" className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+              <FileText size={12} /> Review approval
+            </Link>
+            <a href={`/api/certificate/pathway/${job.id}/word`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+              <Download size={12} /> Export to Word
+            </a>
+            <Link href={`/certificate/pathway/${job.id}?print=1`} target="_blank" className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+              <Printer size={12} /> Print / Save as PDF
+            </Link>
+            {!version.signed_at && <SignCertificateButton jobId={job.id} />}
+          </>
         )}
         {approvalUrl && (
           <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">

@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
 import Link from "next/link";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { AutoPrint } from "@/components/certifier/AutoPrint";
 import type { ActionState } from "@/lib/actions/auth";
 
 // Its own component (rather than inline in the toolbar) because useActionState
@@ -93,6 +94,9 @@ export function CertificatePackage({
 
   return (
     <div className="min-h-screen bg-slate-100 print:bg-white">
+      <Suspense fallback={null}>
+        <AutoPrint />
+      </Suspense>
       <div className="max-w-3xl mx-auto py-6 px-4 print:hidden flex items-center justify-between flex-wrap gap-2">
         <Link href={backHref} className="text-sm text-slate-500 hover:text-teal-800">
           ← Back to project
