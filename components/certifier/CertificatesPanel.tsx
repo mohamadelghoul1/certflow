@@ -107,7 +107,6 @@ export async function CertificatesPanel({
             ))}
             <form action={startModification} className="flex items-center gap-2">
               <input type="hidden" name="job_id" value={job.id} />
-              <input type="hidden" name="pathway" value={job.pathway} />
               <input name="reason" placeholder="Reason for modification…" className="flex-1 px-2 py-1.5 rounded border border-line text-xs" />
               <button className="text-xs font-semibold text-secondary hover:underline">Start a modified {job.pathway}</button>
             </form>

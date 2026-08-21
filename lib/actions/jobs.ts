@@ -636,28 +636,22 @@ export async function deleteModification(formData: FormData) {
 }
 
 export async function startModification(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const reason = String(formData.get("reason") || "");
-  const pathway = String(formData.get("pathway") || "CDC");
 
+  // Deliberately creates an EMPTY checklist. Unlike the initial CDC/CC
+  // assessment — where the full firm library is the right starting point,
+  // since every one of those documents is genuinely needed — a modification
+  // only ever concerns the handful of documents the change actually
+  // affects. Pre-filling it from the library meant every modification began
+  // with a long list of irrelevant items to delete. The certifier picks the
+  // ones they want from the library via ChecklistSection's document picker.
   const { data: mod } = await supabase.from("modifications").insert({ job_id: jobId, reason }).select("id").single();
   if (!mod) return;
-  const { data: checklist } = await supabase.from("checklists").insert({ job_id: jobId, kind: "modification", modification_id: mod.id }).select("id").single();
-  if (checklist) {
-    const library = await firmLibrary(supabase, profile.firm_id, pathway);
-    const items = library.map((doc, idx) => ({
-      checklist_id: checklist.id,
-      title: doc.title,
-      description: doc.description,
-      category: doc.category,
-      sort_order: idx,
-    }));
-    if (items.length) await supabase.from("checklist_items").insert(items);
-  }
+  await supabase.from("checklists").insert({ job_id: jobId, kind: "modification", modification_id: mod.id });
   revalidatePath(`/jobs/${jobId}`);
-  void profile;
 }
 
 export async function issueModification(_prev: ActionState, formData: FormData): Promise<ActionState> {
