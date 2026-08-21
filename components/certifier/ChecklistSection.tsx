@@ -142,16 +142,19 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
             <StatusBadge dot={status.dot} label={status.label} />
           </div>
         </div>
-        {fileUrl && (
-          <a
-            href={fileUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 text-sm font-medium text-white bg-secondary hover:opacity-90 rounded-full px-4 py-2 shrink-0 whitespace-nowrap"
-          >
-            <FileText size={14} /> View
-          </a>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {fileUrl && (
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-sm font-medium text-white bg-secondary hover:opacity-90 rounded-full px-4 py-2 whitespace-nowrap"
+            >
+              <FileText size={14} /> View
+            </a>
+          )}
+          <RemoveItemButton itemId={item.id} jobId={jobId} title={item.title} />
+        </div>
       </div>
 
       <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
@@ -189,7 +192,6 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
             <Stamp size={13} /> {item.requires_stamping ? "Stamp required" : "Stamp not required"}
           </button>
         </form>
-        <RemoveItemButton itemId={item.id} jobId={jobId} title={item.title} />
       </div>
 
       <details className="mt-3">
