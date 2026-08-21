@@ -52,7 +52,8 @@ export async function CertificatesPanel({
           )}
         </div>
         <p className="text-xs text-muted mb-1">
-          Regenerating keeps every earlier version below — nothing is overwritten. Pick which one clients see, or delete a version issued by mistake.
+          Regenerating keeps every earlier version below — nothing is overwritten. Pick which one is active, or delete a version issued by mistake. A
+          version only reaches the client once you sign it and press Send to client.
         </p>
 
         {complete && <IssueCertificateForm jobId={job.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} isRegenerate={job.pathway_generated} />}
@@ -134,12 +135,12 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
           </div>
         </div>
         {version.visible_to_client ? (
-          <span className="text-[11px] font-semibold text-emerald-700 shrink-0">Shown to client</span>
+          <span className="text-[11px] font-semibold text-emerald-700 shrink-0">Active version</span>
         ) : (
           <form action={setVisiblePathwayVersion}>
             <input type="hidden" name="job_id" value={job.id} />
             <input type="hidden" name="version_id" value={version.id} />
-            <button className="text-[11px] font-semibold text-secondary hover:underline shrink-0">Show this to client instead</button>
+            <button className="text-[11px] font-semibold text-secondary hover:underline shrink-0">Make this the active version</button>
           </form>
         )}
       </div>

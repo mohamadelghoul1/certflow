@@ -102,10 +102,14 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
         <Section>
           <DocumentHeader firm={firm} logoUrl={logoUrl} />
           <div className="text-sm space-y-4">
-            <div className="flex justify-between">
-              <div>Our reference: {projRef}</div>
-              <div>{issuedDate}</div>
-            </div>
+            <table className="w-full text-sm">
+              <tbody>
+                <tr>
+                  <td>Our reference: {projRef}</td>
+                  <td className="text-right">{issuedDate}</td>
+                </tr>
+              </tbody>
+            </table>
             <div>
               The General Manager
               <br />
@@ -138,10 +142,14 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
         <Section>
           <DocumentHeader firm={firm} logoUrl={logoUrl} />
           <div className="text-sm space-y-4">
-            <div className="flex justify-between">
-              <div>Our reference: {projRef}</div>
-              <div>{issuedDate}</div>
-            </div>
+            <table className="w-full text-sm">
+              <tbody>
+                <tr>
+                  <td>Our reference: {projRef}</td>
+                  <td className="text-right">{issuedDate}</td>
+                </tr>
+              </tbody>
+            </table>
             <div>
               {applicantName}
               <br />
@@ -179,20 +187,24 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
             >
               APPROVED
             </div>
-            <div className="flex items-start justify-between border-b-2 border-slate-800 pb-4 mb-6">
-              <div>
-                <div className="text-xl font-bold text-slate-900">{firm?.name}</div>
-                <div className="text-xs text-slate-500 mt-1">ABN {firm?.abn}</div>
-                <div className="text-xs text-slate-500">{firm?.office_address}</div>
-                <div className="text-xs text-slate-500">
-                  {firm?.phone} · {firm?.email}
-                </div>
-              </div>
-              <div className="text-right text-xs text-slate-500">
-                <div>Reference</div>
-                <div className="font-mono font-semibold text-slate-800">{ref}</div>
-              </div>
-            </div>
+            <table className="w-full border-b-2 border-slate-800 mb-6">
+              <tbody>
+                <tr>
+                  <td className="align-top pb-4">
+                    <div className="text-xl font-bold text-slate-900">{firm?.name}</div>
+                    <div className="text-xs text-slate-500 mt-1">ABN {firm?.abn}</div>
+                    <div className="text-xs text-slate-500">{firm?.office_address}</div>
+                    <div className="text-xs text-slate-500">
+                      {firm?.phone} · {firm?.email}
+                    </div>
+                  </td>
+                  <td className="align-top pb-4 text-right text-xs text-slate-500">
+                    <div>Reference</div>
+                    <div className="font-mono font-semibold text-slate-800">{ref}</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
             <h1 className="text-center text-2xl font-bold text-slate-900 uppercase tracking-wide mb-1">{typeLabel}</h1>
             <p className="text-center text-xs text-slate-500 mb-8">Issued under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979</p>

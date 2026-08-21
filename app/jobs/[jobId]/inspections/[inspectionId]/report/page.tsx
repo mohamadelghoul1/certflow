@@ -215,10 +215,14 @@ export default async function InspectionReportPage({ params }: { params: Promise
           <div className="text-sm text-slate-500">{formatISODate(inspection.date)}</div>
         </div>
 
-        <div className="flex justify-between text-[11px] text-slate-400 border-t border-slate-200 mt-8 pt-2">
-          <span>Project No.: {certRef}</span>
-          <span>{firmData?.website}</span>
-        </div>
+        <table className="w-full text-[11px] text-slate-400 border-t border-slate-200 mt-8 pt-2">
+          <tbody>
+            <tr>
+              <td>Project No.: {certRef}</td>
+              <td className="text-right">{firmData?.website}</td>
+            </tr>
+          </tbody>
+        </table>
 
         {inspection.inspection_photos.length > 0 && (
           <div className="pt-8 print:break-before-page" data-page-break="before">
