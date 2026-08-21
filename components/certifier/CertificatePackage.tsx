@@ -1,214 +1,9 @@
 "use client";
 
-import { useRef, useActionState } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import type { ActionState } from "@/lib/actions/auth";
-
-// Word ignores the site's Tailwind stylesheet entirely (it isn't linked
-// into the exported file), so without this every exported doc would render
-// as unstyled black-on-white text with no borders/spacing/fonts at all.
-// Inlining each element's actual on-screen computed style is what makes the
-// Word file look like the PDF/print view instead of a bare HTML dump.
-//
-// Deliberately excludes "width" and the horizontal margins: this app's
-// layouts lean on flexbox/grid, which Word cannot render at all, so those
-// properties come out of getComputedStyle as absolute pixel values (a flex
-// child's allocated width, or an mx-auto container's resolved centering
-// margin) that only make sense inside the flex/grid context that produced
-// them. Baking a pixel width or a huge centering margin onto a plain block
-// element in Word is what caused every exported page to come out blank
-// with the content pushed off-page across dozens of pages. Word already
-// falls back flex/grid containers to plain stacked blocks on its own (no
-// stylesheet is linked, so display:flex never reaches it) — that fallback
-// is what's safe to keep; only the width/margin values computed *from* it
-// are not.
-const STYLE_PROPS = [
-  "color",
-  "background-color",
-  "font-family",
-  "font-size",
-  "font-weight",
-  "font-style",
-  "text-align",
-  "text-decoration-line",
-  "text-transform",
-  "letter-spacing",
-  "line-height",
-  "border-top-width",
-  "border-top-style",
-  "border-top-color",
-  "border-right-width",
-  "border-right-style",
-  "border-right-color",
-  "border-bottom-width",
-  "border-bottom-style",
-  "border-bottom-color",
-  "border-left-width",
-  "border-left-style",
-  "border-left-color",
-  "border-collapse",
-  "border-radius",
-  "padding-top",
-  "padding-right",
-  "padding-bottom",
-  "padding-left",
-  "margin-top",
-  "margin-bottom",
-  "vertical-align",
-  "white-space",
-];
-
-const COLOR_PROPS = new Set(["color", "background-color", "border-top-color", "border-right-color", "border-bottom-color", "border-left-color"]);
-
-// Tailwind v4's palette is defined in a modern CSS color space, so
-// getComputedStyle() returns colors as lab(...)/oklch(...) rather than
-// plain rgb(). Word's HTML parser has no idea what those functions are —
-// and when it hits one inside a style attribute, it appears to discard the
-// *entire* attribute, not just the unparseable color, which is what made
-// exported borders/spacing/fonts disappear along with the colors.
-//
-// Reading back a color's *string* serialization (e.g. from a canvas
-// fillStyle getter) isn't reliable — modern browsers can hand it back in
-// the same lab()/oklch() form it went in as, rather than downgrading it.
-// Actually rendering the color to a pixel and reading the resulting bytes
-// has no such ambiguity: getImageData is specified to always return plain
-// 8-bit RGBA, regardless of what color space the fill was expressed in.
-let colorCtx: CanvasRenderingContext2D | null = null;
-function toWordSafeColor(value: string): string {
-  if (!value) return value;
-  if (!colorCtx) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1;
-    canvas.height = 1;
-    colorCtx = canvas.getContext("2d", { willReadFrequently: true });
-  }
-  if (!colorCtx) return value;
-  colorCtx.clearRect(0, 0, 1, 1);
-  colorCtx.fillStyle = value;
-  colorCtx.fillRect(0, 0, 1, 1);
-  const [r, g, b, a] = colorCtx.getImageData(0, 0, 1, 1).data;
-  return a === 255 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
-}
-
-// "Inter" (this app's actual font, loaded as a web font) isn't installed on
-// the machine Word is running on, so leaving the raw computed font-family
-// in the export just makes Word fall through the whole stack — "Inter",
-// "Inter Fallback", "ui-sans-serif", "system-ui" are all meaningless to
-// Word's font matcher — until it lands on some unpredictable default. Word
-// ships with Calibri on every install, so mapping straight to that (or a
-// monospace equivalent for the one place this app uses font-mono) gives a
-// clean, predictable result instead of leaving it to chance.
-function toWordSafeFont(value: string): string {
-  return /mono/i.test(value) ? "Consolas, 'Courier New', monospace" : "Calibri, Arial, sans-serif";
-}
-
-function inlineComputedStyles(live: Element, clone: Element) {
-  if (live instanceof HTMLElement && clone instanceof HTMLElement) {
-    const computed = window.getComputedStyle(live);
-    const declarations = STYLE_PROPS.map((prop) => {
-      const value = computed.getPropertyValue(prop);
-      if (prop === "font-family") return `font-family:${toWordSafeFont(value)}`;
-      return `${prop}:${COLOR_PROPS.has(prop) ? toWordSafeColor(value) : value}`;
-    });
-    // The border="0" attribute alone didn't stop Word: it still applies its
-    // own default "Table Grid" style to an imported table (visible borders
-    // on every cell) unless told otherwise in Word's own vocabulary. A
-    // plain CSS "border: none" doesn't carry enough weight to override that
-    // built-in style once Word's DOCX conversion has assigned it — Word's
-    // table-style system was designed around Word's own style priority
-    // rules, not the browser's cascade. mso-border-*-alt:none is the
-    // MS-Office-specific way of saying "no border" that actually wins
-    // against that default. Every side whose real CSS border is 0 gets one
-    // — sides that have a genuine border (the bordered "details" tables)
-    // are left alone so their border keeps showing.
-    for (const side of ["top", "right", "bottom", "left"]) {
-      if (computed.getPropertyValue(`border-${side}-width`) === "0px") {
-        declarations.push(`mso-border-${side}-alt:none`);
-      }
-    }
-    // Table layout is the one place a computed "width" is safe to inline:
-    // unlike a flex/grid child's width (a viewport-relative pixel value
-    // that only meant something in the browser's flex context — the cause
-    // of the original blank/endless-page bug), a table cell's width
-    // expressed as a percentage of its own table is self-contained and
-    // portable. Without this, every exported table has no width at all
-    // (the "width" property is otherwise deliberately excluded above), so
-    // Word falls back to auto-sizing each column purely from its content —
-    // which is what was producing lopsided, cramped-looking tables instead
-    // of matching the on-screen proportions.
-    if (live.tagName === "TABLE") {
-      declarations.push("width:100%");
-      // CSS alone (border-collapse, border: none) doesn't stop Word from
-      // drawing its own default gridlines around every cell of an
-      // imported table — that's controlled by the classic HTML border
-      // attribute, which none of these tables set, since the app itself
-      // never needs it (the CSS border-*-width: 0px already suppresses
-      // borders correctly in the browser/print view). Without it, Word
-      // boxes every single table-based layout row — which is most of this
-      // document — in a visible grid that isn't there in the PDF.
-      clone.setAttribute("border", "0");
-      clone.setAttribute("cellpadding", "0");
-      clone.setAttribute("cellspacing", "0");
-    } else if (live.tagName === "TD" || live.tagName === "TH") {
-      const table = live.closest("table");
-      if (table) {
-        const tableWidth = table.getBoundingClientRect().width;
-        const cellWidth = live.getBoundingClientRect().width;
-        if (tableWidth > 0) declarations.push(`width:${((cellWidth / tableWidth) * 100).toFixed(2)}%`);
-      }
-    } else if (live.tagName === "IMG") {
-      // Left unset, an exported <img> has no size at all, so Word displays
-      // it at the image file's raw native resolution rather than the small
-      // on-screen size (e.g. a multi-hundred-pixel-tall logo file shown at
-      // h-16 on screen) — this is what was blowing the logo up to fill and
-      // overflow the whole page. Pinning both the inline style and the
-      // classic HTML width/height attributes to the actual on-screen
-      // rendered size is the standard fix for Word/Outlook HTML export.
-      const rect = live.getBoundingClientRect();
-      const w = Math.round(rect.width);
-      const h = Math.round(rect.height);
-      if (w > 0 && h > 0) {
-        declarations.push(`width:${w}px`, `height:${h}px`);
-        clone.setAttribute("width", String(w));
-        clone.setAttribute("height", String(h));
-      }
-    }
-    clone.setAttribute("style", declarations.join(";"));
-  }
-  const liveChildren = live.children;
-  const cloneChildren = clone.children;
-  for (let i = 0; i < liveChildren.length; i++) {
-    if (cloneChildren[i]) inlineComputedStyles(liveChildren[i], cloneChildren[i]);
-  }
-}
-
-// Word's HTML importer only reliably breaks pages on this specific "mso"
-// line-break run — applied wherever the document marks a boundary with
-// data-page-break. Several targeted variations on this were tried and
-// discarded after real exports showed each one either did nothing or made
-// things worse (see git history on this function): a real page-break-after
-// on the section div in addition to this <br> caused content to split
-// mid-paragraph across an extra near-blank page; a leading spacer
-// paragraph before the very first break made no measurable difference;
-// marking the following letterhead table with its own page-break-before
-// left a new blank gap at the top of the next page without fixing the
-// original issue. This plain single <br> per boundary remains the only
-// version confirmed clean across every other section transition in the
-// document — the one known remaining defect (the second section's
-// letterhead landing on the leftover space at the bottom of the first
-// section's page) is a genuine, unresolved Word HTML-import quirk, not a
-// missing property.
-function applyPageBreaks(root: HTMLElement) {
-  root.querySelectorAll<HTMLElement>("[data-page-break]").forEach((el) => {
-    const before = el.getAttribute("data-page-break") === "before";
-    const br = document.createElement("br");
-    br.setAttribute("clear", "all");
-    br.setAttribute("style", "mso-special-character:line-break;page-break-before:always");
-    if (before) el.parentNode?.insertBefore(br, el);
-    else el.insertAdjacentElement("afterend", br);
-  });
-}
 
 // Its own component (rather than inline in the toolbar) because useActionState
 // must run unconditionally, and signAction is only present for documents
@@ -241,66 +36,19 @@ function SignButton({
   );
 }
 
-// The firm logo and certifier signature are rendered from short-lived
-// Supabase Storage "signed" URLs (expire ~1 hour after this page loaded).
-// Baking that URL straight into the exported file means Word has to fetch
-// it itself when the file is later opened — which it does unreliably even
-// while the link is still valid (downloaded files open in Protected View,
-// which blocks fetching remote content by default), and not at all once
-// the link expires. Converting each image to a base64 data: URI before
-// export makes the picture part of the file itself, so it always shows up
-// regardless of when the file is opened or whether the machine is online.
-async function inlineImages(root: HTMLElement) {
-  const imgs = Array.from(root.querySelectorAll("img"));
-  await Promise.all(
-    imgs.map(async (img) => {
-      const src = img.getAttribute("src");
-      if (!src || src.startsWith("data:")) return;
-      try {
-        const res = await fetch(src);
-        const blob = await res.blob();
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-        img.setAttribute("src", dataUrl);
-      } catch {
-        // Leave the remote URL in place as a fallback — better than an
-        // empty src if the fetch itself fails.
-      }
-    })
-  );
-}
-
-function downloadAsWordDoc(filename: string, innerHtml: string) {
-  // Belt-and-braces alongside the per-cell mso-border-*-alt declarations
-  // above: a bare tag-selector default in <head><style> is what Word's own
-  // HTML importer normally reads its table-style baseline from, so this is
-  // the first thing checked before Word decides whether to fall back to
-  // its built-in "Table Grid" borders. Any table that genuinely wants a
-  // border (styled with an explicit inline border-*-width) still shows it
-  // — inline styles win over this bare-tag default either way.
-  const style = `<style>table{border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;}td,th{border:none;mso-border-alt:none;}</style>`;
-  const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title>${style}</head><body>`;
-  const footer = `</body></html>`;
-  const blob = new Blob(["﻿", header + innerHtml + footer], { type: "application/msword" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 // Wraps the whole letter/certificate package: a print:hidden toolbar (back
-// link, Print, Export as Word) plus the printable content itself, held in
-// a ref so "Export as Word" can grab its rendered HTML directly — same
-// technique as the original prototype, just needs a Client Component
-// boundary since the content underneath is otherwise plain server-rendered.
+// link, Print, Export as Word) plus the printable content itself.
+//
+// "Export as Word" links straight to a route under app/api/ that builds a
+// genuine .docx server-side (lib/docx/) — native page breaks, table
+// borders, and image sizing, none of which depend on Word's notoriously
+// inconsistent legacy HTML importer. An earlier version of this component
+// instead cloned the live DOM, inlined every computed style, and disguised
+// the result as a .doc; that approach surfaced a new Word-HTML-import quirk
+// (page breaks, table borders, fonts, image sizing) almost every round it
+// was tested against a real export, including one boundary case that never
+// got fully resolved despite several targeted attempts — see git history on
+// this file if any of that ever needs resurrecting.
 //
 // signAction (optional) turns on the review-then-sign workflow shared by
 // every generated document: export to Word to check/amend the text, then
@@ -318,7 +66,7 @@ function downloadAsWordDoc(filename: string, innerHtml: string) {
 // elsewhere in the app.
 export function CertificatePackage({
   backHref,
-  filename,
+  wordExportHref,
   children,
   signed,
   signedLabel,
@@ -328,10 +76,9 @@ export function CertificatePackage({
   uploadFields,
   uploadPathPrefix,
   uploadedUrl,
-  wordExportHref,
 }: {
   backHref: string;
-  filename: string;
+  wordExportHref: string;
   children: React.ReactNode;
   signed?: boolean;
   signedLabel?: string;
@@ -341,39 +88,8 @@ export function CertificatePackage({
   uploadFields?: Record<string, string>;
   uploadPathPrefix?: string;
   uploadedUrl?: string | null;
-  // When set, "Export as Word" downloads a genuine .docx built server-side
-  // (lib/docx/) instead of this component's own client-side HTML-cloning
-  // export. That older path disguises a plain HTML file as a .doc, which
-  // depends on Word's notoriously inconsistent legacy HTML importer — real
-  // exports surfaced page-break, table-border, font, and image-sizing bugs
-  // one at a time over many rounds, and one boundary case (a small table
-  // landing on the leftover space at the bottom of the previous page)
-  // never got fully resolved despite several targeted attempts. A real
-  // .docx has native, reliable page breaks and formatting instead of
-  // relying on Word's HTML-import quirks at all. Being migrated across
-  // document types incrementally — pages without this prop still use the
-  // old client-side export for now.
-  wordExportHref?: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
   const canExportWord = !signAction || !signed;
-
-  async function exportWord() {
-    if (!ref.current) return;
-    const clone = ref.current.cloneNode(true) as HTMLElement;
-    inlineComputedStyles(ref.current, clone);
-    clone.querySelectorAll("[data-stamp]").forEach((n) => n.remove());
-    // print:hidden only takes effect inside an actual @media print
-    // context (browser Print/Save-as-PDF). This export path grabs the
-    // live on-screen computed style directly and never goes through that
-    // media query at all, so on-screen-only elements — the page index
-    // line, the "no certifier on file" warning banners — were rendering
-    // as ordinary visible content in the exported file.
-    clone.querySelectorAll('[class*="print:hidden"]').forEach((n) => n.remove());
-    applyPageBreaks(clone);
-    await inlineImages(clone);
-    downloadAsWordDoc(filename, clone.innerHTML);
-  }
 
   return (
     <div className="min-h-screen bg-slate-100 print:bg-white">
@@ -385,15 +101,10 @@ export function CertificatePackage({
           <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">
             Print / Save as PDF
           </button>
-          {canExportWord && wordExportHref && (
+          {canExportWord && (
             <a href={wordExportHref} className="px-4 py-2 rounded-md border border-teal-800 text-teal-800 text-sm font-semibold hover:bg-teal-50">
               Export as Word
             </a>
-          )}
-          {canExportWord && !wordExportHref && (
-            <button onClick={exportWord} className="px-4 py-2 rounded-md border border-teal-800 text-teal-800 text-sm font-semibold hover:bg-teal-50">
-              Export as Word
-            </button>
           )}
           {signAction && <SignButton signAction={signAction} signFields={signFields} signed={signed} signedLabel={signedLabel} />}
         </div>
@@ -416,7 +127,7 @@ export function CertificatePackage({
           </div>
         </div>
       )}
-      <div ref={ref}>{children}</div>
+      <div>{children}</div>
     </div>
   );
 }

@@ -61,7 +61,6 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
   return (
     <CertificatePackage
       backHref={`/jobs/${jobId}?tab=oc`}
-      filename={`${projRef}-Occupation-Certificate.docx`}
       wordExportHref={`/api/certificate/oc/${jobId}/${ocId}/word`}
       signed={!!record.signed_at}
       signedLabel={`Signed ${formatISODate(record.signed_at)}`}
