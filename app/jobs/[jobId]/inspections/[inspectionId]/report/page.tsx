@@ -52,7 +52,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
 
   const data = await getInspectionReportData(jobId, inspectionId, profile.firm_id);
   if (!data) notFound();
-  const { job, firm: firmData, inspection, inspector, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, consentRefLines } = data;
+  const { job, firm: firmData, inspection, inspector, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, consentRefLines, introText, notes } = data;
 
   // The results table is built from an array so a future report covering
   // several inspection areas in one visit just means feeding in more rows —
@@ -118,10 +118,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
         </table>
 
         <div className="text-sm font-bold mb-1">INSPECTION RESULTS</div>
-        <div className="text-xs text-slate-500 mb-2">
-          We have attended the above property and completed an inspection. The areas inspected and the overall outcome of the inspection are listed below,
-          together with any specific defects noted or documents required.
-        </div>
+        <div className="text-xs text-slate-500 mb-2 whitespace-pre-line">{introText}</div>
         <table className="w-full mb-4 border border-slate-300 text-sm break-inside-avoid">
           <thead>
             <tr className="bg-slate-100">
@@ -154,6 +151,13 @@ export default async function InspectionReportPage({ params }: { params: Promise
               </li>
             ))}
           </ol>
+        )}
+
+        {notes && (
+          <>
+            <div className="text-sm font-bold mb-1">NOTES</div>
+            <div className="text-sm text-slate-700 whitespace-pre-line mb-4">{notes}</div>
+          </>
         )}
 
         <div className="text-sm font-bold border-b border-slate-300 pb-1 mb-2 mt-6 break-inside-avoid">SIGNED BY:</div>

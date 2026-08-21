@@ -10,6 +10,8 @@ export type InspectionRecord = {
   outcome: string;
   inspector_certifier_id: string | null;
   report_signed_at: string | null;
+  report_intro_override: string | null;
+  report_notes: string | null;
   defects: Defect[];
   inspection_photos: InspectionPhoto[];
 };
@@ -27,6 +29,8 @@ export type InspectionReportData = {
   certRef: string;
   certNumbers: string;
   consentRefLines: string[];
+  introText: string;
+  notes: string;
 };
 
 // Single source of truth for the inspection report's content — used by
@@ -64,5 +68,12 @@ export async function getInspectionReportData(jobId: string, inspectionId: strin
     .map((l) => l.trim())
     .filter(Boolean);
 
-  return { job, firm: firm || null, inspection, inspector: inspector || null, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, consentRefLines };
+  // The certifier can replace the standard opening paragraph; blank or
+  // absent keeps the default wording.
+  const introText =
+    inspection.report_intro_override?.trim() ||
+    "We have attended the above property and completed an inspection. The areas inspected and the overall outcome of the inspection are listed below, together with any specific defects noted or documents required.";
+  const notes = inspection.report_notes?.trim() || "";
+
+  return { job, firm: firm || null, inspection, inspector: inspector || null, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, consentRefLines, introText, notes };
 }

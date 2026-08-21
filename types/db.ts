@@ -255,6 +255,8 @@ export type Inspection = {
   report_sent_date: string | null;
   report_file_path: string | null;
   report_signed_at: string | null;
+  report_intro_override: string | null;
+  report_notes: string | null;
   booked_by_client: boolean;
   confirmed: boolean;
   portal_reported: boolean;

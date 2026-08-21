@@ -45,7 +45,7 @@ function projectFooter(certRef: string, website: string | null | undefined) {
 }
 
 export async function buildInspectionReportDocx(data: InspectionReportData, images: { logo: ImageAsset | null; signature: ImageAsset | null; photos: (ImageAsset | null)[] }): Promise<Buffer> {
-  const { job, firm, inspection, inspector, d, applicantName, certRef, certNumbers, consentRefLines } = data;
+  const { job, firm, inspection, inspector, d, applicantName, certRef, certNumbers, consentRefLines, introText, notes } = data;
 
   const header = letterheadHeader(firm, images.logo);
   const footer = projectFooter(certRef, firm?.website);
@@ -75,7 +75,7 @@ export async function buildInspectionReportDocx(data: InspectionReportData, imag
     fieldTable(rows({ kind: "row", label: "Inspector:", value: inspector?.name }, { kind: "row", label: "Inspection date:", value: formatISODate(inspection.date) }, { kind: "row", label: "Registration No.:", value: inspector?.registration_no })),
 
     p("INSPECTION RESULTS", { bold: true, spacingBefore: 200, spacingAfter: 20 }),
-    p("We have attended the above property and completed an inspection. The areas inspected and the overall outcome of the inspection are listed below, together with any specific defects noted or documents required.", { size: 16, color: MUTED_COLOR, spacingAfter: 120 }),
+    p(introText, { size: 16, color: MUTED_COLOR, spacingAfter: 120 }),
     gridTable(["Inspection Area", "Inspection Outcome", "Reinspections"], [[`1. ${inspection.title}`, OUTCOME_TEXT[inspection.outcome] || "Pending", REINSPECTION_TEXT[inspection.outcome] || "No re-inspections required for this inspection."]], [30, 40, 30]),
 
     p("REQUIRED DOCUMENTS", { bold: true, spacingBefore: 200, spacingAfter: 20 })
@@ -89,6 +89,10 @@ export async function buildInspectionReportDocx(data: InspectionReportData, imag
         mixed([{ text: `${i + 1}.  ${defect.text} — ` }, defect.resolved ? { text: "Resolved", bold: true, color: "059669" } : { text: "Required", bold: true, color: "B45309" }], { spacingAfter: 60 })
       );
     });
+  }
+
+  if (notes) {
+    push(p("NOTES", { bold: true, spacingBefore: 200, spacingAfter: 20 }), p(notes, { spacingAfter: 60 }));
   }
 
   push(headingRule("SIGNED BY:"), ...signatureBlock(images.signature));

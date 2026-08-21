@@ -36,6 +36,22 @@ export async function recordOutcome(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// The two prose parts of the generated report. Blank intro means "use the
+// standard wording" rather than "print nothing", so clearing the box
+// restores the default instead of leaving a gap.
+export async function updateInspectionReportText(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const inspectionId = String(formData.get("inspection_id"));
+  const jobId = String(formData.get("job_id"));
+  const introOverride = String(formData.get("report_intro_override") || "").trim() || null;
+  const notes = String(formData.get("report_notes") || "").trim() || null;
+
+  await supabase.from("inspections").update({ report_intro_override: introOverride, report_notes: notes, updated_at: new Date().toISOString() }).eq("id", inspectionId);
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath("/jobs/[jobId]/inspections/[inspectionId]/report", "page");
+}
+
 export async function addDefect(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();

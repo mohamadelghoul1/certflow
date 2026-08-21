@@ -12,6 +12,7 @@ import {
   confirmBooking,
   uploadInspectionReport,
   removeInspection,
+  updateInspectionReportText,
   addPhoto,
   setPhotoCaption,
   removePhoto,
@@ -192,6 +193,32 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
         )}
         <ActionUpload action={addPhoto} fields={{ inspection_id: insp.id, job_id: jobId }} pathPrefix={`${firmId}/${jobId}/inspections/${insp.id}/photos`} label="Add photo" />
       </div>
+
+      {/* The report's two prose sections, editable here rather than only via
+          the Word round-trip. Collapsed by default since most reports use
+          the standard wording untouched. */}
+      <details className="mt-3">
+        <summary className="text-xs text-muted cursor-pointer hover:text-heading">Report wording (opening paragraph, notes)</summary>
+        <form action={updateInspectionReportText} className="mt-2 space-y-2">
+          <input type="hidden" name="inspection_id" value={insp.id} />
+          <input type="hidden" name="job_id" value={jobId} />
+          <div>
+            <label className="text-[11px] text-muted">Opening paragraph — leave blank for the standard wording</label>
+            <textarea
+              name="report_intro_override"
+              defaultValue={insp.report_intro_override || ""}
+              rows={3}
+              placeholder="We have attended the above property and completed an inspection. The areas inspected and the overall outcome of the inspection are listed below, together with any specific defects noted or documents required."
+              className="w-full px-2 py-1.5 rounded border border-line text-xs"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] text-muted">Notes — an extra section on the report; left out entirely when blank</label>
+            <textarea name="report_notes" defaultValue={insp.report_notes || ""} rows={3} className="w-full px-2 py-1.5 rounded border border-line text-xs" />
+          </div>
+          <button className="text-xs text-secondary hover:underline">Save report wording</button>
+        </form>
+      </details>
 
       <div className="mt-3 flex flex-wrap items-center gap-4">
         {/* Reviewing and signing are separate, deliberate steps, matching the
