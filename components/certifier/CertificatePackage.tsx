@@ -186,15 +186,23 @@ function inlineComputedStyles(live: Element, clone: Element) {
 // Word's HTML importer only reliably breaks pages on this specific "mso"
 // line-break run (a plain CSS page-break-after is not enough on its own) —
 // applied wherever the document marks a boundary with data-page-break.
+// Every mutation in here writes to the style *attribute string* directly
+// rather than through element.style.setProperty(). That CSSOM setter does
+// two things that silently break Word compatibility: (1) it drops
+// non-standard vendor property names outright (mso-special-character,
+// mso-border-*-alt), and (2) confirmed via a real export, it can rewrite a
+// legacy property into its modern CSS-Fragmentation equivalent when the
+// style is later serialized — "page-break-after: always" came back out as
+// "break-after: page". Word's HTML parser predates that modern property
+// entirely and just ignores it, so anything touched by setProperty() here
+// was silently doing nothing in the actual exported file, however correct
+// it looked in the DOM inspector.
 function applyPageBreaks(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>("[data-page-break]").forEach((el) => {
     const before = el.getAttribute("data-page-break") === "before";
-    el.style.setProperty(before ? "page-break-before" : "page-break-after", "always");
-    // setProperty() silently drops "mso-special-character" — the CSSOM
-    // rejects vendor-specific Microsoft Office property names that aren't
-    // in its known-properties list, even though they're perfectly valid to
-    // write as literal text inside a style attribute. Setting the whole
-    // attribute as a string bypasses that validation.
+    const prop = before ? "page-break-before" : "page-break-after";
+    el.setAttribute("style", `${el.getAttribute("style") || ""};${prop}:always`);
+
     const br = document.createElement("br");
     br.setAttribute("clear", "all");
     br.setAttribute("style", "mso-special-character:line-break;page-break-before:always");
@@ -212,7 +220,9 @@ function applyPageBreaks(root: HTMLElement) {
       const next = br.nextElementSibling as HTMLElement | null;
       if (next) {
         const firstTable = next.matches("table") ? next : next.querySelector("table");
-        if (firstTable instanceof HTMLElement) firstTable.style.setProperty("page-break-before", "always");
+        if (firstTable instanceof HTMLElement) {
+          firstTable.setAttribute("style", `${firstTable.getAttribute("style") || ""};page-break-before:always`);
+        }
       }
     }
   });
