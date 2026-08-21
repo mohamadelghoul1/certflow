@@ -198,8 +198,23 @@ function applyPageBreaks(root: HTMLElement) {
     const br = document.createElement("br");
     br.setAttribute("clear", "all");
     br.setAttribute("style", "mso-special-character:line-break;page-break-before:always");
-    if (before) el.parentNode?.insertBefore(br, el);
-    else el.insertAdjacentElement("afterend", br);
+    if (before) {
+      el.parentNode?.insertBefore(br, el);
+    } else {
+      el.insertAdjacentElement("afterend", br);
+      // A page-break-before landing on a <table> isn't reliably honored by
+      // Word's own table-pagination logic the way it is on a paragraph or
+      // div — confirmed by a real export where the next section's
+      // letterhead (a table) got squeezed onto the leftover space at the
+      // bottom of the previous page instead of starting the new one, even
+      // with the break already set on the wrapping section and on this
+      // <br>. Explicitly marking that first table closes the gap.
+      const next = br.nextElementSibling as HTMLElement | null;
+      if (next) {
+        const firstTable = next.matches("table") ? next : next.querySelector("table");
+        if (firstTable instanceof HTMLElement) firstTable.style.setProperty("page-break-before", "always");
+      }
+    }
   });
 }
 
@@ -342,6 +357,13 @@ export function CertificatePackage({
     const clone = ref.current.cloneNode(true) as HTMLElement;
     inlineComputedStyles(ref.current, clone);
     clone.querySelectorAll("[data-stamp]").forEach((n) => n.remove());
+    // print:hidden only takes effect inside an actual @media print
+    // context (browser Print/Save-as-PDF). This export path grabs the
+    // live on-screen computed style directly and never goes through that
+    // media query at all, so on-screen-only elements — the page index
+    // line, the "no certifier on file" warning banners — were rendering
+    // as ordinary visible content in the exported file.
+    clone.querySelectorAll('[class*="print:hidden"]').forEach((n) => n.remove());
     applyPageBreaks(clone);
     await inlineImages(clone);
     downloadAsWordDoc(filename, clone.innerHTML);
