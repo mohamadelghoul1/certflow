@@ -126,6 +126,7 @@ with an API key only you can obtain, exactly as the build brief describes:
 - **Combined stamped PDF bundle** (§11) — merging approved documents into one stamped PDF (the per-document "requires stamping" toggle is already in place, ready for this).
 - **Multi-certifier-firm billing/signup** (§13) — this is intentionally a later phase, once the certifier side is proven on this firm's real jobs.
 - **Offline inspection capture** (§14) — a mobile-specific, offline-first rebuild.
+- **Live-editing generated documents via OneDrive/Word Online** — instead of downloading a plain Word file, register CertFlow with Microsoft, let each firm connect their Microsoft 365/OneDrive account, and create the letters/certificate there directly. Editing in desktop Word (or Word Online embedded right in the page) would then autosave back to that same file with no download/re-upload step, which is what a proper "edit and it's just saved" experience actually requires. Needs a Microsoft developer/Azure app registration and an OAuth connect flow per firm before it can be built — today's Export as Word → edit → "Upload edited/signed copy" is the interim workflow.
 - Reports and Audit screens from the prototype haven't been ported yet (all the underlying data is there — this is a next-iteration UI task, not a data-model gap).
 
 Tell me when you're ready for any of these and I'll wire it up — most of
