@@ -91,14 +91,47 @@ function toWordSafeColor(value: string): string {
   return a === 255 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
 }
 
+// "Inter" (this app's actual font, loaded as a web font) isn't installed on
+// the machine Word is running on, so leaving the raw computed font-family
+// in the export just makes Word fall through the whole stack — "Inter",
+// "Inter Fallback", "ui-sans-serif", "system-ui" are all meaningless to
+// Word's font matcher — until it lands on some unpredictable default. Word
+// ships with Calibri on every install, so mapping straight to that (or a
+// monospace equivalent for the one place this app uses font-mono) gives a
+// clean, predictable result instead of leaving it to chance.
+function toWordSafeFont(value: string): string {
+  return /mono/i.test(value) ? "Consolas, 'Courier New', monospace" : "Calibri, Arial, sans-serif";
+}
+
 function inlineComputedStyles(live: Element, clone: Element) {
   if (live instanceof HTMLElement && clone instanceof HTMLElement) {
     const computed = window.getComputedStyle(live);
     const declarations = STYLE_PROPS.map((prop) => {
       const value = computed.getPropertyValue(prop);
+      if (prop === "font-family") return `font-family:${toWordSafeFont(value)}`;
       return `${prop}:${COLOR_PROPS.has(prop) ? toWordSafeColor(value) : value}`;
-    }).join(";");
-    clone.setAttribute("style", declarations);
+    });
+    // Table layout is the one place a computed "width" is safe to inline:
+    // unlike a flex/grid child's width (a viewport-relative pixel value
+    // that only meant something in the browser's flex context — the cause
+    // of the original blank/endless-page bug), a table cell's width
+    // expressed as a percentage of its own table is self-contained and
+    // portable. Without this, every exported table has no width at all
+    // (the "width" property is otherwise deliberately excluded above), so
+    // Word falls back to auto-sizing each column purely from its content —
+    // which is what was producing lopsided, cramped-looking tables instead
+    // of matching the on-screen proportions.
+    if (live.tagName === "TABLE") {
+      declarations.push("width:100%");
+    } else if (live.tagName === "TD" || live.tagName === "TH") {
+      const table = live.closest("table");
+      if (table) {
+        const tableWidth = table.getBoundingClientRect().width;
+        const cellWidth = live.getBoundingClientRect().width;
+        if (tableWidth > 0) declarations.push(`width:${((cellWidth / tableWidth) * 100).toFixed(2)}%`);
+      }
+    }
+    clone.setAttribute("style", declarations.join(";"));
   }
   const liveChildren = live.children;
   const cloneChildren = clone.children;
