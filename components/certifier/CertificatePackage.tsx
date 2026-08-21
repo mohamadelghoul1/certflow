@@ -66,18 +66,29 @@ const COLOR_PROPS = new Set(["color", "background-color", "border-top-color", "b
 // plain rgb(). Word's HTML parser has no idea what those functions are —
 // and when it hits one inside a style attribute, it appears to discard the
 // *entire* attribute, not just the unparseable color, which is what made
-// exported borders/spacing/fonts disappear along with the colors. Setting
-// the value as a canvas fillStyle and reading it back always normalizes to
-// #rrggbb/rgba(...), which Word can read, regardless of what color space
-// the original value was expressed in.
-let colorNormalizer: CanvasRenderingContext2D | null = null;
+// exported borders/spacing/fonts disappear along with the colors.
+//
+// Reading back a color's *string* serialization (e.g. from a canvas
+// fillStyle getter) isn't reliable — modern browsers can hand it back in
+// the same lab()/oklch() form it went in as, rather than downgrading it.
+// Actually rendering the color to a pixel and reading the resulting bytes
+// has no such ambiguity: getImageData is specified to always return plain
+// 8-bit RGBA, regardless of what color space the fill was expressed in.
+let colorCtx: CanvasRenderingContext2D | null = null;
 function toWordSafeColor(value: string): string {
   if (!value) return value;
-  colorNormalizer ||= document.createElement("canvas").getContext("2d");
-  if (!colorNormalizer) return value;
-  colorNormalizer.fillStyle = "#000000";
-  colorNormalizer.fillStyle = value;
-  return colorNormalizer.fillStyle;
+  if (!colorCtx) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    colorCtx = canvas.getContext("2d", { willReadFrequently: true });
+  }
+  if (!colorCtx) return value;
+  colorCtx.clearRect(0, 0, 1, 1);
+  colorCtx.fillStyle = value;
+  colorCtx.fillRect(0, 0, 1, 1);
+  const [r, g, b, a] = colorCtx.getImageData(0, 0, 1, 1).data;
+  return a === 255 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
 }
 
 function inlineComputedStyles(live: Element, clone: Element) {
