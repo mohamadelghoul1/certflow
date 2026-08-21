@@ -303,6 +303,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
 
         {/* 3. Certificate */}
         <Section>
+          <DocumentHeader firm={firm} logoUrl={logoUrl} />
           {isCdc ? (
             <>
               <div className="text-sm font-bold uppercase">
@@ -407,6 +408,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
 
         {/* 3b. Certificate — certifying authority, declaration & signature */}
         <Section>
+          <DocumentHeader firm={firm} logoUrl={logoUrl} />
           <div className="text-xs text-slate-400 mb-3">
             {pathwayFull} {ref} — continued
           </div>
