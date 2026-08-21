@@ -123,12 +123,39 @@ function inlineComputedStyles(live: Element, clone: Element) {
     // of matching the on-screen proportions.
     if (live.tagName === "TABLE") {
       declarations.push("width:100%");
+      // CSS alone (border-collapse, border: none) doesn't stop Word from
+      // drawing its own default gridlines around every cell of an
+      // imported table — that's controlled by the classic HTML border
+      // attribute, which none of these tables set, since the app itself
+      // never needs it (the CSS border-*-width: 0px already suppresses
+      // borders correctly in the browser/print view). Without it, Word
+      // boxes every single table-based layout row — which is most of this
+      // document — in a visible grid that isn't there in the PDF.
+      clone.setAttribute("border", "0");
+      clone.setAttribute("cellpadding", "0");
+      clone.setAttribute("cellspacing", "0");
     } else if (live.tagName === "TD" || live.tagName === "TH") {
       const table = live.closest("table");
       if (table) {
         const tableWidth = table.getBoundingClientRect().width;
         const cellWidth = live.getBoundingClientRect().width;
         if (tableWidth > 0) declarations.push(`width:${((cellWidth / tableWidth) * 100).toFixed(2)}%`);
+      }
+    } else if (live.tagName === "IMG") {
+      // Left unset, an exported <img> has no size at all, so Word displays
+      // it at the image file's raw native resolution rather than the small
+      // on-screen size (e.g. a multi-hundred-pixel-tall logo file shown at
+      // h-16 on screen) — this is what was blowing the logo up to fill and
+      // overflow the whole page. Pinning both the inline style and the
+      // classic HTML width/height attributes to the actual on-screen
+      // rendered size is the standard fix for Word/Outlook HTML export.
+      const rect = live.getBoundingClientRect();
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      if (w > 0 && h > 0) {
+        declarations.push(`width:${w}px`, `height:${h}px`);
+        clone.setAttribute("width", String(w));
+        clone.setAttribute("height", String(h));
       }
     }
     clone.setAttribute("style", declarations.join(";"));
