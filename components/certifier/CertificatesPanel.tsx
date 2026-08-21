@@ -8,7 +8,7 @@ import { DeletePathwayVersionButton } from "@/components/certifier/DeletePathway
 import { DeleteModificationButton } from "@/components/certifier/DeleteModificationButton";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Download } from "lucide-react";
 import type { Job, Certifier, Modification, ChecklistItem, Amendment, PathwayCertificateVersion } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -146,6 +146,17 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
         )}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-3">
+        {/* Only on the active version: the .docx route renders whichever
+            version the job currently points at, so offering this on an older
+            card would quietly hand over the wrong document. It matters most
+            once signed — the document page hides its own Export as Word at
+            that point, which left no way at all to download the final
+            approved certificate. */}
+        {version.visible_to_client && (
+          <a href={`/api/certificate/pathway/${job.id}/word`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+            <Download size={12} /> Download Word
+          </a>
+        )}
         {approvalUrl && (
           <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
             View uploaded copy

@@ -5,6 +5,7 @@ import { reportOcToPortal, markJobComplete, reopenJob, notifyClientMessage, send
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { IssueOcForm } from "@/components/certifier/IssueOcForm";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
+import { Download } from "lucide-react";
 import type { Job, Certifier, OcRecord, ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -84,6 +85,12 @@ async function OcRecordCard({ record, job, certifiers }: { record: OcRecord; job
         </Link>
       </div>
       <div className="mt-3 flex items-center gap-4 flex-wrap">
+        {/* The OC .docx route is per-record, so unlike the pathway versions
+            every card can safely offer its own download. Matters most once
+            signed, when the document page hides its own Export as Word. */}
+        <a href={`/api/certificate/oc/${job.id}/${record.id}/word`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+          <Download size={12} /> Download Word
+        </a>
         {approvalUrl && (
           <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
             View uploaded copy
