@@ -2,7 +2,7 @@ import { Document, Paragraph, Header, Footer, AlignmentType, Packer } from "docx
 import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
 import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureUnderline, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR } from "@/lib/docx/shared";
-import { formatAddress, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
+import { formatAddress, formatAddressLines, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatISODate } from "@/lib/business";
 
 // Mirrors app/certificate/pathway/[jobId]/page.tsx section-for-section, so
@@ -47,7 +47,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     splitRow(`Our reference: ${projRef}`, issuedDate),
     p("The General Manager"),
     p(d.council?.lga || "Council"),
-    p(formatAddress(d.council?.address)),
+    ...formatAddressLines(d.council?.address).map((line) => p(line)),
     p("Dear Sir/Madam,"),
     mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }]),
     mixed([{ text: `${pathwayFull} No.  `, bold: true }, { text: ref }]),
@@ -71,7 +71,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     pageBreak(),
     splitRow(`Our reference: ${projRef}`, issuedDate),
     p(applicantName),
-    p(formatAddress(d.applicantAddress)),
+    ...formatAddressLines(d.applicantAddress).map((line) => p(line)),
     p("Dear Sir/Madam,"),
     mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }]),
     mixed([{ text: `${pathwayFull} No.:  `, bold: true }, { text: ref }]),
@@ -153,18 +153,16 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
           ] as const)
         : []),
       { kind: "row", label: isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", value: "See attached Notice" },
-    ])
-  );
-
-  // 3b. Certificate — certifying authority, declaration & signature
-  push(
-    pageBreak(),
-    p(`${pathwayFull} ${ref} — continued`, { size: 16, color: MUTED_COLOR, spacingAfter: 120 }),
-    fieldTable([
+      // The certifying-authority declaration flows straight on as part of
+      // the same certificate table rather than a separate "— continued"
+      // page — a hard split here read as an abrupt cut rather than one
+      // continuous certificate, so it's now one table that paginates
+      // naturally if it runs long, the same way a real printed certificate
+      // would.
       { kind: "heading", text: "REGISTERED CERTIFIER" },
       { kind: "row", label: "Registered Certifier:", value: issuedBy?.name },
-      { kind: "row", label: "Registration No:", value: issuedBy?.registration_no },
       { kind: "row", label: "Registration Body:", value: issuedBy?.registration_body },
+      { kind: "row", label: "Registration No:", value: issuedBy?.registration_no },
     ]),
     p(
       isCdc
@@ -230,7 +228,6 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
         { spacingAfter: 0 }
       ),
     ]),
-    splitRow("", `Dated: ${issuedDate}`, { size: 20 }),
     ...signatureBlock(images.signature),
     p(issuedBy?.name || "—"),
     p(`Principal Certifier / ${issuedBy?.registration_no || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 200 }),

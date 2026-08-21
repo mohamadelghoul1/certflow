@@ -10,6 +10,19 @@ export function formatAddress(a?: Record<string, string> | null) {
   return [parts, rest].filter(Boolean).join(", ") || "—";
 }
 
+// Street line / suburb-state-postcode line, split apart — used for the
+// addressee block at the top of a letter (street address on its own line,
+// like a real envelope), as opposed to formatAddress()'s single-line form
+// used everywhere else (e.g. an "Address:" field-table value).
+export function formatAddressLines(a?: Record<string, string> | null): string[] {
+  if (!a) return ["—"];
+  const parts = [a.streetNumber, a.street].filter(Boolean).join(" ");
+  const rest = [a.suburb, a.state, a.postcode].filter(Boolean).join(" ");
+  const lines = [parts, rest].filter(Boolean);
+  if (lines.length === 2) lines[0] = `${lines[0]},`;
+  return lines;
+}
+
 // Falls back to showing whatever was typed rather than "$NaN" if the
 // estimated cost field wasn't entered as a clean number.
 export function formatCurrency(value?: string | null) {
