@@ -7,6 +7,7 @@ import { IssueCertificateForm, IssueModificationForm } from "@/components/certif
 import { DeletePathwayVersionButton } from "@/components/certifier/DeletePathwayVersionButton";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import type { Job, Certifier, Modification, ChecklistItem, Amendment, PathwayCertificateVersion } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -162,41 +163,52 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
   const approvalUrl = await signedUrl(mod.approval_file_path);
 
   return (
-    <div className="border border-line rounded-xl p-6 shadow-sm bg-white">
-      <div className="text-base font-semibold text-heading">Modification {mod.reason ? `— ${mod.reason}` : ""}</div>
-      <div className="text-xs text-muted mt-0.5">{mod.generated ? `Issued ${formatISODate(mod.generated_date)} by ${issuedBy?.name || "—"} (v${mod.version})` : "Checklist in progress"}</div>
+    // Collapsed by default. Each modification carries a full document
+    // checklist, so a job with even one or two of them made this tab
+    // enormously long to scroll — and one started by mistake could never be
+    // folded out of the way. Native <details> rather than a client-side
+    // toggle keeps this a Server Component, matching the collapsibles
+    // already used in ChecklistSection and TaskBoard.
+    <details className="group border border-line rounded-xl shadow-sm bg-white">
+      <summary className="flex items-start justify-between gap-3 p-6 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+        <div>
+          <div className="text-base font-semibold text-heading">Modification {mod.reason ? `— ${mod.reason}` : ""}</div>
+          <div className="text-xs text-muted mt-0.5">{mod.generated ? `Issued ${formatISODate(mod.generated_date)} by ${issuedBy?.name || "—"} (v${mod.version})` : "Checklist in progress"}</div>
+        </div>
+        <ChevronDown className="w-5 h-5 shrink-0 text-muted transition-transform group-open:rotate-180" aria-hidden />
+      </summary>
 
-      {mod.checklistId && (
-        <div className="mt-3">
+      <div className="px-6 pb-6">
+        {mod.checklistId && (
           <ChecklistSection jobId={job.id} firmId={firmId} checklistId={mod.checklistId} label={`Modification${mod.reason ? ` — ${mod.reason}` : ""}`} library={library} items={mod.items} />
-        </div>
-      )}
+        )}
 
-      {complete && !mod.generated && <IssueModificationForm jobId={job.id} modificationId={mod.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} />}
+        {complete && !mod.generated && <IssueModificationForm jobId={job.id} modificationId={mod.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} />}
 
-      {mod.generated && (
-        <div className="mt-3 flex items-center gap-4">
-          {approvalUrl && (
-            <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
-              View signed approval
-            </a>
-          )}
-          <ActionUpload
-            action={uploadModificationApproval}
-            fields={{ job_id: job.id, modification_id: mod.id }}
-            pathPrefix={`${firmId}/${job.id}/certificates/modification/${mod.id}`}
-            label={mod.approval_uploaded ? "Replace signed approval" : "Upload signed approval"}
-          />
-          {mod.approval_uploaded && (
-            <form action={notifyClientMessage}>
-              <input type="hidden" name="job_id" value={job.id} />
-              <input type="hidden" name="subject" value="Modified certificate issued" />
-              <input type="hidden" name="message" value="A modified certificate has been issued and is now available to view in your portal." />
-              <button className="text-xs font-semibold text-secondary hover:underline">Notify client</button>
-            </form>
-          )}
-        </div>
-      )}
-    </div>
+        {mod.generated && (
+          <div className="mt-3 flex items-center gap-4">
+            {approvalUrl && (
+              <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
+                View signed approval
+              </a>
+            )}
+            <ActionUpload
+              action={uploadModificationApproval}
+              fields={{ job_id: job.id, modification_id: mod.id }}
+              pathPrefix={`${firmId}/${job.id}/certificates/modification/${mod.id}`}
+              label={mod.approval_uploaded ? "Replace signed approval" : "Upload signed approval"}
+            />
+            {mod.approval_uploaded && (
+              <form action={notifyClientMessage}>
+                <input type="hidden" name="job_id" value={job.id} />
+                <input type="hidden" name="subject" value="Modified certificate issued" />
+                <input type="hidden" name="message" value="A modified certificate has been issued and is now available to view in your portal." />
+                <button className="text-xs font-semibold text-secondary hover:underline">Notify client</button>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
+    </details>
   );
 }
