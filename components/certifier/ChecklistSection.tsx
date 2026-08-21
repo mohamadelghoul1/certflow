@@ -1,10 +1,8 @@
 import { displayStatus } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { updateItemMeta, certifierUploadItem, notifyClientOfChecklist } from "@/lib/actions/jobs";
-import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { updateItemMeta, notifyClientOfChecklist } from "@/lib/actions/jobs";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
-import { StampToggle } from "@/components/certifier/StampToggle";
 import { ItemStatusProvider, ItemCard, ItemStatusBadge, ItemStatusActions } from "@/components/certifier/ItemStatus";
 import { EditableChecklistItemHeader } from "@/components/certifier/EditableChecklistItemHeader";
 import { AmendmentsList } from "@/components/certifier/AmendmentsList";
@@ -131,14 +129,7 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
         </div>
 
         <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
-          <ItemStatusActions />
-          <ActionUpload
-            action={certifierUploadItem}
-            fields={{ item_id: item.id, job_id: jobId }}
-            pathPrefix={`${firmId}/${jobId}/checklist/${item.id}`}
-            label="Upload on client's behalf"
-          />
-          <StampToggle itemId={item.id} jobId={jobId} requiresStamping={item.requires_stamping} />
+          <ItemStatusActions itemId={item.id} jobId={jobId} firmId={firmId} requiresStamping={item.requires_stamping} />
         </div>
 
         <details className="mt-3">

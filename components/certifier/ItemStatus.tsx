@@ -1,9 +1,11 @@
 "use client";
 
-import { createContext, useContext, useOptimistic, useTransition } from "react";
+import { createContext, useContext, useOptimistic, useState, useTransition } from "react";
 import { CheckCircle2, Clock, AlertTriangle, Circle, RotateCcw } from "lucide-react";
 import { displayStatus, unresolvedCount } from "@/lib/business";
-import { approveItem, reopenItem } from "@/lib/actions/jobs";
+import { approveItem, reopenItem, certifierUploadItem } from "@/lib/actions/jobs";
+import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { StampToggle } from "@/components/certifier/StampToggle";
 import type { Amendment, ChecklistItem } from "@/types/db";
 
 type ItemStatus = ChecklistItem["status"];
@@ -109,32 +111,85 @@ export function ItemStatusBadge() {
   );
 }
 
-export function ItemStatusActions() {
+// The whole action row, driven by where the document actually is. Every
+// button used to show at once regardless of state — Approve sat there
+// before the client had uploaded anything, and the stamp toggle before
+// there was an approved document to stamp — which made it hard to tell
+// what, if anything, needed doing. Each state now offers only the actions
+// that make sense for it.
+export function ItemStatusActions({ itemId, jobId, firmId, requiresStamping }: { itemId: string; jobId: string; firmId: string; requiresStamping: boolean }) {
   const { status, amendments, approve, reopen } = useItemStatus();
-  const canApprove = status === "submitted" && unresolvedCount({ status, amendments }) === 0;
+  const [reviewing, setReviewing] = useState(false);
+  const unresolved = unresolvedCount({ status, amendments });
 
-  if (canApprove) {
-    // Deliberately NOT green. Green means "approved" everywhere else in the
-    // app (the status badge, the completed progress bar), so a solid green
-    // Approve button sitting on an unapproved document made the card read
-    // as already approved at a glance. Dark = "this is the action to take",
-    // green = "this is done" — the two never overlap now.
-    return (
-      <button type="button" onClick={approve} className="flex items-center gap-1.5 text-sm font-medium text-white bg-primary hover:opacity-90 px-4 py-1.5 rounded-full">
-        <CheckCircle2 size={13} /> Approve
-      </button>
-    );
-  }
+  const uploadOnBehalf = (
+    <ActionUpload action={certifierUploadItem} fields={{ item_id: itemId, job_id: jobId }} pathPrefix={`${firmId}/${jobId}/checklist/${itemId}`} label="Upload on client's behalf" />
+  );
+
+  // Done — the only things left are undoing it, and whether it needs stamping.
   if (status === "approved") {
     return (
-      <button
-        type="button"
-        onClick={reopen}
-        className="flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-slate-50"
-      >
-        <RotateCcw size={13} /> Reopen
-      </button>
+      <>
+        <button type="button" onClick={reopen} className="flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-slate-50">
+          <RotateCcw size={13} /> Reopen
+        </button>
+        <StampToggle itemId={itemId} jobId={jobId} requiresStamping={requiresStamping} />
+      </>
     );
   }
-  return null;
+
+  // Client has uploaded and nothing is outstanding — this is the one that
+  // needs a decision, so it leads with a single prompt rather than a row of
+  // buttons, and only opens up to Approve / Request modification once
+  // pressed. Keeps an accidental tap from approving a document outright.
+  if (status === "submitted" && unresolved === 0) {
+    if (!reviewing) {
+      return (
+        <button
+          type="button"
+          onClick={() => setReviewing(true)}
+          className="flex items-center gap-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 hover:bg-blue-100"
+        >
+          <Clock size={13} /> Client uploaded — awaiting review
+        </button>
+      );
+    }
+    return (
+      <>
+        {/* Deliberately NOT green. Green means "approved" everywhere else in
+            the app, so a green Approve button on an unapproved document made
+            the card read as already approved. Dark = the action to take. */}
+        <button type="button" onClick={approve} className="flex items-center gap-1.5 text-sm font-medium text-white bg-primary hover:opacity-90 px-4 py-1.5 rounded-full">
+          <CheckCircle2 size={13} /> Approve
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setReviewing(false);
+            // Requesting a change *is* adding an amendment point — the
+            // mechanism already exists lower down the card, so this jumps
+            // to it rather than introducing a second way to say the same
+            // thing (which would then need its own resolve/track flow).
+            document.getElementById(`amendment-input-${itemId}`)?.focus();
+          }}
+          className="flex items-center gap-1.5 text-sm font-medium text-amber-800 border border-amber-300 rounded-full px-4 py-1.5 hover:bg-amber-50"
+        >
+          <AlertTriangle size={13} /> Request modification
+        </button>
+        <button type="button" onClick={() => setReviewing(false)} className="text-sm text-muted hover:underline px-2">
+          Cancel
+        </button>
+      </>
+    );
+  }
+
+  // Either nothing uploaded yet, or amendments are outstanding — in both
+  // cases the ball is with the client, so the only useful action is
+  // stepping in and uploading for them.
+  return (
+    <>
+      {unresolved > 0 && <span className="text-xs text-amber-700">Waiting on the client to address {unresolved} requested change{unresolved === 1 ? "" : "s"}.</span>}
+      {uploadOnBehalf}
+    </>
+  );
 }

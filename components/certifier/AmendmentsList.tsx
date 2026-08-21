@@ -80,7 +80,15 @@ export function AmendmentsList({ itemId, jobId, amendments }: { itemId: string; 
         </div>
       )}
       <form onSubmit={handleAdd} className="mt-3 flex gap-2">
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Add an amendment point…" className="flex-1 px-2 py-1.5 rounded border border-slate-200 text-xs" />
+        {/* id is how "Request modification" up in the action row jumps
+            straight here, rather than that button duplicating this input. */}
+        <input
+          id={`amendment-input-${itemId}`}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Add an amendment point…"
+          className="flex-1 px-2 py-1.5 rounded border border-slate-200 text-xs"
+        />
         <button type="submit" className="text-xs font-semibold text-amber-700 hover:underline">
           Add
         </button>
