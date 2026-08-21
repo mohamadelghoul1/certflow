@@ -9,6 +9,19 @@ import type { ActionState } from "@/lib/actions/auth";
 // as unstyled black-on-white text with no borders/spacing/fonts at all.
 // Inlining each element's actual on-screen computed style is what makes the
 // Word file look like the PDF/print view instead of a bare HTML dump.
+//
+// Deliberately excludes "width" and the horizontal margins: this app's
+// layouts lean on flexbox/grid, which Word cannot render at all, so those
+// properties come out of getComputedStyle as absolute pixel values (a flex
+// child's allocated width, or an mx-auto container's resolved centering
+// margin) that only make sense inside the flex/grid context that produced
+// them. Baking a pixel width or a huge centering margin onto a plain block
+// element in Word is what caused every exported page to come out blank
+// with the content pushed off-page across dozens of pages. Word already
+// falls back flex/grid containers to plain stacked blocks on its own (no
+// stylesheet is linked, so display:flex never reaches it) — that fallback
+// is what's safe to keep; only the width/margin values computed *from* it
+// are not.
 const STYLE_PROPS = [
   "color",
   "background-color",
@@ -40,10 +53,7 @@ const STYLE_PROPS = [
   "padding-bottom",
   "padding-left",
   "margin-top",
-  "margin-right",
   "margin-bottom",
-  "margin-left",
-  "width",
   "vertical-align",
   "white-space",
 ];

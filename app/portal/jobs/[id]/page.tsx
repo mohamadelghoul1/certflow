@@ -59,7 +59,7 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
         firmId={job.firm_id}
       />
 
-      {job.pathway_generated && (
+      {job.pathway_sent_to_client && (
         <div className="bg-white rounded-lg border border-slate-200 p-5">
           <div className="font-bold text-teal-900 mb-1">{job.pathway} certificate issued</div>
           <div className="text-xs text-slate-500 mb-3">Issued {formatISODate(job.pathway_generated_date)}</div>
@@ -90,7 +90,7 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
 
       <StageSection title="Occupation Certificate — checklist" items={(ocChecklist?.checklist_items as ItemWithAmendments[]) || []} jobId={id} firmId={job.firm_id} />
 
-      <OcSection ocRecords={ocRecords || []} />
+      <OcSection ocRecords={(ocRecords || []).filter((r) => r.sent_to_client)} />
 
       <div className="text-[11px] text-slate-400 text-center">Signed in as {profile.email}</div>
     </div>

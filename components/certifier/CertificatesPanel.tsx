@@ -1,10 +1,11 @@
 import { formatISODate, stageComplete, pathwayCertRef } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { reportPathwayToPortal, uploadPathwayApproval, setVisiblePathwayVersion, startModification, uploadModificationApproval, notifyClientMessage } from "@/lib/actions/jobs";
+import { reportPathwayToPortal, uploadPathwayApproval, setVisiblePathwayVersion, startModification, uploadModificationApproval, notifyClientMessage, sendPathwayCertificateToClient } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { IssueCertificateForm, IssueModificationForm } from "@/components/certifier/IssueCertificateForm";
 import { DeletePathwayVersionButton } from "@/components/certifier/DeletePathwayVersionButton";
+import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import Link from "next/link";
 import type { Job, Certifier, Modification, ChecklistItem, Amendment, PathwayCertificateVersion } from "@/types/db";
 
@@ -57,19 +58,29 @@ export async function CertificatesPanel({
         {complete && <IssueCertificateForm jobId={job.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} isRegenerate={job.pathway_generated} />}
 
         {job.pathway_generated && (
-          <div className="mt-3 flex items-center gap-4">
+          <div className="mt-3 flex items-center gap-4 flex-wrap">
             <form action={reportPathwayToPortal}>
               <input type="hidden" name="job_id" value={job.id} />
               <button disabled={job.pathway_portal_reported} className="text-xs font-semibold text-slate-600 hover:underline disabled:opacity-50 disabled:cursor-default">
                 {job.pathway_portal_reported ? `Reported to Portal ${formatISODate(job.pathway_portal_reported_date)}` : "Report to NSW Planning Portal"}
               </button>
             </form>
-            {job.pathway_approval_uploaded && (
+            {job.pathway_sent_to_client ? (
+              <span className="text-xs font-semibold text-emerald-700">Sent to client {formatISODate(job.pathway_sent_to_client_date)}</span>
+            ) : (
+              <SendToClientButton
+                action={sendPathwayCertificateToClient}
+                fields={{ job_id: job.id }}
+                disabled={!job.pathway_signed_at && !job.pathway_approval_uploaded}
+                disabledReason="Sign the certificate document first"
+              />
+            )}
+            {job.pathway_sent_to_client && (
               <form action={notifyClientMessage}>
                 <input type="hidden" name="job_id" value={job.id} />
                 <input type="hidden" name="subject" value="Certificate issued" />
                 <input type="hidden" name="message" value="Your certificate has been issued and is now available to view in your portal." />
-                <button className="text-xs font-semibold text-secondary hover:underline">Notify client</button>
+                <button className="text-xs font-semibold text-secondary hover:underline">Notify client again</button>
               </form>
             )}
           </div>
@@ -119,6 +130,7 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
           <div className="text-xs text-muted mt-0.5">
             Issued {formatISODate(version.generated_date)} by {issuedBy?.name || "—"}
             {version.signed_at ? ` · Signed ${formatISODate(version.signed_at)}` : " · Not yet signed"}
+            {version.sent_to_client ? ` · Sent to client ${formatISODate(version.sent_to_client_date)}` : " · Not sent to client"}
           </div>
         </div>
         {version.visible_to_client ? (

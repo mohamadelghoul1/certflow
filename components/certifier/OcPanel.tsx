@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { formatISODate, stageComplete } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { uploadOcApproval, reportOcToPortal, markJobComplete, reopenJob, notifyClientMessage } from "@/lib/actions/jobs";
+import { uploadOcApproval, reportOcToPortal, markJobComplete, reopenJob, notifyClientMessage, sendOcToClient } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { IssueOcForm } from "@/components/certifier/IssueOcForm";
+import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import type { Job, Certifier, OcRecord, ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -76,13 +77,14 @@ async function OcRecordCard({ record, job, firmId, certifiers }: { record: OcRec
           <div className="text-xs text-muted mt-0.5">
             Issued {formatISODate(record.generated_date)} by {issuedBy?.name || "—"}
             {record.signed_at ? ` · Signed ${formatISODate(record.signed_at)}` : " · Not yet signed"}
+            {record.sent_to_client ? ` · Sent to client ${formatISODate(record.sent_to_client_date)}` : " · Not sent to client"}
           </div>
         </div>
         <Link href={`/certificate/oc/${job.id}/${record.id}`} target="_blank" className="text-xs font-semibold text-secondary hover:underline shrink-0">
           {record.signed_at ? "View document →" : "Generate / sign document →"}
         </Link>
       </div>
-      <div className="mt-3 flex items-center gap-4">
+      <div className="mt-3 flex items-center gap-4 flex-wrap">
         {approvalUrl && (
           <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
             View signed approval
@@ -94,12 +96,20 @@ async function OcRecordCard({ record, job, firmId, certifiers }: { record: OcRec
           pathPrefix={`${firmId}/${job.id}/certificates/oc/${record.id}`}
           label={record.approval_uploaded ? "Replace signed approval" : "Upload signed approval"}
         />
-        {record.approval_uploaded && (
+        {!record.sent_to_client && (
+          <SendToClientButton
+            action={sendOcToClient}
+            fields={{ job_id: job.id, oc_id: record.id }}
+            disabled={!record.signed_at && !record.approval_uploaded}
+            disabledReason="Sign the certificate document first"
+          />
+        )}
+        {record.sent_to_client && (
           <form action={notifyClientMessage}>
             <input type="hidden" name="job_id" value={job.id} />
             <input type="hidden" name="subject" value="Occupation Certificate issued" />
             <input type="hidden" name="message" value={`Your ${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate has been issued and is now available to view in your portal.`} />
-            <button className="text-xs font-semibold text-secondary hover:underline">Notify client</button>
+            <button className="text-xs font-semibold text-secondary hover:underline">Notify client again</button>
           </form>
         )}
         <form action={reportOcToPortal}>

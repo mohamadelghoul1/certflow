@@ -397,7 +397,21 @@ export async function reopenItem(formData: FormData) {
 // dashboard tasks, and reports/audit all read those columns directly.
 // Keeping this in one place means only the "currently visible" version's
 // data ever has to be duplicated onto jobs.
-async function mirrorVisiblePathwayVersion(supabase: SupabaseClient, jobId: string, version: { version: number; generated_date: string; issued_by: string | null; signed_at: string | null; approval_uploaded: boolean; approval_date: string | null; approval_file_path: string | null } | null) {
+async function mirrorVisiblePathwayVersion(
+  supabase: SupabaseClient,
+  jobId: string,
+  version: {
+    version: number;
+    generated_date: string;
+    issued_by: string | null;
+    signed_at: string | null;
+    sent_to_client: boolean;
+    sent_to_client_date: string | null;
+    approval_uploaded: boolean;
+    approval_date: string | null;
+    approval_file_path: string | null;
+  } | null
+) {
   if (!version) {
     await supabase
       .from("jobs")
@@ -406,6 +420,8 @@ async function mirrorVisiblePathwayVersion(supabase: SupabaseClient, jobId: stri
         pathway_generated_date: null,
         pathway_issued_by: null,
         pathway_signed_at: null,
+        pathway_sent_to_client: false,
+        pathway_sent_to_client_date: null,
         pathway_version: 0,
         pathway_approval_uploaded: false,
         pathway_approval_date: null,
@@ -423,6 +439,8 @@ async function mirrorVisiblePathwayVersion(supabase: SupabaseClient, jobId: stri
       pathway_generated_date: version.generated_date,
       pathway_issued_by: version.issued_by,
       pathway_signed_at: version.signed_at,
+      pathway_sent_to_client: version.sent_to_client,
+      pathway_sent_to_client_date: version.sent_to_client_date,
       pathway_version: version.version,
       pathway_approval_uploaded: version.approval_uploaded,
       pathway_approval_date: version.approval_date,
@@ -490,6 +508,41 @@ export async function signPathwayCertificate(_prev: ActionState, formData: FormD
 
   const { error: jobError } = await supabase.from("jobs").update({ pathway_signed_at: signedAt }).eq("id", jobId);
   if (jobError) return { error: jobError.message };
+
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/pathway/${jobId}`);
+  return undefined;
+}
+
+// The certificate being generated/signed never exposes it to the client on
+// its own — the portal only ever shows a certificate once this is pressed,
+// so a mistake can be fixed (regenerate, re-export to Word, re-sign)
+// without the client ever seeing the wrong version. Regenerating always
+// resets sent_to_client to false on the new version, so it stays hidden
+// again until deliberately re-sent.
+export async function sendPathwayCertificateToClient(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+
+  const { data: job } = await supabase.from("jobs").select("id, pathway, pathway_version, pathway_signed_at, pathway_approval_uploaded").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return { error: "Project not found." };
+  if (!job.pathway_signed_at && !job.pathway_approval_uploaded) return { error: "Sign the certificate (or upload a signed copy) before sending it to the client." };
+
+  const sentDate = todayISO();
+  const { error: versionError, data: updatedVersions } = await supabase
+    .from("pathway_certificate_versions")
+    .update({ sent_to_client: true, sent_to_client_date: sentDate })
+    .eq("job_id", jobId)
+    .eq("version", job.pathway_version)
+    .select("id");
+  if (versionError) return { error: versionError.message };
+  if (!updatedVersions || updatedVersions.length === 0) return { error: "Could not find this certificate version to send." };
+
+  const { error: jobError } = await supabase.from("jobs").update({ pathway_sent_to_client: true, pathway_sent_to_client_date: sentDate }).eq("id", jobId);
+  if (jobError) return { error: jobError.message };
+
+  await notifyJobClient(supabase, jobId, `${job.pathway} issued`, `<p>Your ${job.pathway} has been issued and is now available to view in your portal.</p>`);
 
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pathway/${jobId}`);
@@ -633,6 +686,32 @@ export async function signOc(_prev: ActionState, formData: FormData): Promise<Ac
   const { error, data } = await supabase.from("oc_records").update({ signed_at: new Date().toISOString() }).eq("id", ocId).select("id");
   if (error) return { error: error.message };
   if (!data || data.length === 0) return { error: "Could not find this Occupation Certificate to sign." };
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/oc/${jobId}/${ocId}`);
+  return undefined;
+}
+
+export async function sendOcToClient(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const ocId = String(formData.get("oc_id"));
+
+  const { data: record } = await supabase.from("oc_records").select("id, type, signed_at, approval_uploaded").eq("id", ocId).single();
+  if (!record) return { error: "Occupation Certificate not found." };
+  if (!record.signed_at && !record.approval_uploaded) return { error: "Sign the certificate (or upload a signed copy) before sending it to the client." };
+
+  const { error, data } = await supabase.from("oc_records").update({ sent_to_client: true, sent_to_client_date: todayISO() }).eq("id", ocId).select("id");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "Could not find this Occupation Certificate to send." };
+
+  await notifyJobClient(
+    supabase,
+    jobId,
+    "Occupation Certificate issued",
+    `<p>Your ${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate has been issued and is now available to view in your portal.</p>`
+  );
+
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/oc/${jobId}/${ocId}`);
   return undefined;
