@@ -1,7 +1,7 @@
 import { Document, Paragraph, Header, Footer, AlignmentType, Packer } from "docx";
 import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
-import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureUnderline, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR } from "@/lib/docx/shared";
+import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR } from "@/lib/docx/shared";
 import { formatAddress, formatAddressLines, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatISODate } from "@/lib/business";
 
@@ -25,13 +25,6 @@ function letterheadHeader(firm: PathwayCertificateData["firm"], logo: ImageAsset
 
 function projectFooter(projRef: string, website: string | null | undefined) {
   return new Footer({ children: [splitRow(`Project No.: ${projRef}`, website || "", { size: 16, color: MUTED_COLOR })] });
-}
-
-function signatureBlock(signature: ImageAsset | null) {
-  if (signature) {
-    return [new Paragraph({ children: [image(signature.buffer, signature.type, signature.width, signature.height)], spacing: { before: 120, after: 0 } }), signatureUnderline()];
-  }
-  return [new Paragraph({ spacing: { before: 240, after: 0 } }), signatureUnderline()];
 }
 
 export async function buildPathwayCertificateDocx(data: PathwayCertificateData, images: { logo: ImageAsset | null; signature: ImageAsset | null }): Promise<Buffer> {

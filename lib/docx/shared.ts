@@ -228,13 +228,16 @@ export function calloutBox(children: Paragraph[]) {
   });
 }
 
-// A short ruled line for a signature to sit on/above — a narrow bordered
-// table rather than a paragraph border, since a paragraph's bottom border
-// spans the whole line box (the full page width) regardless of content,
-// not a short "sign here" line.
-export function signatureUnderline(widthPct = 28) {
-  return new Table({
-    rows: [new TableRow({ children: [cell([p("", { spacingAfter: 0 })], { widthPct: 100, borders: BOTTOM_LINE_ONLY })] })],
-    width: { size: widthPct, type: WidthType.PERCENTAGE },
-  });
+// The signature itself, or — while unsigned — just the blank vertical gap
+// where it will go once signed. Previously followed by a short ruled
+// line, which read as redundant once a real signature image was already
+// sitting right above it (a printed "sign here" line under an actual
+// signature stroke looks like an unfinished form field, not a finished
+// document) — removed everywhere this is used: every certificate, letter,
+// and inspection report.
+export function signatureBlock(signature: ImageAsset | null) {
+  if (signature) {
+    return [new Paragraph({ children: [image(signature.buffer, signature.type, signature.width, signature.height)], spacing: { before: 120, after: 120 } })];
+  }
+  return [new Paragraph({ spacing: { before: 240, after: 120 } })];
 }

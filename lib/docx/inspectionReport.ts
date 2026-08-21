@@ -1,7 +1,7 @@
 import { Document, Paragraph, Header, Footer, AlignmentType, Packer } from "docx";
 import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
-import { p, mixed, pageBreak, splitRow, fieldTable, gridTable, headingRule, photoGrid, image, signatureUnderline, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, type FieldRow } from "@/lib/docx/shared";
+import { p, mixed, pageBreak, splitRow, fieldTable, gridTable, headingRule, photoGrid, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, type FieldRow } from "@/lib/docx/shared";
 import { formatAddress } from "@/lib/certificates/pathwayData";
 import { formatISODate } from "@/lib/business";
 import type { InspectionReportData } from "@/lib/certificates/inspectionReportData";
@@ -91,12 +91,7 @@ export async function buildInspectionReportDocx(data: InspectionReportData, imag
     });
   }
 
-  push(headingRule("SIGNED BY:"));
-  if (images.signature) {
-    push(new Paragraph({ children: [image(images.signature.buffer, images.signature.type, images.signature.width, images.signature.height)], spacing: { before: 120, after: 0 } }), signatureUnderline());
-  } else {
-    push(new Paragraph({ spacing: { before: 240, after: 0 } }), signatureUnderline());
-  }
+  push(headingRule("SIGNED BY:"), ...signatureBlock(images.signature));
   push(p(`${inspector?.name || "—"} – Inspector`, { spacingAfter: 0 }), p(formatISODate(inspection.date), { color: MUTED_COLOR }));
 
   if (inspection.inspection_photos.length > 0) {
