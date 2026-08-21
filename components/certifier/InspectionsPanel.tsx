@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { FileText, Download, Printer } from "lucide-react";
+import { SignInspectionReportButton } from "@/components/certifier/SignInspectionReportButton";
 import { formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import {
@@ -192,13 +194,27 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-4">
-        <Link
-          href={`/jobs/${jobId}/inspections/${insp.id}/report`}
-          className="text-sm font-semibold text-white bg-secondary hover:opacity-90 px-4 py-2 rounded-full"
-        >
-          {insp.report_signed_at ? "View Inspection Report" : "Generate / Sign Inspection Report"}
+        {/* Reviewing and signing are separate, deliberate steps, matching the
+            certificate version card. The single "Generate / Sign Inspection
+            Report" button this replaces only ever opened the report page —
+            it never generated or signed anything — but read as though
+            pressing it would do both. */}
+        <Link href={`/jobs/${jobId}/inspections/${insp.id}/report`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+          <FileText size={12} /> Review report
         </Link>
-        {insp.report_signed_at && <span className="text-[11px] text-emerald-700">Signed {formatISODate(insp.report_signed_at)}</span>}
+        <a href={`/api/jobs/${jobId}/inspections/${insp.id}/report/word`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+          <Download size={12} /> Export to Word
+        </a>
+        <Link href={`/jobs/${jobId}/inspections/${insp.id}/report?print=1`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+          <Printer size={12} /> Print / Save as PDF
+        </Link>
+        {insp.report_signed_at ? (
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent">
+            <CheckCircle2 size={12} /> Signed {formatISODate(insp.report_signed_at)}
+          </span>
+        ) : (
+          <SignInspectionReportButton jobId={jobId} inspectionId={insp.id} />
+        )}
         {reportUrl && (
           <a href={reportUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
             View uploaded report
