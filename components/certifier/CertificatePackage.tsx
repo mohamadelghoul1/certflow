@@ -59,10 +59,34 @@ const STYLE_PROPS = [
   "white-space",
 ];
 
+const COLOR_PROPS = new Set(["color", "background-color", "border-top-color", "border-right-color", "border-bottom-color", "border-left-color"]);
+
+// Tailwind v4's palette is defined in a modern CSS color space, so
+// getComputedStyle() returns colors as lab(...)/oklch(...) rather than
+// plain rgb(). Word's HTML parser has no idea what those functions are —
+// and when it hits one inside a style attribute, it appears to discard the
+// *entire* attribute, not just the unparseable color, which is what made
+// exported borders/spacing/fonts disappear along with the colors. Setting
+// the value as a canvas fillStyle and reading it back always normalizes to
+// #rrggbb/rgba(...), which Word can read, regardless of what color space
+// the original value was expressed in.
+let colorNormalizer: CanvasRenderingContext2D | null = null;
+function toWordSafeColor(value: string): string {
+  if (!value) return value;
+  colorNormalizer ||= document.createElement("canvas").getContext("2d");
+  if (!colorNormalizer) return value;
+  colorNormalizer.fillStyle = "#000000";
+  colorNormalizer.fillStyle = value;
+  return colorNormalizer.fillStyle;
+}
+
 function inlineComputedStyles(live: Element, clone: Element) {
   if (live instanceof HTMLElement && clone instanceof HTMLElement) {
     const computed = window.getComputedStyle(live);
-    const declarations = STYLE_PROPS.map((prop) => `${prop}:${computed.getPropertyValue(prop)}`).join(";");
+    const declarations = STYLE_PROPS.map((prop) => {
+      const value = computed.getPropertyValue(prop);
+      return `${prop}:${COLOR_PROPS.has(prop) ? toWordSafeColor(value) : value}`;
+    }).join(";");
     clone.setAttribute("style", declarations);
   }
   const liveChildren = live.children;
