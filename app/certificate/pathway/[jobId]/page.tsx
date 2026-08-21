@@ -189,7 +189,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
     >
       <div className="max-w-3xl mx-auto px-4 pb-10 print:px-0 print:max-w-none">
         <div className="text-xs text-slate-400 px-2 pb-2 print:hidden">
-          1. Council letter · 2. Applicant letter · 3. Certificate · 4. Mandatory inspections notice · 5. Checklist summary
+          1. Council letter · 2. Applicant letter · 3. Certificate · 4. Certificate (cont.) · 5. Mandatory inspections notice · 6. Checklist summary
         </div>
         {!issuedBy && (
           <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2 mx-2 mb-3 print:hidden">
@@ -400,7 +400,18 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
                 </tr>
               )}
               <CertRow label={isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:"} value="See attached Notice" />
+            </tbody>
+          </table>
+          <DocFooter projRef={projRef} website={firm?.website} />
+        </Section>
 
+        {/* 3b. Certificate — certifying authority, declaration & signature */}
+        <Section>
+          <div className="text-xs text-slate-400 mb-3">
+            {pathwayFull} {ref} — continued
+          </div>
+          <table className="w-full">
+            <tbody>
               <TableSectionHeading>REGISTERED CERTIFIER</TableSectionHeading>
               <CertRow label="Registered Certifier:" value={issuedBy?.name} />
               <CertRow label="Registration No:" value={issuedBy?.registration_no} />

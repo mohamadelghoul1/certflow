@@ -19,6 +19,18 @@ body {
   background: var(--color-surface);
 }
 
+/* Generated documents (certificates, letters, inspection reports) print at
+   real A4 dimensions instead of whatever default the browser/OS falls
+   back to. A section's own content still flows across as many physical
+   pages as it needs within this — @page only fixes the paper size and
+   margins, it doesn't force any single section onto exactly one page. */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+}
+
 /* Shared "premium card" treatment: soft shadow that lifts slightly on
    hover, used across the dashboard's stat cards, panels, and task
    columns so they read as one consistent design language. */
