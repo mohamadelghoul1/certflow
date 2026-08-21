@@ -158,6 +158,39 @@ function SignButton({
   );
 }
 
+// The firm logo and certifier signature are rendered from short-lived
+// Supabase Storage "signed" URLs (expire ~1 hour after this page loaded).
+// Baking that URL straight into the exported file means Word has to fetch
+// it itself when the file is later opened — which it does unreliably even
+// while the link is still valid (downloaded files open in Protected View,
+// which blocks fetching remote content by default), and not at all once
+// the link expires. Converting each image to a base64 data: URI before
+// export makes the picture part of the file itself, so it always shows up
+// regardless of when the file is opened or whether the machine is online.
+async function inlineImages(root: HTMLElement) {
+  const imgs = Array.from(root.querySelectorAll("img"));
+  await Promise.all(
+    imgs.map(async (img) => {
+      const src = img.getAttribute("src");
+      if (!src || src.startsWith("data:")) return;
+      try {
+        const res = await fetch(src);
+        const blob = await res.blob();
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        img.setAttribute("src", dataUrl);
+      } catch {
+        // Leave the remote URL in place as a fallback — better than an
+        // empty src if the fetch itself fails.
+      }
+    })
+  );
+}
+
 function downloadAsWordDoc(filename: string, innerHtml: string) {
   const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title></head><body>`;
   const footer = `</body></html>`;
@@ -220,12 +253,13 @@ export function CertificatePackage({
   const ref = useRef<HTMLDivElement>(null);
   const canExportWord = !signAction || !signed;
 
-  function exportWord() {
+  async function exportWord() {
     if (!ref.current) return;
     const clone = ref.current.cloneNode(true) as HTMLElement;
     inlineComputedStyles(ref.current, clone);
     clone.querySelectorAll("[data-stamp]").forEach((n) => n.remove());
     applyPageBreaks(clone);
+    await inlineImages(clone);
     downloadAsWordDoc(filename, clone.innerHTML);
   }
 
