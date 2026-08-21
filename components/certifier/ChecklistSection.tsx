@@ -1,46 +1,18 @@
-import { displayStatus, unresolvedCount } from "@/lib/business";
+import { displayStatus } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { approveItem, reopenItem, updateItemMeta, certifierUploadItem, notifyClientOfChecklist } from "@/lib/actions/jobs";
+import { updateItemMeta, certifierUploadItem, notifyClientOfChecklist } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
 import { StampToggle } from "@/components/certifier/StampToggle";
+import { ItemStatusProvider, ItemStatusBadge, ItemStatusActions } from "@/components/certifier/ItemStatus";
 import { EditableChecklistItemHeader } from "@/components/certifier/EditableChecklistItemHeader";
 import { AmendmentsList } from "@/components/certifier/AmendmentsList";
-import { CheckCircle2, Clock, AlertTriangle, Circle, RotateCcw, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
+import { CheckCircle2, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
 import type { ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
 type LibItem = { title: string; description: string | null; category: string | null };
-
-function StatusBadge({ dot, label }: { dot: string; label: string }) {
-  if (dot.includes("amber")) {
-    return (
-      <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700">
-        <AlertTriangle size={12} /> {label}
-      </span>
-    );
-  }
-  if (dot.includes("emerald")) {
-    return (
-      <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-accent">
-        <CheckCircle2 size={12} /> {label}
-      </span>
-    );
-  }
-  if (dot.includes("blue")) {
-    return (
-      <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-        <Clock size={12} /> {label}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-      <Circle size={12} /> {label}
-    </span>
-  );
-}
 
 // Thin-line document icon chosen by keyword match on the item's title —
 // purely decorative, falls back to a generic file icon.
@@ -129,76 +101,62 @@ export async function ChecklistSection({
 async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobId: string; firmId: string }) {
   const status = displayStatus(item);
   const fileUrl = await signedUrl(item.file_path);
-  const canApprove = item.status === "submitted" && unresolvedCount(item) === 0;
 
   return (
-    <div className="card-lift rounded-xl border border-line bg-white shadow-sm p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <span className="w-9 h-9 rounded-lg bg-slate-50 border border-line flex items-center justify-center shrink-0 mt-0.5">
-            <DocumentIcon title={item.title} />
-          </span>
-          <div className="flex-1 min-w-0">
-            <EditableChecklistItemHeader itemId={item.id} jobId={jobId} title={item.title} description={item.description || ""} version={item.version} statusDot={status.dot} />
-            <StatusBadge dot={status.dot} label={status.label} />
+    <ItemStatusProvider itemId={item.id} jobId={jobId} status={item.status} amendments={item.amendments}>
+      <div className="card-lift rounded-xl border border-line bg-white shadow-sm p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <span className="w-9 h-9 rounded-lg bg-slate-50 border border-line flex items-center justify-center shrink-0 mt-0.5">
+              <DocumentIcon title={item.title} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <EditableChecklistItemHeader itemId={item.id} jobId={jobId} title={item.title} description={item.description || ""} version={item.version} statusDot={status.dot} />
+              <ItemStatusBadge />
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {fileUrl && (
+              <a
+                href={fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 text-sm font-medium text-white bg-secondary hover:opacity-90 rounded-full px-4 py-2 whitespace-nowrap"
+              >
+                <FileText size={14} /> View
+              </a>
+            )}
+            <RemoveItemButton itemId={item.id} jobId={jobId} title={item.title} />
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {fileUrl && (
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 text-sm font-medium text-white bg-secondary hover:opacity-90 rounded-full px-4 py-2 whitespace-nowrap"
-            >
-              <FileText size={14} /> View
-            </a>
-          )}
-          <RemoveItemButton itemId={item.id} jobId={jobId} title={item.title} />
+
+        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
+          <ItemStatusActions />
+          <ActionUpload
+            action={certifierUploadItem}
+            fields={{ item_id: item.id, job_id: jobId }}
+            pathPrefix={`${firmId}/${jobId}/checklist/${item.id}`}
+            label="Upload on client's behalf"
+          />
+          <StampToggle itemId={item.id} jobId={jobId} requiresStamping={item.requires_stamping} />
         </div>
-      </div>
 
-      <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
-        {canApprove && (
-          <form action={approveItem}>
+        <details className="mt-3">
+          <summary className="text-xs text-muted cursor-pointer hover:text-heading">Document details (revision, date, prepared by)</summary>
+          <form action={updateItemMeta} className="mt-2 grid sm:grid-cols-5 gap-2">
             <input type="hidden" name="item_id" value={item.id} />
             <input type="hidden" name="job_id" value={jobId} />
-            <button className="text-sm font-medium text-white bg-accent hover:opacity-90 px-4 py-1.5 rounded-full">Approve</button>
+            <input name="revision" defaultValue={item.revision || ""} placeholder="Revision" className="px-2 py-1.5 rounded border border-line text-xs" />
+            <input type="date" name="document_date" defaultValue={item.document_date || ""} className="px-2 py-1.5 rounded border border-line text-xs" />
+            <input name="prepared_by" defaultValue={item.prepared_by || ""} placeholder="Prepared by" className="px-2 py-1.5 rounded border border-line text-xs" />
+            <input name="drawing_number" defaultValue={item.drawing_number || ""} placeholder="Drawing number" className="px-2 py-1.5 rounded border border-line text-xs" />
+            <input name="clause_ref" defaultValue={item.clause_ref || ""} placeholder="NCC/BCA clause ref" className="px-2 py-1.5 rounded border border-line text-xs" />
+            <button className="sm:col-span-5 text-xs text-secondary hover:underline text-left">Save details</button>
           </form>
-        )}
-        {item.status === "approved" && (
-          <form action={reopenItem}>
-            <input type="hidden" name="item_id" value={item.id} />
-            <input type="hidden" name="job_id" value={jobId} />
-            <button className="flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-slate-50">
-              <RotateCcw size={13} /> Reopen
-            </button>
-          </form>
-        )}
-        <ActionUpload
-          action={certifierUploadItem}
-          fields={{ item_id: item.id, job_id: jobId }}
-          pathPrefix={`${firmId}/${jobId}/checklist/${item.id}`}
-          label="Upload on client's behalf"
-        />
-        <StampToggle itemId={item.id} jobId={jobId} requiresStamping={item.requires_stamping} />
+        </details>
+
+        <AmendmentsList itemId={item.id} jobId={jobId} amendments={item.amendments} />
       </div>
-
-      <details className="mt-3">
-        <summary className="text-xs text-muted cursor-pointer hover:text-heading">Document details (revision, date, prepared by)</summary>
-        <form action={updateItemMeta} className="mt-2 grid sm:grid-cols-5 gap-2">
-          <input type="hidden" name="item_id" value={item.id} />
-          <input type="hidden" name="job_id" value={jobId} />
-          <input name="revision" defaultValue={item.revision || ""} placeholder="Revision" className="px-2 py-1.5 rounded border border-line text-xs" />
-          <input type="date" name="document_date" defaultValue={item.document_date || ""} className="px-2 py-1.5 rounded border border-line text-xs" />
-          <input name="prepared_by" defaultValue={item.prepared_by || ""} placeholder="Prepared by" className="px-2 py-1.5 rounded border border-line text-xs" />
-          <input name="drawing_number" defaultValue={item.drawing_number || ""} placeholder="Drawing number" className="px-2 py-1.5 rounded border border-line text-xs" />
-          <input name="clause_ref" defaultValue={item.clause_ref || ""} placeholder="NCC/BCA clause ref" className="px-2 py-1.5 rounded border border-line text-xs" />
-          <button className="sm:col-span-5 text-xs text-secondary hover:underline text-left">Save details</button>
-        </form>
-      </details>
-
-      <AmendmentsList itemId={item.id} jobId={jobId} amendments={item.amendments} />
-    </div>
+    </ItemStatusProvider>
   );
 }
