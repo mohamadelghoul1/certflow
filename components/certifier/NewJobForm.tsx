@@ -400,16 +400,16 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
             ))}
           </div>
         ) : (
-          <>
+          <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Relevant environmental planning instrument</label>
-              <textarea name="relevantInstrument" rows={2} placeholder="e.g. State Environmental Planning Policy (Housing) 2021" className={inputCls} />
+              <label className={labelCls}>Development Consent (DA) Number</label>
+              <input name="developmentConsentNumber" placeholder="e.g. DA-25-01431" className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>Relevant part of code</label>
-              <input name="relevantPartOfCode" placeholder="e.g. Schedule 1 — Complying Development Secondary Dwelling" className={inputCls} />
+              <label className={labelCls}>Development Consent (DA) Date</label>
+              <input type="date" name="developmentConsentDate" className={inputCls} />
             </div>
-          </>
+          </div>
         )}
       </Section>
 

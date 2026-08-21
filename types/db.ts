@@ -118,6 +118,11 @@ export type JobDetails = {
     codeParts?: string[];
     determinationDate?: string;
     lapseDate?: string;
+    // CC only — a CC relies on an already-approved Development Application
+    // rather than a SEPP code, so it needs its own number/date, distinct
+    // from the CC's own certificate number/issuance date.
+    developmentConsentNumber?: string;
+    developmentConsentDate?: string;
     // Free-text, one reference per line — DA numbers, Notice of
     // Determination, or any other consent reference that doesn't fit a
     // fixed field. Shown on generated documents as its own line each.

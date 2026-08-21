@@ -113,6 +113,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
   const isCdc = job.pathway === "CDC";
   const pathwayFull = isCdc ? "Complying Development Certificate" : "Construction Certificate";
   const d = job.details || {};
+  const cd = d.certificateDetails || {};
   const issuedDate = formatISODate(job.pathway_generated_date);
   const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "Applicant";
   const applicantPhone = d.contact?.phone || d.contact?.mobile;
@@ -124,7 +125,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
   const councilBody = job.council_letter_override
     ? job.council_letter_override.split("\n\n")
     : [
-        `${firm?.name} Pty Ltd has issued a ${pathwayFull} under Part 4 of the Environmental Planning and Assessment Act 1979 for the above premises.`,
+        `${firm?.name} Pty Ltd has issued a ${pathwayFull} under ${isCdc ? "Part 4" : "Sections 6.3, 6.4, 6.16"} of the Environmental Planning and Assessment Act 1979 for the above premises.`,
         ...(isCdc ? ["The applicant / owner has been advised to submit the Notice of Intention to commence works on the NSW Planning Portal at least 48 hours prior to any works commencing on site."] : []),
         `Should you need to discuss any issues, please do not hesitate to contact the Registered Building Surveyor ${issuedBy?.name || "—"}.`,
       ];
@@ -134,12 +135,16 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
     : [
         `One copy of each has been forwarded directly to ${d.council?.lga || "Council"} for their records.`,
         `The Applicant / Owner is required to lodge the Appointment of a Principal Certifier to us through the NSW Planning Portal.`,
-        `Please note that no works can commence on site less than 7 days from the date of issuance of ${job.pathway}.`,
+        ...(isCdc ? [`Please note that no works can commence on site less than 7 days from the date of issuance of ${job.pathway}.`] : []),
         `Once our office accepts the Principal Certifier Appointment through the NSW Planning Portal the Applicant / Owner is required to lodge the Notice of Intention to commence works on the NSW Planning Portal at least 48 hours prior to any works commencing on site.`,
         `The Principal Certifier role to be undertaken by ${issuedBy?.name || "—"} will require inspections and certification.`,
         `Please have the Owner/Builder or licensed contractor liaise with ${issuedBy?.name || "—"} prior to commencement of the work.`,
         `Should you need to discuss any issues, please do not hesitate to contact the undersigned on the above numbers.`,
       ];
+
+  const requiredDocsList = isCdc
+    ? ["Receipt of the Council Contribution Fee.", "Receipt of the Council Bond.", "Builder’s Home Building Compensation Fund (HBCF Certificate) or Owner Builder Permit.", "Erosion and Sediment Controls to be implemented on site.", "Lodge the Principal Certifier Appointment to us through the NSW Planning Portal."]
+    : ["Erosion and Sediment Controls to be installed on site.", "Builder’s Home Warranty Certificate (HBCF) or Owner Builder Permit.", "Lodge the Principal Certifier Appointment to us through the NSW Planning Portal."];
 
   return (
     <CertificatePackage
@@ -176,7 +181,15 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
                 <strong>{pathwayFull} No.</strong>&nbsp;&nbsp;{ref}
               </div>
               <div className="mt-1">
-                <strong>Planning Instrument Decision Made Under:</strong>&nbsp;&nbsp;{d.certificateDetails?.relevantInstrument || "—"}
+                {isCdc ? (
+                  <>
+                    <strong>Planning Instrument Decision Made Under:</strong>&nbsp;&nbsp;{cd.relevantInstrument || "—"}
+                  </>
+                ) : (
+                  <>
+                    <strong>Development Application No.:</strong>&nbsp;&nbsp;{cd.developmentConsentNumber || "—"}
+                  </>
+                )}
               </div>
             </div>
             {councilBody.map((para, i) => (
@@ -230,11 +243,9 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
             <div className="bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
               Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:
               <ul className="list-disc pl-5 mt-1 space-y-0.5">
-                <li>Receipt of the Council Contribution Fee.</li>
-                <li>Receipt of the Council Bond.</li>
-                <li>Builder&apos;s Home Building Compensation Fund (HBCF Certificate) or Owner Builder Permit.</li>
-                <li>Erosion and Sediment Controls to be implemented on site.</li>
-                <li>Lodge the Principal Certifier Appointment to us through the NSW Planning Portal.</li>
+                {requiredDocsList.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
               </ul>
             </div>
             <div className="pt-4">Yours sincerely,</div>
@@ -247,19 +258,32 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
 
         {/* 3. Certificate */}
         <Section>
-          <div className="text-sm font-bold uppercase">
-            {pathwayFull} {ref}
-            <br />
-            PROJECT REFERENCE {projRef}
-          </div>
-          <p className="text-xs text-slate-500 mt-1 mb-4">
-            Issued under {isCdc ? "Part 4, Division 4.5" : "Part 6, Division 6.2"} of the Environmental Planning and Assessment Act 1979
-          </p>
-          <p className="text-sm font-bold mb-4">
-            This {job.pathway} approval does not allow any work to commence. Principal Certifier must be appointed, and Home Building Compensation Fund
-            (HBCF) has been issued by a licenced builder or Owner Builder Permit is issued by Building Commission NSW and all council fees/bonds have been
-            paid.
-          </p>
+          {isCdc ? (
+            <>
+              <div className="text-sm font-bold uppercase">
+                {pathwayFull} {ref}
+                <br />
+                PROJECT REFERENCE {projRef}
+              </div>
+              <p className="text-xs text-slate-500 mt-1 mb-4">Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979</p>
+              <p className="text-sm font-bold mb-4">
+                This CDC approval does not allow any work to commence. Principal Certifier must be appointed, and Home Building Compensation Fund (HBCF)
+                has been issued by a licenced builder or Owner Builder Permit is issued by Building Commission NSW and all council fees/bonds have been
+                paid.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="text-sm font-bold uppercase">
+                {pathwayFull} &ndash; {projRef}
+              </div>
+              <p className="text-xs text-slate-500 mt-1 mb-4">Issued under Part 6 the Environmental Planning and Assessment Act 1979</p>
+              <p className="text-sm font-bold mb-4">
+                This Construction Certificate does not give authorisation of any construction works to commence until a Principal Certifier has been
+                appointed.
+              </p>
+            </>
+          )}
 
           <table className="w-full">
             <tbody>
@@ -269,49 +293,68 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               <CertRow label="Phone:" value={applicantPhone} />
 
               <TableSectionHeading>OWNER DETAILS</TableSectionHeading>
-              <CertRow label="Owner" value={ownerName} />
+              <CertRow label={isCdc ? "Owner" : "Owner:"} value={ownerName} />
               <CertRow label="Address:" value={ownerAddress} />
               <CertRow label="Phone:" value={ownerPhone} />
 
-              <TableSectionHeading>{pathwayFull.toUpperCase()} DETAILS</TableSectionHeading>
-              <CertRow label="NSW Planning Portal Ref Number:" value={d.certificateDetails?.planningPortalRef} />
-              <CertRow label="Local Government Area:" value={d.council?.lga} />
-              <CertRow label="Relevant Environmental Planning Instrument" value={d.certificateDetails?.relevantInstrument} />
-              <CertRow label="Relevant Part of Code" value={d.certificateDetails?.relevantPartOfCode} />
-              <CertRow label="Date of Determination:" value={formatISODate(d.certificateDetails?.determinationDate)} />
-              {isCdc && <CertRow label="Date of Lapse:" value={lapseDate} />}
+              {isCdc ? (
+                <>
+                  <TableSectionHeading>{pathwayFull.toUpperCase()} DETAILS</TableSectionHeading>
+                  <CertRow label="NSW Planning Portal Ref Number:" value={cd.planningPortalRef} />
+                  <CertRow label="Local Government Area:" value={d.council?.lga} />
+                  <CertRow label="Relevant Environmental Planning Instrument" value={cd.relevantInstrument} />
+                  <CertRow label="Relevant Part of Code" value={cd.relevantPartOfCode} />
+                  <CertRow label="Date of Determination:" value={formatISODate(cd.determinationDate)} />
+                  <CertRow label="Date of Lapse:" value={lapseDate} />
+                </>
+              ) : (
+                <>
+                  <TableSectionHeading>RELEVANT DEVELOPMENT CONSENTS</TableSectionHeading>
+                  <CertRow label="Consent Authority / Local Government Area:" value={d.council?.lga} />
+                  <CertRow label="Development Consent Number:" value={cd.developmentConsentNumber} />
+                  <CertRow label="Development Consent Date:" value={formatISODate(cd.developmentConsentDate)} />
+                  <CertRow label="NSW Planning Portal Ref Number:" value={cd.planningPortalRef} />
+                  <CertRow label="Construction Certificate Number:" value={ref} />
+                  <CertRow label="Date of Issue of Construction Certificate:" value={issuedDate} />
+                </>
+              )}
 
               <TableSectionHeading>PROPOSAL</TableSectionHeading>
               <CertRow label="Address of Development:" value={job.address} />
-              <CertRow label="Lot/Section/DP:" value={d.certificateDetails?.lotSectionDp} />
-              <CertRow label="Land Use Zone:" value={d.zoning} />
-              <CertRow label="BCA Classification/s:" value={(d.proposal?.classifications || []).join(", ")} />
+              <CertRow label={isCdc ? "Lot/Section/DP:" : "Lot/ DP:"} value={cd.lotSectionDp} />
+              {isCdc && <CertRow label="Land Use Zone:" value={d.zoning} />}
+              <CertRow label={isCdc ? "BCA Classification/s:" : "BCA Classification:"} value={(d.proposal?.classifications || []).join(", ")} />
               <CertRow label="BCA/NCC Version:" value={d.bcaVersion} />
               <CertRow label="Description of Building Works:" value={job.description} />
-              <CertRow label="Value of Construction (incl. GST):" value={d.proposal?.estimatedCost ? `$${Number(d.proposal.estimatedCost).toLocaleString("en-AU", { minimumFractionDigits: 2 })}` : null} />
-              <CertRow label="Attachments" value={`Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon`} />
-              <tr className="align-top">
-                <td className="py-1.5 pr-4 text-sm font-semibold text-slate-800 whitespace-nowrap w-1/3">Conditions:</td>
-                <td className="py-1.5 text-sm text-slate-700">
-                  <div>
-                    Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying
-                    Development) Codes 2008 &amp; State Environmental Planning Policy (Housing) 2021
-                  </div>
-                  <div className="mt-1">
-                    Any monetary contribution fee&rsquo;s and/or any other Council fee&rsquo;s/bonds that are required by council MUST be paid prior to
-                    commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from Council
-                    and a copy of such approval provided to the PC prior to the works commencing.
-                  </div>
-                  {(conditions || []).length > 0 && (
-                    <ul className="list-disc pl-4 mt-2 space-y-0.5">
-                      {(conditions || []).map((c) => (
-                        <li key={c.id}>{c.text}</li>
-                      ))}
-                    </ul>
-                  )}
-                </td>
-              </tr>
-              <CertRow label="Critical stage inspections:" value="See attached Notice" />
+              <CertRow
+                label={isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)"}
+                value={d.proposal?.estimatedCost ? `$${Number(d.proposal.estimatedCost).toLocaleString("en-AU", { minimumFractionDigits: 2 })}` : null}
+              />
+              <CertRow label={isCdc ? "Attachments" : "Attachments:"} value="Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon" />
+              {isCdc && (
+                <tr className="align-top">
+                  <td className="py-1.5 pr-4 text-sm font-semibold text-slate-800 whitespace-nowrap w-1/3">Conditions:</td>
+                  <td className="py-1.5 text-sm text-slate-700">
+                    <div>
+                      Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and
+                      Complying Development) Codes 2008 &amp; State Environmental Planning Policy (Housing) 2021
+                    </div>
+                    <div className="mt-1">
+                      Any monetary contribution fee&rsquo;s and/or any other Council fee&rsquo;s/bonds that are required by council MUST be paid prior to
+                      commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from
+                      Council and a copy of such approval provided to the PC prior to the works commencing.
+                    </div>
+                    {(conditions || []).length > 0 && (
+                      <ul className="list-disc pl-4 mt-2 space-y-0.5">
+                        {(conditions || []).map((c) => (
+                          <li key={c.id}>{c.text}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </td>
+                </tr>
+              )}
+              <CertRow label={isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:"} value="See attached Notice" />
 
               <TableSectionHeading>REGISTERED CERTIFIER</TableSectionHeading>
               <CertRow label="Registered Certifier:" value={issuedBy?.name} />
@@ -321,10 +364,18 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
           </table>
 
           <p className="text-sm mt-4 text-justify">
-            I, {issuedBy?.name || "—"},{" "}
-            {isCdc
-              ? "certify that the development is complying development and (if carried out as specified in the certificate) will comply with all development standards applicable to the development and with such other requirements prescribed by this regulation concerning the issue of the certificate."
-              : "certify that the work, if completed in accordance with the specifications and plans set out in or accompanying this certificate, will comply with the requirements of the Building Code of Australia (as in force at the date the application for the relevant construction certificate was made)."}
+            {isCdc ? (
+              <>
+                I, {issuedBy?.name || "—"}, certify that the development is complying development and (if carried out as specified in the certificate)
+                will comply with all development standards applicable to the development and with such other requirements prescribed by this regulation
+                concerning the issue of the certificate.
+              </>
+            ) : (
+              <>
+                I certify that building work completed in accordance with the documents accompanying the application for the certificate, including
+                modifications verified by the certifier shown on the documents, will comply with the requirements referred to in the Act, Part 6.
+              </>
+            )}
           </p>
 
           <table className="w-full text-sm mt-4">
@@ -339,7 +390,9 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
           <div className="text-sm">{issuedBy?.name || "—"}</div>
 
           <p className="text-sm font-bold mt-6">
-            N.B. Prior to the commencement of work section 6.6 of the Environment Planning and Assessment Act 1979 must be satisfied.
+            {isCdc
+              ? "N.B. Prior to the commencement of work section 6.6 of the Environment Planning and Assessment Act 1979 must be satisfied."
+              : "N.B Prior to the commencement of work Sections 4.19, 6.6, 6.7, 6.12, 6.13, 6.14 of the Environment Planning and Assessment Act 1979 must be satisfied."}
           </p>
         </Section>
 
@@ -359,10 +412,22 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
                 <CertRow label="Address:" value={formatAddress(d.applicantAddress)} />
                 <CertRow label="Phone:" value={applicantPhone} />
 
-                <TableSectionHeading>COMPLYING DEVELOPMENT CONSENTS</TableSectionHeading>
-                <CertRow label="Consent Authority / Local Government Area:" value={d.council?.lga} />
-                <CertRow label="Decision Made Under:" value={d.certificateDetails?.relevantInstrument} />
-                <CertRow label={`${job.pathway} Number:`} value={ref} />
+                {isCdc ? (
+                  <>
+                    <TableSectionHeading>COMPLYING DEVELOPMENT CONSENTS</TableSectionHeading>
+                    <CertRow label="Consent Authority / Local Government Area:" value={d.council?.lga} />
+                    <CertRow label="Decision Made Under:" value={cd.relevantInstrument} />
+                    <CertRow label="CDC Number:" value={ref} />
+                  </>
+                ) : (
+                  <>
+                    <TableSectionHeading>RELEVANT CONSENTS</TableSectionHeading>
+                    <CertRow label="Consent Authority / Local Government Area:" value={d.council?.lga} />
+                    <CertRow label="Development Consent Number:" value={cd.developmentConsentNumber} />
+                    <CertRow label="Date Issued:" value={formatISODate(cd.developmentConsentDate)} />
+                    <CertRow label="Construction Certificate Number:" value={ref} />
+                  </>
+                )}
 
                 <TableSectionHeading>PROPOSAL</TableSectionHeading>
                 <CertRow label="Address of Development:" value={job.address} />

@@ -269,16 +269,16 @@ export function DetailsTab({
               ))}
             </div>
           ) : (
-            <>
+            <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Relevant instrument (EPI)</label>
-                <textarea name="relevantInstrument" defaultValue={d.certificateDetails?.relevantInstrument || ""} rows={2} className={inputCls} />
+                <label className={labelCls}>Development Consent (DA) Number</label>
+                <input name="developmentConsentNumber" defaultValue={d.certificateDetails?.developmentConsentNumber || ""} placeholder="e.g. DA-25-01431" className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Relevant part of code</label>
-                <input name="relevantPartOfCode" defaultValue={d.certificateDetails?.relevantPartOfCode || ""} className={inputCls} />
+                <label className={labelCls}>Development Consent (DA) Date</label>
+                <input type="date" name="developmentConsentDate" defaultValue={d.certificateDetails?.developmentConsentDate || ""} className={inputCls} />
               </div>
-            </>
+            </div>
           )}
           {d.certificateDetails?.determinationDate && (
             <div className="text-xs text-slate-500">
