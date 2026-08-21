@@ -184,50 +184,29 @@ function inlineComputedStyles(live: Element, clone: Element) {
 }
 
 // Word's HTML importer only reliably breaks pages on this specific "mso"
-// line-break run — a plain CSS page-break-after on the section itself is
-// not enough on its own (element.style.setProperty() also silently
-// rewrites it to the modern, Word-unrecognized "break-after" property, so
-// it was never actually reaching Word at all in earlier attempts). Once
-// fixed to genuinely apply, layering a real page-break-after on the
-// section div *in addition to* this <br> made things worse, not better —
-// a real export came back with content splitting mid-paragraph across a
-// near-blank extra page, consistent with Word receiving two independent
-// break signals at the same boundary and inserting two page breaks. This
-// single <br> is the one mechanism confirmed clean and reliable across
-// many rounds of real exports — deliberately not "reinforcing" it further.
+// line-break run — applied wherever the document marks a boundary with
+// data-page-break. Several targeted variations on this were tried and
+// discarded after real exports showed each one either did nothing or made
+// things worse (see git history on this function): a real page-break-after
+// on the section div in addition to this <br> caused content to split
+// mid-paragraph across an extra near-blank page; a leading spacer
+// paragraph before the very first break made no measurable difference;
+// marking the following letterhead table with its own page-break-before
+// left a new blank gap at the top of the next page without fixing the
+// original issue. This plain single <br> per boundary remains the only
+// version confirmed clean across every other section transition in the
+// document — the one known remaining defect (the second section's
+// letterhead landing on the leftover space at the bottom of the first
+// section's page) is a genuine, unresolved Word HTML-import quirk, not a
+// missing property.
 function applyPageBreaks(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>("[data-page-break]").forEach((el) => {
     const before = el.getAttribute("data-page-break") === "before";
     const br = document.createElement("br");
     br.setAttribute("clear", "all");
     br.setAttribute("style", "mso-special-character:line-break;page-break-before:always");
-    if (before) {
-      el.parentNode?.insertBefore(br, el);
-    } else {
-      el.insertAdjacentElement("afterend", br);
-      // Isolated to this document's very first section boundary — every
-      // later break in the same file lands cleanly, confirmed across
-      // several real exports. The theory that it's about being the first
-      // break in the file was tested and disproven (a leading spacer
-      // paragraph made no difference). What actually varies between this
-      // boundary and the working ones is how much blank space is left at
-      // the bottom of the page: the council letter is short, so its page
-      // break leaves a lot of room, and that's exactly when Word's table
-      // layout appears to decide the following small letterhead table
-      // "fits" in that leftover space and renders it there despite the
-      // forced break, only sending the rest of the section's actual
-      // paragraph content to the real next page. Marking that table with
-      // its own page-break-before — written as a literal attribute string
-      // this time, not through the CSSOM setter that silently drops it —
-      // is the properly-isolated version of a fix a much earlier round
-      // attempted but never actually tested cleanly, since it was bundled
-      // with the div-level change that caused a different regression.
-      const next = br.nextElementSibling as HTMLElement | null;
-      const firstTable = next?.matches("table") ? next : next?.querySelector("table");
-      if (firstTable instanceof HTMLElement) {
-        firstTable.setAttribute("style", `${firstTable.getAttribute("style") || ""};page-break-before:always`);
-      }
-    }
+    if (before) el.parentNode?.insertBefore(br, el);
+    else el.insertAdjacentElement("afterend", br);
   });
 }
 
