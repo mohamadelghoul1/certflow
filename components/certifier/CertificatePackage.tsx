@@ -184,47 +184,25 @@ function inlineComputedStyles(live: Element, clone: Element) {
 }
 
 // Word's HTML importer only reliably breaks pages on this specific "mso"
-// line-break run (a plain CSS page-break-after is not enough on its own) —
-// applied wherever the document marks a boundary with data-page-break.
-// Every mutation in here writes to the style *attribute string* directly
-// rather than through element.style.setProperty(). That CSSOM setter does
-// two things that silently break Word compatibility: (1) it drops
-// non-standard vendor property names outright (mso-special-character,
-// mso-border-*-alt), and (2) confirmed via a real export, it can rewrite a
-// legacy property into its modern CSS-Fragmentation equivalent when the
-// style is later serialized — "page-break-after: always" came back out as
-// "break-after: page". Word's HTML parser predates that modern property
-// entirely and just ignores it, so anything touched by setProperty() here
-// was silently doing nothing in the actual exported file, however correct
-// it looked in the DOM inspector.
+// line-break run — a plain CSS page-break-after on the section itself is
+// not enough on its own (element.style.setProperty() also silently
+// rewrites it to the modern, Word-unrecognized "break-after" property, so
+// it was never actually reaching Word at all in earlier attempts). Once
+// fixed to genuinely apply, layering a real page-break-after on the
+// section div *in addition to* this <br> made things worse, not better —
+// a real export came back with content splitting mid-paragraph across a
+// near-blank extra page, consistent with Word receiving two independent
+// break signals at the same boundary and inserting two page breaks. This
+// single <br> is the one mechanism confirmed clean and reliable across
+// many rounds of real exports — deliberately not "reinforcing" it further.
 function applyPageBreaks(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>("[data-page-break]").forEach((el) => {
     const before = el.getAttribute("data-page-break") === "before";
-    const prop = before ? "page-break-before" : "page-break-after";
-    el.setAttribute("style", `${el.getAttribute("style") || ""};${prop}:always`);
-
     const br = document.createElement("br");
     br.setAttribute("clear", "all");
     br.setAttribute("style", "mso-special-character:line-break;page-break-before:always");
-    if (before) {
-      el.parentNode?.insertBefore(br, el);
-    } else {
-      el.insertAdjacentElement("afterend", br);
-      // A page-break-before landing on a <table> isn't reliably honored by
-      // Word's own table-pagination logic the way it is on a paragraph or
-      // div — confirmed by a real export where the next section's
-      // letterhead (a table) got squeezed onto the leftover space at the
-      // bottom of the previous page instead of starting the new one, even
-      // with the break already set on the wrapping section and on this
-      // <br>. Explicitly marking that first table closes the gap.
-      const next = br.nextElementSibling as HTMLElement | null;
-      if (next) {
-        const firstTable = next.matches("table") ? next : next.querySelector("table");
-        if (firstTable instanceof HTMLElement) {
-          firstTable.setAttribute("style", `${firstTable.getAttribute("style") || ""};page-break-before:always`);
-        }
-      }
-    }
+    if (before) el.parentNode?.insertBefore(br, el);
+    else el.insertAdjacentElement("afterend", br);
   });
 }
 
