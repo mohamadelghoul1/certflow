@@ -1,19 +1,11 @@
 import { requireProfile } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { formatISODate, pathwayCertRef } from "@/lib/business";
-import { signedUrl } from "@/lib/storage";
+import { formatISODate } from "@/lib/business";
 import { signInspectionReport } from "@/lib/actions/inspections";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
-import type { Firm, Job, Defect, InspectionPhoto, Certifier } from "@/types/db";
-
-function formatAddress(a?: Record<string, string> | null) {
-  if (!a) return "—";
-  const parts = [a.streetNumber, a.street].filter(Boolean).join(" ");
-  const rest = [a.suburb, a.state, a.postcode].filter(Boolean).join(" ");
-  return [parts, rest].filter(Boolean).join(", ") || "—";
-}
+import { getInspectionReportData } from "@/lib/certificates/inspectionReportData";
+import { formatAddress } from "@/lib/certificates/pathwayData";
 
 // Skips the row entirely rather than showing an empty "—" line, per the
 // existing report format's convention of not leaving blank fields visible.
@@ -57,49 +49,10 @@ const REINSPECTION_TEXT: Record<string, string> = {
 export default async function InspectionReportPage({ params }: { params: Promise<{ jobId: string; inspectionId: string }> }) {
   const { jobId, inspectionId } = await params;
   const { profile } = await requireProfile("certifier");
-  const supabase = await createClient();
 
-  const { data: rawJob } = await supabase.from("jobs").select("*").eq("id", jobId).eq("firm_id", profile.firm_id).single();
-  if (!rawJob) notFound();
-  const job = rawJob as Job;
-
-  const [{ data: rawInspection }, { data: firm }, { data: versions }] = await Promise.all([
-    supabase.from("inspections").select("*, defects(*), inspection_photos(*)").eq("id", inspectionId).eq("job_id", jobId).single(),
-    supabase.from("firms").select("*").eq("id", profile.firm_id).single(),
-    supabase.from("pathway_certificate_versions").select("version").eq("job_id", jobId).order("version"),
-  ]);
-  if (!rawInspection) notFound();
-  const inspection = rawInspection as {
-    id: string;
-    title: string;
-    date: string | null;
-    outcome: string;
-    inspector_certifier_id: string | null;
-    report_signed_at: string | null;
-    defects: Defect[];
-    inspection_photos: InspectionPhoto[];
-  };
-  const firmData = firm as Firm | null;
-
-  const inspector = inspection.inspector_certifier_id
-    ? ((await supabase.from("certifiers").select("*").eq("id", inspection.inspector_certifier_id).single()).data as Certifier | null)
-    : null;
-  const signatureUrl = inspection.report_signed_at && inspector?.signature_url ? await signedUrl(inspector.signature_url) : null;
-  const logoUrl = firmData?.logo_url ? await signedUrl(firmData.logo_url) : null;
-  const photoUrls = await Promise.all(inspection.inspection_photos.map((p) => signedUrl(p.file_path)));
-
-  const d = job.details || {};
-  const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "—";
-  const certRef = job.pathway_generated ? pathwayCertRef(job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version) : d.projectNumber || job.id.slice(0, 8).toUpperCase();
-
-  // Every certificate version issued for this job (a job can be re-issued,
-  // e.g. after a modification), joined so multiple certificate numbers show
-  // on the same line the way the original report does.
-  const certNumbers = (versions || []).map((v) => pathwayCertRef(job.pathway, d.projectNumber || job.id.slice(0, 8), v.version)).join(", ");
-  const consentRefLines = (d.certificateDetails?.consentReferences || "")
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
+  const data = await getInspectionReportData(jobId, inspectionId, profile.firm_id);
+  if (!data) notFound();
+  const { job, firm: firmData, inspection, inspector, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, consentRefLines } = data;
 
   // The results table is built from an array so a future report covering
   // several inspection areas in one visit just means feeding in more rows —
@@ -109,7 +62,8 @@ export default async function InspectionReportPage({ params }: { params: Promise
   return (
     <CertificatePackage
       backHref={`/jobs/${jobId}?tab=inspections`}
-      filename={`Inspection-Report-${inspection.title.replace(/\s+/g, "-")}.doc`}
+      filename={`Inspection-Report-${inspection.title.replace(/\s+/g, "-")}.docx`}
+      wordExportHref={`/api/jobs/${jobId}/inspections/${inspectionId}/report/word`}
       signed={!!inspection.report_signed_at}
       signedLabel={`Signed ${formatISODate(inspection.report_signed_at)}`}
       signAction={signInspectionReport}

@@ -63,9 +63,9 @@ export function p(text: string, opts: { bold?: boolean; italic?: boolean; size?:
 }
 
 // A paragraph built from mixed runs, e.g. "Re: <bold>123 Main St</bold>".
-export function mixed(parts: { text: string; bold?: boolean }[], opts: { spacingBefore?: number; spacingAfter?: number } = {}) {
+export function mixed(parts: { text: string; bold?: boolean; color?: string }[], opts: { spacingBefore?: number; spacingAfter?: number } = {}) {
   return new Paragraph({
-    children: parts.map((part) => run(part.text, { bold: part.bold })),
+    children: parts.map((part) => run(part.text, { bold: part.bold, color: part.color })),
     spacing: { before: opts.spacingBefore ?? 0, after: opts.spacingAfter ?? 120 },
   });
 }
@@ -75,6 +75,25 @@ export function bullet(text: string) {
     children: [run(`•  ${text}`)],
     indent: { left: convertMillimetersToTwip(5), hanging: convertMillimetersToTwip(5) },
     spacing: { after: 60 },
+  });
+}
+
+export function numbered(n: number, text: string) {
+  return new Paragraph({
+    children: [run(`${n}.  ${text}`)],
+    indent: { left: convertMillimetersToTwip(6), hanging: convertMillimetersToTwip(6) },
+    spacing: { after: 60 },
+  });
+}
+
+// A bold section heading with a rule underneath spanning the full text
+// width — a paragraph border, unlike signatureUnderline()'s short table
+// cell, since a full-width rule is exactly what a paragraph border draws.
+export function headingRule(text: string) {
+  return new Paragraph({
+    children: [run(text, { bold: true })],
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: LINE_COLOR, space: 2 } },
+    spacing: { after: 120 },
   });
 }
 
@@ -114,6 +133,26 @@ export function splitRow(left: string | Paragraph[], right: string | Paragraph[]
       children: [cell(leftChildren, { widthPct: opts.leftPct ?? 50 }), cell(rightChildren, { widthPct: 100 - (opts.leftPct ?? 50) })],
     }),
   ]);
+}
+
+// A two-column grid of images + captions, one row per pair — the
+// inspection-photo evidence page. An odd photo out just gets an empty
+// second cell rather than stretching to fill the row.
+export function photoGrid(items: { image: Paragraph; caption: Paragraph }[]) {
+  const rows: TableRow[] = [];
+  for (let i = 0; i < items.length; i += 2) {
+    const left = items[i];
+    const right = items[i + 1];
+    rows.push(
+      new TableRow({
+        children: [
+          cell([left.image, left.caption], { widthPct: 50 }),
+          cell(right ? [right.image, right.caption] : [p("", { spacingAfter: 0 })], { widthPct: 50 }),
+        ],
+      })
+    );
+  }
+  return borderlessTable(rows);
 }
 
 export type FieldRow = { kind: "heading"; text: string } | { kind: "row"; label: string; value?: string | null; children?: readonly Paragraph[] };

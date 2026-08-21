@@ -51,3 +51,13 @@ export function scaleToHeight(dims: { width: number; height: number }, targetHei
   const height = Math.round((dims.height / dims.width) * width);
   return { width, height };
 }
+
+// Same idea, the other way round — for the inspection-photo grid, where
+// every photo should share a common column width but can be any aspect
+// ratio (unlike the logo/signature, which target a fixed height).
+export function scaleToWidth(dims: { width: number; height: number }, targetWidthPx: number, maxHeightPx: number) {
+  if (dims.width <= 0 || dims.height <= 0) return { width: targetWidthPx, height: maxHeightPx };
+  const height = Math.min(maxHeightPx, Math.round((dims.height / dims.width) * targetWidthPx));
+  const width = Math.round((dims.width / dims.height) * height);
+  return { width, height };
+}

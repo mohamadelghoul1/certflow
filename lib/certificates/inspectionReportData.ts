@@ -1,0 +1,67 @@
+import { createClient } from "@/lib/supabase/server";
+import { signedUrl } from "@/lib/storage";
+import { pathwayCertRef } from "@/lib/business";
+import type { Job, Firm, Defect, InspectionPhoto, Certifier, JobDetails } from "@/types/db";
+
+export type InspectionRecord = {
+  id: string;
+  title: string;
+  date: string | null;
+  outcome: string;
+  inspector_certifier_id: string | null;
+  report_signed_at: string | null;
+  defects: Defect[];
+  inspection_photos: InspectionPhoto[];
+};
+
+export type InspectionReportData = {
+  job: Job;
+  firm: Firm | null;
+  inspection: InspectionRecord;
+  inspector: Certifier | null;
+  signatureUrl: string | null;
+  logoUrl: string | null;
+  photoUrls: (string | null)[];
+  d: JobDetails;
+  applicantName: string;
+  certRef: string;
+  certNumbers: string;
+  consentRefLines: string[];
+};
+
+// Single source of truth for the inspection report's content — used by
+// both the on-screen page
+// (app/jobs/[jobId]/inspections/[inspectionId]/report/page.tsx) and the
+// real .docx export (lib/docx/inspectionReport.ts).
+export async function getInspectionReportData(jobId: string, inspectionId: string, firmId: string): Promise<InspectionReportData | null> {
+  const supabase = await createClient();
+
+  const { data: rawJob } = await supabase.from("jobs").select("*").eq("id", jobId).eq("firm_id", firmId).single();
+  if (!rawJob) return null;
+  const job = rawJob as Job;
+
+  const [{ data: rawInspection }, { data: firm }, { data: versions }] = await Promise.all([
+    supabase.from("inspections").select("*, defects(*), inspection_photos(*)").eq("id", inspectionId).eq("job_id", jobId).single(),
+    supabase.from("firms").select("*").eq("id", firmId).single(),
+    supabase.from("pathway_certificate_versions").select("version").eq("job_id", jobId).order("version"),
+  ]);
+  if (!rawInspection) return null;
+  const inspection = rawInspection as InspectionRecord;
+
+  const inspector = inspection.inspector_certifier_id ? ((await supabase.from("certifiers").select("*").eq("id", inspection.inspector_certifier_id).single()).data as Certifier | null) : null;
+  const signatureUrl = inspection.report_signed_at && inspector?.signature_url ? await signedUrl(inspector.signature_url) : null;
+  const logoUrl = firm?.logo_url ? await signedUrl(firm.logo_url) : null;
+  const photoUrls = await Promise.all(inspection.inspection_photos.map((p) => signedUrl(p.file_path)));
+
+  const d = job.details || {};
+  const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "—";
+  const certRef = job.pathway_generated ? pathwayCertRef(job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version) : d.projectNumber || job.id.slice(0, 8).toUpperCase();
+
+  const certNumbers = (versions || []).map((v) => pathwayCertRef(job.pathway, d.projectNumber || job.id.slice(0, 8), v.version)).join(", ");
+  const consentRefLines = (d.certificateDetails?.consentReferences || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  return { job, firm: firm || null, inspection, inspector: inspector || null, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, consentRefLines };
+}
