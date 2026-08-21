@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { signedUrl } from "@/lib/storage";
 import { formatISODate, resolvePathwayCertRef, resolveOcCertRef } from "@/lib/business";
 import type { Job, Firm, OcRecord, JobDetails } from "@/types/db";
@@ -27,8 +28,10 @@ export type OcCertificateData = {
 // Single source of truth for the OC certificate package's content — used
 // by both the on-screen page (app/certificate/oc/[jobId]/[ocId]/page.tsx)
 // and the real .docx export (lib/docx/ocCertificate.ts).
-export async function getOcCertificateData(jobId: string, ocId: string, firmId: string): Promise<OcCertificateData | null> {
-  const supabase = await createClient();
+// `client` overrides the request-scoped RLS client — see the portal
+// certificate routes for why.
+export async function getOcCertificateData(jobId: string, ocId: string, firmId: string, client?: SupabaseClient): Promise<OcCertificateData | null> {
+  const supabase = client ?? (await createClient());
 
   const { data: rawJob } = await supabase.from("jobs").select("*").eq("id", jobId).eq("firm_id", firmId).single();
   if (!rawJob) return null;
@@ -45,9 +48,9 @@ export async function getOcCertificateData(jobId: string, ocId: string, firmId: 
   const sequence = (allOcRecords || []).findIndex((r) => r.id === ocId) + 1;
 
   const issuedBy = record.issued_by ? ((await supabase.from("certifiers").select("*").eq("id", record.issued_by).single()).data as OcIssuer | null) : null;
-  const signatureUrl = record.signed_at && issuedBy?.signature_url ? await signedUrl(issuedBy.signature_url) : null;
-  const logoUrl = firm?.logo_url ? await signedUrl(firm.logo_url) : null;
-  const uploadedApprovalUrl = record.approval_uploaded ? await signedUrl(record.approval_file_path) : null;
+  const signatureUrl = record.signed_at && issuedBy?.signature_url ? await signedUrl(issuedBy.signature_url, 3600, client) : null;
+  const logoUrl = firm?.logo_url ? await signedUrl(firm.logo_url, 3600, client) : null;
+  const uploadedApprovalUrl = record.approval_uploaded ? await signedUrl(record.approval_file_path, 3600, client) : null;
 
   const ocChecklist = (checklists || []).find((c) => c.kind === "oc");
   const allItems = ((ocChecklist?.checklist_items as never[]) || []) as OcChecklistItem[];

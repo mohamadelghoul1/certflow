@@ -63,12 +63,20 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
         <div className="bg-white rounded-lg border border-slate-200 p-5">
           <div className="font-bold text-teal-900 mb-1">{job.pathway} certificate issued</div>
           <div className="text-xs text-slate-500 mb-3">Issued {formatISODate(job.pathway_generated_date)}</div>
+          {/* The certifier's own uploaded copy wins when there is one — it's
+              the version they actually edited and signed off. Falling back to
+              the generated certificate means a released certificate is always
+              downloadable: previously, forgetting to upload left the client
+              with nothing but "not yet uploaded", even though the certificate
+              had been issued and sent. */}
           {job.pathway_approval_uploaded && pathwayApprovalUrl ? (
             <a href={pathwayApprovalUrl} target="_blank" rel="noreferrer" className="text-sm text-teal-800 font-semibold hover:underline">
               Download certificate
             </a>
           ) : (
-            <div className="text-xs text-slate-400">Signed certificate not yet uploaded by your certifier.</div>
+            <a href={`/api/portal/certificate/pathway/${job.id}/word`} className="text-sm text-teal-800 font-semibold hover:underline">
+              Download certificate
+            </a>
           )}
         </div>
       )}
@@ -246,7 +254,9 @@ async function OcRecordCard({ record }: { record: OcRecord }) {
           Download certificate
         </a>
       ) : (
-        <div className="text-xs text-slate-400 mt-2">Signed certificate not yet available.</div>
+        <a href={`/api/portal/certificate/oc/${record.job_id}/${record.id}/word`} className="inline-block mt-2 text-xs text-teal-800 font-semibold hover:underline">
+          Download certificate
+        </a>
       )}
     </div>
   );

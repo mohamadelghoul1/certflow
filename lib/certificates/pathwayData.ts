@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { signedUrl } from "@/lib/storage";
 import { formatISODate, resolvePathwayCertRef, calcCdcLapseDate } from "@/lib/business";
 import type { Job, Firm, Certifier, ConditionOfConsent, CriticalStageInspection, JobDetails } from "@/types/db";
@@ -64,8 +65,10 @@ export type PathwayCertificateData = {
 // used by both the on-screen page (app/certificate/pathway/[jobId]/page.tsx)
 // and the real .docx export (lib/docx/pathwayCertificate.ts), so the two
 // can never drift apart the way a duplicated copy of this logic would.
-export async function getPathwayCertificateData(jobId: string, firmId: string): Promise<PathwayCertificateData | null> {
-  const supabase = await createClient();
+// `client` overrides the request-scoped RLS client — see the portal
+// certificate routes for why.
+export async function getPathwayCertificateData(jobId: string, firmId: string, client?: SupabaseClient): Promise<PathwayCertificateData | null> {
+  const supabase = client ?? (await createClient());
 
   const { data: rawJob } = await supabase.from("jobs").select("*").eq("id", jobId).eq("firm_id", firmId).single();
   if (!rawJob || !rawJob.pathway_generated) return null;
@@ -79,9 +82,9 @@ export async function getPathwayCertificateData(jobId: string, firmId: string): 
     supabase.from("inspections").select("outcome").eq("job_id", jobId),
     supabase.from("pathway_certificate_versions").select("id, cert_ref").eq("job_id", jobId).eq("version", job.pathway_version).single(),
   ]);
-  const signatureUrl = job.pathway_signed_at && issuedBy?.signature_url ? await signedUrl(issuedBy.signature_url) : null;
-  const uploadedApprovalUrl = job.pathway_approval_uploaded ? await signedUrl(job.pathway_approval_file_path) : null;
-  const logoUrl = firm?.logo_url ? await signedUrl(firm.logo_url) : null;
+  const signatureUrl = job.pathway_signed_at && issuedBy?.signature_url ? await signedUrl(issuedBy.signature_url, 3600, client) : null;
+  const uploadedApprovalUrl = job.pathway_approval_uploaded ? await signedUrl(job.pathway_approval_file_path, 3600, client) : null;
+  const logoUrl = firm?.logo_url ? await signedUrl(firm.logo_url, 3600, client) : null;
 
   const pathwayChecklist = (checklists || []).find((c) => c.kind === "pathway");
   const nocChecklist = (checklists || []).find((c) => c.kind === "noc");
