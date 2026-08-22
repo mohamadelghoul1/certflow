@@ -14,7 +14,7 @@ import {
   COUNCIL_DIRECTORY,
   epiForCodeParts,
 } from "@/lib/constants";
-import { X } from "lucide-react";
+import { X, AlertTriangle } from "lucide-react";
 import { AddressLookupField } from "@/components/certifier/AddressLookupField";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
@@ -97,10 +97,11 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
           zoning={zoning}
           onZoningChange={setZoning}
           required
+          zoningRequired={pathway === "CDC"}
         />
         <div>
           <label className={labelCls}>Scope of works</label>
-          <textarea name="description" rows={2} placeholder="e.g. Construction of a secondary dwelling" className={inputCls} />
+          <textarea name="description" rows={2} required placeholder="e.g. Construction of a secondary dwelling" className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>Project type(s)</label>
@@ -178,7 +179,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Assigned certifier</label>
-            <select name="assigned_certifier_id" className={inputCls} defaultValue="">
+            <select name="assigned_certifier_id" required className={inputCls} defaultValue="">
               <option value="">— Select —</option>
               {certifiers.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -209,7 +210,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
           </div>
           <div>
             <label className={labelCls}>BCA / NCC version</label>
-            <input name="bcaVersion" list="bca-version-list" placeholder="e.g. NCC 2022 Amendment 2" className={inputCls} />
+            <input name="bcaVersion" list="bca-version-list" required placeholder="e.g. NCC 2022 Amendment 2" className={inputCls} />
             <datalist id="bca-version-list">
               {BCA_VERSIONS.map((v) => (
                 <option key={v} value={v} />
@@ -263,10 +264,10 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
         <div>
           <label className={labelCls}>Applicant address</label>
           <div className="grid sm:grid-cols-5 gap-2">
-            <input name="applicantAddress_streetNumber" placeholder="No." className={inputCls} />
-            <input name="applicantAddress_street" placeholder="Street" className={`${inputCls} sm:col-span-2`} />
-            <input name="applicantAddress_suburb" placeholder="Suburb" className={inputCls} />
-            <input name="applicantAddress_postcode" placeholder="Postcode" className={inputCls} />
+            <input name="applicantAddress_streetNumber" required placeholder="No." className={inputCls} />
+            <input name="applicantAddress_street" required placeholder="Street" className={`${inputCls} sm:col-span-2`} />
+            <input name="applicantAddress_suburb" required placeholder="Suburb" className={inputCls} />
+            <input name="applicantAddress_postcode" required placeholder="Postcode" className={inputCls} />
           </div>
           <select name="applicantAddress_state" defaultValue="NSW" className={`${inputCls} mt-2 sm:w-40`}>
             {NSW_STATE.map((s) => (
@@ -414,7 +415,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
         </div>
         <div>
           <label className={labelCls}>Total estimated cost / value of project (AUD)</label>
-          <input type="number" name="estimatedCost" className={inputCls} />
+          <input type="number" name="estimatedCost" required className={inputCls} />
         </div>
         <div className="grid sm:grid-cols-3 gap-4">
           <div>
@@ -453,7 +454,15 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
         </div>
       </Section>
 
-      {state?.error && <div className="text-sm text-red-600 mb-4">{state.error}</div>}
+      {state?.error && (
+        <div className="flex items-start gap-2 text-sm text-red-800 bg-red-50 border border-red-200 rounded-md px-4 py-3 mb-4">
+          <AlertTriangle size={16} className="shrink-0 mt-0.5 text-red-600" />
+          <span>{state.error}</span>
+        </div>
+      )}
+      <p className="text-xs text-slate-400 mb-2">
+        A project can only be created once the details a certificate needs are filled in — the address, scope, lot, council, applicant, certifier, NCC version, classification and cost.
+      </p>
       <button disabled={pending} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900 disabled:opacity-60">
         {pending ? "Creating…" : "Create project"}
       </button>

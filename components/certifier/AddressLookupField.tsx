@@ -41,6 +41,7 @@ export function AddressLookupField({
   onZoningChange,
   addressLabel = "Property address",
   required = false,
+  zoningRequired = false,
 }: {
   address: string;
   onAddressChange: (value: string) => void;
@@ -51,7 +52,11 @@ export function AddressLookupField({
   zoning: string;
   onZoningChange: (value: string) => void;
   addressLabel?: string;
+  // Set on New Job, where these have to be there before the project can
+  // be created. Left off on the Details tab, which edits a job that
+  // already exists.
   required?: boolean;
+  zoningRequired?: boolean;
 }) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -278,7 +283,7 @@ export function AddressLookupField({
             </div>
           </div>
         )}
-        <input name="lotSectionDp" value={lotSectionDp} onChange={(e) => onLotSectionDpChange(e.target.value)} placeholder="e.g. 12/-/DP12345" className={inputCls} />
+        <input name="lotSectionDp" value={lotSectionDp} onChange={(e) => onLotSectionDpChange(e.target.value)} required={required} placeholder="e.g. 12/-/DP12345" className={inputCls} />
         <div className="text-[11px] text-slate-400 mt-1">
           {lotOptions.length > 0
             ? "Tick the parcels this job covers. You can also edit the box directly."
@@ -287,7 +292,7 @@ export function AddressLookupField({
       </div>
       <div>
         <label className={labelCls}>Land zoning</label>
-        <input name="zoning" value={zoning} onChange={(e) => onZoningChange(e.target.value)} placeholder="e.g. R2 Low Density Residential" className={inputCls} />
+        <input name="zoning" value={zoning} onChange={(e) => onZoningChange(e.target.value)} required={zoningRequired} placeholder="e.g. R2 Low Density Residential" className={inputCls} />
         <div className="text-[11px] text-slate-400 mt-1">
           Zoning isn&rsquo;t available from the NSW lookup, so type it in here — the Planning Portal link above shows it for the address.
         </div>

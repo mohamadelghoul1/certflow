@@ -8,6 +8,7 @@ import { INSPECTION_LIBRARY, defaultCriticalStageInspections, normalizeCriticalS
 import { todayISO } from "@/lib/business";
 import { notifyJobClient } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
+import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
 import type { JobDetails, CriticalStageInspection } from "@/types/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -133,18 +134,27 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
   const jobTypes = formData.getAll("job_types").map(String);
   const clientId = String(formData.get("client_id") || "") || null;
   const certifierId = String(formData.get("assigned_certifier_id") || "") || null;
+  const address = String(formData.get("address") || "");
+  const description = String(formData.get("description") || "");
+  const details = extractJobDetails(formData, pathway);
+
+  // Checked here as well as in the browser: form validation is a
+  // convenience, not a guarantee, and a job missing these can't produce a
+  // certificate later.
+  const missing = missingJobFields({ pathway, address, description, certifierId, details });
+  if (missing.length) return { error: missingFieldsMessage(missing) };
 
   const { data: job, error } = await supabase
     .from("jobs")
     .insert({
       firm_id: profile.firm_id,
-      address: String(formData.get("address") || ""),
-      description: String(formData.get("description") || ""),
+      address,
+      description,
       job_types: jobTypes,
       pathway,
       assigned_certifier_id: certifierId,
       client_id: clientId,
-      details: extractJobDetails(formData, pathway),
+      details,
       critical_stage_inspections: defaultCriticalStageInspections(),
     })
     .select("id")
