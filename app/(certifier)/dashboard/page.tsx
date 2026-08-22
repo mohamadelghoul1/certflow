@@ -15,13 +15,16 @@ type Task = { priority: "High" | "Medium" | "Low"; text: string; jobId: string |
 // A compact tile. `tone` marks the one that means "something is wrong",
 // which is the only place red appears on this page — green stays reserved
 // for approved, as everywhere else in the app.
-function Tile({ icon: Icon, label, value, href, tone }: { icon: LucideIcon; label: string; value: number; href: string; tone?: "alert" }) {
+function Tile({ icon: Icon, label, value, href, tone, detail }: { icon: LucideIcon; label: string; value: number; href: string; tone?: "alert"; detail?: string }) {
   const alert = tone === "alert" && value > 0;
   return (
-    <Link href={href} className={`card-lift block rounded-xl border bg-white p-4 shadow-sm ${alert ? "border-red-200" : "border-line"}`}>
+    // h-full so a tile whose label runs to two lines doesn't leave the row
+    // ragged — they all take the height of the tallest.
+    <Link href={href} className={`card-lift h-full flex flex-col rounded-xl border bg-white p-4 shadow-sm ${alert ? "border-red-200" : "border-line"}`}>
       <Icon size={18} strokeWidth={1.6} className={alert ? "text-red-500" : "text-secondary"} />
       <div className={`text-3xl font-bold mt-2 ${alert ? "text-red-600" : "text-heading"}`}>{value}</div>
       <div className="text-xs font-medium text-muted mt-1 leading-snug">{label}</div>
+      {detail && <div className="text-[11px] text-slate-400 mt-auto pt-1">{detail}</div>}
     </Link>
   );
 }
@@ -266,11 +269,16 @@ export default async function DashboardPage() {
       {/* Two columns from large screens down to one on a phone, where the
           order below is the order it reads in: what needs doing first,
           then what's on today, then the rest. */}
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-stretch">
         <Tile icon={AlertTriangle} label="Actions require attention" value={tasks.length} href="#attention" tone="alert" />
         <Tile icon={CalendarCheck} label="Inspections today" value={inspectionsToday.length} href="#today" />
-        <Tile icon={ClipboardCheck} label="CDC / CC assessments" value={assessmentsInProgress} href="/jobs" />
-        <Tile icon={ClipboardCheck} label="OC assessments" value={ocAssessments} href="/jobs" />
+        <Tile
+          icon={ClipboardCheck}
+          label="Assessments in progress"
+          value={assessmentsInProgress + ocAssessments}
+          href="/jobs"
+          detail={`CDC/CC ${assessmentsInProgress} · OC ${ocAssessments}`}
+        />
         <Tile icon={ShieldCheck} label="Approvals to issue" value={approvalsToIssue} href="/jobs" />
         <Tile icon={Inbox} label="Documents for review" value={documentsForReview} href="/jobs" />
       </div>
