@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireProfile } from "@/lib/auth";
 import { lookupNswProperty, suggestNswAddresses, extractLotDps, type Attempt } from "@/lib/nsw/propertyLookup";
 import { matchCouncilByAddress } from "@/lib/constants";
+import { probeNswEndpoints } from "@/lib/nsw/probe";
 
 // Lot/Section/Plan and council for an address the certifier has picked or
 // typed. Answers from three sources: the address text itself (if it
@@ -25,6 +26,14 @@ export async function GET(request: NextRequest) {
 
   const address = request.nextUrl.searchParams.get("address")?.trim() || "";
   const debug = request.nextUrl.searchParams.get("debug") === "1";
+
+  // &probe=1 tries every candidate NSW endpoint at once and reports which
+  // answered — see lib/nsw/probe.ts for why that beats guessing one per
+  // deploy.
+  if (request.nextUrl.searchParams.get("probe") === "1") {
+    return NextResponse.json({ probe: await probeNswEndpoints(address || "29 Strickland Road Guildford NSW 2161") }, { headers: { "Cache-Control": "no-store" } });
+  }
+
   if (address.length < 6) return NextResponse.json({ lots: [] });
 
   const fromText = extractLotDps(address);

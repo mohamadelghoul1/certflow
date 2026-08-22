@@ -257,6 +257,19 @@ export function AddressLookupField({
               <ExternalLink size={11} /> Why?
             </a>
           )}
+          {/* Tests every candidate NSW endpoint at once and reports which
+              one answers. Temporary: it exists only until the working
+              endpoint is identified, at which point it comes out. */}
+          {noSuggestions && (
+            <a
+              href={`/api/address-details?address=${encodeURIComponent(address.trim())}&probe=1`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 text-[11px] text-slate-400 hover:underline"
+            >
+              <ExternalLink size={11} /> Test NSW connection
+            </a>
+          )}
         </div>
         {noSuggestions && (
           <div className="text-[11px] text-amber-700 mt-1">
