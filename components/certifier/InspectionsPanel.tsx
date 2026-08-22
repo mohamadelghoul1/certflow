@@ -30,7 +30,7 @@ const OUTCOME_META: Record<string, { label: string; style: string }> = {
   pending: { label: "Pending", style: "bg-slate-100 text-slate-600" },
   passed: { label: "Passed", style: "bg-emerald-50 text-accent" },
   failed: { label: "Failed", style: "bg-red-50 text-red-700" },
-  passed_subject_to: { label: "Passed subject to", style: "bg-amber-50 text-amber-700" },
+  passed_subject_to: { label: "Satisfactory (minor issues) subject to documents being provided", style: "bg-amber-50 text-amber-700" },
 };
 
 function OutcomeIcon({ outcome, size }: { outcome: string; size: number }) {
@@ -130,7 +130,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
             <option value="pending">Pending</option>
             <option value="passed">Passed</option>
             <option value="failed">Failed</option>
-            <option value="passed_subject_to">Passed subject to</option>
+            <option value="passed_subject_to">Satisfactory (minor issues) subject to documents being provided</option>
           </AutoSubmitSelect>
         </div>
       </div>

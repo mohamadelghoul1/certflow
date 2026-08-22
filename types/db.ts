@@ -89,6 +89,7 @@ export type JobDetails = {
   projectNumber?: string;
   zoning?: string;
   bcaVersion?: string;
+  bcaVolumes?: string[];
   contact?: { nameOrCompany?: string; title?: string; givenNames?: string; surname?: string; phone?: string; mobile?: string; email?: string };
   applicantAddress?: { streetNumber?: string; street?: string; suburb?: string; state?: string; postcode?: string };
   ownerSameAsApplicant?: boolean;

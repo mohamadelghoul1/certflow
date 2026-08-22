@@ -3,9 +3,8 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import {
   updateJobDetails,
-  addCondition,
-  removeCondition,
   assignJobClient,
+  updateClientContact,
   addSharedAccess,
   removeSharedAccess,
   addClientAndShare,
@@ -13,6 +12,7 @@ import {
 import type { ActionState } from "@/lib/actions/auth";
 import {
   BCA_VERSIONS,
+  BCA_VOLUMES,
   BUILDING_CLASSIFICATIONS,
   CLIENT_TYPES,
   CONSTRUCTION_TYPES,
@@ -23,7 +23,8 @@ import {
 } from "@/lib/constants";
 import { formatISODate } from "@/lib/business";
 import { CriticalStageInspections } from "@/components/certifier/CriticalStageInspections";
-import type { Job, ConditionOfConsent, ClientContact } from "@/types/db";
+import { useSelectTab } from "@/components/certifier/JobTabs";
+import type { Job, ClientContact } from "@/types/db";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
 const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
@@ -34,6 +35,88 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <div className="text-xs font-bold uppercase tracking-wide text-slate-400">{title}</div>
       {children}
     </div>
+  );
+}
+
+// One portal contact's details, editable in place. Contacts change their
+// phone or email part-way through a job, and previously the only way to
+// fix that was Settings -> Clients; now it's next to Remove, where the
+// contact is actually listed.
+function ContactRow({
+  jobId,
+  contact,
+  onRemove,
+}: {
+  jobId: string;
+  contact: ClientContact;
+  onRemove?: React.ReactNode;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(updateClientContact, undefined);
+  const wasPending = useRef(false);
+
+  useEffect(() => {
+    if (wasPending.current && !pending && !state?.error) setEditing(false);
+    wasPending.current = pending;
+  }, [pending, state]);
+
+  if (!editing) {
+    return (
+      <div className="flex items-center justify-between gap-3 text-sm text-slate-700">
+        <span>
+          {contact.name} <span className="text-slate-400">({contact.type})</span>
+          {(contact.email || contact.phone) && <span className="text-slate-400"> · {[contact.email, contact.phone].filter(Boolean).join(" · ")}</span>}
+        </span>
+        <div className="flex items-center gap-3 shrink-0">
+          <button type="button" onClick={() => setEditing(true)} className="text-xs text-teal-800 hover:underline">
+            Edit
+          </button>
+          {onRemove}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form action={formAction} className="border border-slate-200 rounded-md p-3 space-y-2">
+      <input type="hidden" name="job_id" value={jobId} />
+      <input type="hidden" name="client_id" value={contact.id} />
+      <div className="grid sm:grid-cols-2 gap-2">
+        <div>
+          <label className={labelCls}>Name</label>
+          <input name="name" defaultValue={contact.name} required autoFocus className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Type</label>
+          <select name="type" defaultValue={contact.type} className={inputCls}>
+            {CLIENT_TYPES.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Company</label>
+          <input name="company" defaultValue={contact.company || ""} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Phone</label>
+          <input name="phone" defaultValue={contact.phone || ""} className={inputCls} />
+        </div>
+        <div className="sm:col-span-2">
+          <label className={labelCls}>Email (used for portal invites and notifications)</label>
+          <input type="email" name="email" defaultValue={contact.email || ""} className={inputCls} />
+        </div>
+      </div>
+      {state?.error && <div className="text-xs text-red-600">{state.error}</div>}
+      <div className="flex gap-2">
+        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-teal-800 text-white text-xs font-semibold hover:bg-teal-900 disabled:opacity-60">
+          {pending ? "Saving…" : "Save changes"}
+        </button>
+        <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-xs text-slate-600 hover:bg-slate-50">
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -50,19 +133,19 @@ type CouncilState = {
 
 export function DetailsTab({
   job,
-  conditions,
   clients,
   sharedClients,
 }: {
   job: Job;
-  conditions: ConditionOfConsent[];
   clients: ClientContact[];
   sharedClients: { id: string; name: string; type: string }[];
 }) {
   const d = job.details || {};
+  const detailsFormId = `job-details-${job.id}`;
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateJobDetails, undefined);
   const [showSaved, setShowSaved] = useState(false);
   const wasPending = useRef(false);
+  const selectTab = useSelectTab();
 
   const [council, setCouncil] = useState<CouncilState>({
     lga: d.council?.lga || "",
@@ -77,6 +160,8 @@ export function DetailsTab({
   const [codeParts, setCodeParts] = useState<Set<string>>(new Set(d.certificateDetails?.codeParts || []));
   const [shareClientId, setShareClientId] = useState("");
   const availableToShare = clients.filter((c) => c.id !== job.client_id && !sharedClients.some((s) => s.id === c.id));
+  const clientsById = new Map(clients.map((c) => [c.id, c]));
+  const primaryClient = job.client_id ? clientsById.get(job.client_id) : undefined;
   const [addingNewClient, setAddingNewClient] = useState(false);
   const [addClientState, addClientAction, addClientPending] = useActionState<ActionState, FormData>(addClientAndShare, undefined);
 
@@ -110,11 +195,16 @@ export function DetailsTab({
   useEffect(() => {
     if (wasPending.current && !pending && !state?.error) {
       setShowSaved(true);
+      // Details are almost always filled in on the way to working on the
+      // certificate, so saving hands straight over to that tab instead of
+      // leaving the certifier at the bottom of a long form.
+      selectTab("pathway");
+      window.scrollTo({ top: 0 });
       const t = setTimeout(() => setShowSaved(false), 2500);
       return () => clearTimeout(t);
     }
     wasPending.current = pending;
-  }, [pending, state]);
+  }, [pending, state, selectTab]);
 
   const wasAddClientPending = useRef(false);
   useEffect(() => {
@@ -126,7 +216,7 @@ export function DetailsTab({
 
   return (
     <div className="space-y-6">
-      <form action={formAction} className="bg-white rounded-lg border border-slate-200 p-5">
+      <form id={detailsFormId} action={formAction} className="bg-white rounded-lg border border-slate-200 p-5">
         <input type="hidden" name="job_id" value={job.id} />
         <input type="hidden" name="pathway" value={job.pathway} />
 
@@ -154,6 +244,14 @@ export function DetailsTab({
                   <option key={v} value={v} />
                 ))}
               </datalist>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                {BCA_VOLUMES.map((v) => (
+                  <label key={v} className="flex items-center gap-1.5 text-xs text-slate-600">
+                    <input type="checkbox" name="bcaVolumes" value={v} defaultChecked={(d.bcaVolumes || []).includes(v)} className="accent-teal-700" />
+                    {v}
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
           <div>
@@ -382,16 +480,16 @@ export function DetailsTab({
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Existing floor area (m²)</label>
-              <input type="number" name="floorAreaExisting" defaultValue={d.proposal?.floorAreaExisting || ""} className={inputCls} />
+              <input type="text" inputMode="decimal" name="floorAreaExisting" defaultValue={d.proposal?.floorAreaExisting || ""} placeholder="e.g. 123.4" className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>New floor area (m²)</label>
-              <input type="number" name="floorAreaNew" defaultValue={d.proposal?.floorAreaNew || ""} className={inputCls} />
+              <input type="text" inputMode="decimal" name="floorAreaNew" defaultValue={d.proposal?.floorAreaNew || ""} placeholder="e.g. 123.4" className={inputCls} />
             </div>
           </div>
           <div>
             <label className={labelCls}>Site area (m²)</label>
-            <input type="number" name="siteArea" defaultValue={d.siteArea || ""} className={inputCls} />
+            <input type="text" inputMode="decimal" name="siteArea" defaultValue={d.siteArea || ""} placeholder="e.g. 1,234.5" className={inputCls} />
           </div>
         </Section>
 
@@ -400,13 +498,6 @@ export function DetailsTab({
           <textarea name="description" defaultValue={job.description || ""} rows={2} className={inputCls} />
         </Section>
 
-        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-100">
-          <button disabled={pending} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900 disabled:opacity-60">
-            {pending ? "Saving…" : "Save details"}
-          </button>
-          {showSaved && <span className="text-sm font-medium text-emerald-700">Saved ✓</span>}
-          {state?.error && <span className="text-sm text-red-600">{state.error}</span>}
-        </div>
       </form>
 
       <div className="bg-white rounded-lg border border-slate-200 p-5">
@@ -423,21 +514,28 @@ export function DetailsTab({
           </select>
         </form>
         <p className="text-xs text-slate-400 mt-2">Assign an existing client for portal access, or add a new one under Settings.</p>
+        {primaryClient && (
+          <div className="mt-2">
+            <ContactRow jobId={job.id} contact={primaryClient} />
+          </div>
+        )}
 
         <div className="mt-4 pt-4 border-t border-slate-100">
           <div className="text-xs font-semibold text-slate-500 mb-2">Additional shared access (e.g. the owner, alongside the primary contact)</div>
           <div className="space-y-1.5 mb-2">
             {sharedClients.map((c) => (
-              <div key={c.id} className="flex items-center justify-between text-sm text-slate-700">
-                <span>
-                  {c.name} <span className="text-slate-400">({c.type})</span>
-                </span>
-                <form action={removeSharedAccess}>
-                  <input type="hidden" name="job_id" value={job.id} />
-                  <input type="hidden" name="client_id" value={c.id} />
-                  <button className="text-xs text-red-500 hover:underline">Remove</button>
-                </form>
-              </div>
+              <ContactRow
+                key={c.id}
+                jobId={job.id}
+                contact={clientsById.get(c.id) || ({ ...c, firm_id: "", company: null, email: null, phone: null, user_id: null } as ClientContact)}
+                onRemove={
+                  <form action={removeSharedAccess}>
+                    <input type="hidden" name="job_id" value={job.id} />
+                    <input type="hidden" name="client_id" value={c.id} />
+                    <button className="text-xs text-red-500 hover:underline">Remove</button>
+                  </form>
+                }
+              />
             ))}
             {sharedClients.length === 0 && <div className="text-xs text-slate-400">No additional people have access yet.</div>}
           </div>
@@ -517,29 +615,16 @@ export function DetailsTab({
         <CriticalStageInspections jobId={job.id} items={job.critical_stage_inspections} />
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 p-5">
-        <div className="font-bold text-teal-900 mb-3">Conditions of Consent</div>
-        <div className="space-y-2 mb-3">
-          {conditions.map((c) => (
-            <div key={c.id} className="flex items-start justify-between gap-3 text-sm text-slate-700 border-b border-slate-50 pb-2">
-              <div>
-                {c.text}
-                <div className="text-[11px] text-slate-400">{formatISODate(c.date_added)}</div>
-              </div>
-              <form action={removeCondition}>
-                <input type="hidden" name="job_id" value={job.id} />
-                <input type="hidden" name="condition_id" value={c.id} />
-                <button className="text-xs text-red-500 hover:underline shrink-0">Remove</button>
-              </form>
-            </div>
-          ))}
-          {conditions.length === 0 && <div className="text-sm text-slate-400">None added.</div>}
-        </div>
-        <form action={addCondition} className="flex gap-2">
-          <input type="hidden" name="job_id" value={job.id} />
-          <input name="text" placeholder="Add a condition of consent…" className={inputCls} />
-          <button className="px-3 py-2 rounded-md bg-teal-800 text-white text-xs font-semibold hover:bg-teal-900 shrink-0">Add</button>
-        </form>
+      {/* The Save button sits at the very bottom of the page rather than at
+          the foot of the details card, so it's the last thing reached after
+          working down the whole page. `form` ties it back to the details
+          form it submits, which is allowed to live anywhere on the page. */}
+      <div className="flex items-center gap-3 bg-white rounded-lg border border-slate-200 p-5">
+        <button form={detailsFormId} disabled={pending} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900 disabled:opacity-60">
+          {pending ? "Saving…" : "Save details"}
+        </button>
+        {showSaved && <span className="text-sm font-medium text-emerald-700">Saved ✓</span>}
+        {state?.error && <span className="text-sm text-red-600">{state.error}</span>}
       </div>
     </div>
   );

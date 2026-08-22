@@ -2,7 +2,7 @@ import { Document, Paragraph, Header, Footer, AlignmentType, Packer } from "docx
 import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
 import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR } from "@/lib/docx/shared";
-import { formatAddress, formatAddressLines, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
+import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatISODate } from "@/lib/business";
 
 // Mirrors app/certificate/pathway/[jobId]/page.tsx section-for-section, so
@@ -128,7 +128,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       { kind: "row", label: isCdc ? "Lot/Section/DP:" : "Lot/ DP:", value: cd.lotSectionDp },
       ...(isCdc ? ([{ kind: "row", label: "Land Use Zone:", value: d.zoning }] as const) : []),
       { kind: "row", label: isCdc ? "BCA Classification/s:" : "BCA Classification:", value: (d.proposal?.classifications || []).join(", ") },
-      { kind: "row", label: "BCA/NCC Version:", value: d.bcaVersion },
+      { kind: "row", label: "BCA/NCC Version:", value: formatBcaVersion(d.bcaVersion, d.bcaVolumes) },
       { kind: "row", label: "Description of Building Works:", value: job.description },
       { kind: "row", label: isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)", value: formatCurrency(d.proposal?.estimatedCost) },
       { kind: "row", label: isCdc ? "Attachments" : "Attachments:", value: "Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon" },

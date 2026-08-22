@@ -14,7 +14,7 @@ const OUTCOME_META: Record<string, { label: string; style: string }> = {
   pending: { label: "Pending", style: "bg-slate-100 text-slate-600" },
   passed: { label: "Passed", style: "bg-emerald-50 text-emerald-700" },
   failed: { label: "Failed", style: "bg-red-50 text-red-700" },
-  passed_subject_to: { label: "Passed subject to", style: "bg-amber-50 text-amber-700" },
+  passed_subject_to: { label: "Satisfactory (minor issues) subject to documents being provided", style: "bg-amber-50 text-amber-700" },
 };
 
 export default async function PortalJobPage({ params }: { params: Promise<{ id: string }> }) {

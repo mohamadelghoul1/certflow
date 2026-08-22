@@ -1,8 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 type TabMeta = { key: string; label: string; progress?: string | null };
+
+// Lets a panel move the user to a different tab — e.g. saving the job
+// details jumps straight to the CDC/CC tab, which is where the work
+// actually continues. Defaults to a no-op so a panel rendered outside
+// JobTabs (in a test, or on its own page) still works.
+const SelectTabContext = createContext<(key: string) => void>(() => {});
+
+export function useSelectTab() {
+  return useContext(SelectTabContext);
+}
 
 // All five tabs' content is already fetched and rendered up front (the
 // data queries on the job page were never actually scoped to one tab), so
@@ -18,7 +28,7 @@ export function JobTabs({ tabs, initialTab, content }: { tabs: TabMeta[]; initia
   }
 
   return (
-    <div>
+    <SelectTabContext.Provider value={select}>
       <div className="mb-8 overflow-x-auto">
         <div className="inline-flex gap-1 bg-slate-100 rounded-full p-1">
           {tabs.map((t) => (
@@ -40,6 +50,6 @@ export function JobTabs({ tabs, initialTab, content }: { tabs: TabMeta[]; initia
           {content[t.key]}
         </div>
       ))}
-    </div>
+    </SelectTabContext.Provider>
   );
 }

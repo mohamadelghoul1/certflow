@@ -4,7 +4,7 @@ import { formatISODate } from "@/lib/business";
 import { signPathwayCertificate, uploadPathwayApproval } from "@/lib/actions/jobs";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
-import { getPathwayCertificateData, formatAddress, formatCurrency } from "@/lib/certificates/pathwayData";
+import { getPathwayCertificateData, formatAddress, formatBcaVersion, formatCurrency } from "@/lib/certificates/pathwayData";
 
 // Every field row on the certificate/notice is a real table row (not a
 // flex row) so the two-column layout also comes out right in the Word
@@ -316,7 +316,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               <CertRow label={isCdc ? "Lot/Section/DP:" : "Lot/ DP:"} value={cd.lotSectionDp} />
               {isCdc && <CertRow label="Land Use Zone:" value={d.zoning} />}
               <CertRow label={isCdc ? "BCA Classification/s:" : "BCA Classification:"} value={(d.proposal?.classifications || []).join(", ")} />
-              <CertRow label="BCA/NCC Version:" value={d.bcaVersion} />
+              <CertRow label="BCA/NCC Version:" value={formatBcaVersion(d.bcaVersion, d.bcaVolumes)} />
               <CertRow label="Description of Building Works:" value={job.description} />
               <CertRow
                 label={isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)"}

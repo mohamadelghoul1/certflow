@@ -24,6 +24,19 @@ async function firmLibrary(supabase: SupabaseClient, firmId: string, pathway: st
   return data || [];
 }
 
+// Floor areas and similar measurements are stored as free text so the
+// certifier can type them the way they appear on the plans. People write
+// "123.4", "1,234", "1234 m2" or "1,234.5m²" — all of which mean the same
+// number — so we keep the digits and a single decimal point and drop the
+// thousands separators and unit suffix. Anything that isn't recognisably a
+// number is kept verbatim rather than silently blanked.
+function numericText(value: FormDataEntryValue | null): string {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const cleaned = raw.replace(/,/g, "").replace(/\s*(m2|m²|sqm|sq\.?\s*m)\s*$/i, "").trim();
+  return /^\d*\.?\d+$/.test(cleaned) ? cleaned : raw;
+}
+
 // Shared by the New Job intake form and the Details-tab edit form — same
 // full field set as the prototype's single JobForm (used for both create
 // and edit). CDC's relevant instrument/part of code are computed from the
@@ -37,6 +50,7 @@ function extractJobDetails(formData: FormData, pathway: string): JobDetails {
     projectNumber: String(formData.get("projectNumber") || ""),
     zoning: String(formData.get("zoning") || ""),
     bcaVersion: String(formData.get("bcaVersion") || ""),
+    bcaVolumes: formData.getAll("bcaVolumes").map(String),
     contact: {
       nameOrCompany: String(formData.get("contact_nameOrCompany") || ""),
       title: String(formData.get("contact_title") || ""),
@@ -90,10 +104,10 @@ function extractJobDetails(formData: FormData, pathway: string): JobDetails {
       storeysBelow: String(formData.get("storeysBelow") || ""),
       storeysTotal: String(formData.get("storeysTotal") || ""),
       effectiveHeight: String(formData.get("effectiveHeight") || ""),
-      floorAreaExisting: String(formData.get("floorAreaExisting") || ""),
-      floorAreaNew: String(formData.get("floorAreaNew") || ""),
+      floorAreaExisting: numericText(formData.get("floorAreaExisting")),
+      floorAreaNew: numericText(formData.get("floorAreaNew")),
     },
-    siteArea: String(formData.get("siteArea") || ""),
+    siteArea: numericText(formData.get("siteArea")),
     certificateDetails: {
       lotSectionDp: String(formData.get("lotSectionDp") || ""),
       planningPortalRef: String(formData.get("planningPortalRef") || ""),
@@ -830,6 +844,35 @@ export async function addClientAndShare(_prev: ActionState, formData: FormData):
   return undefined;
 }
 
+// Portal contacts change their phone or email mid-project often enough
+// that having to leave the job, edit them under Settings -> Clients and
+// come back was a real nuisance — this edits the same client record from
+// the job's own portal-access panel.
+export async function updateClientContact(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const clientId = String(formData.get("client_id"));
+  const name = String(formData.get("name") || "").trim();
+  if (!name) return { error: "Name is required." };
+
+  const { error } = await supabase
+    .from("clients")
+    .update({
+      name,
+      type: String(formData.get("type") || "Other"),
+      company: String(formData.get("company") || ""),
+      email: String(formData.get("email") || ""),
+      phone: String(formData.get("phone") || ""),
+    })
+    .eq("id", clientId)
+    .eq("firm_id", profile.firm_id);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/jobs/${jobId}`);
+  return undefined;
+}
+
 export async function addSharedAccess(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
@@ -875,8 +918,11 @@ export async function updateCriticalStageInspection(formData: FormData) {
   const stage = String(formData.get("stage") || "").trim();
   const inspector = String(formData.get("inspector") || "").trim();
   if (!stage) return;
+  // Editing an inspection's wording is only ever done because it applies
+  // to this job, so it's accepted at the same time — the certifier doesn't
+  // have to go back and tick the box as a separate step.
   const current = await getCriticalStageInspections(supabase, jobId);
-  const next = current.map((i) => (i.id === id ? { ...i, stage, inspector } : i));
+  const next = current.map((i) => (i.id === id ? { ...i, stage, inspector, enabled: true } : i));
   await supabase.from("jobs").update({ critical_stage_inspections: next }).eq("id", jobId);
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pathway/${jobId}`);

@@ -33,7 +33,6 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     { data: modifications },
     { data: ocRecords },
     { data: inspections },
-    { data: conditions },
     { data: certifiers },
     { data: clients },
     { data: libraryItems },
@@ -45,7 +44,6 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     supabase.from("modifications").select("*").eq("job_id", id).order("created_at"),
     supabase.from("oc_records").select("*").eq("job_id", id).order("created_at"),
     supabase.from("inspections").select("*, defects(*), inspection_photos(*)").eq("job_id", id).order("sort_order", { referencedTable: "inspection_photos" }),
-    supabase.from("conditions_of_consent").select("*").eq("job_id", id).order("created_at"),
     supabase.from("certifiers").select("*").eq("firm_id", profile.firm_id).order("name"),
     supabase.from("clients").select("*").eq("firm_id", profile.firm_id).order("name"),
     supabase.from("document_library_items").select("*").eq("firm_id", profile.firm_id).order("sort_order"),
@@ -104,7 +102,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               : null,
         }))}
         content={{
-          details: <DetailsTab job={typedJob} conditions={conditions || []} clients={clients || []} sharedClients={sharedClients} />,
+          details: <DetailsTab job={typedJob} clients={clients || []} sharedClients={sharedClients} />,
           pathway: pathwayChecklist ? (
             <CertificatesPanel
               job={typedJob}

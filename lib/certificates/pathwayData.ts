@@ -26,6 +26,16 @@ export function formatAddressLines(a?: Record<string, string> | null): string[] 
 
 // Falls back to showing whatever was typed rather than "$NaN" if the
 // estimated cost field wasn't entered as a clean number.
+// The NCC version and the volumes assessed against it are one line on the
+// certificate — a job can be assessed under more than one volume (a
+// dwelling plus a Class 10 shed, say), so they're ticked separately but
+// read together.
+export function formatBcaVersion(version?: string | null, volumes?: string[] | null) {
+  const vols = (volumes || []).filter(Boolean);
+  if (!version) return vols.length ? vols.join(", ") : "";
+  return vols.length ? `${version} — ${vols.join(", ")}` : version;
+}
+
 export function formatCurrency(value?: string | null) {
   if (!value) return null;
   const parsed = Number(String(value).replace(/[^0-9.]/g, ""));

@@ -17,7 +17,7 @@ function reducer(state: CriticalStageInspection[], action: Action): CriticalStag
     case "toggle":
       return state.map((i) => (i.id === action.id ? { ...i, enabled: !i.enabled } : i));
     case "edit":
-      return state.map((i) => (i.id === action.id ? { ...i, stage: action.stage, inspector: action.inspector } : i));
+      return state.map((i) => (i.id === action.id ? { ...i, stage: action.stage, inspector: action.inspector, enabled: true } : i));
     case "add":
       return [...state, action.item];
     case "remove":
@@ -160,9 +160,17 @@ function InspectionRow({
   return (
     <div className="group flex items-start gap-2 text-sm text-slate-700">
       <input type="checkbox" checked={insp.enabled} onChange={onToggle} className="mt-0.5 accent-teal-700 shrink-0" />
-      <button onClick={() => setEditing(true)} className="flex-1 min-w-0 text-left">
+      {/* Clicking the wording of an inspection that isn't ticked yet
+          accepts it — the common case is "yes, this one applies", not
+          "let me reword it". Once it's ticked, clicking opens the editor. */}
+      <button onClick={() => (insp.enabled ? setEditing(true) : onToggle())} className="flex-1 min-w-0 text-left">
         {index}. {insp.stage} <span className="text-slate-400">({insp.inspector})</span>
       </button>
+      {insp.enabled && (
+        <button onClick={() => setEditing(true)} className="text-xs text-teal-800 hover:underline opacity-0 group-hover:opacity-100 shrink-0">
+          Edit
+        </button>
+      )}
       <button onClick={onRemove} className="p-0.5 rounded text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 shrink-0">
         <X size={13} />
       </button>

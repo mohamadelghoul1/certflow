@@ -97,6 +97,10 @@ export const JOB_TYPES = ["Secondary Dwelling", "Dual Occupancy", "Alterations &
 // Not exhaustive — certifiers can also just type any version directly into
 // the BCA/NCC field (it's a free-text input with this list as suggestions),
 // so a new amendment doesn't need a code change to be usable.
+// NCC volumes are ticked independently of the version — a job can be
+// assessed against more than one (e.g. a dwelling plus a Class 10 shed).
+export const BCA_VOLUMES = ["Volume One", "Volume Two", "Volume Three"];
+
 export const BCA_VERSIONS = [
   "NCC 2025",
   "NCC 2022 Amendment 3",

@@ -6,6 +6,7 @@ import type { ActionState } from "@/lib/actions/auth";
 import {
   JOB_TYPES,
   BCA_VERSIONS,
+  BCA_VOLUMES,
   BUILDING_CLASSIFICATIONS,
   CONSTRUCTION_TYPES,
   NSW_STATE,
@@ -289,6 +290,14 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
                 <option key={v} value={v} />
               ))}
             </datalist>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+              {BCA_VOLUMES.map((v) => (
+                <label key={v} className="flex items-center gap-1.5 text-xs text-slate-600">
+                  <input type="checkbox" name="bcaVolumes" value={v} className="accent-teal-700" />
+                  {v}
+                </label>
+              ))}
+            </div>
           </div>
         </div>
       </Section>
@@ -507,11 +516,11 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Existing floor area (m²)</label>
-            <input type="number" name="floorAreaExisting" className={inputCls} />
+            <input type="text" inputMode="decimal" name="floorAreaExisting" placeholder="e.g. 123.4" className={inputCls} />
           </div>
           <div>
             <label className={labelCls}>New floor area (m²)</label>
-            <input type="number" name="floorAreaNew" className={inputCls} />
+            <input type="text" inputMode="decimal" name="floorAreaNew" placeholder="e.g. 123.4" className={inputCls} />
           </div>
         </div>
       </Section>
@@ -519,7 +528,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
       <Section title="Proposal site">
         <div>
           <label className={labelCls}>Total area of land (m²)</label>
-          <input type="number" name="siteArea" className={inputCls} />
+          <input type="text" inputMode="decimal" name="siteArea" placeholder="e.g. 1,234.5" className={inputCls} />
         </div>
       </Section>
 
