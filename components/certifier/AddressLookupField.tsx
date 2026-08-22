@@ -229,6 +229,21 @@ export function AddressLookupField({
           <a href={SPATIAL_VIEWER} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[11px] text-slate-500 hover:underline">
             <ExternalLink size={11} /> Find a property on the NSW Planning Portal
           </a>
+          {/* Opens the raw result of every call made to NSW for this
+              address. The NSW service can't be reached from where this app
+              is developed, so when a lookup comes back empty this is the
+              only way to tell a wrong endpoint from a blocked request from
+              an address NSW genuinely doesn't hold. */}
+          {result && (
+            <a
+              href={`/api/address-details?address=${encodeURIComponent(address.trim())}&debug=1`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 text-[11px] text-slate-400 hover:underline"
+            >
+              <ExternalLink size={11} /> Why?
+            </a>
+          )}
         </div>
         {result && <div className="text-[11px] text-slate-600 mt-1">{result}</div>}
         {!looking && !result && councilLga && <div className="text-[11px] text-teal-700 mt-1">Council: {councilLga} — matched from the address, edit below if wrong.</div>}
