@@ -1,6 +1,7 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { NavBar } from "@/components/certifier/NavBar";
+import { MobileTabBar } from "@/components/certifier/MobileTabBar";
 
 export default async function CertifierLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireProfile("certifier");
@@ -19,7 +20,10 @@ export default async function CertifierLayout({ children }: { children: React.Re
         recentJobs={(recentJobs || []).map((j) => ({ id: j.id, title: j.address, subtitle: j.description || "" }))}
         recentQuotes={(recentQuotes || []).map((q) => ({ id: q.id, title: q.proposal_address || q.project_title || "Untitled quote", subtitle: q.project_title && q.proposal_address ? q.project_title : "" }))}
       />
-      <div className="max-w-6xl mx-auto px-6 py-8">{children}</div>
+      {/* Bottom padding on phones clears the fixed tab bar, so the last
+          card on a page isn't sitting underneath it. */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24 sm:pb-8">{children}</div>
+      <MobileTabBar />
     </div>
   );
 }
