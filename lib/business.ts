@@ -9,7 +9,14 @@ export function todayISO() {
 }
 export function formatISODate(iso?: string | null) {
   if (!iso) return "Not yet scheduled";
-  const dt = new Date(`${iso}T00:00:00`);
+  // Some columns are plain dates ("2026-08-22") and others are full
+  // timestamps ("2026-08-22T04:19:03.123Z") — signed_at and its siblings
+  // are the latter. Appending T00:00:00 to a timestamp produced nonsense
+  // that failed to parse, and the fallback then printed the raw value,
+  // which is how a time of day ended up on the approval stamp. Taking the
+  // date part first handles both.
+  const datePart = iso.slice(0, 10);
+  const dt = new Date(`${datePart}T00:00:00`);
   if (isNaN(dt.getTime())) return iso;
   return dt.toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" });
 }

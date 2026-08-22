@@ -4,6 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { signedUrl } from "@/lib/storage";
 import { resolvePathwayCertRef, formatISODate, todayISO } from "@/lib/business";
 import { buildApprovalBundle, type BundleDocument } from "@/lib/pdf/bundle";
+import { buildCertificatePackagePdf } from "@/lib/pdf/certificatePackage";
+import { getPathwayCertificateData } from "@/lib/certificates/pathwayData";
+import { fetchStampImage } from "@/lib/pdf/stamp";
 import { buildStampDetails } from "@/lib/pdf/stampDetails";
 import type { Job, Firm, Certifier, ChecklistItem } from "@/types/db";
 
@@ -23,6 +26,11 @@ async function fetchBytes(path: string | null | undefined): Promise<{ bytes: Uin
   } catch {
     return null;
   }
+}
+
+// The letterhead logo and the certifier's signature, ready to embed.
+async function fetchPdfImage(url: string | null) {
+  return fetchStampImage(url);
 }
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
@@ -65,7 +73,24 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     stamp: item.requires_stamping,
   }));
 
-  const approval = job.pathway_approval_uploaded ? await fetchBytes(job.pathway_approval_file_path) : null;
+  // The approval that leads the set. The signed copy the certifier
+  // uploaded wins when there is one, since that upload is the official
+  // document; otherwise the whole package — council letter, applicant
+  // letter, certificate, inspections notice and Schedule 1 — is generated
+  // as a PDF so the set is complete either way. The Word export is
+  // untouched: that one is for editing, this one is for handing over.
+  const uploaded = job.pathway_approval_uploaded ? await fetchBytes(job.pathway_approval_file_path) : null;
+  let approval = uploaded;
+  let approvalLabel = "Signed approval (uploaded)";
+
+  if (!approval) {
+    const packageData = await getPathwayCertificateData(jobId, profile.firm_id);
+    if (packageData) {
+      const [logo, signature] = await Promise.all([fetchPdfImage(packageData.logoUrl), fetchPdfImage(packageData.signatureUrl)]);
+      approval = { bytes: await buildCertificatePackagePdf(packageData, { logo, signature }), contentType: "application/pdf" };
+      approvalLabel = "Approval — letters, certificate, inspections notice and Schedule 1";
+    }
+  }
 
   const firmData = (firm || null) as Firm | null;
   const stampDetails = await buildStampDetails(supabase, job, profile, firmData, activeVersion?.cert_ref);
@@ -74,6 +99,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     heading: `${job.pathway} ${certRef} — approved set`,
     subheading: `${job.address || ""} · ${firmData?.name || ""} · Compiled ${formatISODate(todayISO())}`,
     approval: approval ? { bytes: approval.bytes, contentType: approval.contentType } : null,
+    approvalLabel,
     documents,
     stampDetails,
   });

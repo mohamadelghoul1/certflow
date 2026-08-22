@@ -1,11 +1,12 @@
 import { displayStatus, formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { updateItemMeta, notifyClientOfChecklist } from "@/lib/actions/jobs";
+import { notifyClientOfChecklist } from "@/lib/actions/jobs";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
 import { ItemStatusProvider, ItemCard, ItemStatusBadge, ItemStatusActions } from "@/components/certifier/ItemStatus";
 import { EditableChecklistItemHeader } from "@/components/certifier/EditableChecklistItemHeader";
 import { AmendmentsList } from "@/components/certifier/AmendmentsList";
+import { DocumentDetailsForm } from "@/components/certifier/DocumentDetailsForm";
 import { CheckCircle2, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
 import type { ChecklistItem, Amendment } from "@/types/db";
 
@@ -148,22 +149,9 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
           <ItemStatusActions itemId={item.id} jobId={jobId} firmId={firmId} requiresStamping={item.requires_stamping} />
         </div>
 
-        {/* These five are what ends up in the DOCUMENTS REQUESTED table on
-            the certificate, so they're labelled here the same way they're
-            headed there. `drawing_number` is the stored column name — it
-            holds any document reference, not only a drawing number. */}
         <details className="mt-3">
           <summary className="text-xs text-muted cursor-pointer hover:text-heading">Document details (prepared by, reference no., revision, date)</summary>
-          <form action={updateItemMeta} className="mt-2 grid sm:grid-cols-5 gap-2">
-            <input type="hidden" name="item_id" value={item.id} />
-            <input type="hidden" name="job_id" value={jobId} />
-            <input name="prepared_by" defaultValue={item.prepared_by || ""} placeholder="Prepared by" className="px-2 py-1.5 rounded border border-line text-xs" />
-            <input name="drawing_number" defaultValue={item.drawing_number || ""} placeholder="Reference number" className="px-2 py-1.5 rounded border border-line text-xs" />
-            <input name="revision" defaultValue={item.revision || ""} placeholder="Revision" className="px-2 py-1.5 rounded border border-line text-xs" />
-            <input type="date" name="document_date" defaultValue={item.document_date || ""} className="px-2 py-1.5 rounded border border-line text-xs" />
-            <input name="clause_ref" defaultValue={item.clause_ref || ""} placeholder="NCC/BCA clause ref" className="px-2 py-1.5 rounded border border-line text-xs" />
-            <button className="sm:col-span-5 text-xs text-secondary hover:underline text-left">Save details</button>
-          </form>
+          <DocumentDetailsForm item={item} jobId={jobId} />
         </details>
 
         <AmendmentsList itemId={item.id} jobId={jobId} amendments={item.amendments} />

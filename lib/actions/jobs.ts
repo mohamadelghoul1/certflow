@@ -324,7 +324,9 @@ export async function updateItemMeta(formData: FormData) {
       document_date: formData.get("document_date") || null,
       prepared_by: String(formData.get("prepared_by") || ""),
       drawing_number: String(formData.get("drawing_number") || ""),
-      clause_ref: String(formData.get("clause_ref") || ""),
+      // clause_ref is deliberately not written. Its box has been removed
+      // from the item's details, so the form no longer submits one, and
+      // writing the empty value would wipe anything already recorded.
     })
     .eq("id", itemId);
   revalidatePath(`/jobs/${jobId}`);

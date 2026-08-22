@@ -21,10 +21,13 @@ export type BundleDocument = {
 export type BundleInput = {
   heading: string;
   subheading: string;
-  // The signed approval, when one has been uploaded as a PDF. Word
-  // documents can't be merged into a PDF without converting them first,
-  // so a .docx approval is noted on the contents page instead.
+  // The approval itself: the council letter, the applicant letter, the
+  // certificate, the inspections notice and Schedule 1. Generated as a
+  // PDF so it can lead the set, or the signed copy the certifier
+  // uploaded, which takes precedence when it is a PDF — that upload is
+  // the official document.
   approval?: { bytes: Uint8Array; contentType?: string | null } | null;
+  approvalLabel?: string;
   documents: BundleDocument[];
   stampDetails: StampDetails;
 };
@@ -93,12 +96,12 @@ export async function buildApprovalBundle(input: BundleInput): Promise<Uint8Arra
   if (input.approval) {
     const ok = isPdf(input.approval.bytes, input.approval.contentType) && (await appendPdf(bundle, input.approval.bytes));
     notes.push({
-      title: "Approval",
+      title: input.approvalLabel || "Approval",
       detail: ok ? "Included" : "Not included — the signed approval is not a PDF. Save it as PDF and upload it again to have it lead this bundle.",
       included: ok,
     });
   } else {
-    notes.push({ title: "Approval", detail: "Not included — no signed approval has been uploaded for this job yet.", included: false });
+    notes.push({ title: input.approvalLabel || "Approval", detail: "Not included — the approval could not be generated for this job.", included: false });
   }
 
   for (const doc of input.documents) {
