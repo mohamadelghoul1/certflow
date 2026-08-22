@@ -65,7 +65,7 @@ export function TaskBoard({ lists }: { lists: ListWithTasks[] }) {
   }
 
   return (
-    <div className="w-full overflow-x-auto pb-2">
+    <div className="w-full min-w-0 max-w-full overflow-x-auto pb-2">
       <div className="flex gap-4 min-w-max px-1">
         {order.map((l, i) => (
           <TaskListColumn

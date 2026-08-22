@@ -286,7 +286,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mt-6 grid lg:grid-cols-3 gap-5 items-start">
-        <div className="lg:col-span-2 space-y-5">
+        <div className="lg:col-span-2 min-w-0 space-y-5">
           <div id="today">
             <Panel title="Today&rsquo;s inspections" icon={CalendarCheck} viewAllHref="/jobs">
               {inspectionsToday.length === 0 ? (
@@ -342,7 +342,7 @@ export default async function DashboardPage() {
 
         </div>
 
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <Panel title="Upcoming inspections" icon={CalendarClock}>
             {nextInspections.length === 0 ? (
               <EmptyPanel icon={CalendarClock} message="Nothing booked." />

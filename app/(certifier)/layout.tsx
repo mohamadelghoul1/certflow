@@ -13,7 +13,7 @@ export default async function CertifierLayout({ children }: { children: React.Re
   ]);
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-surface overflow-x-hidden">
       <NavBar
         firmName={firm?.name || ""}
         userName={profile.full_name || profile.email || "Certifier"}
