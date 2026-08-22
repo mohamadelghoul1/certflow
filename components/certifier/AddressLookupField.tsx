@@ -268,7 +268,7 @@ export function AddressLookupField({
           {/* Tests every candidate NSW endpoint at once and reports which
               one answers. Temporary: it exists only until the working
               endpoint is identified, at which point it comes out. */}
-          {noSuggestions && (
+          {address.trim().length >= 6 && (
             <a
               href={`/api/address-details?address=${encodeURIComponent(address.trim())}&probe=1`}
               target="_blank"

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireProfile } from "@/lib/auth";
 import { extractLotDps } from "@/lib/nsw/propertyLookup";
-import { lookupNswProperty, suggestNswAddresses, type Attempt } from "@/lib/nsw/spatial";
+import { lookupNswProperty, suggestNswAddresses, findZoneLayer, type Attempt } from "@/lib/nsw/spatial";
 import { matchCouncilByAddress } from "@/lib/constants";
 import { probeNswEndpoints } from "@/lib/nsw/probe";
 
@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
       lotsFromNsw: remote.lots,
       lgaFromNsw: remote.lga || null,
       zoneFromNsw: remote.zone || null,
+      zoneLayerFound: await findZoneLayer(),
       addressSuggestions: await suggestNswAddresses(address, 8, log),
       calls: log,
     };

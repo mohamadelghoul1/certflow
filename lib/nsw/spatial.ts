@@ -156,15 +156,45 @@ export type PropertyLookup = { lots: string[]; lga?: string; zone?: string };
 
 // Land zoning is not in the parcel service — it comes from the planning
 // layers, which live on NSW's ePlanning map servers rather than on
-// portal.spatial. The host and layer number differ between deployments,
-// so several are tried and the first that answers with something
-// zone-shaped wins.
-const ZONE_SOURCES = [
-  "https://mapprod3.environment.nsw.gov.au/arcgis/rest/services/ePlanning/Planning_Portal_Principal_Planning/MapServer/19",
-  "https://mapprod1.environment.nsw.gov.au/arcgis/rest/services/ePlanning/Planning_Portal_Principal_Planning/MapServer/19",
-  "https://mapprod3.environment.nsw.gov.au/arcgis/rest/services/Planning/EPI_Primary_Planning_Layers/MapServer/19",
-  "https://mapprod1.environment.nsw.gov.au/arcgis/rest/services/Planning/EPI_Primary_Planning_Layers/MapServer/19",
+// portal.spatial.
+//
+// Only the service is named here, never the layer number. The first
+// attempt hard-coded layer 19 and found nothing: these services carry
+// dozens of layers and their numbering differs between deployments, so a
+// guessed index is worth very little. Instead the service is asked for
+// its own layer list and the zoning layer is picked out by name, which
+// keeps working if NSW renumbers them.
+const ZONE_SERVICES = [
+  "https://mapprod3.environment.nsw.gov.au/arcgis/rest/services/ePlanning/Planning_Portal_Principal_Planning/MapServer",
+  "https://mapprod1.environment.nsw.gov.au/arcgis/rest/services/ePlanning/Planning_Portal_Principal_Planning/MapServer",
+  "https://mapprod2.environment.nsw.gov.au/arcgis/rest/services/ePlanning/Planning_Portal_Principal_Planning/MapServer",
+  "https://mapprod3.environment.nsw.gov.au/arcgis/rest/services/Planning/EPI_Primary_Planning_Layers/MapServer",
+  "https://mapprod1.environment.nsw.gov.au/arcgis/rest/services/Planning/EPI_Primary_Planning_Layers/MapServer",
 ];
+
+// Resolved once per running instance — the layer list is metadata that
+// changes about never, and refetching it per lookup would double the
+// number of calls for nothing.
+let zoneLayerUrl: string | null | undefined;
+
+export async function findZoneLayer(log?: Attempt[]): Promise<string | null> {
+  if (zoneLayerUrl !== undefined) return zoneLayerUrl;
+
+  for (const base of ZONE_SERVICES) {
+    const meta = await getJson(`${base}?f=json`, log);
+    const layers = (meta?.layers as { id?: number; name?: string }[] | undefined) || [];
+    // "Land Zoning Map" is the usual name; anything mentioning zoning
+    // will do if that exact wording isn't there.
+    const match = layers.find((l) => typeof l.id === "number" && /land\s*zon/i.test(String(l.name))) || layers.find((l) => typeof l.id === "number" && /zon/i.test(String(l.name)));
+    if (match) {
+      zoneLayerUrl = `${base}/${match.id}`;
+      return zoneLayerUrl;
+    }
+  }
+
+  zoneLayerUrl = null;
+  return null;
+}
 
 // NSW zoning records carry the code and the description in separate
 // fields — SYM_CODE "R2" and LAY_CLASS "Low Density Residential" — which
@@ -182,17 +212,16 @@ function zoneFrom(attributes: Json): string | null {
 }
 
 async function lookupZone(point: { x: number; y: number }, wkid: number, log?: Attempt[]): Promise<string | undefined> {
-  for (const base of ZONE_SOURCES) {
-    const url =
-      `${base}/query?geometry=${encodeURIComponent(`${point.x},${point.y}`)}` +
-      `&geometryType=esriGeometryPoint&inSR=${wkid}&spatialRel=esriSpatialRelIntersects` +
-      `&outFields=*&returnGeometry=false&resultRecordCount=1&f=json`;
-    const data = await getJson(url, log);
-    const attributes = features(data)[0]?.attributes;
-    const zone = attributes ? zoneFrom(attributes) : null;
-    if (zone) return zone;
-  }
-  return undefined;
+  const layer = await findZoneLayer(log);
+  if (!layer) return undefined;
+
+  const url =
+    `${layer}/query?geometry=${encodeURIComponent(`${point.x},${point.y}`)}` +
+    `&geometryType=esriGeometryPoint&inSR=${wkid}&spatialRel=esriSpatialRelIntersects` +
+    `&outFields=*&returnGeometry=false&resultRecordCount=1&f=json`;
+  const data = await getJson(url, log);
+  const attributes = features(data)[0]?.attributes;
+  return (attributes ? zoneFrom(attributes) : null) || undefined;
 }
 
 export async function lookupNswProperty(address: string, log?: Attempt[]): Promise<PropertyLookup> {
