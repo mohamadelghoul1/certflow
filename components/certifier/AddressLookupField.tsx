@@ -8,7 +8,13 @@ import { extractLotDps } from "@/lib/nsw/propertyLookup";
 // The NSW Planning Portal's own property search. Always available as a
 // fallback: it's the authoritative source, so if our lookup can't place an
 // address the certifier can check it there and paste the lot back in.
-const SPATIAL_VIEWER = "https://www.planningportal.nsw.gov.au/spatialviewer/#/find-a-property/address";
+//
+// Linked at its root rather than at #/find-a-property/address. That's a
+// route inside a single-page app, and opened cold — which is what a link
+// from here always is — the app boots at its own landing page and
+// discards the route, so the deep link looked broken. The root loads the
+// same search reliably.
+const SPATIAL_VIEWER = "https://www.planningportal.nsw.gov.au/spatialviewer/";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
 const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
@@ -54,6 +60,9 @@ export function AddressLookupField({
   // ticked ones make up the Lot/Section/DP field — the same way the NSW
   // Planning Portal presents them.
   const [lotOptions, setLotOptions] = useState<string[]>([]);
+  // Set once a search has actually run and come back empty, so an address
+  // search that finds nothing says so instead of looking dead.
+  const [noSuggestions, setNoSuggestions] = useState(false);
 
   const selectedLots = lotSectionDp
     .split(",")
@@ -152,6 +161,7 @@ export function AddressLookupField({
     if (lookupDebounce.current) clearTimeout(lookupDebounce.current);
     if (trimmed.length < 4) {
       setSuggestions([]);
+      setNoSuggestions(false);
       return;
     }
 
@@ -159,10 +169,13 @@ export function AddressLookupField({
       try {
         const res = await fetch(`/api/address-autocomplete?input=${encodeURIComponent(trimmed)}`);
         const data = await res.json();
-        setSuggestions(data.suggestions || []);
-        setShowSuggestions(true);
+        const list: string[] = data.suggestions || [];
+        setSuggestions(list);
+        setShowSuggestions(list.length > 0);
+        setNoSuggestions(list.length === 0);
       } catch {
         setSuggestions([]);
+        setNoSuggestions(true);
       }
     }, 300);
 
@@ -234,7 +247,7 @@ export function AddressLookupField({
               is developed, so when a lookup comes back empty this is the
               only way to tell a wrong endpoint from a blocked request from
               an address NSW genuinely doesn't hold. */}
-          {result && (
+          {address.trim().length >= 6 && (
             <a
               href={`/api/address-details?address=${encodeURIComponent(address.trim())}&debug=1`}
               target="_blank"
@@ -245,6 +258,11 @@ export function AddressLookupField({
             </a>
           )}
         </div>
+        {noSuggestions && (
+          <div className="text-[11px] text-amber-700 mt-1">
+            No matching addresses came back — type the address in full. The lot and council can still be looked up from what you type.
+          </div>
+        )}
         {result && <div className="text-[11px] text-slate-600 mt-1">{result}</div>}
         {!looking && !result && councilLga && <div className="text-[11px] text-teal-700 mt-1">Council: {councilLga} — matched from the address, edit below if wrong.</div>}
       </div>

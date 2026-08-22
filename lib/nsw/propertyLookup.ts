@@ -130,7 +130,16 @@ function addressStrings(payload: unknown): string[] {
 export async function suggestNswAddresses(input: string, limit = 8, log?: Attempt[]): Promise<string[]> {
   const query = input.trim();
   if (query.length < 4) return [];
-  const data = await getJson(`${BASE}/FetchAddress?a=${encodeURIComponent(query)}&noOfRecords=${limit}`, log);
+
+  // Tried in order, stopping at the first that answers. The extra
+  // parameter is optional on some deployments and rejected on others, so
+  // the bare form is kept as a second attempt rather than assuming which
+  // one this service wants.
+  let data: unknown | null = null;
+  for (const url of [`${BASE}/FetchAddress?a=${encodeURIComponent(query)}&noOfRecords=${limit}`, `${BASE}/FetchAddress?a=${encodeURIComponent(query)}`]) {
+    data = await getJson(url, log);
+    if (data) break;
+  }
   if (!data) return [];
   // The address search returns a plain array of strings on some
   // deployments and objects on others, so take both.
