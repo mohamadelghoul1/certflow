@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireProfile } from "@/lib/auth";
 import { extractLotDps } from "@/lib/nsw/propertyLookup";
-import { lookupNswProperty, suggestNswAddresses, findZoneLayer, type Attempt } from "@/lib/nsw/spatial";
+import { lookupNswProperty, suggestNswAddresses, type Attempt } from "@/lib/nsw/spatial";
 import { matchCouncilByAddress } from "@/lib/constants";
-import { probeNswEndpoints } from "@/lib/nsw/probe";
 
 // Lot/Section/Plan and council for an address the certifier has picked or
 // typed. Answers from three sources: the address text itself (if it
@@ -28,13 +27,6 @@ export async function GET(request: NextRequest) {
   const address = request.nextUrl.searchParams.get("address")?.trim() || "";
   const debug = request.nextUrl.searchParams.get("debug") === "1";
 
-  // &probe=1 tries every candidate NSW endpoint at once and reports which
-  // answered — see lib/nsw/probe.ts for why that beats guessing one per
-  // deploy.
-  if (request.nextUrl.searchParams.get("probe") === "1") {
-    return NextResponse.json(await probeNswEndpoints(address || "21 Strickland Road Guildford NSW 2161"), { headers: { "Cache-Control": "no-store" } });
-  }
-
   if (address.length < 6) return NextResponse.json({ lots: [] });
 
   const fromText = extractLotDps(address);
@@ -44,7 +36,7 @@ export async function GET(request: NextRequest) {
   // Only ask NSW for what we couldn't work out locally — unless we're
   // diagnosing, in which case ask regardless so there's something to see.
   const askNsw = debug || !fromText.length || !council;
-  const remote = askNsw ? await lookupNswProperty(address, log) : { lots: [], lga: undefined, zone: undefined };
+  const remote = askNsw ? await lookupNswProperty(address, log) : { lots: [], lga: undefined };
 
   const body: Record<string, unknown> = {
     lots: fromText.length ? fromText : remote.lots,
@@ -58,8 +50,6 @@ export async function GET(request: NextRequest) {
       councilFromDirectory: council?.name || null,
       lotsFromNsw: remote.lots,
       lgaFromNsw: remote.lga || null,
-      zoneFromNsw: remote.zone || null,
-      zoneLayerFound: await findZoneLayer(),
       addressSuggestions: await suggestNswAddresses(address, 8, log),
       calls: log,
     };

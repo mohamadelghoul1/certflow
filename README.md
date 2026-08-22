@@ -130,28 +130,19 @@ database is multi-tenant-ready (every row carries a `firm_id`, enforced by
 Postgres Row Level Security) per the brief's Section 12 guidance, even
 though only one firm uses it today.
 
-**Needs a live test before you rely on it**
+**Automatic Lot/Section/Plan and council from the address** — working.
+Typing a development address (on New Job or the Details tab) suggests
+matching NSW addresses, and picking one fills in the Lot/Section/Plan and
+the council. A property across several parcels lists them all as
+tickboxes so you can choose which the job covers. It reads NSW Spatial
+Services, a free public government service that needs no account or key,
+and every field stays an ordinary box you can type into.
 
-- **Automatic Lot/DP and council lookup from the address.** Typing a
-  development address (on New Job or the Details tab) suggests matching
-  addresses, then fills in the Lot/Section/DP and the council for you. It
-  reads the lot and council straight from the address text where it can,
-  falls back to the built-in council directory, and otherwise asks the NSW
-  ePlanning Spatial API — a free, public NSW government service that needs
-  no account or key. **This last step could not be tested while building
-  it** (the build environment has no outbound internet), so please try a
-  few real addresses once it's deployed and tell me what comes back. If
-  the lot or council doesn't appear, nothing is broken — both fields are
-  ordinary boxes you type into, exactly as before — and I can correct the
-  lookup from whatever the live service actually returns.
-- The address **suggestions** now come from NSW's own ePlanning address
-  search, which needs **no API key and no billing account**. Setting
-  `GOOGLE_PLACES_API_KEY` in Vercel is optional and only worth doing if
-  you need addresses outside NSW; if that key is ever rejected or over
-  quota, the NSW search is used instead rather than showing nothing.
-- **Find a property on the NSW Planning Portal** next to the address field
-  opens the Planning Portal's own property search, which is the
-  authoritative source — use it whenever our lookup can't place an address.
+Land zoning is **not** filled in automatically. It isn't part of the
+parcel data, and no public endpoint serving it could be found, so it
+stays a field you fill in — the "Find a property on the NSW Planning
+Portal" link beside the address opens the official search, which shows
+the zoning for an address.
 
 **Deliberately not built yet** — these all need a paid third-party account
 with an API key only you can obtain, exactly as the build brief describes:

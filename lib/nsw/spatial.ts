@@ -152,77 +152,16 @@ export async function suggestNswAddresses(input: string, limit = 8, log?: Attemp
   return filterByWords(addresses, words).slice(0, limit);
 }
 
-export type PropertyLookup = { lots: string[]; lga?: string; zone?: string };
+export type PropertyLookup = { lots: string[]; lga?: string };
 
-// Land zoning is not in the parcel service — it comes from the planning
-// layers, which live on NSW's ePlanning map servers rather than on
-// portal.spatial.
+// Land zoning is deliberately not looked up here.
 //
-// Only the service is named here, never the layer number. The first
-// attempt hard-coded layer 19 and found nothing: these services carry
-// dozens of layers and their numbering differs between deployments, so a
-// guessed index is worth very little. Instead the service is asked for
-// its own layer list and the zoning layer is picked out by name, which
-// keeps working if NSW renumbers them.
-const ZONE_SERVICES = [
-  "https://mapprod3.environment.nsw.gov.au/arcgis/rest/services/ePlanning/Planning_Portal_Principal_Planning/MapServer",
-  "https://mapprod1.environment.nsw.gov.au/arcgis/rest/services/ePlanning/Planning_Portal_Principal_Planning/MapServer",
-  "https://mapprod2.environment.nsw.gov.au/arcgis/rest/services/ePlanning/Planning_Portal_Principal_Planning/MapServer",
-  "https://mapprod3.environment.nsw.gov.au/arcgis/rest/services/Planning/EPI_Primary_Planning_Layers/MapServer",
-  "https://mapprod1.environment.nsw.gov.au/arcgis/rest/services/Planning/EPI_Primary_Planning_Layers/MapServer",
-];
-
-// Resolved once per running instance — the layer list is metadata that
-// changes about never, and refetching it per lookup would double the
-// number of calls for nothing.
-let zoneLayerUrl: string | null | undefined;
-
-export async function findZoneLayer(log?: Attempt[]): Promise<string | null> {
-  if (zoneLayerUrl !== undefined) return zoneLayerUrl;
-
-  for (const base of ZONE_SERVICES) {
-    const meta = await getJson(`${base}?f=json`, log);
-    const layers = (meta?.layers as { id?: number; name?: string }[] | undefined) || [];
-    // "Land Zoning Map" is the usual name; anything mentioning zoning
-    // will do if that exact wording isn't there.
-    const match = layers.find((l) => typeof l.id === "number" && /land\s*zon/i.test(String(l.name))) || layers.find((l) => typeof l.id === "number" && /zon/i.test(String(l.name)));
-    if (match) {
-      zoneLayerUrl = `${base}/${match.id}`;
-      return zoneLayerUrl;
-    }
-  }
-
-  zoneLayerUrl = null;
-  return null;
-}
-
-// NSW zoning records carry the code and the description in separate
-// fields — SYM_CODE "R2" and LAY_CLASS "Low Density Residential" — which
-// together make the "R2 Low Density Residential" wording the certificate
-// already uses. Both are matched by pattern rather than by exact name,
-// since these layers are not consistently named across deployments.
-function zoneFrom(attributes: Json): string | null {
-  const entries = Object.entries(attributes).filter(([, v]) => typeof v === "string" && v.trim());
-  const pick = (re: RegExp) => entries.find(([k]) => re.test(k))?.[1] as string | undefined;
-
-  const code = pick(/^(sym_?code|zone_?code|zone)$/i)?.trim();
-  const label = pick(/(lay_?class|zone_?name|zone_?desc|class)/i)?.trim();
-  if (code && label) return code === label ? code : `${code} ${label}`;
-  return code || label || null;
-}
-
-async function lookupZone(point: { x: number; y: number }, wkid: number, log?: Attempt[]): Promise<string | undefined> {
-  const layer = await findZoneLayer(log);
-  if (!layer) return undefined;
-
-  const url =
-    `${layer}/query?geometry=${encodeURIComponent(`${point.x},${point.y}`)}` +
-    `&geometryType=esriGeometryPoint&inSR=${wkid}&spatialRel=esriSpatialRelIntersects` +
-    `&outFields=*&returnGeometry=false&resultRecordCount=1&f=json`;
-  const data = await getJson(url, log);
-  const attributes = features(data)[0]?.attributes;
-  return (attributes ? zoneFrom(attributes) : null) || undefined;
-}
+// It isn't in the parcel service, and the planning service that holds it
+// couldn't be found on any public endpoint that answers — the searches
+// for it came back empty. Rather than leave five failing calls slowing
+// down every address lookup, zoning stays a field the certifier fills in,
+// with the NSW Planning Portal linked beside the address for looking one
+// up.
 
 export async function lookupNswProperty(address: string, log?: Attempt[]): Promise<PropertyLookup> {
   if (address.trim().length < 6) return { lots: [] };
@@ -253,13 +192,9 @@ export async function lookupNswProperty(address: string, log?: Attempt[]): Promi
     `&geometryType=esriGeometryPoint&inSR=${wkid}&spatialRel=esriSpatialRelIntersects` +
     `&outFields=lotidstring,lotnumber,sectionnumber,planlabel&returnGeometry=false&resultRecordCount=12&f=json`;
 
-  // Parcels and zoning are independent lookups against the same point,
-  // so they run together rather than one after the other.
-  const [lotData, zone] = await Promise.all([getJson(lotUrl, log), lookupZone(point, wkid, log)]);
-
-  const lots = features(lotData)
+  const lots = features(await getJson(lotUrl, log))
     .map((f) => (f.attributes ? lotLabel(f.attributes) : null))
     .filter((l): l is string => !!l);
 
-  return { lots: [...new Set(lots)], zone };
+  return { lots: [...new Set(lots)] };
 }

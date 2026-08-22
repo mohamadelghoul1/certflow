@@ -140,10 +140,6 @@ export function AddressLookupField({
         latest.current.onCouncilMatched(data.lga);
         found.push(data.lga);
       }
-      if (data.zone && (force || !latest.current.zoning)) {
-        latest.current.onZoningChange(data.zone);
-        found.push(data.zone);
-      }
 
       if (force) {
         setResult(
@@ -250,34 +246,6 @@ export function AddressLookupField({
           <a href={SPATIAL_VIEWER} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[11px] text-slate-500 hover:underline">
             <ExternalLink size={11} /> Find a property on the NSW Planning Portal
           </a>
-          {/* Opens the raw result of every call made to NSW for this
-              address. The NSW service can't be reached from where this app
-              is developed, so when a lookup comes back empty this is the
-              only way to tell a wrong endpoint from a blocked request from
-              an address NSW genuinely doesn't hold. */}
-          {address.trim().length >= 6 && (
-            <a
-              href={`/api/address-details?address=${encodeURIComponent(address.trim())}&debug=1`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1 text-[11px] text-slate-400 hover:underline"
-            >
-              <ExternalLink size={11} /> Why?
-            </a>
-          )}
-          {/* Tests every candidate NSW endpoint at once and reports which
-              one answers. Temporary: it exists only until the working
-              endpoint is identified, at which point it comes out. */}
-          {address.trim().length >= 6 && (
-            <a
-              href={`/api/address-details?address=${encodeURIComponent(address.trim())}&probe=1`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1 text-[11px] text-slate-400 hover:underline"
-            >
-              <ExternalLink size={11} /> Test NSW connection
-            </a>
-          )}
         </div>
         {noSuggestions && (
           <div className="text-[11px] text-amber-700 mt-1">
@@ -320,7 +288,9 @@ export function AddressLookupField({
       <div>
         <label className={labelCls}>Land zoning</label>
         <input name="zoning" value={zoning} onChange={(e) => onZoningChange(e.target.value)} placeholder="e.g. R2 Low Density Residential" className={inputCls} />
-        <div className="text-[11px] text-slate-400 mt-1">Filled in from the NSW planning layers with the lot — type it in yourself if it&rsquo;s blank or wrong.</div>
+        <div className="text-[11px] text-slate-400 mt-1">
+          Zoning isn&rsquo;t available from the NSW lookup, so type it in here — the Planning Portal link above shows it for the address.
+        </div>
       </div>
     </>
   );
