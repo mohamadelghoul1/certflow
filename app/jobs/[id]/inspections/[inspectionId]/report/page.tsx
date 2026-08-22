@@ -46,8 +46,13 @@ const REINSPECTION_TEXT: Record<string, string> = {
   passed_subject_to: "No re-inspection required, subject to documents/conditions being provided",
 };
 
-export default async function InspectionReportPage({ params }: { params: Promise<{ jobId: string; inspectionId: string }> }) {
-  const { jobId, inspectionId } = await params;
+// The folder is [id] rather than [jobId] to match
+// app/(certifier)/jobs/[id]. Next.js requires one name per dynamic
+// segment across the whole route tree, and having both meant every
+// request — not just these — failed with "You cannot use different slug
+// names for the same dynamic path".
+export default async function InspectionReportPage({ params }: { params: Promise<{ id: string; inspectionId: string }> }) {
+  const { id: jobId, inspectionId } = await params;
   const { profile } = await requireProfile("certifier");
 
   const data = await getInspectionReportData(jobId, inspectionId, profile.firm_id);

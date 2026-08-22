@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
@@ -7,6 +7,21 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
   title: "CertFlow",
   description: "Certification project management for NSW building certifiers",
+};
+
+// Without this, phones lay the page out at a notional 980px and shrink the
+// result to fit — which is why the app looked like a zoomed-out desktop on
+// a phone rather than a mobile layout, and why none of the responsive
+// breakpoints were taking effect there.
+//
+// viewportFit: "cover" is what lets the bottom tab bar's
+// env(safe-area-inset-bottom) padding report a real value on a phone with
+// a home indicator, instead of always zero.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#1a3a5f",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

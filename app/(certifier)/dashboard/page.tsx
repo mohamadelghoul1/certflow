@@ -15,12 +15,12 @@ type Task = { priority: "High" | "Medium" | "Low"; text: string; jobId: string |
 // A compact tile. `tone` marks the one that means "something is wrong",
 // which is the only place red appears on this page — green stays reserved
 // for approved, as everywhere else in the app.
-function Tile({ icon: Icon, label, value, href, tone, detail }: { icon: LucideIcon; label: string; value: number; href: string; tone?: "alert"; detail?: string }) {
+function Tile({ icon: Icon, label, value, href, tone, detail, className = "" }: { icon: LucideIcon; label: string; value: number; href: string; tone?: "alert"; detail?: string; className?: string }) {
   const alert = tone === "alert" && value > 0;
   return (
     // h-full so a tile whose label runs to two lines doesn't leave the row
     // ragged — they all take the height of the tallest.
-    <Link href={href} className={`card-lift h-full flex flex-col rounded-xl border bg-white p-4 shadow-sm ${alert ? "border-error/40" : "border-line"}`}>
+    <Link href={href} className={`card-lift h-full flex flex-col rounded-xl border bg-white p-4 shadow-sm ${alert ? "border-error/40" : "border-line"} ${className}`}>
       <Icon size={18} strokeWidth={1.6} className={alert ? "text-error" : "text-icon"} />
       <div className={`text-3xl font-bold mt-2 ${alert ? "text-error" : "text-heading"}`}>{value}</div>
       <div className="text-xs font-medium text-muted mt-1 leading-snug">{label}</div>
@@ -280,7 +280,9 @@ export default async function DashboardPage() {
           detail={`CDC/CC ${assessmentsInProgress} · OC ${ocAssessments}`}
         />
         <Tile icon={ShieldCheck} label="Approvals to issue" value={approvalsToIssue} href="/jobs" />
-        <Tile icon={Inbox} label="Documents for review" value={documentsForReview} href="/jobs" />
+        {/* Five tiles into a two-column grid leaves the last one stranded on
+            its own row, so on a phone it takes the full width. */}
+        <Tile icon={Inbox} label="Documents for review" value={documentsForReview} href="/jobs" className="col-span-2 md:col-span-1" />
       </div>
 
       <div className="mt-6 grid lg:grid-cols-3 gap-5 items-start">

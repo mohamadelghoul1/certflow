@@ -42,7 +42,7 @@ export function ProjectsDonut({ slices }: { slices: Slice[] }) {
   }));
 
   return (
-    <div className="flex items-center gap-5 flex-wrap">
+    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
       <svg viewBox="0 0 140 140" role="img" aria-label={`${total} projects by stage`} className="w-[132px] h-[132px] shrink-0 -rotate-90">
         <circle cx="70" cy="70" r={RADIUS} fill="none" stroke="var(--color-line)" strokeWidth={STROKE} />
         {arcs.map((s) => {
@@ -73,7 +73,7 @@ export function ProjectsDonut({ slices }: { slices: Slice[] }) {
         </g>
       </svg>
 
-      <div className="flex-1 min-w-[150px] space-y-1.5">
+      <div className="w-full sm:flex-1 sm:min-w-[150px] space-y-1.5">
         {slices.map((s) => (
           <Link key={s.label} href={s.href} className="flex items-center gap-2 text-sm hover:bg-hover rounded px-1 -mx-1 py-0.5">
             <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: s.color }} />
