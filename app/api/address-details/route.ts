@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   // answered — see lib/nsw/probe.ts for why that beats guessing one per
   // deploy.
   if (request.nextUrl.searchParams.get("probe") === "1") {
-    return NextResponse.json({ probe: await probeNswEndpoints(address || "29 Strickland Road Guildford NSW 2161") }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(await probeNswEndpoints(address || "21 Strickland Road Guildford NSW 2161"), { headers: { "Cache-Control": "no-store" } });
   }
 
   if (address.length < 6) return NextResponse.json({ lots: [] });
