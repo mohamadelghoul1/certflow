@@ -1,10 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { signedUrl } from "@/lib/storage";
-import { resolvePathwayCertRef, formatISODate, todayISO } from "@/lib/business";
-import { stampSheetPdf, fetchStampImage } from "@/lib/pdf/stamp";
-import type { Job, Firm, Certifier } from "@/types/db";
+import { stampSheetPdf } from "@/lib/pdf/stamp";
+import { buildStampDetails } from "@/lib/pdf/stampDetails";
+import type { Job, Firm } from "@/types/db";
 
 // The job's approval stamp on its own, so the certifier can see exactly
 // what will be applied to the approved documents before downloading the
@@ -22,26 +21,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     supabase.from("firms").select("*").eq("id", profile.firm_id).single(),
     supabase.from("pathway_certificate_versions").select("cert_ref").eq("job_id", jobId).eq("version", job.pathway_version).single(),
   ]);
-  const issuedBy = job.pathway_issued_by ? ((await supabase.from("certifiers").select("*").eq("id", job.pathway_issued_by).single()).data as Certifier | null) : null;
 
-  const d = job.details || {};
-  const certRef = resolvePathwayCertRef(version?.cert_ref, job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version);
-  const firmData = (firm || null) as Firm | null;
-
-  const bytes = await stampSheetPdf({
-    firmName: firmData?.name || "",
-    certRef,
-    pathway: job.pathway,
-    certifierName: issuedBy?.name || "",
-    registrationNo: issuedBy?.registration_no || "",
-    date: formatISODate(job.pathway_signed_at || todayISO()),
-    image: await fetchStampImage(await signedUrl(firmData?.stamp_url)),
-  });
+  const details = await buildStampDetails(supabase, job, profile, (firm || null) as Firm | null, version?.cert_ref);
+  const bytes = await stampSheetPdf(details);
 
   return new NextResponse(new Uint8Array(bytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${certRef}-Stamp.pdf"`,
+      "Content-Disposition": `inline; filename="${details.certRef}-Stamp.pdf"`,
     },
   });
 }

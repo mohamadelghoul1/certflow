@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signedUrl } from "@/lib/storage";
 import { resolvePathwayCertRef, formatISODate, todayISO } from "@/lib/business";
 import { buildApprovalBundle, type BundleDocument } from "@/lib/pdf/bundle";
-import { fetchStampImage } from "@/lib/pdf/stamp";
+import { buildStampDetails } from "@/lib/pdf/stampDetails";
 import type { Job, Firm, Certifier, ChecklistItem } from "@/types/db";
 
 // The whole approval as one PDF: contents page, the signed approval, then
@@ -41,8 +41,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   ]);
 
   const activeVersion = (versions || []).find((v) => v.version === job.pathway_version);
-  const issuedBy = job.pathway_issued_by ? ((await supabase.from("certifiers").select("*").eq("id", job.pathway_issued_by).single()).data as Certifier | null) : null;
-
   const d = job.details || {};
   const projRef = d.projectNumber || job.id.slice(0, 8);
   const certRef = resolvePathwayCertRef(activeVersion?.cert_ref, job.pathway, projRef, job.pathway_version);
@@ -70,20 +68,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const approval = job.pathway_approval_uploaded ? await fetchBytes(job.pathway_approval_file_path) : null;
 
   const firmData = (firm || null) as Firm | null;
+  const stampDetails = await buildStampDetails(supabase, job, profile, firmData, activeVersion?.cert_ref);
+
   const bytes = await buildApprovalBundle({
     heading: `${job.pathway} ${certRef} — approved set`,
     subheading: `${job.address || ""} · ${firmData?.name || ""} · Compiled ${formatISODate(todayISO())}`,
     approval: approval ? { bytes: approval.bytes, contentType: approval.contentType } : null,
     documents,
-    stampDetails: {
-      firmName: firmData?.name || "",
-      certRef,
-      pathway: job.pathway,
-      certifierName: issuedBy?.name || "",
-      registrationNo: issuedBy?.registration_no || "",
-      date: formatISODate(job.pathway_signed_at || activeVersion?.signed_at || todayISO()),
-      image: await fetchStampImage(await signedUrl(firmData?.stamp_url)),
-    },
+    stampDetails,
   });
 
   return new NextResponse(new Uint8Array(bytes), {
