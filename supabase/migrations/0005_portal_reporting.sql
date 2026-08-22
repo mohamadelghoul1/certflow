@@ -10,8 +10,8 @@
 -- acknowledgement plus a dashboard deadline task, not an automated
 -- submission. Wire up the real Common API calls once that key exists.
 
-alter table jobs add column pathway_portal_reported boolean not null default false;
-alter table jobs add column pathway_portal_reported_date date;
+alter table jobs add column if not exists pathway_portal_reported boolean not null default false;
+alter table jobs add column if not exists pathway_portal_reported_date date;
 
-alter table oc_records add column portal_reported boolean not null default false;
-alter table oc_records add column portal_reported_date date;
+alter table oc_records add column if not exists portal_reported boolean not null default false;
+alter table oc_records add column if not exists portal_reported_date date;

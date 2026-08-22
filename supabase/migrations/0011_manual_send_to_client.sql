@@ -12,13 +12,13 @@
 -- "active" one whose data is mirrored onto jobs.pathway_* and used
 -- everywhere in the certifier UI) — reusing it for client-facing exposure
 -- would have tied those two unrelated concerns together.
-alter table pathway_certificate_versions add column sent_to_client boolean not null default false;
-alter table pathway_certificate_versions add column sent_to_client_date date;
-alter table jobs add column pathway_sent_to_client boolean not null default false;
-alter table jobs add column pathway_sent_to_client_date date;
+alter table pathway_certificate_versions add column if not exists sent_to_client boolean not null default false;
+alter table pathway_certificate_versions add column if not exists sent_to_client_date date;
+alter table jobs add column if not exists pathway_sent_to_client boolean not null default false;
+alter table jobs add column if not exists pathway_sent_to_client_date date;
 
-alter table oc_records add column sent_to_client boolean not null default false;
-alter table oc_records add column sent_to_client_date date;
+alter table oc_records add column if not exists sent_to_client boolean not null default false;
+alter table oc_records add column if not exists sent_to_client_date date;
 
 -- Existing jobs that already had an approval uploaded/visible before this
 -- feature existed keep behaving the way clients have already seen them —

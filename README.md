@@ -43,8 +43,14 @@ at this stage (small free tiers on both).
 > `0012_custom_cert_ref.sql` (rename a certificate reference),
 > `0013_inspection_report_text.sql` (edit an inspection report's wording
 > in the app), and `0014_firm_stamp.sql` (upload your own approval stamp).
-> Running one twice is harmless — it just reports that the column already
-> exists.
+> Running one twice is harmless — every one of these is safe to re-run.
+
+> **If a migration stops with "column ... already exists":** you've run
+> that file before. Note that Supabase runs the whole editor tab as a
+> single unit, so when one line fails the lines *after* it don't run
+> either. Re-run the file as-is — every `add column` is now written as
+> `add column if not exists`, so it adds whatever is missing and skips
+> whatever isn't.
 
 You should see "Success. No rows returned" both times. If you see a red
 error instead, stop and get help before continuing — don't re-run a

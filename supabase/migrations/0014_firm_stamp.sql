@@ -10,4 +10,4 @@
 --
 -- Null (the default) keeps the drawn stamp on its own, which is what every
 -- existing firm gets until they upload something.
-alter table firms add column stamp_url text;
+alter table firms add column if not exists stamp_url text;

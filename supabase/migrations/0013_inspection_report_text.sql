@@ -12,5 +12,5 @@
 --     don't fit the results table or the required-documents list. Omitted
 --     from the report entirely when blank, rather than printing an empty
 --     heading.
-alter table inspections add column report_intro_override text;
-alter table inspections add column report_notes text;
+alter table inspections add column if not exists report_intro_override text;
+alter table inspections add column if not exists report_notes text;
