@@ -19,6 +19,21 @@ export type ChecklistItemLike = {
   amendments?: { resolved: boolean }[];
 };
 
+// The firm's postal and office addresses are stored as one string, but on
+// the letterhead the suburb belongs on its own line under the street — a
+// single long line pushes the contact block out of shape, especially in
+// Word where the header has less room than the browser gives it. Split at
+// the last comma, which is where "…, Yagoona NSW 2199" always begins.
+export function letterheadAddressLines(address?: string | null): string[] {
+  const value = (address || "").trim();
+  if (!value) return ["—"];
+  const cut = value.lastIndexOf(",");
+  if (cut === -1) return [value];
+  const street = value.slice(0, cut).trim();
+  const locality = value.slice(cut + 1).trim();
+  return street && locality ? [`${street},`, locality] : [value];
+}
+
 export function stageComplete(items: ChecklistItemLike[]) {
   return items.length > 0 && items.every((i) => i.status === "approved");
 }

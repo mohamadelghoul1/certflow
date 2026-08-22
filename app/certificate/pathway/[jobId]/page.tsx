@@ -358,12 +358,15 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
           <div className="text-xs text-slate-400 mb-3">
             {pathwayFull} {ref} — continued
           </div>
-          <table className="w-full">
+          {/* Registration body then number, in that order and never split
+              across a page — read together they're one statement of the
+              authority the certificate is issued under. */}
+          <table className="w-full break-inside-avoid">
             <tbody>
               <TableSectionHeading>REGISTERED CERTIFIER</TableSectionHeading>
               <CertRow label="Registered Certifier:" value={issuedBy?.name} />
-              <CertRow label="Registration No:" value={issuedBy?.registration_no} />
               <CertRow label="Registration Body:" value={issuedBy?.registration_body} />
+              <CertRow label="Registration No:" value={issuedBy?.registration_no} />
             </tbody>
           </table>
 
@@ -477,8 +480,20 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
             <SignatureLine signatureUrl={signatureUrl} topPadding="pt-8" />
             <div>{issuedBy?.name || "—"}</div>
             <div className="text-xs text-slate-500">Principal Certifier / {issuedBy?.registration_no}</div>
+          </div>
+          <DocFooter projRef={projRef} website={firm?.website} />
+        </Section>
 
-            <div className="font-bold mt-6 mb-1">SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS</div>
+        {/* 4b. Schedule 1 — the schedule the notice refers to, on its own
+            page so it can be handed to the builder as a standalone list of
+            the inspections to book. */}
+        <Section>
+          <DocumentHeader firm={firm} logoUrl={logoUrl} />
+          <div className="text-sm space-y-3">
+            <div className="font-bold text-base mb-1">SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS</div>
+            <div className="text-xs text-slate-500">
+              {pathwayFull} {ref} — {job.address}
+            </div>
             <table className="w-full border border-slate-300 text-sm">
               <thead>
                 <tr className="bg-slate-100">
@@ -509,17 +524,23 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
             <table className="w-full border border-slate-300 text-sm">
               <thead>
                 <tr className="bg-slate-100">
+                  <th className="border border-slate-300 px-3 py-1.5 w-32 text-left">Prepared by</th>
                   <th className="border border-slate-300 px-3 py-1.5 text-left">Document</th>
-                  <th className="border border-slate-300 px-3 py-1.5 w-32 text-left">Status</th>
-                  <th className="border border-slate-300 px-3 py-1.5 w-28 text-left">Document date</th>
+                  <th className="border border-slate-300 px-3 py-1.5 w-28 text-left">Reference no.</th>
+                  <th className="border border-slate-300 px-3 py-1.5 w-20 text-left">Revision</th>
+                  <th className="border border-slate-300 px-3 py-1.5 w-24 text-left">Date</th>
+                  <th className="border border-slate-300 px-3 py-1.5 w-24 text-left">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {allItems.map((i) => (
                   <tr key={i.id}>
+                    <td className="border border-slate-300 px-3 py-1.5">{i.prepared_by || "—"}</td>
                     <td className="border border-slate-300 px-3 py-1.5">{i.title}</td>
-                    <td className="border border-slate-300 px-3 py-1.5 capitalize">{i.status}</td>
+                    <td className="border border-slate-300 px-3 py-1.5">{i.drawing_number || "—"}</td>
+                    <td className="border border-slate-300 px-3 py-1.5">{i.revision || "—"}</td>
                     <td className="border border-slate-300 px-3 py-1.5">{formatISODate(i.document_date)}</td>
+                    <td className="border border-slate-300 px-3 py-1.5 capitalize">{i.status}</td>
                   </tr>
                 ))}
               </tbody>

@@ -3,7 +3,7 @@ import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
 import { p, mixed, pageBreak, splitRow, fieldTable, gridTable, headingRule, photoGrid, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, type FieldRow } from "@/lib/docx/shared";
 import { formatAddress } from "@/lib/certificates/pathwayData";
-import { formatISODate } from "@/lib/business";
+import { formatISODate, letterheadAddressLines } from "@/lib/business";
 import type { InspectionReportData } from "@/lib/certificates/inspectionReportData";
 
 // Mirrors app/jobs/[jobId]/inspections/[inspectionId]/report/page.tsx.
@@ -32,8 +32,8 @@ function letterheadHeader(firm: InspectionReportData["firm"], logo: ImageAsset |
     ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 })]
     : [p(firm?.name || "", { bold: true, size: 24, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 })];
   const right = [
-    p(`Postal: ${firm?.postal_address || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
-    p(`Office: ${firm?.office_address || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
+    ...letterheadAddressLines(firm?.postal_address).map((line, i) => p(i === 0 ? `Postal: ${line}` : line, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })),
+    ...letterheadAddressLines(firm?.office_address).map((line, i) => p(i === 0 ? `Office: ${line}` : line, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })),
     p(`(p): ${firm?.phone || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
     p(`(e): ${firm?.email || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
   ];

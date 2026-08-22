@@ -216,24 +216,26 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
               <table className="w-full text-xs border border-slate-200">
                 <thead>
                   <tr className="bg-slate-50 text-left">
-                    <th className="px-2 py-1.5 border-b border-slate-200">Document</th>
-                    <th className="px-2 py-1.5 border-b border-slate-200">Revision</th>
-                    <th className="px-2 py-1.5 border-b border-slate-200">Document date</th>
                     <th className="px-2 py-1.5 border-b border-slate-200">Prepared by</th>
+                    <th className="px-2 py-1.5 border-b border-slate-200">Document</th>
+                    <th className="px-2 py-1.5 border-b border-slate-200">Reference no.</th>
+                    <th className="px-2 py-1.5 border-b border-slate-200">Revision</th>
+                    <th className="px-2 py-1.5 border-b border-slate-200">Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {approvedItems.map((item) => (
                     <tr key={item.id}>
+                      <td className="px-2 py-1.5 border-b border-slate-100">{item.prepared_by || "—"}</td>
                       <td className="px-2 py-1.5 border-b border-slate-100">{item.title}</td>
+                      <td className="px-2 py-1.5 border-b border-slate-100">{item.drawing_number || "—"}</td>
                       <td className="px-2 py-1.5 border-b border-slate-100">{item.revision || "—"}</td>
                       <td className="px-2 py-1.5 border-b border-slate-100">{formatISODate(item.document_date)}</td>
-                      <td className="px-2 py-1.5 border-b border-slate-100">{item.prepared_by || "—"}</td>
                     </tr>
                   ))}
                   {approvedItems.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-2 py-3 text-center text-slate-400">
+                      <td colSpan={5} className="px-2 py-3 text-center text-slate-400">
                         No approved documents.
                       </td>
                     </tr>

@@ -3,7 +3,7 @@ import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
 import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR } from "@/lib/docx/shared";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
-import { formatISODate } from "@/lib/business";
+import { formatISODate, letterheadAddressLines } from "@/lib/business";
 
 // Mirrors app/certificate/pathway/[jobId]/page.tsx section-for-section, so
 // any change to the real document content only needs to happen once in
@@ -15,8 +15,8 @@ function letterheadHeader(firm: PathwayCertificateData["firm"], logo: ImageAsset
     ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 })]
     : [p(firm?.name || "", { bold: true, size: 24, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 })];
   const right = [
-    p(`Postal: ${firm?.postal_address || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
-    p(`Office: ${firm?.office_address || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
+    ...letterheadAddressLines(firm?.postal_address).map((line, i) => p(i === 0 ? `Postal: ${line}` : line, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })),
+    ...letterheadAddressLines(firm?.office_address).map((line, i) => p(i === 0 ? `Office: ${line}` : line, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })),
     p(`(p): ${firm?.phone || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
     p(`(e): ${firm?.email || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
   ];
@@ -146,22 +146,28 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
           ] as const)
         : []),
       { kind: "row", label: isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", value: "See attached Notice" },
-      // The certifying-authority declaration flows straight on as part of
-      // the same certificate table rather than a separate "— continued"
-      // page — a hard split here read as an abrupt cut rather than one
-      // continuous certificate, so it's now one table that paginates
-      // naturally if it runs long, the same way a real printed certificate
-      // would.
-      { kind: "heading", text: "REGISTERED CERTIFIER" },
-      { kind: "row", label: "Registered Certifier:", value: issuedBy?.name },
-      { kind: "row", label: "Registration Body:", value: issuedBy?.registration_body },
-      { kind: "row", label: "Registration No:", value: issuedBy?.registration_no },
     ]),
+    // The certifying-authority block is its own table so it can be held
+    // together: read as a unit, the certifier's name, registration body
+    // and registration number are one statement, and Word was free to
+    // paginate the big certificate table between any two of them. It also
+    // stays with the declaration and signature that follow it, so the
+    // whole "who issued this and on what authority" end of the
+    // certificate lands on a single page.
+    fieldTable(
+      [
+        { kind: "heading", text: "REGISTERED CERTIFIER" },
+        { kind: "row", label: "Registered Certifier:", value: issuedBy?.name },
+        { kind: "row", label: "Registration Body:", value: issuedBy?.registration_body },
+        { kind: "row", label: "Registration No:", value: issuedBy?.registration_no },
+      ],
+      { keepTogether: true }
+    ),
     p(
       isCdc
         ? `I, ${issuedBy?.name || "—"}, certify that the development is complying development and (if carried out as specified in the certificate) will comply with all development standards applicable to the development and with such other requirements prescribed by this regulation concerning the issue of the certificate.`
         : "I certify that building work completed in accordance with the documents accompanying the application for the certificate, including modifications verified by the certifier shown on the documents, will comply with the requirements referred to in the Act, Part 6.",
-      { justify: true, spacingBefore: 200 }
+      { justify: true, spacingBefore: 200, keepNext: true }
     ),
     mixed([{ text: "Dated:  " }, { text: issuedDate }], { spacingBefore: 200 }),
     ...signatureBlock(images.signature),
@@ -223,8 +229,16 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     ]),
     ...signatureBlock(images.signature),
     p(issuedBy?.name || "—"),
-    p(`Principal Certifier / ${issuedBy?.registration_no || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 200 }),
-    p("SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS", { bold: true, spacingAfter: 100 }),
+    p(`Principal Certifier / ${issuedBy?.registration_no || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 200 })
+  );
+
+  // 4b. Schedule 1 — on its own page, so it can be handed to the builder
+  // as a standalone list of the inspections to book rather than being
+  // buried at the foot of the notice.
+  push(
+    pageBreak(),
+    p("SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS", { bold: true, size: 24, spacingAfter: 40 }),
+    p(`${pathwayFull} ${ref} — ${job.address || ""}`, { size: 16, color: MUTED_COLOR, spacingAfter: 160 }),
     gridTable(
       ["No.", "Critical Stage Inspection", "Inspector"],
       selectedInspections.map((r, idx) => [`${idx + 1}.`, r.stage, r.inspector]),
@@ -238,9 +252,9 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     p(`DOCUMENTS REQUESTED — ${job.pathway} CHECKLIST`, { bold: true, size: 24, spacingAfter: 40 }),
     p("Every document requested from the applicant during assessment, for reference.", { size: 16, color: MUTED_COLOR, spacingAfter: 160 }),
     gridTable(
-      ["Document", "Status", "Document date"],
-      allItems.map((i) => [i.title, i.status, formatISODate(i.document_date)]),
-      [60, 20, 20]
+      ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
+      allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),
+      [18, 30, 16, 11, 13, 12]
     )
   );
 

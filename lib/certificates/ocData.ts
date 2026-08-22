@@ -4,7 +4,9 @@ import { signedUrl } from "@/lib/storage";
 import { formatISODate, resolvePathwayCertRef, resolveOcCertRef } from "@/lib/business";
 import type { Job, Firm, OcRecord, JobDetails } from "@/types/db";
 
-type OcChecklistItem = { id: string; title: string; status: string; revision: string | null; document_date: string | null; prepared_by: string | null };
+// drawing_number is the stored column name; it holds any document
+// reference, not only a drawing number.
+type OcChecklistItem = { id: string; title: string; status: string; revision: string | null; document_date: string | null; prepared_by: string | null; drawing_number: string | null };
 type OcIssuer = { name: string; registration_no: string | null; registration_body: string | null; signature_url: string | null };
 
 export type OcCertificateData = {

@@ -54,11 +54,30 @@ export function run(text: string, opts: { bold?: boolean; italic?: boolean; size
 }
 
 // A plain text paragraph — the workhorse for every letter body line.
-export function p(text: string, opts: { bold?: boolean; italic?: boolean; size?: number; color?: string; spacingBefore?: number; spacingAfter?: number; align?: (typeof AlignmentType)[keyof typeof AlignmentType]; justify?: boolean; uppercase?: boolean } = {}) {
+export function p(
+  text: string,
+  opts: {
+    bold?: boolean;
+    italic?: boolean;
+    size?: number;
+    color?: string;
+    spacingBefore?: number;
+    spacingAfter?: number;
+    align?: (typeof AlignmentType)[keyof typeof AlignmentType];
+    justify?: boolean;
+    uppercase?: boolean;
+    // Word's "keep with next" — stops a page break falling between this
+    // paragraph and the one after it. Used to hold blocks that only make
+    // sense read together (a certifier's registration body and number,
+    // say) on the same page.
+    keepNext?: boolean;
+  } = {}
+) {
   return new Paragraph({
     children: text ? [run(text, opts)] : [],
     spacing: { before: opts.spacingBefore ?? 0, after: opts.spacingAfter ?? 120 },
     alignment: opts.justify ? AlignmentType.JUSTIFIED : opts.align,
+    keepNext: opts.keepNext,
   });
 }
 
@@ -160,17 +179,24 @@ export type FieldRow = { kind: "heading"; text: string } | { kind: "row"; label:
 // The label/value tables used throughout every certificate and notice —
 // APPLICANT DETAILS, PROPOSAL, REGISTERED CERTIFIER, etc. Section headings
 // get a bottom rule; ordinary rows are borderless.
-export function fieldTable(rows: FieldRow[]) {
+// `keepTogether` holds the whole table — and whatever paragraph follows
+// it — on one page. Word paginates a table row by row, so without it a
+// short block like the certifier's registration details can be split down
+// the middle, leaving the registration number stranded on the next page.
+export function fieldTable(rows: FieldRow[], opts: { keepTogether?: boolean } = {}) {
+  const keepNext = opts.keepTogether || undefined;
   return borderlessTable(
     rows.map((row) => {
       if (row.kind === "heading") {
         return new TableRow({
-          children: [cell([p(row.text, { bold: true, spacingAfter: 40 })], { widthPct: 100, columnSpan: 2, borders: BOTTOM_LINE_ONLY })],
+          cantSplit: keepNext,
+          children: [cell([p(row.text, { bold: true, spacingAfter: 40, keepNext })], { widthPct: 100, columnSpan: 2, borders: BOTTOM_LINE_ONLY })],
         });
       }
-      const valueChildren = row.children ?? [p(row.value || "—", { spacingAfter: 0 })];
+      const valueChildren = row.children ?? [p(row.value || "—", { spacingAfter: 0, keepNext })];
       return new TableRow({
-        children: [cell([p(row.label, { bold: true, spacingAfter: 0 })], { widthPct: 33 }), cell(valueChildren, { widthPct: 67 })],
+        cantSplit: keepNext,
+        children: [cell([p(row.label, { bold: true, spacingAfter: 0, keepNext })], { widthPct: 33 }), cell(valueChildren, { widthPct: 67 })],
       });
     })
   );

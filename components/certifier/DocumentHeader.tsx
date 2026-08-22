@@ -1,3 +1,4 @@
+import { letterheadAddressLines } from "@/lib/business";
 import type { Firm } from "@/types/db";
 
 // Shared masthead for every generated document (certificates, inspection
@@ -28,8 +29,12 @@ export function DocumentHeader({ firm, logoUrl }: { firm: Firm | null; logoUrl?:
             <div className="text-xs text-slate-500 mt-1">ABN: {firm?.abn}</div>
           </td>
           <td className="align-top pb-4 text-right text-xs text-slate-600 leading-relaxed w-1/2">
-            <div>Postal: {firm?.postal_address}</div>
-            <div>Office: {firm?.office_address}</div>
+            {letterheadAddressLines(firm?.postal_address).map((line, i) => (
+              <div key={`postal-${i}`}>{i === 0 ? `Postal: ${line}` : line}</div>
+            ))}
+            {letterheadAddressLines(firm?.office_address).map((line, i) => (
+              <div key={`office-${i}`}>{i === 0 ? `Office: ${line}` : line}</div>
+            ))}
             <div>(p): {firm?.phone}</div>
             <div>(e): {firm?.email}</div>
           </td>

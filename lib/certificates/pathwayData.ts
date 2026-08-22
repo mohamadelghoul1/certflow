@@ -47,7 +47,7 @@ export type PathwayCertificateData = {
   firm: Firm | null;
   issuedBy: Certifier | null;
   conditions: ConditionOfConsent[];
-  allItems: { id: string; title: string; status: string; document_date: string | null }[];
+  allItems: { id: string; title: string; status: string; document_date: string | null; prepared_by: string | null; drawing_number: string | null; revision: string | null }[];
   selectedInspections: CriticalStageInspection[];
   activeVersionId: string | null;
   signatureUrl: string | null;
@@ -103,6 +103,11 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
     title: string;
     status: string;
     document_date: string | null;
+    prepared_by: string | null;
+    // Stored as drawing_number, but it holds any document reference —
+    // a BASIX certificate number as readily as a drawing number.
+    drawing_number: string | null;
+    revision: string | null;
   }[];
 
   const lapseDate = calcCdcLapseDate(

@@ -1,4 +1,4 @@
-import { displayStatus } from "@/lib/business";
+import { displayStatus, formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { updateItemMeta, notifyClientOfChecklist } from "@/lib/actions/jobs";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
@@ -96,6 +96,21 @@ export async function ChecklistSection({
   );
 }
 
+// Whatever's been filled in under "Document details" shown at a glance,
+// so the certifier can see a document's reference and revision without
+// opening the panel. Blank fields are left out rather than printed as
+// "—", so nothing is added to the card until there's something to say.
+function DocumentMeta({ item }: { item: ChecklistItem }) {
+  const parts = [
+    item.prepared_by && `Prepared by ${item.prepared_by}`,
+    item.drawing_number && `Ref. ${item.drawing_number}`,
+    item.revision && `Rev. ${item.revision}`,
+    item.document_date && formatISODate(item.document_date),
+  ].filter(Boolean);
+  if (parts.length === 0) return null;
+  return <div className="text-xs text-muted mt-0.5">{parts.join(" · ")}</div>;
+}
+
 async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobId: string; firmId: string }) {
   const status = displayStatus(item);
   const fileUrl = await signedUrl(item.file_path);
@@ -110,6 +125,7 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
             </span>
             <div className="flex-1 min-w-0">
               <EditableChecklistItemHeader itemId={item.id} jobId={jobId} title={item.title} description={item.description || ""} version={item.version} statusDot={status.dot} />
+              <DocumentMeta item={item} />
               <ItemStatusBadge />
             </div>
           </div>
@@ -132,15 +148,19 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
           <ItemStatusActions itemId={item.id} jobId={jobId} firmId={firmId} requiresStamping={item.requires_stamping} />
         </div>
 
+        {/* These five are what ends up in the DOCUMENTS REQUESTED table on
+            the certificate, so they're labelled here the same way they're
+            headed there. `drawing_number` is the stored column name — it
+            holds any document reference, not only a drawing number. */}
         <details className="mt-3">
-          <summary className="text-xs text-muted cursor-pointer hover:text-heading">Document details (revision, date, prepared by)</summary>
+          <summary className="text-xs text-muted cursor-pointer hover:text-heading">Document details (prepared by, reference no., revision, date)</summary>
           <form action={updateItemMeta} className="mt-2 grid sm:grid-cols-5 gap-2">
             <input type="hidden" name="item_id" value={item.id} />
             <input type="hidden" name="job_id" value={jobId} />
+            <input name="prepared_by" defaultValue={item.prepared_by || ""} placeholder="Prepared by" className="px-2 py-1.5 rounded border border-line text-xs" />
+            <input name="drawing_number" defaultValue={item.drawing_number || ""} placeholder="Reference number" className="px-2 py-1.5 rounded border border-line text-xs" />
             <input name="revision" defaultValue={item.revision || ""} placeholder="Revision" className="px-2 py-1.5 rounded border border-line text-xs" />
             <input type="date" name="document_date" defaultValue={item.document_date || ""} className="px-2 py-1.5 rounded border border-line text-xs" />
-            <input name="prepared_by" defaultValue={item.prepared_by || ""} placeholder="Prepared by" className="px-2 py-1.5 rounded border border-line text-xs" />
-            <input name="drawing_number" defaultValue={item.drawing_number || ""} placeholder="Drawing number" className="px-2 py-1.5 rounded border border-line text-xs" />
             <input name="clause_ref" defaultValue={item.clause_ref || ""} placeholder="NCC/BCA clause ref" className="px-2 py-1.5 rounded border border-line text-xs" />
             <button className="sm:col-span-5 text-xs text-secondary hover:underline text-left">Save details</button>
           </form>

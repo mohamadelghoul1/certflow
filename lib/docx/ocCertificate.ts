@@ -4,7 +4,7 @@ import type { ImageAsset } from "@/lib/docx/shared";
 import { p, mixed, pageBreak, splitRow, fieldTable, gridTable, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR } from "@/lib/docx/shared";
 import type { OcCertificateData } from "@/lib/certificates/ocData";
 import { formatAddress } from "@/lib/certificates/pathwayData";
-import { formatISODate } from "@/lib/business";
+import { formatISODate, letterheadAddressLines } from "@/lib/business";
 
 // Mirrors app/certificate/oc/[jobId]/[ocId]/page.tsx section-for-section.
 // The council/applicant letters (sections 1-2) share the same logo
@@ -20,8 +20,8 @@ function letterheadHeader(firm: OcCertificateData["firm"], logo: ImageAsset | nu
     ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 })]
     : [p(firm?.name || "", { bold: true, size: 24, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 })];
   const right = [
-    p(`Postal: ${firm?.postal_address || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
-    p(`Office: ${firm?.office_address || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
+    ...letterheadAddressLines(firm?.postal_address).map((line, i) => p(i === 0 ? `Postal: ${line}` : line, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })),
+    ...letterheadAddressLines(firm?.office_address).map((line, i) => p(i === 0 ? `Office: ${line}` : line, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })),
     p(`(p): ${firm?.phone || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
     p(`(e): ${firm?.email || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
   ];
@@ -105,9 +105,9 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
     p("Documents relied upon", { bold: true, size: 16, uppercase: true, spacingBefore: 200, spacingAfter: 80 }),
     approvedItems.length > 0
       ? gridTable(
-          ["Document", "Revision", "Document date", "Prepared by"],
-          approvedItems.map((item) => [item.title, item.revision || "—", formatISODate(item.document_date), item.prepared_by || "—"]),
-          [40, 20, 20, 20]
+          ["Prepared by", "Document", "Reference no.", "Revision", "Date"],
+          approvedItems.map((item) => [item.prepared_by || "—", item.title, item.drawing_number || "—", item.revision || "—", formatISODate(item.document_date)]),
+          [20, 32, 18, 13, 17]
         )
       : p("No approved documents.", { color: MUTED_COLOR }),
     p("Certifying authority", { size: 16, color: MUTED_COLOR, uppercase: true, spacingBefore: 300, spacingAfter: 20 }),
