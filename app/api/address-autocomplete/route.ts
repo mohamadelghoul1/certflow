@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { suggestNswAddresses, type Attempt } from "@/lib/nsw/propertyLookup";
+import { suggestNswAddresses, type Attempt } from "@/lib/nsw/spatial";
 
 // Matching addresses for the one being typed.
 //

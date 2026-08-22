@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireProfile } from "@/lib/auth";
-import { lookupNswProperty, suggestNswAddresses, extractLotDps, type Attempt } from "@/lib/nsw/propertyLookup";
+import { extractLotDps } from "@/lib/nsw/propertyLookup";
+import { lookupNswProperty, suggestNswAddresses, type Attempt } from "@/lib/nsw/spatial";
 import { matchCouncilByAddress } from "@/lib/constants";
 import { probeNswEndpoints } from "@/lib/nsw/probe";
 
