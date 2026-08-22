@@ -144,9 +144,14 @@ though only one firm uses it today.
   the lot or council doesn't appear, nothing is broken — both fields are
   ordinary boxes you type into, exactly as before — and I can correct the
   lookup from whatever the live service actually returns.
-- The address **suggestions** need `GOOGLE_PLACES_API_KEY` set in Vercel.
-  Without it you just type the address in full, and the lot/council lookup
-  still runs on what you typed.
+- The address **suggestions** (the dropdown of matching addresses as you
+  type) need `GOOGLE_PLACES_API_KEY` set in Vercel. **Without that key no
+  dropdown appears at all** — that is the usual reason it looks like
+  "nothing happens". You can still type the address in full, and the
+  **Look up lot & council** button beside the field works either way.
+- **Find a property on the NSW Planning Portal** next to the address field
+  opens the Planning Portal's own property search, which is the
+  authoritative source — use it whenever our lookup can't place an address.
 
 **Deliberately not built yet** — these all need a paid third-party account
 with an API key only you can obtain, exactly as the build brief describes:

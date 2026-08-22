@@ -61,14 +61,15 @@ function findByKey(payload: unknown, pattern: RegExp): string | undefined {
 // "12//DP123456", "12/3/DP123456", "LOT 12 DP 123456" — all of which mean
 // the same parcel. Normalised to the "Lot / Section / DP" field's own
 // format, with "-" standing in for an absent section.
-const SLASHED = /\b(\d+[A-Z]?)\s*\/\s*([0-9A-Z]*)\s*\/\s*(DP|SP)\s*(\d+)\b/i;
+const SLASHED = /\b(\d+[A-Z]?)\s*\/\s*([0-9A-Z]*|-)\s*\/\s*(DP|SP)\s*(\d+)\b/i;
 const WORDED = /\bLOT\s*(\d+[A-Z]?)\s*(?:,?\s*SEC(?:TION)?\s*([0-9A-Z]+))?\s*,?\s*(?:IN\s*)?(DP|SP)\s*(\d+)\b/i;
 
 export function normalizeLotDp(text: string): string | undefined {
   const match = text.match(SLASHED) || text.match(WORDED);
   if (!match) return undefined;
   const [, lot, section, plan, planNo] = match;
-  return `${lot}/${section || "-"}/${plan.toUpperCase()}${planNo}`;
+  const sec = section && section !== "-" ? section : "-";
+  return `${lot}/${sec}/${plan.toUpperCase()}${planNo}`;
 }
 
 function findLotDp(payload: unknown): string | undefined {

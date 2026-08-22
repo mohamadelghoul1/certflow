@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Search, ExternalLink } from "lucide-react";
 import { extractLotDpFromAddress, matchCouncilByAddress } from "@/lib/constants";
+
+// The NSW Planning Portal's own property search. Always available as a
+// fallback: it's the authoritative source, so if our lookup can't place an
+// address the certifier can check it there and paste the lot back in.
+const SPATIAL_VIEWER = "https://www.planningportal.nsw.gov.au/spatialviewer/#/find-a-property/address";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
 const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
@@ -39,6 +45,9 @@ export function AddressLookupField({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [looking, setLooking] = useState(false);
+  // What the last lookup actually found, so pressing Look up always says
+  // something back rather than appearing to do nothing.
+  const [result, setResult] = useState<string | null>(null);
   const suggestDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lookupDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -66,17 +75,37 @@ export function AddressLookupField({
     }
   }
 
-  async function lookupDetails(value: string) {
+  // `force` is set when the certifier presses Look up. Typing only ever
+  // fills a blank field, so it can't quietly rewrite something they
+  // entered by hand — but asking for the lookup outright is permission to
+  // replace what's there, which is the whole point of pressing it.
+  async function lookupDetails(value: string, force = false) {
     setLooking(true);
+    setResult(null);
     try {
       const res = await fetch(`/api/address-details?address=${encodeURIComponent(value)}`);
       const data = await res.json();
-      // Only ever fills a blank field — never overwrites something the
-      // certifier typed themselves.
-      if (data.lotSectionDp && !latest.current.lotSectionDp) latest.current.onLotSectionDpChange(data.lotSectionDp);
-      if (data.lga && !latest.current.councilLga) latest.current.onCouncilMatched(data.lga);
+
+      const found: string[] = [];
+      if (data.lotSectionDp && (force || !latest.current.lotSectionDp)) {
+        latest.current.onLotSectionDpChange(data.lotSectionDp);
+        found.push(data.lotSectionDp);
+      }
+      if (data.lga && (force || !latest.current.councilLga)) {
+        latest.current.onCouncilMatched(data.lga);
+        found.push(data.lga);
+      }
+
+      if (force) {
+        setResult(
+          found.length
+            ? `Found ${found.join(" · ")}`
+            : "Nothing found for that address — type the lot and council in below, or check it on the NSW Planning Portal."
+        );
+      }
     } catch {
       // Leave the fields alone — they're typed in by hand instead.
+      if (force) setResult("The lookup couldn't be reached — type the lot and council in below.");
     } finally {
       setLooking(false);
     }
@@ -156,8 +185,21 @@ export function AddressLookupField({
             ))}
           </div>
         )}
-        {looking && <div className="text-[11px] text-slate-400 mt-1">Looking up the lot and council…</div>}
-        {!looking && councilLga && <div className="text-[11px] text-teal-700 mt-1">Council: {councilLga} — matched from the address, edit below if wrong.</div>}
+        <div className="flex flex-wrap items-center gap-3 mt-1.5">
+          <button
+            type="button"
+            onClick={() => address.trim().length >= 6 && lookupDetails(address.trim(), true)}
+            disabled={looking || address.trim().length < 6}
+            className="flex items-center gap-1 text-[11px] font-semibold text-teal-800 hover:underline disabled:opacity-40 disabled:no-underline"
+          >
+            <Search size={11} /> {looking ? "Looking up…" : "Look up lot & council"}
+          </button>
+          <a href={SPATIAL_VIEWER} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[11px] text-slate-500 hover:underline">
+            <ExternalLink size={11} /> Find a property on the NSW Planning Portal
+          </a>
+        </div>
+        {result && <div className="text-[11px] text-slate-600 mt-1">{result}</div>}
+        {!looking && !result && councilLga && <div className="text-[11px] text-teal-700 mt-1">Council: {councilLga} — matched from the address, edit below if wrong.</div>}
       </div>
       <div>
         <label className={labelCls}>Lot / Section / DP</label>
