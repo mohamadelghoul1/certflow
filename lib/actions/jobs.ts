@@ -117,7 +117,10 @@ function extractJobDetails(formData: FormData, pathway: string): JobDetails {
       determinationDate: String(formData.get("determinationDate") || ""),
       developmentConsentNumber: String(formData.get("developmentConsentNumber") || ""),
       developmentConsentDate: String(formData.get("developmentConsentDate") || ""),
-      consentReferences: String(formData.get("consentReferences") || ""),
+      // No longer entered on either form. Kept on the type, and carried
+      // forward on save below, so jobs that already recorded references
+      // keep printing them on the inspection report.
+      consentReferences: "",
     },
   };
 }
@@ -194,6 +197,7 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   const { data: existingJob } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
   const details = extractJobDetails(formData, pathway);
   details.certificateDetails!.determinationDate = existingJob?.details?.certificateDetails?.determinationDate || "";
+  details.certificateDetails!.consentReferences = existingJob?.details?.certificateDetails?.consentReferences || "";
   const address = String(formData.get("address") || "");
   const description = String(formData.get("description") || "");
 

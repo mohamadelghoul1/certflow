@@ -343,10 +343,6 @@ export function DetailsTab({
         </Section>
 
         <Section title={`${job.pathway} certificate details`}>
-          <div>
-            <label className={labelCls}>Other consent references (DA / Modification / Notice of Determination — one per line)</label>
-            <textarea name="consentReferences" defaultValue={d.certificateDetails?.consentReferences || ""} rows={2} className={inputCls} />
-          </div>
           {job.pathway === "CDC" ? (
             <div>
               <label className={labelCls}>Relevant part of code — tick every part of SEPP 2008 this CDC relies on</label>
