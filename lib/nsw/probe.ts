@@ -96,5 +96,28 @@ export async function probeNswEndpoints(address: string) {
     }
   }
 
+  // What a Property record actually looks like. The address field's real
+  // format decides how a typed address has to be matched against it, and
+  // it had been assumed rather than seen.
+  const propSample = await get(`${PORTAL}/NSW_Land_Parcel_Property_Theme/MapServer/12/query?where=1%3D1&outFields=address,housenumber,propid&resultRecordCount=3&returnGeometry=false&f=json`);
+  report.propertySample = { status: propSample.status, sample: JSON.stringify(propSample.data).slice(0, 600) };
+
+  // The prefix query the lookup now uses, timed. The first attempt used a
+  // leading wildcard and timed out; this shows whether anchoring it fixed
+  // that, and is the single most useful number here.
+  const words = address.toUpperCase().replace(/[^A-Z0-9 ]+/g, " ").split(/\s+/).filter(Boolean).slice(0, 2);
+  if (words.length) {
+    const where = encodeURIComponent(`address LIKE '${words.join(" ")}%'`);
+    const url = `${PORTAL}/NSW_Land_Parcel_Property_Theme/MapServer/12/query?where=${where}&outFields=address&returnGeometry=false&resultRecordCount=25&f=json`;
+    const started = Date.now();
+    const timed = await get(url);
+    report.prefixQuery = { url, status: timed.status, tookMs: Date.now() - started, sample: JSON.stringify(timed.data).slice(0, 700) };
+  }
+
+  // The service built specifically for address search, in case the parcel
+  // service stays too slow to search by address.
+  const geo = await get(`${PORTAL}/NSW_Geocoded_Addressing_Theme/MapServer?f=json`);
+  report.geocodedAddressing = { status: geo.status, layers: layerList(geo.data).map((l) => `${l.id}: ${l.name}`) };
+
   return report;
 }

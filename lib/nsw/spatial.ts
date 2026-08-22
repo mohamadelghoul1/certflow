@@ -46,23 +46,51 @@ async function getJson(url: string, log?: Attempt[]): Promise<Json | null> {
   }
 }
 
-// The typed address becomes a LIKE pattern across its words, so "29
-// strickland guildford" still matches "29 STRICKLAND ROAD GUILDFORD".
-//
-// Everything that isn't a letter, digit or space is stripped before the
-// value reaches the query. This value is interpolated into an ArcGIS
-// where clause, so leaving quotes or SQL punctuation in it would let a
-// typed address change the meaning of the query.
-function addressWhere(input: string): string | null {
-  const words = input
+// Everything that isn't a letter, digit or space is stripped: this value
+// is interpolated into an ArcGIS where clause, so leaving quotes or SQL
+// punctuation in it would let a typed address change the query's meaning.
+// NSW and the postcode go too — the address field holds neither.
+function addressWords(input: string): string[] {
+  return input
     .toUpperCase()
     .replace(/[^A-Z0-9 ]+/g, " ")
     .split(/\s+/)
     .filter(Boolean)
-    // NSW and the postcode add nothing — the address field holds neither.
     .filter((w) => w !== "NSW" && !/^\d{4}$/.test(w));
-  if (words.length === 0) return null;
-  return `UPPER(address) LIKE '%${words.join("%")}%'`;
+}
+
+// Matches on the start of the address only — "29 STRICKLAND%" — never
+// with a leading wildcard.
+//
+// This matters more than it looks. The first attempt asked for
+// UPPER(address) LIKE '%29%STRICKLAND%ROAD%GUILDFORD%', and every one of
+// those queries timed out: a leading wildcard can't use an index, and
+// wrapping the column in UPPER() disables it too, so the server was made
+// to read every property in New South Wales. Anchoring at the start keeps
+// the index in play and the query fast.
+//
+// Only the street number and street name go into it, because the rest of
+// what someone types ("road", "guildford") may be worded differently or
+// out of order in the stored address. The remaining words are matched in
+// filterByWords below, against the much smaller set that comes back.
+function addressWhere(words: string[]): string | null {
+  const prefix = words.slice(0, 2);
+  if (prefix.length === 0) return null;
+  return `address LIKE '${prefix.join(" ")}%'`;
+}
+
+// The words the prefix didn't cover, matched against the candidates the
+// server returned rather than by making the server do the work.
+function filterByWords(addresses: string[], words: string[]): string[] {
+  const rest = words.slice(2);
+  if (rest.length === 0) return addresses;
+  const matching = addresses.filter((a) => {
+    const upper = a.toUpperCase();
+    return rest.every((w) => upper.includes(w));
+  });
+  // A suburb spelt differently from the stored record shouldn't wipe out
+  // an otherwise good match, so fall back to everything on the street.
+  return matching.length ? matching : addresses;
 }
 
 function features(data: Json | null): Feature[] {
@@ -96,26 +124,47 @@ function lotLabel(a: Json): string | null {
   return `${lot}/${section || "-"}/${plan}`;
 }
 
-export async function suggestNswAddresses(input: string, limit = 8, log?: Attempt[]): Promise<string[]> {
-  const where = addressWhere(input.trim());
-  if (!where || input.trim().length < 4) return [];
+// Pulls a wider set than it shows: the server narrows by street, and the
+// remaining words are matched here. returnDistinctValues is deliberately
+// not used — it forces a sort over the whole match set, which is more
+// work for the server than de-duplicating a couple of hundred strings.
+async function addressCandidates(input: string, log?: Attempt[]): Promise<{ addresses: string[]; words: string[] }> {
+  const words = addressWords(input.trim());
+  const where = addressWhere(words);
+  if (!where) return { addresses: [], words };
 
-  const url = `${PARCEL}/${PROPERTY_LAYER}/query?where=${encodeURIComponent(where)}&outFields=address&returnGeometry=false&returnDistinctValues=true&resultRecordCount=${limit}&f=json`;
+  const url = `${PARCEL}/${PROPERTY_LAYER}/query?where=${encodeURIComponent(where)}&outFields=address&returnGeometry=false&resultRecordCount=200&f=json`;
   const data = await getJson(url, log);
 
-  const out = features(data)
-    .map((f) => (typeof f.attributes?.address === "string" ? f.attributes.address.trim() : ""))
-    .filter(Boolean);
-  return [...new Set(out)].slice(0, limit);
+  const addresses = [
+    ...new Set(
+      features(data)
+        .map((f) => (typeof f.attributes?.address === "string" ? f.attributes.address.trim() : ""))
+        .filter(Boolean)
+    ),
+  ];
+  return { addresses, words };
+}
+
+export async function suggestNswAddresses(input: string, limit = 8, log?: Attempt[]): Promise<string[]> {
+  if (input.trim().length < 4) return [];
+  const { addresses, words } = await addressCandidates(input, log);
+  return filterByWords(addresses, words).slice(0, limit);
 }
 
 export type PropertyLookup = { lots: string[]; lga?: string };
 
 export async function lookupNswProperty(address: string, log?: Attempt[]): Promise<PropertyLookup> {
-  const where = addressWhere(address.trim());
-  if (!where || address.trim().length < 6) return { lots: [] };
+  if (address.trim().length < 6) return { lots: [] };
 
-  const propertyUrl = `${PARCEL}/${PROPERTY_LAYER}/query?where=${encodeURIComponent(where)}&outFields=address,propid&returnGeometry=true&returnCentroid=true&resultRecordCount=1&f=json`;
+  // Resolved to one exact address first, so the geometry request is for a
+  // single known property rather than everything on the street.
+  const { addresses, words } = await addressCandidates(address, log);
+  const best = filterByWords(addresses, words)[0];
+  if (!best) return { lots: [] };
+
+  const exact = `address = '${best.toUpperCase().replace(/[^A-Z0-9 ]+/g, " ")}'`;
+  const propertyUrl = `${PARCEL}/${PROPERTY_LAYER}/query?where=${encodeURIComponent(exact)}&outFields=address,propid&returnGeometry=true&returnCentroid=true&resultRecordCount=1&f=json`;
   const propertyData = await getJson(propertyUrl, log);
   const property = features(propertyData)[0];
   if (!property) return { lots: [] };
