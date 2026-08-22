@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { suggestNswAddresses } from "@/lib/nsw/propertyLookup";
+import { suggestNswAddresses, type Attempt } from "@/lib/nsw/propertyLookup";
 
 // Matching addresses for the one being typed.
 //
@@ -12,8 +12,16 @@ export async function GET(request: NextRequest) {
   const input = request.nextUrl.searchParams.get("input")?.trim() || "";
   if (input.length < 4) return NextResponse.json({ suggestions: [] });
 
+  // Adding &debug=1 shows what NSW actually returned, for diagnosing a
+  // search that comes back empty.
+  const debug = request.nextUrl.searchParams.get("debug") === "1";
+  const log: Attempt[] = [];
+
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) return NextResponse.json({ suggestions: await suggestNswAddresses(input) });
+  if (!apiKey || debug) {
+    const suggestions = await suggestNswAddresses(input, 8, log);
+    return NextResponse.json(debug ? { suggestions, usingGoogleKey: !!apiKey, calls: log } : { suggestions });
+  }
 
   try {
     const res = await fetch("https://places.googleapis.com/v1/places:autocomplete", {

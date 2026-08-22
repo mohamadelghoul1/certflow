@@ -18,14 +18,32 @@ const TIMEOUT_MS = 6000;
 
 export type PropertyLookup = { lots: string[]; lga?: string };
 
-async function getJson(url: string): Promise<unknown | null> {
+// A record of every call made, so the diagnostic endpoint can show what
+// NSW actually said. Without it there is no way to tell a wrong endpoint
+// from a blocked request from an address NSW genuinely doesn't hold.
+export type Attempt = { url: string; status: number | string; body?: string };
+
+async function getJson(url: string, log?: Attempt[]): Promise<unknown | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } });
+    const res = await fetch(url, {
+      signal: controller.signal,
+      // Some government gateways reject requests with no browser-ish
+      // headers outright, which looks identical to "no results" from the
+      // outside.
+      headers: { Accept: "application/json, text/plain, */*", "User-Agent": "CertFlow/1.0 (+certifier job management)" },
+    });
+    const text = await res.text();
+    log?.push({ url, status: res.status, body: text.slice(0, 1200) });
     if (!res.ok) return null;
-    return await res.json();
-  } catch {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  } catch (e) {
+    log?.push({ url, status: e instanceof Error ? e.name : "failed" });
     return null;
   } finally {
     clearTimeout(timer);
@@ -109,12 +127,15 @@ function addressStrings(payload: unknown): string[] {
 }
 
 // Matching NSW addresses for a partial one being typed.
-export async function suggestNswAddresses(input: string, limit = 8): Promise<string[]> {
+export async function suggestNswAddresses(input: string, limit = 8, log?: Attempt[]): Promise<string[]> {
   const query = input.trim();
   if (query.length < 4) return [];
-  const data = await getJson(`${BASE}/FetchAddress?a=${encodeURIComponent(query)}&noOfRecords=${limit}`);
+  const data = await getJson(`${BASE}/FetchAddress?a=${encodeURIComponent(query)}&noOfRecords=${limit}`, log);
   if (!data) return [];
-  return addressStrings(data).slice(0, limit);
+  // The address search returns a plain array of strings on some
+  // deployments and objects on others, so take both.
+  const direct = Array.isArray(data) ? data.filter((v): v is string => typeof v === "string" && v.trim().length > 5) : [];
+  return [...new Set([...direct, ...addressStrings(data)])].slice(0, limit);
 }
 
 // The follow-up endpoints that carry parcel details, tried in order.
@@ -122,11 +143,11 @@ export async function suggestNswAddresses(input: string, limit = 8): Promise<str
 // recognisable wins, and if none do the certifier types the lot in.
 const LOT_ENDPOINTS = [(id: string) => `${BASE}/FetchLotsFromProperty?propId=${encodeURIComponent(id)}`, (id: string) => `${BASE}/FetchPropertyDetails?propId=${encodeURIComponent(id)}`];
 
-export async function lookupNswProperty(address: string): Promise<PropertyLookup> {
+export async function lookupNswProperty(address: string, log?: Attempt[]): Promise<PropertyLookup> {
   const query = address.trim();
   if (query.length < 6) return { lots: [] };
 
-  const search = await getJson(`${BASE}/FetchAddress?a=${encodeURIComponent(query)}&noOfRecords=1`);
+  const search = await getJson(`${BASE}/FetchAddress?a=${encodeURIComponent(query)}&noOfRecords=1`, log);
   if (!search) return { lots: [] };
 
   // Some address records already carry the parcel description, in which
@@ -136,12 +157,12 @@ export async function lookupNswProperty(address: string): Promise<PropertyLookup
 
   const propId = findPropId(search);
   if (propId) {
-    const lgaData = await getJson(`${BASE}/FetchLGAName?id=${encodeURIComponent(propId)}&Type=property`);
+    const lgaData = await getJson(`${BASE}/FetchLGAName?id=${encodeURIComponent(propId)}&Type=property`, log);
     if (lgaData) lga = findByKey(lgaData, /lga|council|name/i);
 
     for (const endpoint of LOT_ENDPOINTS) {
       if (lots.length) break;
-      const data = await getJson(endpoint(propId));
+      const data = await getJson(endpoint(propId), log);
       if (data) lots = findLotDps(data);
     }
   }

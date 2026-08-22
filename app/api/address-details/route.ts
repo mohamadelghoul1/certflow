@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireProfile } from "@/lib/auth";
-import { lookupNswProperty, extractLotDps } from "@/lib/nsw/propertyLookup";
+import { lookupNswProperty, suggestNswAddresses, extractLotDps, type Attempt } from "@/lib/nsw/propertyLookup";
 import { matchCouncilByAddress } from "@/lib/constants";
 
 // Lot/Section/Plan and council for an address the certifier has picked or
@@ -14,20 +14,44 @@ import { matchCouncilByAddress } from "@/lib/constants";
 //
 // Never an error: anything it can't work out simply comes back empty, and
 // the form's own fields stay hand-editable.
+//
+// Adding &debug=1 returns every NSW call that was made with its status
+// and response. The NSW service can't be reached from the environment
+// this app is developed in, so that output is the only way to tell a
+// wrong endpoint from a blocked request from an address NSW genuinely
+// doesn't hold.
 export async function GET(request: NextRequest) {
   await requireProfile("certifier");
 
   const address = request.nextUrl.searchParams.get("address")?.trim() || "";
+  const debug = request.nextUrl.searchParams.get("debug") === "1";
   if (address.length < 6) return NextResponse.json({ lots: [] });
 
   const fromText = extractLotDps(address);
   const council = matchCouncilByAddress(address);
+  const log: Attempt[] = [];
 
-  // Only ask NSW for what we couldn't work out locally.
-  const remote = fromText.length && council ? { lots: [], lga: undefined } : await lookupNswProperty(address);
+  // Only ask NSW for what we couldn't work out locally — unless we're
+  // diagnosing, in which case ask regardless so there's something to see.
+  const askNsw = debug || !fromText.length || !council;
+  const remote = askNsw ? await lookupNswProperty(address, log) : { lots: [], lga: undefined };
 
-  return NextResponse.json({
+  const body: Record<string, unknown> = {
     lots: fromText.length ? fromText : remote.lots,
     lga: council?.name || remote.lga || null,
-  });
+  };
+
+  if (debug) {
+    body.diagnostics = {
+      address,
+      lotsFoundInAddressText: fromText,
+      councilFromDirectory: council?.name || null,
+      lotsFromNsw: remote.lots,
+      lgaFromNsw: remote.lga || null,
+      addressSuggestions: await suggestNswAddresses(address, 8, log),
+      calls: log,
+    };
+  }
+
+  return NextResponse.json(body);
 }
