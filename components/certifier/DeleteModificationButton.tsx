@@ -5,7 +5,7 @@ import { deleteModification } from "@/lib/actions/jobs";
 export function DeleteModificationButton({ jobId, modificationId, label, generated }: { jobId: string; modificationId: string; label: string; generated: boolean }) {
   return (
     <button
-      className="text-xs text-red-500 hover:underline"
+      className="text-xs text-error hover:underline"
       onClick={() => {
         // Spells out that the whole document checklist goes with it — the
         // checklist is the bulk of what a modification actually holds, and

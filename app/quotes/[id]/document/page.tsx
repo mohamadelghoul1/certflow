@@ -62,20 +62,20 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
       mailtoHref={mailtoHref}
       hasApplicantEmail={!!applicant.email}
     >
-      <div className="max-w-2xl mx-auto p-8 bg-white text-slate-900 print:max-w-none">
+      <div className="max-w-2xl mx-auto p-8 bg-white text-heading print:max-w-none">
         <div className="flex justify-between items-start pb-3 mb-1">
           <div>
             <div className="text-xl font-black tracking-tight">{firmData?.name}</div>
           </div>
-          <div className="text-right text-xs text-slate-700 leading-relaxed">
+          <div className="text-right text-xs text-muted leading-relaxed">
             <div className="font-bold">{firmData?.name} Pty Ltd</div>
             <div>{firmData?.office_address}</div>
             <div className="mt-1">Phone: {firmData?.phone}</div>
-            <div className="text-blue-700 underline">{firmData?.email}</div>
-            {firmData?.website && <div className="text-blue-700 underline">{firmData.website}</div>}
+            <div className="text-info underline">{firmData?.email}</div>
+            {firmData?.website && <div className="text-info underline">{firmData.website}</div>}
           </div>
         </div>
-        <div className="border-b border-slate-800 mb-4" />
+        <div className="border-b border-heading mb-4" />
 
         <div className="flex justify-between text-sm mb-6">
           <div>Quote Number: {id.slice(0, 8).toUpperCase()}</div>
@@ -102,20 +102,20 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
           ))}
         </ul>
 
-        <table className="w-full mb-1 border border-slate-300 text-sm">
+        <table className="w-full mb-1 border border-line text-sm">
           <thead>
             <tr style={{ backgroundColor: "#B8B49A" }}>
-              <th className="text-left font-semibold px-3 py-2 border border-slate-300">Description</th>
-              <th className="text-center font-semibold px-3 py-2 border border-slate-300 w-24">Quantity</th>
-              <th className="text-right font-semibold px-3 py-2 border border-slate-300 w-28">Unit Price</th>
+              <th className="text-left font-semibold px-3 py-2 border border-line">Description</th>
+              <th className="text-center font-semibold px-3 py-2 border border-line w-24">Quantity</th>
+              <th className="text-right font-semibold px-3 py-2 border border-line w-28">Unit Price</th>
             </tr>
           </thead>
           <tbody>
             {feeLines.map((l) => (
               <tr key={l.id}>
-                <td className="px-3 py-1.5 border border-slate-300">{l.description || "—"}</td>
-                <td className="px-3 py-1.5 border border-slate-300 text-center">{l.quantity || "1"}</td>
-                <td className="px-3 py-1.5 border border-slate-300 text-right">{l.amount ? Number(l.amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "—"}</td>
+                <td className="px-3 py-1.5 border border-line">{l.description || "—"}</td>
+                <td className="px-3 py-1.5 border border-line text-center">{l.quantity || "1"}</td>
+                <td className="px-3 py-1.5 border border-line text-right">{l.amount ? Number(l.amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -123,11 +123,11 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
 
         <div className="flex flex-col items-end gap-0.5 text-sm mb-4">
           <div className="flex gap-4">
-            <span className="text-slate-500">Subtotal:</span>
+            <span className="text-placeholder">Subtotal:</span>
             <span>${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
           </div>
           <div className="flex gap-4">
-            <span className="text-slate-500">GST:</span>
+            <span className="text-placeholder">GST:</span>
             <span>${gst.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
           </div>
           <div className="flex gap-4 font-bold">

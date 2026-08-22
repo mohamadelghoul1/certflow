@@ -20,11 +20,11 @@ function Tile({ icon: Icon, label, value, href, tone, detail }: { icon: LucideIc
   return (
     // h-full so a tile whose label runs to two lines doesn't leave the row
     // ragged — they all take the height of the tallest.
-    <Link href={href} className={`card-lift h-full flex flex-col rounded-xl border bg-white p-4 shadow-sm ${alert ? "border-red-200" : "border-line"}`}>
-      <Icon size={18} strokeWidth={1.6} className={alert ? "text-red-500" : "text-secondary"} />
-      <div className={`text-3xl font-bold mt-2 ${alert ? "text-red-600" : "text-heading"}`}>{value}</div>
+    <Link href={href} className={`card-lift h-full flex flex-col rounded-xl border bg-white p-4 shadow-sm ${alert ? "border-error/40" : "border-line"}`}>
+      <Icon size={18} strokeWidth={1.6} className={alert ? "text-error" : "text-icon"} />
+      <div className={`text-3xl font-bold mt-2 ${alert ? "text-error" : "text-heading"}`}>{value}</div>
       <div className="text-xs font-medium text-muted mt-1 leading-snug">{label}</div>
-      {detail && <div className="text-[11px] text-slate-400 mt-auto pt-1">{detail}</div>}
+      {detail && <div className="text-[11px] text-placeholder mt-auto pt-1">{detail}</div>}
     </Link>
   );
 }
@@ -34,7 +34,7 @@ function Panel({ title, icon: Icon, viewAllHref, children }: { title: string; ic
     <div className="rounded-xl border border-line bg-white shadow-sm overflow-hidden">
       <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-line">
         <span className="flex items-center gap-2">
-          <Icon size={15} className="text-secondary" />
+          <Icon size={15} className="text-icon" />
           <span className="text-sm font-semibold text-heading">{title}</span>
         </span>
         {viewAllHref && (
@@ -50,9 +50,9 @@ function Panel({ title, icon: Icon, viewAllHref, children }: { title: string; ic
 
 function QuickAction({ href, icon: Icon, label }: { href: string; icon: LucideIcon; label: string }) {
   return (
-    <Link href={href} className="flex flex-col items-center gap-1.5 rounded-lg px-2 py-3 hover:bg-slate-50 text-center">
-      <Icon size={19} strokeWidth={1.6} className="text-secondary" />
-      <span className="text-[11px] font-medium text-slate-700 leading-tight">{label}</span>
+    <Link href={href} className="group flex flex-col items-center gap-1.5 rounded-lg px-2 py-3 hover:bg-hover text-center">
+      <Icon size={19} strokeWidth={1.6} className="text-icon group-hover:text-icon-300" />
+      <span className="text-[11px] font-medium text-heading leading-tight">{label}</span>
     </Link>
   );
 }
@@ -60,7 +60,7 @@ function QuickAction({ href, icon: Icon, label }: { href: string; icon: LucideIc
 function EmptyPanel({ icon: Icon, message }: { icon: LucideIcon; message: string }) {
   return (
     <div className="px-4 py-10 flex flex-col items-center text-center">
-      <Icon size={34} strokeWidth={1.25} className="text-slate-300 mb-2" />
+      <Icon size={34} strokeWidth={1.25} className="text-placeholder mb-2" />
       <div className="text-sm text-muted">{message}</div>
     </div>
   );
@@ -291,7 +291,7 @@ export default async function DashboardPage() {
                 <EmptyPanel icon={CalendarCheck} message="Nothing booked for today." />
               ) : (
                 inspectionsToday.map((i, idx) => (
-                  <div key={idx} className="flex items-center justify-between gap-3 px-5 py-3 border-t border-slate-100 first:border-t-0 flex-wrap">
+                  <div key={idx} className="flex items-center justify-between gap-3 px-5 py-3 border-t border-line first:border-t-0 flex-wrap">
                     <div className="min-w-0">
                       <div className="text-sm font-medium text-heading truncate">{i.title}</div>
                       <div className="text-xs text-muted truncate">{i.address}</div>
@@ -312,11 +312,11 @@ export default async function DashboardPage() {
             {tasks.length > 0 ? (
               <Panel title="Actions require attention" icon={AlertTriangle}>
                 {tasks.slice(0, 8).map((t, i) => {
-                  const dot = t.priority === "High" ? "bg-red-500" : t.priority === "Medium" ? "bg-amber-500" : "bg-slate-400";
+                  const dot = t.priority === "High" ? "bg-error" : t.priority === "Medium" ? "bg-warning" : "bg-placeholder";
                   return (
-                    <Link key={i} href={t.href} className="px-5 py-3 border-t border-slate-100 first:border-t-0 hover:bg-slate-50 flex items-start gap-3">
+                    <Link key={i} href={t.href} className="px-5 py-3 border-t border-line first:border-t-0 hover:bg-hover flex items-start gap-3">
                       <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
-                      <div className="text-sm text-slate-700">{t.text}</div>
+                      <div className="text-sm text-muted">{t.text}</div>
                     </Link>
                   );
                 })}
@@ -346,9 +346,9 @@ export default async function DashboardPage() {
               <EmptyPanel icon={CalendarClock} message="Nothing booked." />
             ) : (
               nextInspections.map((u, i) => (
-                <Link key={i} href={`/jobs/${u.jobId}?tab=inspections`} className="flex items-start justify-between gap-3 px-5 py-3 border-t border-slate-100 first:border-t-0 hover:bg-slate-50">
+                <Link key={i} href={`/jobs/${u.jobId}?tab=inspections`} className="flex items-start justify-between gap-3 px-5 py-3 border-t border-line first:border-t-0 hover:bg-hover">
                   <div className="min-w-0">
-                    <div className="text-sm text-slate-700 truncate">{u.title}</div>
+                    <div className="text-sm text-muted truncate">{u.title}</div>
                     <div className="text-xs text-muted truncate">{u.address}</div>
                   </div>
                   <div className="text-xs font-medium text-secondary shrink-0 whitespace-nowrap">{formatISODate(u.date)}</div>
@@ -362,9 +362,9 @@ export default async function DashboardPage() {
               <EmptyPanel icon={Inbox} message="No activity yet." />
             ) : (
               recentActivity.map((e, i) => (
-                <div key={i} className="flex items-start justify-between gap-3 px-5 py-3 border-t border-slate-100 first:border-t-0">
+                <div key={i} className="flex items-start justify-between gap-3 px-5 py-3 border-t border-line first:border-t-0">
                   <div className="min-w-0">
-                    <div className="text-sm text-slate-700 truncate">{e.action}</div>
+                    <div className="text-sm text-muted truncate">{e.action}</div>
                     <div className="text-xs text-muted truncate">{e.address}</div>
                   </div>
                   <div className="text-xs text-muted shrink-0 whitespace-nowrap">{formatISODate(e.date)}</div>
@@ -377,10 +377,10 @@ export default async function DashboardPage() {
             <div className="p-5">
               <ProjectsDonut
                 slices={[
-                  { label: "In assessment", value: stageCounts.assessment, color: "#2a78d6", href: "/jobs" },
-                  { label: "Ready to issue", value: stageCounts.readyToIssue, color: "#eb6834", href: "/jobs" },
-                  { label: "Under construction", value: stageCounts.underConstruction, color: "#1baf7a", href: "/jobs" },
-                  { label: "Complete", value: stageCounts.complete, color: "#4a3aa7", href: "/jobs" },
+                  { label: "In assessment", value: stageCounts.assessment, color: "#2FA6A0", href: "/jobs" },
+                  { label: "Ready to issue", value: stageCounts.readyToIssue, color: "#F9A825", href: "/jobs" },
+                  { label: "Under construction", value: stageCounts.underConstruction, color: "#1A3A5F", href: "/jobs" },
+                  { label: "Complete", value: stageCounts.complete, color: "#2E7D32", href: "/jobs" },
                 ]}
               />
             </div>
@@ -397,7 +397,7 @@ export default async function DashboardPage() {
             { icon: Building2, label: "Projects started", value: projectsStartedThisMonth },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-center gap-3 px-5 py-4">
-              <Icon size={17} strokeWidth={1.6} className="text-secondary" />
+              <Icon size={17} strokeWidth={1.6} className="text-icon" />
               <div className="min-w-0">
                 <div className="text-xs text-muted leading-tight">{label}</div>
                 <div className="text-xl font-bold text-heading">{value}</div>
@@ -417,7 +417,7 @@ export default async function DashboardPage() {
                 <span
                   key={l.id}
                   className={`px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
-                    open > 0 ? "bg-white border-secondary/30 text-secondary" : "bg-slate-50 border-line text-muted"
+                    open > 0 ? "bg-white border-secondary/40 text-secondary" : "bg-surface border-line text-muted"
                   }`}
                 >
                   {open} {l.title}

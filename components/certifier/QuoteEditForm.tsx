@@ -7,13 +7,13 @@ import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS, VALID_FOR_OPTIONS, matc
 import type { Quote, QuoteFeeLine } from "@/types/db";
 import { X, Plus } from "lucide-react";
 
-const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
-const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
+const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
+const labelCls = "block text-xs font-semibold text-placeholder mb-1";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 mb-5">
-      <div className="px-5 py-3 border-b border-slate-100 font-bold text-teal-900">{title}</div>
+    <div className="bg-white rounded-lg border border-line mb-5">
+      <div className="px-5 py-3 border-b border-line font-bold text-primary">{title}</div>
       <div className="p-5 space-y-4">{children}</div>
     </div>
   );
@@ -77,8 +77,8 @@ export function QuoteEditForm({
       <input type="hidden" name="pathway" value={pathway} />
 
       <div className="flex items-center justify-end gap-2 mb-6">
-        {showSaved && <span className="text-sm font-medium text-emerald-700">Saved ✓</span>}
-        <button className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900 disabled:opacity-60" disabled={pending}>
+        {showSaved && <span className="text-sm font-medium text-success">Saved ✓</span>}
+        <button className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60" disabled={pending}>
           {pending ? "Saving…" : "Save changes"}
         </button>
       </div>
@@ -111,7 +111,7 @@ export function QuoteEditForm({
                 key={p}
                 type="button"
                 onClick={() => setPathway(p)}
-                className={`flex-1 py-2 rounded-md text-sm font-semibold border ${pathway === p ? "bg-teal-800 text-white border-teal-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                className={`flex-1 py-2 rounded-md text-sm font-semibold border ${pathway === p ? "bg-primary text-white border-primary" : "border-line text-muted hover:bg-hover"}`}
               >
                 {p}
               </button>
@@ -142,7 +142,7 @@ export function QuoteEditForm({
         <div>
           <label className={labelCls}>Proposal address</label>
           <input name="proposal_address" required value={proposalAddress} onChange={(e) => handleAddressChange(e.target.value)} placeholder="Start typing an address" className={inputCls} />
-          {councilLga && <div className="text-[11px] text-teal-700 mt-1">Council: {councilLga} — auto-matched, edit below if wrong.</div>}
+          {councilLga && <div className="text-[11px] text-secondary mt-1">Council: {councilLga} — auto-matched, edit below if wrong.</div>}
         </div>
         <div>
           <label className={labelCls}>Lot/Section/Plan</label>
@@ -167,8 +167,8 @@ export function QuoteEditForm({
           <label className={labelCls}>Building classification(s)</label>
           <div className="flex flex-wrap gap-3">
             {BUILDING_CLASSIFICATIONS.map((c) => (
-              <label key={c} className="flex items-center gap-1.5 text-xs text-slate-600">
-                <input type="checkbox" name="classifications" value={c} defaultChecked={(quote.classifications || []).includes(c)} className="accent-teal-700" />
+              <label key={c} className="flex items-center gap-1.5 text-xs text-muted">
+                <input type="checkbox" name="classifications" value={c} defaultChecked={(quote.classifications || []).includes(c)} className="accent-icon" />
                 {c}
               </label>
             ))}
@@ -181,8 +181,8 @@ export function QuoteEditForm({
       </Section>
 
       <Section title="Contact details">
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" name="owner_is_applicant" checked={ownerIsApplicant} onChange={(e) => setOwnerIsApplicant(e.target.checked)} className="accent-teal-700" />
+        <label className="flex items-center gap-2 text-sm text-muted">
+          <input type="checkbox" name="owner_is_applicant" checked={ownerIsApplicant} onChange={(e) => setOwnerIsApplicant(e.target.checked)} className="accent-icon" />
           Owner is the applicant
         </label>
         <div className="grid sm:grid-cols-3 gap-4">
@@ -225,7 +225,7 @@ export function QuoteEditForm({
           </select>
         </div>
         {!ownerIsApplicant && (
-          <div className="grid sm:grid-cols-3 gap-4 border-t border-slate-100 pt-4">
+          <div className="grid sm:grid-cols-3 gap-4 border-t border-line pt-4">
             <div>
               <label className={labelCls}>Owner name</label>
               <input name="owner_name" defaultValue={owner.name || ""} className={inputCls} />
@@ -259,12 +259,12 @@ export function QuoteEditForm({
                 onChange={(e) => setScopeItems((prev) => prev.map((s, i) => (i === idx ? e.target.value : s)))}
                 className={inputCls}
               />
-              <button type="button" onClick={() => setScopeItems((prev) => prev.filter((_, i) => i !== idx))} className="p-2 rounded-full hover:bg-slate-100 text-slate-400">
+              <button type="button" onClick={() => setScopeItems((prev) => prev.filter((_, i) => i !== idx))} className="p-2 rounded-full hover:bg-surface text-placeholder">
                 <X size={14} />
               </button>
             </div>
           ))}
-          <button type="button" onClick={() => setScopeItems((prev) => [...prev, ""])} className="flex items-center gap-1.5 text-sm text-teal-700 font-medium hover:underline">
+          <button type="button" onClick={() => setScopeItems((prev) => [...prev, ""])} className="flex items-center gap-1.5 text-sm text-secondary font-medium hover:underline">
             <Plus size={14} /> Add scope item
           </button>
         </div>
@@ -272,7 +272,7 @@ export function QuoteEditForm({
 
       <Section title="Fee">
         <div className="space-y-2">
-          <div className="flex gap-2 items-center text-xs text-slate-400 px-1">
+          <div className="flex gap-2 items-center text-xs text-placeholder px-1">
             <span className="flex-1">Description</span>
             <span className="w-16 text-center">Qty</span>
             <span className="w-32 text-right pr-8">Unit price</span>
@@ -302,23 +302,23 @@ export function QuoteEditForm({
                 placeholder="0.00"
                 className={`${inputCls} w-32`}
               />
-              <button type="button" onClick={() => setFeeLines((prev) => prev.filter((_, i) => i !== idx))} className="p-2 rounded-full hover:bg-slate-100 text-slate-400">
+              <button type="button" onClick={() => setFeeLines((prev) => prev.filter((_, i) => i !== idx))} className="p-2 rounded-full hover:bg-surface text-placeholder">
                 <X size={14} />
               </button>
             </div>
           ))}
-          <button type="button" onClick={() => setFeeLines((prev) => [...prev, { description: "", quantity: "1", amount: "" }])} className="flex items-center gap-1.5 text-sm text-teal-700 font-medium hover:underline">
+          <button type="button" onClick={() => setFeeLines((prev) => [...prev, { description: "", quantity: "1", amount: "" }])} className="flex items-center gap-1.5 text-sm text-secondary font-medium hover:underline">
             <Plus size={14} /> Add fee line
           </button>
-          <div className="flex flex-col items-end gap-0.5 pt-2 border-t border-slate-100 mt-2 text-sm">
-            <div className="text-slate-500">Subtotal: ${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-            <div className="text-slate-500">GST (10%): ${gst.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-            <div className="font-bold text-teal-900">Total: ${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+          <div className="flex flex-col items-end gap-0.5 pt-2 border-t border-line mt-2 text-sm">
+            <div className="text-placeholder">Subtotal: ${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            <div className="text-placeholder">GST (10%): ${gst.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            <div className="font-bold text-primary">Total: ${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
           </div>
         </div>
       </Section>
 
-      {state?.error && <div className="text-sm text-red-600 mb-4">{state.error}</div>}
+      {state?.error && <div className="text-sm text-error mb-4">{state.error}</div>}
     </form>
   );
 }

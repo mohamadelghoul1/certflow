@@ -61,12 +61,12 @@ export async function CertificatesPanel({
           <div className="mt-3 flex items-center gap-4 flex-wrap">
             <form action={reportPathwayToPortal}>
               <input type="hidden" name="job_id" value={job.id} />
-              <button disabled={job.pathway_portal_reported} className="text-xs font-semibold text-slate-600 hover:underline disabled:opacity-50 disabled:cursor-default">
+              <button disabled={job.pathway_portal_reported} className="text-xs font-semibold text-muted hover:underline disabled:opacity-50 disabled:cursor-default">
                 {job.pathway_portal_reported ? `Reported to Portal ${formatISODate(job.pathway_portal_reported_date)}` : "Report to NSW Planning Portal"}
               </button>
             </form>
             {job.pathway_sent_to_client ? (
-              <span className="text-xs font-semibold text-emerald-700">Sent to client {formatISODate(job.pathway_sent_to_client_date)}</span>
+              <span className="text-xs font-semibold text-success">Sent to client {formatISODate(job.pathway_sent_to_client_date)}</span>
             ) : (
               <SendToClientButton
                 action={sendPathwayCertificateToClient}
@@ -87,7 +87,7 @@ export async function CertificatesPanel({
         )}
 
         {versions.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+          <div className="mt-4 pt-4 border-t border-line space-y-3">
             {versions.map((v) => (
               <PathwayVersionCard key={v.id} version={v} job={job} firmId={firmId} certifiers={certifiers} />
             ))}
@@ -120,7 +120,7 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
   const ref = resolvePathwayCertRef(version.cert_ref, job.pathway, job.details?.projectNumber || job.id.slice(0, 8), version.version);
 
   return (
-    <div className={`border rounded-xl p-4 ${version.signed_at ? "border-accent/40 bg-emerald-50/40" : "border-line bg-white"}`}>
+    <div className={`border rounded-xl p-4 ${version.signed_at ? "border-accent/40 bg-success-bg" : "border-line bg-white"}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-heading">
@@ -156,7 +156,7 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
           )}
         </div>
       </div>
-      <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-3">
+      <div className="mt-3 pt-3 border-t border-line flex flex-wrap items-center gap-3">
         {/* Everything that renders a document is limited to the active
             version: all three routes build from whichever version the job
             currently points at, so offering them on an older card would

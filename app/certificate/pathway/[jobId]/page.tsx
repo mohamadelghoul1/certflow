@@ -12,8 +12,8 @@ import { getPathwayCertificateData, formatAddress, formatBcaVersion, formatCurre
 function CertRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <tr className="align-top">
-      <td className="py-1.5 pr-4 text-sm font-semibold text-slate-800 whitespace-nowrap w-1/3">{label}</td>
-      <td className="py-1.5 text-sm text-slate-700">{value || "—"}</td>
+      <td className="py-1.5 pr-4 text-sm font-semibold text-heading whitespace-nowrap w-1/3">{label}</td>
+      <td className="py-1.5 text-sm text-muted">{value || "—"}</td>
     </tr>
   );
 }
@@ -21,7 +21,7 @@ function CertRow({ label, value }: { label: string; value?: string | null }) {
 function TableSectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <tr>
-      <td colSpan={2} className="pb-1.5 pt-3 text-sm font-bold border-b border-slate-300">
+      <td colSpan={2} className="pb-1.5 pt-3 text-sm font-bold border-b border-line">
         {children}
       </td>
     </tr>
@@ -43,7 +43,7 @@ function Section({ children, last }: { children: React.ReactNode; last?: boolean
 // footers"), not something CSS or JS on the page can control.
 function DocFooter({ projRef, website }: { projRef: string; website?: string | null }) {
   return (
-    <table className="w-full text-[11px] text-slate-400 border-t border-slate-200 mt-6 pt-2">
+    <table className="w-full text-[11px] text-placeholder border-t border-line mt-6 pt-2">
       <tbody>
         <tr>
           <td>Project No.: {projRef}</td>
@@ -134,17 +134,17 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
       uploadedUrl={uploadedApprovalUrl}
     >
       <div className="max-w-3xl mx-auto px-4 pb-10 print:px-0 print:max-w-none">
-        <div className="text-xs text-slate-400 px-2 pb-2 print:hidden">
+        <div className="text-xs text-placeholder px-2 pb-2 print:hidden">
           1. Council letter · 2. Applicant letter · 3. Certificate · 4. Certificate (cont.) · 5. Mandatory inspections notice · 6. Checklist summary
         </div>
         {!issuedBy && (
-          <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2 mx-2 mb-3 print:hidden">
+          <div className="text-xs text-error bg-error-bg border border-error/40 rounded-md px-3 py-2 mx-2 mb-3 print:hidden">
             No certifier is recorded as having issued this version — the certifier&apos;s name, registration details, and signature will show as blank on
             every page below. Re-issue or regenerate the certificate and select a certifier.
           </div>
         )}
         {issuedBy && job.pathway_signed_at && !issuedBy.signature_url && (
-          <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mx-2 mb-3 print:hidden">
+          <div className="text-xs text-warning-text bg-warning-bg border border-warning/50 rounded-md px-3 py-2 mx-2 mb-3 print:hidden">
             Signed, but {issuedBy.name} has no signature image on file — the signature line will stay blank. Upload one in Settings → Certifiers.
           </div>
         )}
@@ -197,8 +197,8 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
             <div className="pt-4">Yours sincerely,</div>
             <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
             <div>{issuedBy?.name || "—"}</div>
-            <div className="text-xs text-slate-500">Registered Certifier / {issuedBy?.registration_no}</div>
-            <div className="text-xs text-slate-500">{firm?.name} Pty Ltd</div>
+            <div className="text-xs text-placeholder">Registered Certifier / {issuedBy?.registration_no}</div>
+            <div className="text-xs text-placeholder">{firm?.name} Pty Ltd</div>
           </div>
           <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
@@ -230,7 +230,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
                 {para}
               </div>
             ))}
-            <div className="bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
+            <div className="bg-warning-bg border border-warning/50 rounded-md px-4 py-3">
               Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:
               <ul className="list-disc pl-5 mt-1 space-y-0.5">
                 {requiredDocsList.map((item) => (
@@ -241,8 +241,8 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
             <div className="pt-4">Yours sincerely,</div>
             <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
             <div>{issuedBy?.name || "—"}</div>
-            <div className="text-xs text-slate-500">Registered Certifier / {issuedBy?.registration_no}</div>
-            <div className="text-xs text-slate-500">{firm?.name} Pty Ltd</div>
+            <div className="text-xs text-placeholder">Registered Certifier / {issuedBy?.registration_no}</div>
+            <div className="text-xs text-placeholder">{firm?.name} Pty Ltd</div>
           </div>
           <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
@@ -257,7 +257,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
                 <br />
                 PROJECT REFERENCE {projRef}
               </div>
-              <p className="text-xs text-slate-500 mt-1 mb-4">Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979</p>
+              <p className="text-xs text-placeholder mt-1 mb-4">Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979</p>
               <p className="text-sm font-bold mb-4">
                 This CDC approval does not allow any work to commence. Principal Certifier must be appointed, and Home Building Compensation Fund (HBCF)
                 has been issued by a licenced builder or Owner Builder Permit is issued by Building Commission NSW and all council fees/bonds have been
@@ -269,7 +269,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               <div className="text-sm font-bold uppercase">
                 {pathwayFull} &ndash; {projRef}
               </div>
-              <p className="text-xs text-slate-500 mt-1 mb-4">Issued under Part 6 the Environmental Planning and Assessment Act 1979</p>
+              <p className="text-xs text-placeholder mt-1 mb-4">Issued under Part 6 the Environmental Planning and Assessment Act 1979</p>
               <p className="text-sm font-bold mb-4">
                 This Construction Certificate does not give authorisation of any construction works to commence until a Principal Certifier has been
                 appointed.
@@ -325,8 +325,8 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               <CertRow label={isCdc ? "Attachments" : "Attachments:"} value="Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon" />
               {isCdc && (
                 <tr className="align-top">
-                  <td className="py-1.5 pr-4 text-sm font-semibold text-slate-800 whitespace-nowrap w-1/3">Conditions:</td>
-                  <td className="py-1.5 text-sm text-slate-700">
+                  <td className="py-1.5 pr-4 text-sm font-semibold text-heading whitespace-nowrap w-1/3">Conditions:</td>
+                  <td className="py-1.5 text-sm text-muted">
                     <div>
                       Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and
                       Complying Development) Codes 2008 &amp; State Environmental Planning Policy (Housing) 2021
@@ -355,7 +355,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
         {/* 3b. Certificate — certifying authority, declaration & signature */}
         <Section>
           <DocumentHeader firm={firm} logoUrl={logoUrl} />
-          <div className="text-xs text-slate-400 mb-3">
+          <div className="text-xs text-placeholder mb-3">
             {pathwayFull} {ref} — continued
           </div>
           {/* Registration body then number, in that order and never split
@@ -409,7 +409,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
           <DocumentHeader firm={firm} logoUrl={logoUrl} />
           <div className="text-sm space-y-3">
             <div className="text-base font-bold">NOTICE TO APPLICANT OF MANDATORY CRITICAL STAGE INSPECTIONS</div>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-placeholder">
               Made under Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 — Section 58
             </div>
 
@@ -464,7 +464,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
               site if a mandatory critical stage inspection is required before the commencement of the work in accordance with Section 58 of the Environmental
               Planning and Assessment (Development Certification and Fire Safety) Regulation 2021.
             </div>
-            <div className="bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
+            <div className="bg-warning-bg border border-warning/50 rounded-md px-4 py-3">
               Failure to request a mandatory critical stage inspection will prohibit the principal certifier under Section 58 of the Environmental Planning
               and Assessment (Development Certification and Fire Safety) Regulation 2021 to issue an occupation certificate.
             </div>
@@ -479,7 +479,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
             </table>
             <SignatureLine signatureUrl={signatureUrl} topPadding="pt-8" />
             <div>{issuedBy?.name || "—"}</div>
-            <div className="text-xs text-slate-500">Principal Certifier / {issuedBy?.registration_no}</div>
+            <div className="text-xs text-placeholder">Principal Certifier / {issuedBy?.registration_no}</div>
           </div>
           <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
@@ -491,23 +491,23 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
           <DocumentHeader firm={firm} logoUrl={logoUrl} />
           <div className="text-sm space-y-3">
             <div className="font-bold text-base mb-1">SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS</div>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-placeholder">
               {pathwayFull} {ref} — {job.address}
             </div>
-            <table className="w-full border border-slate-300 text-sm">
+            <table className="w-full border border-line text-sm">
               <thead>
-                <tr className="bg-slate-100">
-                  <th className="border border-slate-300 px-3 py-1.5 w-10 text-left">No.</th>
-                  <th className="border border-slate-300 px-3 py-1.5 text-left">Critical Stage Inspection</th>
-                  <th className="border border-slate-300 px-3 py-1.5 w-56 text-left">Inspector</th>
+                <tr className="bg-surface">
+                  <th className="border border-line px-3 py-1.5 w-10 text-left">No.</th>
+                  <th className="border border-line px-3 py-1.5 text-left">Critical Stage Inspection</th>
+                  <th className="border border-line px-3 py-1.5 w-56 text-left">Inspector</th>
                 </tr>
               </thead>
               <tbody>
                 {selectedInspections.map((r, idx) => (
                   <tr key={r.id}>
-                    <td className="border border-slate-300 px-3 py-1.5">{idx + 1}.</td>
-                    <td className="border border-slate-300 px-3 py-1.5">{r.stage}</td>
-                    <td className="border border-slate-300 px-3 py-1.5">{r.inspector}</td>
+                    <td className="border border-line px-3 py-1.5">{idx + 1}.</td>
+                    <td className="border border-line px-3 py-1.5">{r.stage}</td>
+                    <td className="border border-line px-3 py-1.5">{r.inspector}</td>
                   </tr>
                 ))}
               </tbody>
@@ -520,27 +520,27 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
         <Section last>
           <div className="text-sm">
             <div className="text-base font-bold mb-1">DOCUMENTS REQUESTED — {job.pathway} CHECKLIST</div>
-            <div className="text-xs text-slate-500 mb-3">Every document requested from the applicant during assessment, for reference.</div>
-            <table className="w-full border border-slate-300 text-sm">
+            <div className="text-xs text-placeholder mb-3">Every document requested from the applicant during assessment, for reference.</div>
+            <table className="w-full border border-line text-sm">
               <thead>
-                <tr className="bg-slate-100">
-                  <th className="border border-slate-300 px-3 py-1.5 w-32 text-left">Prepared by</th>
-                  <th className="border border-slate-300 px-3 py-1.5 text-left">Document</th>
-                  <th className="border border-slate-300 px-3 py-1.5 w-28 text-left">Reference no.</th>
-                  <th className="border border-slate-300 px-3 py-1.5 w-20 text-left">Revision</th>
-                  <th className="border border-slate-300 px-3 py-1.5 w-24 text-left">Date</th>
-                  <th className="border border-slate-300 px-3 py-1.5 w-24 text-left">Status</th>
+                <tr className="bg-surface">
+                  <th className="border border-line px-3 py-1.5 w-32 text-left">Prepared by</th>
+                  <th className="border border-line px-3 py-1.5 text-left">Document</th>
+                  <th className="border border-line px-3 py-1.5 w-28 text-left">Reference no.</th>
+                  <th className="border border-line px-3 py-1.5 w-20 text-left">Revision</th>
+                  <th className="border border-line px-3 py-1.5 w-24 text-left">Date</th>
+                  <th className="border border-line px-3 py-1.5 w-24 text-left">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {allItems.map((i) => (
                   <tr key={i.id}>
-                    <td className="border border-slate-300 px-3 py-1.5">{i.prepared_by || "—"}</td>
-                    <td className="border border-slate-300 px-3 py-1.5">{i.title}</td>
-                    <td className="border border-slate-300 px-3 py-1.5">{i.drawing_number || "—"}</td>
-                    <td className="border border-slate-300 px-3 py-1.5">{i.revision || "—"}</td>
-                    <td className="border border-slate-300 px-3 py-1.5">{formatISODate(i.document_date)}</td>
-                    <td className="border border-slate-300 px-3 py-1.5 capitalize">{i.status}</td>
+                    <td className="border border-line px-3 py-1.5">{i.prepared_by || "—"}</td>
+                    <td className="border border-line px-3 py-1.5">{i.title}</td>
+                    <td className="border border-line px-3 py-1.5">{i.drawing_number || "—"}</td>
+                    <td className="border border-line px-3 py-1.5">{i.revision || "—"}</td>
+                    <td className="border border-line px-3 py-1.5">{formatISODate(i.document_date)}</td>
+                    <td className="border border-line px-3 py-1.5 capitalize">{i.status}</td>
                   </tr>
                 ))}
               </tbody>

@@ -70,7 +70,7 @@ export function NavDropdown({
       <button
         ref={buttonRef}
         onClick={toggleOpen}
-        className={`flex items-center gap-1 py-4 px-3 text-sm font-medium whitespace-nowrap shrink-0 ${open ? "text-white" : "text-slate-300 hover:text-white"}`}
+        className={`flex items-center gap-1 py-4 px-3 text-sm font-medium whitespace-nowrap shrink-0 ${open ? "text-white" : "text-placeholder hover:text-white"}`}
       >
         {label}
         <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
@@ -85,22 +85,22 @@ export function NavDropdown({
             <Link
               href={createHref}
               onClick={() => setOpen(false)}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-secondary hover:bg-slate-50 border-b border-slate-100"
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-secondary hover:bg-hover border-b border-line"
             >
               <Plus size={14} /> {createLabel}
             </Link>
             {items.length > 0 && (
               <div className="max-h-72 overflow-y-auto">
                 {items.map((it) => (
-                  <Link key={it.id} href={`${itemHrefBase}/${it.id}${itemHrefSuffix}`} onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm hover:bg-slate-50 border-b border-slate-50 last:border-b-0">
-                    <div className="font-medium text-slate-800 truncate">{it.title}</div>
-                    {it.subtitle && <div className="text-xs text-slate-400 truncate">{it.subtitle}</div>}
+                  <Link key={it.id} href={`${itemHrefBase}/${it.id}${itemHrefSuffix}`} onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm hover:bg-hover border-b border-line last:border-b-0">
+                    <div className="font-medium text-heading truncate">{it.title}</div>
+                    {it.subtitle && <div className="text-xs text-placeholder truncate">{it.subtitle}</div>}
                   </Link>
                 ))}
               </div>
             )}
-            {items.length === 0 && <div className="px-4 py-3 text-xs text-slate-400">Nothing yet.</div>}
-            <Link href={viewAllHref} onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm font-semibold text-secondary hover:bg-slate-50 border-t border-slate-100">
+            {items.length === 0 && <div className="px-4 py-3 text-xs text-placeholder">Nothing yet.</div>}
+            <Link href={viewAllHref} onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm font-semibold text-secondary hover:bg-hover border-t border-line">
               {viewAllLabel} →
             </Link>
           </div>,

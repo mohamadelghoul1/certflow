@@ -29,7 +29,7 @@ export function DashboardSearch({ jobs }: { jobs: JobLite[] }) {
             <div className="px-4 py-6 text-center text-sm text-muted">No projects match &ldquo;{trimmed}&rdquo;.</div>
           ) : (
             results.map((j) => (
-              <Link key={j.id} href={`/jobs/${j.id}?tab=pathway`} className="block px-4 py-3 border-t border-slate-100 first:border-t-0 hover:bg-slate-50">
+              <Link key={j.id} href={`/jobs/${j.id}?tab=pathway`} className="block px-4 py-3 border-t border-line first:border-t-0 hover:bg-hover">
                 <div className="font-medium text-sm text-heading">{j.address}</div>
                 <div className="text-xs text-muted">
                   {j.pathway} · {j.description}

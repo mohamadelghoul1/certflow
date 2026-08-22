@@ -12,8 +12,8 @@ export function AuditView({ certifiers, events }: { certifiers: CertifierRow[]; 
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-teal-900 mb-1">Certifier Audit</h1>
-      <p className="text-slate-500 text-sm mb-6 max-w-2xl">
+      <h1 className="text-xl font-bold text-primary mb-1">Certifier Audit</h1>
+      <p className="text-placeholder text-sm mb-6 max-w-2xl">
         What each registered certifier has actually issued or carried out, across every project — derived from real issuance and inspection records, not a separate log.
       </p>
 
@@ -29,58 +29,58 @@ export function AuditView({ certifiers, events }: { certifiers: CertifierRow[]; 
           const isOpen = expanded === c.id;
 
           return (
-            <div key={c.id} className="rounded-lg overflow-hidden border border-slate-200 bg-white">
-              <button onClick={() => setExpanded(isOpen ? null : c.id)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors">
+            <div key={c.id} className="rounded-lg overflow-hidden border border-line bg-white">
+              <button onClick={() => setExpanded(isOpen ? null : c.id)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-hover transition-colors">
                 <div className="text-left">
-                  <div className="font-semibold text-teal-900">{c.name}</div>
-                  <div className="text-xs text-slate-400">
+                  <div className="font-semibold text-primary">{c.name}</div>
+                  <div className="text-xs text-placeholder">
                     {c.registration_body} · {c.registration_no}
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="hidden sm:flex gap-4 text-xs text-slate-500">
+                  <div className="hidden sm:flex gap-4 text-xs text-placeholder">
                     <span>
-                      <span className="font-bold text-teal-800">{cdcCount}</span> CDC/CC issued
+                      <span className="font-bold text-primary">{cdcCount}</span> CDC/CC issued
                     </span>
                     <span>
-                      <span className="font-bold text-teal-800">{modCount}</span> modifications
+                      <span className="font-bold text-primary">{modCount}</span> modifications
                     </span>
                     <span>
-                      <span className="font-bold text-teal-800">{ocCount}</span> OC issued
+                      <span className="font-bold text-primary">{ocCount}</span> OC issued
                     </span>
                     <span>
-                      <span className="font-bold text-teal-800">{inspCount}</span> inspections{inspCount > 0 && ` (${inspPassed} passed, ${inspFailed} failed)`}
+                      <span className="font-bold text-primary">{inspCount}</span> inspections{inspCount > 0 && ` (${inspPassed} passed, ${inspFailed} failed)`}
                     </span>
                   </div>
-                  <ChevronDown size={16} className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown size={16} className={`text-placeholder transition-transform ${isOpen ? "rotate-180" : ""}`} />
                 </div>
               </button>
-              <div className="sm:hidden flex flex-wrap gap-2 px-5 pb-3 text-xs text-slate-500">
+              <div className="sm:hidden flex flex-wrap gap-2 px-5 pb-3 text-xs text-placeholder">
                 <span>
-                  <span className="font-bold text-teal-800">{cdcCount}</span> CDC/CC
+                  <span className="font-bold text-primary">{cdcCount}</span> CDC/CC
                 </span>
                 <span>
-                  <span className="font-bold text-teal-800">{modCount}</span> mods
+                  <span className="font-bold text-primary">{modCount}</span> mods
                 </span>
                 <span>
-                  <span className="font-bold text-teal-800">{ocCount}</span> OC
+                  <span className="font-bold text-primary">{ocCount}</span> OC
                 </span>
                 <span>
-                  <span className="font-bold text-teal-800">{inspCount}</span> inspections
+                  <span className="font-bold text-primary">{inspCount}</span> inspections
                 </span>
               </div>
               {isOpen &&
                 (own.length === 0 ? (
-                  <div className="px-5 py-6 text-sm text-slate-400 border-t border-slate-100">No recorded activity yet.</div>
+                  <div className="px-5 py-6 text-sm text-placeholder border-t border-line">No recorded activity yet.</div>
                 ) : (
-                  <div className="border-t border-slate-100">
+                  <div className="border-t border-line">
                     {own.map((e, i) => (
-                      <div key={i} className="flex items-center justify-between px-5 py-3 border-t border-slate-100 first:border-t-0 text-sm">
+                      <div key={i} className="flex items-center justify-between px-5 py-3 border-t border-line first:border-t-0 text-sm">
                         <div>
-                          <span className="text-slate-700">{e.action}</span>
-                          <span className="text-slate-400"> — {e.address}</span>
+                          <span className="text-muted">{e.action}</span>
+                          <span className="text-placeholder"> — {e.address}</span>
                         </div>
-                        <span className="text-xs text-slate-400 whitespace-nowrap ml-3">{formatISODate(e.date)}</span>
+                        <span className="text-xs text-placeholder whitespace-nowrap ml-3">{formatISODate(e.date)}</span>
                       </div>
                     ))}
                   </div>
@@ -88,7 +88,7 @@ export function AuditView({ certifiers, events }: { certifiers: CertifierRow[]; 
             </div>
           );
         })}
-        {certifiers.length === 0 && <div className="text-sm text-slate-400">No certifiers yet — add one under Settings.</div>}
+        {certifiers.length === 0 && <div className="text-sm text-placeholder">No certifiers yet — add one under Settings.</div>}
       </div>
     </div>
   );

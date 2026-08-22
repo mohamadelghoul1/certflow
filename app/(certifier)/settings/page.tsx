@@ -29,31 +29,31 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8 max-w-3xl">
-      <h1 className="text-xl font-bold text-teal-900">Settings</h1>
+      <h1 className="text-xl font-bold text-primary">Settings</h1>
 
-      <section className="bg-white rounded-lg border border-slate-200">
-        <div className="px-5 py-3 border-b border-slate-100 font-bold text-teal-900">Firm details</div>
+      <section className="bg-white rounded-lg border border-line">
+        <div className="px-5 py-3 border-b border-line font-bold text-primary">Firm details</div>
         <div className="p-5">
           <FirmForm firm={firm} logoUrl={logoUrl} stampUrl={stampUrl} />
         </div>
       </section>
 
-      <section className="bg-white rounded-lg border border-slate-200">
-        <div className="px-5 py-3 border-b border-slate-100 font-bold text-teal-900">Certifiers</div>
+      <section className="bg-white rounded-lg border border-line">
+        <div className="px-5 py-3 border-b border-line font-bold text-primary">Certifiers</div>
         <div className="p-5">
           <CertifierList certifiers={certifiers || []} firmId={profile.firm_id} signatureUrls={signatureUrls} />
         </div>
       </section>
 
-      <section className="bg-white rounded-lg border border-slate-200">
-        <div className="px-5 py-3 border-b border-slate-100 font-bold text-teal-900">Clients &amp; portal access</div>
+      <section className="bg-white rounded-lg border border-line">
+        <div className="px-5 py-3 border-b border-line font-bold text-primary">Clients &amp; portal access</div>
         <div className="p-5">
           <ClientList clients={clients || []} />
         </div>
       </section>
 
-      <section className="bg-white rounded-lg border border-slate-200">
-        <div className="px-5 py-3 border-b border-slate-100 font-bold text-teal-900">Document Library</div>
+      <section className="bg-white rounded-lg border border-line">
+        <div className="px-5 py-3 border-b border-line font-bold text-primary">Document Library</div>
         <div className="p-5">
           <DocumentLibrarySection items={libraryItems || []} />
         </div>

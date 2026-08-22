@@ -27,10 +27,10 @@ import type { Inspection, Defect, InspectionPhoto, Certifier } from "@/types/db"
 type InspectionWithDefects = Inspection & { defects: Defect[]; inspection_photos: InspectionPhoto[] };
 
 const OUTCOME_META: Record<string, { label: string; style: string }> = {
-  pending: { label: "Pending", style: "bg-slate-100 text-slate-600" },
-  passed: { label: "Passed", style: "bg-emerald-50 text-accent" },
-  failed: { label: "Failed", style: "bg-red-50 text-red-700" },
-  passed_subject_to: { label: "Satisfactory (minor issues) subject to documents being provided", style: "bg-amber-50 text-amber-700" },
+  pending: { label: "Pending", style: "bg-surface text-muted" },
+  passed: { label: "Passed", style: "bg-success-bg text-accent" },
+  failed: { label: "Failed", style: "bg-error-bg text-error" },
+  passed_subject_to: { label: "Satisfactory (minor issues) subject to documents being provided", style: "bg-warning-bg text-warning-text" },
 };
 
 function OutcomeIcon({ outcome, size }: { outcome: string; size: number }) {
@@ -80,7 +80,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
           <div className="text-base font-semibold text-heading">{insp.title}</div>
           <div className="text-sm text-muted mt-0.5">{insp.description}</div>
           {insp.booked_by_client && !insp.confirmed && (
-            <div className="text-xs text-amber-700 font-medium mt-1">Booked by client for {formatISODate(insp.date)} — needs confirmation</div>
+            <div className="text-xs text-warning-text font-medium mt-1">Booked by client for {formatISODate(insp.date)} — needs confirmation</div>
           )}
         </div>
         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${meta.style}`}>
@@ -95,7 +95,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
           <div className="flex-1">
             <label className="block text-[11px] text-muted mb-1">Date</label>
             <input type="date" name="date" defaultValue={insp.date || ""} className="w-full px-2 py-1.5 rounded border border-line text-xs" />
-            {dateOnWeekend && <div className="text-[11px] text-amber-700 mt-1">⚠ falls on a weekend</div>}
+            {dateOnWeekend && <div className="text-[11px] text-warning-text mt-1">⚠ falls on a weekend</div>}
           </div>
           <button className="text-xs text-secondary hover:underline pb-1.5">Save</button>
         </form>
@@ -139,14 +139,14 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
         <form action={confirmBooking} className="mt-2">
           <input type="hidden" name="inspection_id" value={insp.id} />
           <input type="hidden" name="job_id" value={jobId} />
-          <button className="text-xs font-semibold text-emerald-700 hover:underline">Confirm client&apos;s booking</button>
+          <button className="text-xs font-semibold text-success hover:underline">Confirm client&apos;s booking</button>
         </form>
       )}
 
       {needsDefect && (
         <div className="mt-3 space-y-2">
           {insp.defects.map((d) => (
-            <div key={d.id} className={`text-xs rounded-md px-3 py-2 flex items-start justify-between gap-3 ${d.resolved ? "bg-slate-50 text-muted line-through" : "bg-amber-50 text-amber-800"}`}>
+            <div key={d.id} className={`text-xs rounded-md px-3 py-2 flex items-start justify-between gap-3 ${d.resolved ? "bg-surface text-muted line-through" : "bg-warning-bg text-warning-text"}`}>
               <span>{d.text}</span>
               {!d.resolved && (
                 <form action={resolveDefect} className="shrink-0">
@@ -161,7 +161,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
             <input type="hidden" name="inspection_id" value={insp.id} />
             <input type="hidden" name="job_id" value={jobId} />
             <input name="text" placeholder="Add a defect / condition…" className="flex-1 px-2 py-1.5 rounded border border-line text-xs" />
-            <button className="text-xs font-semibold text-amber-700 hover:underline">Add</button>
+            <button className="text-xs font-semibold text-warning-text hover:underline">Add</button>
           </form>
         </div>
       )}
@@ -185,7 +185,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
                 <form action={removePhoto}>
                   <input type="hidden" name="photo_id" value={p.id} />
                   <input type="hidden" name="job_id" value={jobId} />
-                  <button className="text-[11px] text-red-500 hover:underline">Remove</button>
+                  <button className="text-[11px] text-error hover:underline">Remove</button>
                 </form>
               </div>
             ))}
@@ -255,7 +255,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
         />
         {insp.report_sent && (
           <>
-            <span className="text-[11px] text-emerald-700">Available {formatISODate(insp.report_sent_date)}</span>
+            <span className="text-[11px] text-success">Available {formatISODate(insp.report_sent_date)}</span>
             <form action={notifyClientMessage}>
               <input type="hidden" name="job_id" value={jobId} />
               <input type="hidden" name="subject" value="Inspection report available" />
@@ -267,14 +267,14 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
         <form action={reportToPortal}>
           <input type="hidden" name="inspection_id" value={insp.id} />
           <input type="hidden" name="job_id" value={jobId} />
-          <button disabled={insp.portal_reported} className="text-xs font-semibold text-slate-600 hover:underline disabled:opacity-50 disabled:cursor-default">
+          <button disabled={insp.portal_reported} className="text-xs font-semibold text-muted hover:underline disabled:opacity-50 disabled:cursor-default">
             {insp.portal_reported ? `Reported to Portal ${formatISODate(insp.portal_reported_date)}` : "Report to NSW Planning Portal"}
           </button>
         </form>
         <form action={removeInspection} className="ml-auto">
           <input type="hidden" name="inspection_id" value={insp.id} />
           <input type="hidden" name="job_id" value={jobId} />
-          <button className="text-xs text-red-500 hover:underline">Remove</button>
+          <button className="text-xs text-error hover:underline">Remove</button>
         </form>
       </div>
     </div>

@@ -143,7 +143,7 @@ function InspectionRow({
   if (editing) {
     return (
       <div
-        className="rounded-md border border-teal-200 bg-teal-50/40 p-2 space-y-1.5"
+        className="rounded-md border border-line bg-hover p-2 space-y-1.5"
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node)) save();
         }}
@@ -153,16 +153,16 @@ function InspectionRow({
           onChange={(e) => setStage(e.target.value)}
           autoFocus
           placeholder="Stage"
-          className="w-full text-sm outline-none bg-white rounded px-2 py-1 border border-slate-200"
+          className="w-full text-sm outline-none bg-white rounded px-2 py-1 border border-line"
         />
         <input
           value={inspector}
           onChange={(e) => setInspector(e.target.value)}
           placeholder="Inspector"
-          className="w-full text-xs outline-none bg-white rounded px-2 py-1 border border-slate-200"
+          className="w-full text-xs outline-none bg-white rounded px-2 py-1 border border-line"
         />
         <div className="flex gap-2">
-          <button onClick={save} className="text-xs font-semibold text-teal-800 hover:underline">
+          <button onClick={save} className="text-xs font-semibold text-primary hover:underline">
             Save
           </button>
           <button
@@ -171,7 +171,7 @@ function InspectionRow({
               setInspector(insp.inspector);
               setEditing(false);
             }}
-            className="text-xs text-slate-400 hover:underline"
+            className="text-xs text-placeholder hover:underline"
           >
             Cancel
           </button>
@@ -181,20 +181,20 @@ function InspectionRow({
   }
 
   return (
-    <div className="group flex items-start gap-2 text-sm text-slate-700">
-      <input type="checkbox" checked={insp.enabled} onChange={onToggle} className="mt-0.5 accent-teal-700 shrink-0" />
+    <div className="group flex items-start gap-2 text-sm text-muted">
+      <input type="checkbox" checked={insp.enabled} onChange={onToggle} className="mt-0.5 accent-icon shrink-0" />
       {/* Clicking the wording of an inspection that isn't ticked yet
           accepts it — the common case is "yes, this one applies", not
           "let me reword it". Once it's ticked, clicking opens the editor. */}
       <button onClick={() => (insp.enabled ? setEditing(true) : onToggle())} className="flex-1 min-w-0 text-left">
-        {index}. {insp.stage} <span className="text-slate-400">({insp.inspector})</span>
+        {index}. {insp.stage} <span className="text-placeholder">({insp.inspector})</span>
       </button>
       {insp.enabled && (
-        <button onClick={() => setEditing(true)} className="text-xs text-teal-800 hover:underline opacity-0 group-hover:opacity-100 shrink-0">
+        <button onClick={() => setEditing(true)} className="text-xs text-primary hover:underline opacity-0 group-hover:opacity-100 shrink-0">
           Edit
         </button>
       )}
-      <button onClick={onRemove} className="p-0.5 rounded text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 shrink-0">
+      <button onClick={onRemove} className="p-0.5 rounded text-placeholder hover:text-error opacity-0 group-hover:opacity-100 shrink-0">
         <X size={13} />
       </button>
     </div>
@@ -220,29 +220,29 @@ function AddInspectionForm({ onAdd }: { onAdd: (stage: string, inspector: string
 
   if (!adding) {
     return (
-      <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1.5 text-xs font-medium text-teal-800 hover:underline mt-1">
+      <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline mt-1">
         <Plus size={13} /> Add inspection
       </button>
     );
   }
 
   return (
-    <div className="rounded-md border border-slate-200 p-2 space-y-1.5 mt-1">
+    <div className="rounded-md border border-line p-2 space-y-1.5 mt-1">
       <input
         value={stage}
         onChange={(e) => setStage(e.target.value)}
         autoFocus
         placeholder="Stage (e.g. Prior to pouring slab)"
-        className="w-full text-sm outline-none bg-white rounded px-2 py-1 border border-slate-200"
+        className="w-full text-sm outline-none bg-white rounded px-2 py-1 border border-line"
       />
       <input
         value={inspector}
         onChange={(e) => setInspector(e.target.value)}
         placeholder="Inspector (e.g. Registered Certifier)"
-        className="w-full text-xs outline-none bg-white rounded px-2 py-1 border border-slate-200"
+        className="w-full text-xs outline-none bg-white rounded px-2 py-1 border border-line"
       />
       <div className="flex gap-2">
-        <button onClick={submit} className="text-xs font-semibold text-teal-800 hover:underline">
+        <button onClick={submit} className="text-xs font-semibold text-primary hover:underline">
           Add
         </button>
         <button
@@ -252,7 +252,7 @@ function AddInspectionForm({ onAdd }: { onAdd: (stage: string, inspector: string
             setStage("");
             setInspector("");
           }}
-          className="text-xs text-slate-400 hover:underline"
+          className="text-xs text-placeholder hover:underline"
         >
           Cancel
         </button>

@@ -13,8 +13,8 @@ function CertRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
   return (
     <tr className="align-top">
-      <td className="py-1.5 pr-4 text-sm font-semibold text-slate-800 whitespace-nowrap w-1/3">{label}</td>
-      <td className="py-1.5 text-sm text-slate-700">{value}</td>
+      <td className="py-1.5 pr-4 text-sm font-semibold text-heading whitespace-nowrap w-1/3">{label}</td>
+      <td className="py-1.5 text-sm text-muted">{value}</td>
     </tr>
   );
 }
@@ -25,8 +25,8 @@ function CertRowMultiline({ label, lines }: { label: string; lines: string[] }) 
   if (lines.length === 0) return null;
   return (
     <tr className="align-top">
-      <td className="py-1.5 pr-4 text-sm font-semibold text-slate-800 whitespace-nowrap w-1/3">{label}</td>
-      <td className="py-1.5 text-sm text-slate-700">
+      <td className="py-1.5 pr-4 text-sm font-semibold text-heading whitespace-nowrap w-1/3">{label}</td>
+      <td className="py-1.5 text-sm text-muted">
         {lines.map((line, i) => (
           <div key={i}>{line}</div>
         ))}
@@ -68,15 +68,15 @@ export default async function InspectionReportPage({ params }: { params: Promise
       signAction={signInspectionReport}
       signFields={{ job_id: jobId, inspection_id: inspectionId }}
     >
-      <div className="max-w-2xl mx-auto p-8 bg-white text-slate-900 print:max-w-none">
+      <div className="max-w-2xl mx-auto p-8 bg-white text-heading print:max-w-none">
         <DocumentHeader firm={firmData} logoUrl={logoUrl} />
 
         <h1 className="text-lg font-bold">
           INSPECTION REPORT – {certRef} – {inspection.title}
         </h1>
-        <div className="text-sm text-slate-500 mb-6">{job.address}</div>
+        <div className="text-sm text-placeholder mb-6">{job.address}</div>
 
-        <div className="text-sm font-bold border-b border-slate-300 pb-1 mb-2">APPLICANT DETAILS</div>
+        <div className="text-sm font-bold border-b border-line pb-1 mb-2">APPLICANT DETAILS</div>
         <table className="w-full mb-4">
           <tbody>
             <CertRow label="Applicant:" value={applicantName} />
@@ -86,7 +86,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
           </tbody>
         </table>
 
-        <div className="text-sm font-bold border-b border-slate-300 pb-1 mb-2">RELEVANT CONSENTS</div>
+        <div className="text-sm font-bold border-b border-line pb-1 mb-2">RELEVANT CONSENTS</div>
         <table className="w-full mb-4">
           <tbody>
             <CertRow label="Local Government Area:" value={d.council?.lga} />
@@ -98,7 +98,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
           </tbody>
         </table>
 
-        <div className="text-sm font-bold border-b border-slate-300 pb-1 mb-2">PROPOSAL</div>
+        <div className="text-sm font-bold border-b border-line pb-1 mb-2">PROPOSAL</div>
         <table className="w-full mb-4">
           <tbody>
             <CertRow label="Address of Development:" value={job.address} />
@@ -108,7 +108,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
           </tbody>
         </table>
 
-        <div className="text-sm font-bold border-b border-slate-300 pb-1 mb-2">INSPECTION DETAILS</div>
+        <div className="text-sm font-bold border-b border-line pb-1 mb-2">INSPECTION DETAILS</div>
         <table className="w-full mb-4">
           <tbody>
             <CertRow label="Inspector:" value={inspector?.name} />
@@ -118,23 +118,23 @@ export default async function InspectionReportPage({ params }: { params: Promise
         </table>
 
         <div className="text-sm font-bold mb-1">INSPECTION RESULTS</div>
-        <div className="text-xs text-slate-500 mb-2 whitespace-pre-line">{introText}</div>
-        <table className="w-full mb-4 border border-slate-300 text-sm break-inside-avoid">
+        <div className="text-xs text-placeholder mb-2 whitespace-pre-line">{introText}</div>
+        <table className="w-full mb-4 border border-line text-sm break-inside-avoid">
           <thead>
-            <tr className="bg-slate-100">
-              <th className="text-left font-semibold px-3 py-1.5 border border-slate-300">Inspection Area</th>
-              <th className="text-left font-semibold px-3 py-1.5 border border-slate-300">Inspection Outcome</th>
-              <th className="text-left font-semibold px-3 py-1.5 border border-slate-300 w-40">Reinspections</th>
+            <tr className="bg-surface">
+              <th className="text-left font-semibold px-3 py-1.5 border border-line">Inspection Area</th>
+              <th className="text-left font-semibold px-3 py-1.5 border border-line">Inspection Outcome</th>
+              <th className="text-left font-semibold px-3 py-1.5 border border-line w-40">Reinspections</th>
             </tr>
           </thead>
           <tbody>
             {resultsRows.map((r, i) => (
               <tr key={r.id}>
-                <td className="px-3 py-1.5 border border-slate-300">
+                <td className="px-3 py-1.5 border border-line">
                   {i + 1}. {r.title}
                 </td>
-                <td className="px-3 py-1.5 border border-slate-300">{OUTCOME_TEXT[r.outcome] || "Pending"}</td>
-                <td className="px-3 py-1.5 border border-slate-300">{REINSPECTION_TEXT[r.outcome] || "No re-inspections required for this inspection."}</td>
+                <td className="px-3 py-1.5 border border-line">{OUTCOME_TEXT[r.outcome] || "Pending"}</td>
+                <td className="px-3 py-1.5 border border-line">{REINSPECTION_TEXT[r.outcome] || "No re-inspections required for this inspection."}</td>
               </tr>
             ))}
           </tbody>
@@ -142,12 +142,12 @@ export default async function InspectionReportPage({ params }: { params: Promise
 
         <div className="text-sm font-bold mb-1">REQUIRED DOCUMENTS</div>
         {inspection.defects.length === 0 ? (
-          <div className="text-sm text-slate-400 italic mb-4">No further documents are required.</div>
+          <div className="text-sm text-placeholder italic mb-4">No further documents are required.</div>
         ) : (
-          <ol className="list-decimal pl-5 text-sm text-slate-700 space-y-0.5 mb-4">
+          <ol className="list-decimal pl-5 text-sm text-muted space-y-0.5 mb-4">
             {inspection.defects.map((d2) => (
               <li key={d2.id}>
-                {d2.text} — {d2.resolved ? <span className="text-emerald-600 font-medium">Resolved</span> : <span className="text-amber-700 font-medium">Required</span>}
+                {d2.text} — {d2.resolved ? <span className="text-success font-medium">Resolved</span> : <span className="text-warning-text font-medium">Required</span>}
               </li>
             ))}
           </ol>
@@ -156,11 +156,11 @@ export default async function InspectionReportPage({ params }: { params: Promise
         {notes && (
           <>
             <div className="text-sm font-bold mb-1">NOTES</div>
-            <div className="text-sm text-slate-700 whitespace-pre-line mb-4">{notes}</div>
+            <div className="text-sm text-muted whitespace-pre-line mb-4">{notes}</div>
           </>
         )}
 
-        <div className="text-sm font-bold border-b border-slate-300 pb-1 mb-2 mt-6 break-inside-avoid">SIGNED BY:</div>
+        <div className="text-sm font-bold border-b border-line pb-1 mb-2 mt-6 break-inside-avoid">SIGNED BY:</div>
         <div className="break-inside-avoid">
           {/* No ruled line under the signature — see SignatureLine in the
               certificate pages for why. Unsigned, this is just the blank
@@ -172,10 +172,10 @@ export default async function InspectionReportPage({ params }: { params: Promise
             <div className="h-20" />
           )}
           <div className="text-sm">{inspector?.name || "—"} – Inspector</div>
-          <div className="text-sm text-slate-500">{formatISODate(inspection.date)}</div>
+          <div className="text-sm text-placeholder">{formatISODate(inspection.date)}</div>
         </div>
 
-        <table className="w-full text-[11px] text-slate-400 border-t border-slate-200 mt-8 pt-2">
+        <table className="w-full text-[11px] text-placeholder border-t border-line mt-8 pt-2">
           <tbody>
             <tr>
               <td>Project No.: {certRef}</td>
@@ -188,7 +188,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
           <div className="pt-8 print:break-before-page" data-page-break="before">
             <DocumentHeader firm={firmData} logoUrl={logoUrl} />
             <h2 className="text-lg font-bold mb-1">PHOTOGRAPHIC EVIDENCE</h2>
-            <div className="text-sm text-slate-500 mb-4">
+            <div className="text-sm text-placeholder mb-4">
               {inspection.title} – {certRef}
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -196,15 +196,15 @@ export default async function InspectionReportPage({ params }: { params: Promise
                 <div key={p.id} className="break-inside-avoid">
                   {photoUrls[i] && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={photoUrls[i]!} alt={p.caption || "Inspection photo"} className="w-full aspect-[4/3] object-cover rounded-md border border-slate-300" />
+                    <img src={photoUrls[i]!} alt={p.caption || "Inspection photo"} className="w-full aspect-[4/3] object-cover rounded-md border border-line" />
                   )}
-                  <div className="text-xs text-slate-600 mt-1">
+                  <div className="text-xs text-muted mt-1">
                     {i + 1}. {p.caption || ""}
                   </div>
                 </div>
               ))}
             </div>
-            <div className="flex justify-between text-[11px] text-slate-400 border-t border-slate-200 mt-8 pt-2">
+            <div className="flex justify-between text-[11px] text-placeholder border-t border-line mt-8 pt-2">
               <span>Project No.: {certRef}</span>
               <span>{firmData?.website}</span>
             </div>

@@ -25,28 +25,28 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="max-w-2xl">
-      <Link href="/quotes" className="text-xs text-slate-400 hover:text-teal-800">
+      <Link href="/quotes" className="text-xs text-placeholder hover:text-primary">
         ← All quotes
       </Link>
       <div className="flex items-center justify-between mt-1 mb-2 flex-wrap gap-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-xl font-bold text-teal-900">{quote.proposal_address || "Untitled quote"}</h1>
+          <h1 className="text-xl font-bold text-primary">{quote.proposal_address || "Untitled quote"}</h1>
           <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${meta.style}`}>{meta.label}</span>
           {quote.status !== "draft" && (
-            <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${quote.payment_status === "paid" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+            <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${quote.payment_status === "paid" ? "bg-success-bg text-success" : "bg-warning-bg text-warning-text"}`}>
               {quote.payment_status === "paid" ? `Paid ${quote.payment_received_date || ""}` : "Unpaid"}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Link href={`/quotes/${id}/document`} className="px-3.5 py-2 rounded-md border border-slate-200 text-sm text-teal-800 font-medium hover:bg-slate-50">
+          <Link href={`/quotes/${id}/document`} className="px-3.5 py-2 rounded-md border border-line text-sm text-primary font-medium hover:bg-hover">
             View quote
           </Link>
           {quote.status === "draft" && (
             <form action={setQuoteStatus}>
               <input type="hidden" name="quote_id" value={id} />
               <input type="hidden" name="status" value="sent" />
-              <button className="px-3.5 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">Issue quote to client</button>
+              <button className="px-3.5 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">Issue quote to client</button>
             </form>
           )}
           {quote.status === "sent" && (
@@ -54,29 +54,29 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               <form action={setQuoteStatus}>
                 <input type="hidden" name="quote_id" value={id} />
                 <input type="hidden" name="status" value="declined" />
-                <button className="px-3.5 py-2 rounded-md border border-red-200 text-sm text-red-700 font-medium hover:bg-red-50">Mark declined</button>
+                <button className="px-3.5 py-2 rounded-md border border-error/40 text-sm text-error font-medium hover:bg-error-bg">Mark declined</button>
               </form>
               <form action={setQuoteStatus}>
                 <input type="hidden" name="quote_id" value={id} />
                 <input type="hidden" name="status" value="accepted" />
-                <button className="px-3.5 py-2 rounded-md border border-emerald-200 text-sm text-emerald-700 font-medium hover:bg-emerald-50">Mark accepted</button>
+                <button className="px-3.5 py-2 rounded-md border border-success/40 text-sm text-success font-medium hover:bg-success-bg">Mark accepted</button>
               </form>
             </>
           )}
           {quote.status === "accepted" && !quote.linked_job_id && (
             <form action={generateJobFromQuote}>
               <input type="hidden" name="quote_id" value={id} />
-              <button className="px-3.5 py-2 rounded-md bg-emerald-700 text-white text-sm font-semibold hover:bg-emerald-800">Generate project from quote</button>
+              <button className="px-3.5 py-2 rounded-md bg-success text-white text-sm font-semibold hover:bg-success">Generate project from quote</button>
             </form>
           )}
           {quote.status !== "draft" && quote.payment_status !== "paid" && (
             <form action={markQuotePaid}>
               <input type="hidden" name="quote_id" value={id} />
-              <button className="px-3.5 py-2 rounded-md border border-emerald-200 text-sm text-emerald-700 font-medium hover:bg-emerald-50">Mark as paid</button>
+              <button className="px-3.5 py-2 rounded-md border border-success/40 text-sm text-success font-medium hover:bg-success-bg">Mark as paid</button>
             </form>
           )}
           {quote.linked_job_id && (
-            <Link href={`/jobs/${quote.linked_job_id}?tab=pathway`} className="flex items-center gap-1.5 px-3 py-2 text-sm text-emerald-700 font-medium hover:underline">
+            <Link href={`/jobs/${quote.linked_job_id}?tab=pathway`} className="flex items-center gap-1.5 px-3 py-2 text-sm text-success font-medium hover:underline">
               <Check size={14} /> View project
             </Link>
           )}

@@ -47,12 +47,12 @@ export function FileUpload({
 
   return (
     <div>
-      <label className="inline-flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-slate-50 cursor-pointer whitespace-nowrap">
+      <label className="inline-flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-hover cursor-pointer whitespace-nowrap">
         <UploadCloud size={14} />
         {busy ? "Uploading…" : label}
         <input type="file" className="hidden" onChange={handleChange} disabled={busy} />
       </label>
-      {error && <div className="text-xs text-red-600 mt-1">{error}</div>}
+      {error && <div className="text-xs text-error mt-1">{error}</div>}
     </div>
   );
 }

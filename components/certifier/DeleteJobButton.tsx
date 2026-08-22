@@ -19,19 +19,19 @@ export function DeleteJobButton({ jobId, address }: { jobId: string; address: st
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-xs font-medium text-red-600 hover:underline">
+      <button type="button" onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-xs font-medium text-error hover:underline">
         <Trash2 size={13} /> Delete this job
       </button>
     );
   }
 
   return (
-    <form action={formAction} className="border border-red-200 bg-red-50 rounded-md p-4 space-y-3">
+    <form action={formAction} className="border border-error/40 bg-error-bg rounded-md p-4 space-y-3">
       <input type="hidden" name="job_id" value={jobId} />
 
       <div className="flex items-start gap-2">
-        <AlertTriangle size={16} className="text-red-600 shrink-0 mt-0.5" />
-        <div className="text-sm text-red-900">
+        <AlertTriangle size={16} className="text-error shrink-0 mt-0.5" />
+        <div className="text-sm text-error">
           <div className="font-bold mb-1">This permanently deletes the whole job.</div>
           <p className="mb-2">Everything below goes with it, and none of it can be recovered:</p>
           <ul className="list-disc pl-5 space-y-0.5 text-[13px]">
@@ -44,7 +44,7 @@ export function DeleteJobButton({ jobId, address }: { jobId: string; address: st
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-red-900 mb-1">
+        <label className="block text-xs font-semibold text-error mb-1">
           To confirm, type the job address exactly: <span className="font-mono">{address || "(no address)"}</span>
         </label>
         <input
@@ -53,16 +53,16 @@ export function DeleteJobButton({ jobId, address }: { jobId: string; address: st
           onChange={(e) => setTyped(e.target.value)}
           autoComplete="off"
           placeholder="Type the address to confirm"
-          className="w-full px-3 py-2 rounded-md border border-red-300 text-sm outline-none focus:ring-2 focus:ring-red-500 bg-white"
+          className="w-full px-3 py-2 rounded-md border border-error/40 text-sm outline-none focus:ring-2 focus:ring-error bg-white"
         />
       </div>
 
-      {state?.error && <div className="text-xs text-red-700 font-medium">{state.error}</div>}
+      {state?.error && <div className="text-xs text-error font-medium">{state.error}</div>}
 
       <div className="flex items-center gap-2">
         <button
           disabled={!matches || pending}
-          className="px-4 py-2 rounded-md bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-4 py-2 rounded-md bg-error text-white text-sm font-semibold hover:bg-error disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {pending ? "Deleting…" : "Delete this job permanently"}
         </button>
@@ -72,7 +72,7 @@ export function DeleteJobButton({ jobId, address }: { jobId: string; address: st
             setOpen(false);
             setTyped("");
           }}
-          className="px-4 py-2 rounded-md text-sm text-slate-600 hover:bg-white"
+          className="px-4 py-2 rounded-md text-sm text-muted hover:bg-white"
         >
           Cancel
         </button>

@@ -19,7 +19,7 @@ export function StampToggle({ itemId, jobId, requiresStamping }: { itemId: strin
     <button
       type="button"
       className={`flex items-center gap-1.5 text-sm font-medium px-4 py-1.5 rounded-full border ${
-        optimistic ? "bg-amber-50 border-amber-200 text-amber-700" : "border-line text-muted hover:bg-slate-50"
+        optimistic ? "bg-warning-bg border-warning/50 text-warning-text" : "border-line text-muted hover:bg-hover"
       }`}
       onClick={() => {
         startTransition(async () => {

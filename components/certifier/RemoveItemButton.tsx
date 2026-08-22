@@ -17,7 +17,7 @@ export function RemoveItemButton({ itemId, jobId, title }: { itemId: string; job
       disabled={pending}
       aria-label={`Delete ${title} from this checklist`}
       title="Delete from checklist"
-      className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-muted hover:text-red-600 hover:bg-red-50 disabled:opacity-40"
+      className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-muted hover:text-error hover:bg-error-bg disabled:opacity-40"
       onClick={() => {
         if (!confirm(`Delete "${title}" from this checklist? This can't be undone.`)) return;
         startTransition(async () => {

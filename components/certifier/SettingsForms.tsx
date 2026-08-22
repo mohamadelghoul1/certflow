@@ -22,8 +22,8 @@ import type { Firm, Certifier, ClientContact } from "@/types/db";
 import { CLIENT_TYPES } from "@/lib/constants";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 
-const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
-const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
+const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
+const labelCls = "block text-xs font-semibold text-placeholder mb-1";
 
 export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoUrl?: string; stampUrl?: string }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateFirm, undefined);
@@ -34,14 +34,14 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
         <div className="flex items-center gap-3">
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt="Firm logo" className="h-14 border border-slate-100 rounded bg-white px-2 py-1" />
+            <img src={logoUrl} alt="Firm logo" className="h-14 border border-line rounded bg-white px-2 py-1" />
           ) : (
-            <span className="text-xs text-slate-400">No logo uploaded — shown on generated certificates and reports once added.</span>
+            <span className="text-xs text-placeholder">No logo uploaded — shown on generated certificates and reports once added.</span>
           )}
           <ActionUpload action={updateFirmLogo} fields={{}} pathPrefix={`${firm?.id || "firm"}/logo`} label={logoUrl ? "Replace logo" : "Upload logo"} />
           {logoUrl && (
             <form action={removeFirmLogo}>
-              <button className="text-xs text-red-500 hover:underline">Remove</button>
+              <button className="text-xs text-error hover:underline">Remove</button>
             </form>
           )}
         </div>
@@ -52,20 +52,20 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
         <div className="flex items-center gap-3">
           {stampUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={stampUrl} alt="Approval stamp" className="h-14 border border-slate-100 rounded bg-white px-2 py-1" />
+            <img src={stampUrl} alt="Approval stamp" className="h-14 border border-line rounded bg-white px-2 py-1" />
           ) : (
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-placeholder">
               No stamp uploaded — approved documents are stamped with your firm name, the certificate number, and the signing certifier&rsquo;s name and registration number.
             </span>
           )}
           <ActionUpload action={updateFirmStamp} fields={{}} pathPrefix={`${firm?.id || "firm"}/stamp`} label={stampUrl ? "Replace stamp" : "Upload stamp"} />
           {stampUrl && (
             <form action={removeFirmStamp}>
-              <button className="text-xs text-red-500 hover:underline">Remove</button>
+              <button className="text-xs text-error hover:underline">Remove</button>
             </form>
           )}
         </div>
-        <p className="text-[11px] text-slate-400 mt-1">A PNG or JPEG of your own stamp. It sits above the certificate and registration details, which are always printed.</p>
+        <p className="text-[11px] text-placeholder mt-1">A PNG or JPEG of your own stamp. It sits above the certificate and registration details, which are always printed.</p>
       </div>
 
       <form action={formAction} className="space-y-4">
@@ -99,8 +99,8 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
           <input name="website" defaultValue={firm?.website || ""} className={inputCls} />
         </div>
       </div>
-      {state?.error && <div className="text-sm text-red-600">{state.error}</div>}
-      <button disabled={pending} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900 disabled:opacity-60">
+      {state?.error && <div className="text-sm text-error">{state.error}</div>}
+      <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
         {pending ? "Saving…" : "Save firm details"}
       </button>
       </form>
@@ -117,10 +117,10 @@ export function CertifierList({ certifiers, firmId, signatureUrls }: { certifier
       {certifiers.map((c) => (
         <CertifierRow key={c.id} certifier={c} firmId={firmId} signatureUrl={signatureUrls[c.id]} />
       ))}
-      {certifiers.length === 0 && <div className="text-sm text-slate-400">No certifiers yet.</div>}
+      {certifiers.length === 0 && <div className="text-sm text-placeholder">No certifiers yet.</div>}
 
       {adding ? (
-        <form action={addAction} className="border border-slate-200 rounded-md p-4 space-y-3 mt-3">
+        <form action={addAction} className="border border-line rounded-md p-4 space-y-3 mt-3">
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Name</label>
@@ -144,18 +144,18 @@ export function CertifierList({ certifiers, firmId, signatureUrls }: { certifier
               <input type="date" name="registration_expiry" className={inputCls} />
             </div>
           </div>
-          {addState?.error && <div className="text-sm text-red-600">{addState.error}</div>}
+          {addState?.error && <div className="text-sm text-error">{addState.error}</div>}
           <div className="flex gap-2">
-            <button disabled={addPending} className="px-3 py-1.5 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">
+            <button disabled={addPending} className="px-3 py-1.5 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
               {addPending ? "Adding…" : "Add certifier"}
             </button>
-            <button type="button" onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-md text-sm text-slate-600 hover:bg-slate-50">
+            <button type="button" onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-md text-sm text-muted hover:bg-hover">
               Cancel
             </button>
           </div>
         </form>
       ) : (
-        <button onClick={() => setAdding(true)} className="text-sm font-medium text-teal-800 hover:underline">
+        <button onClick={() => setAdding(true)} className="text-sm font-medium text-primary hover:underline">
           + Add certifier
         </button>
       )}
@@ -169,18 +169,18 @@ function CertifierRow({ certifier, firmId, signatureUrl }: { certifier: Certifie
 
   if (!editing) {
     return (
-      <div className="flex items-center justify-between border border-slate-100 rounded-md px-4 py-3">
+      <div className="flex items-center justify-between border border-line rounded-md px-4 py-3">
         <div>
-          <div className="text-sm font-semibold text-teal-900">{certifier.name}</div>
-          <div className="text-xs text-slate-500">
+          <div className="text-sm font-semibold text-primary">{certifier.name}</div>
+          <div className="text-xs text-placeholder">
             {certifier.registration_no} · {certifier.registration_body}
           </div>
           <div className="flex items-center gap-2 mt-2">
             {signatureUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={signatureUrl} alt={`${certifier.name} signature`} className="h-10 border border-slate-100 rounded bg-white px-2" />
+              <img src={signatureUrl} alt={`${certifier.name} signature`} className="h-10 border border-line rounded bg-white px-2" />
             ) : (
-              <span className="text-[11px] text-slate-400">No signature uploaded</span>
+              <span className="text-[11px] text-placeholder">No signature uploaded</span>
             )}
             <ActionUpload
               action={updateCertifierSignature}
@@ -191,18 +191,18 @@ function CertifierRow({ certifier, firmId, signatureUrl }: { certifier: Certifie
             {signatureUrl && (
               <form action={removeCertifierSignature}>
                 <input type="hidden" name="id" value={certifier.id} />
-                <button className="text-xs text-red-500 hover:underline">Remove</button>
+                <button className="text-xs text-error hover:underline">Remove</button>
               </form>
             )}
           </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setEditing(true)} className="text-xs text-teal-800 hover:underline">
+          <button onClick={() => setEditing(true)} className="text-xs text-primary hover:underline">
             Edit
           </button>
           <form action={removeCertifier}>
             <input type="hidden" name="id" value={certifier.id} />
-            <button className="text-xs text-red-600 hover:underline">Remove</button>
+            <button className="text-xs text-error hover:underline">Remove</button>
           </form>
         </div>
       </div>
@@ -210,7 +210,7 @@ function CertifierRow({ certifier, firmId, signatureUrl }: { certifier: Certifie
   }
 
   return (
-    <form action={formAction} className="border border-slate-200 rounded-md p-4 space-y-3">
+    <form action={formAction} className="border border-line rounded-md p-4 space-y-3">
       <input type="hidden" name="id" value={certifier.id} />
       <div className="grid sm:grid-cols-2 gap-3">
         <div>
@@ -235,12 +235,12 @@ function CertifierRow({ certifier, firmId, signatureUrl }: { certifier: Certifie
           <input type="date" name="registration_expiry" defaultValue={certifier.registration_expiry || ""} className={inputCls} />
         </div>
       </div>
-      {state?.error && <div className="text-sm text-red-600">{state.error}</div>}
+      {state?.error && <div className="text-sm text-error">{state.error}</div>}
       <div className="flex gap-2">
-        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">
+        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
           {pending ? "Saving…" : "Save"}
         </button>
-        <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-sm text-slate-600 hover:bg-slate-50">
+        <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-sm text-muted hover:bg-hover">
           Cancel
         </button>
       </div>
@@ -257,10 +257,10 @@ export function ClientList({ clients }: { clients: ClientContact[] }) {
       {clients.map((c) => (
         <ClientRow key={c.id} client={c} />
       ))}
-      {clients.length === 0 && <div className="text-sm text-slate-400">No clients yet — add one below, then assign them to a project.</div>}
+      {clients.length === 0 && <div className="text-sm text-placeholder">No clients yet — add one below, then assign them to a project.</div>}
 
       {adding ? (
-        <form action={addAction} className="border border-slate-200 rounded-md p-4 space-y-3 mt-3">
+        <form action={addAction} className="border border-line rounded-md p-4 space-y-3 mt-3">
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Name</label>
@@ -287,18 +287,18 @@ export function ClientList({ clients }: { clients: ClientContact[] }) {
               <input type="email" name="email" className={inputCls} />
             </div>
           </div>
-          {addState?.error && <div className="text-sm text-red-600">{addState.error}</div>}
+          {addState?.error && <div className="text-sm text-error">{addState.error}</div>}
           <div className="flex gap-2">
-            <button disabled={addPending} className="px-3 py-1.5 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">
+            <button disabled={addPending} className="px-3 py-1.5 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
               {addPending ? "Adding…" : "Add client"}
             </button>
-            <button type="button" onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-md text-sm text-slate-600 hover:bg-slate-50">
+            <button type="button" onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-md text-sm text-muted hover:bg-hover">
               Cancel
             </button>
           </div>
         </form>
       ) : (
-        <button onClick={() => setAdding(true)} className="text-sm font-medium text-teal-800 hover:underline">
+        <button onClick={() => setAdding(true)} className="text-sm font-medium text-primary hover:underline">
           + Add client
         </button>
       )}
@@ -312,26 +312,26 @@ function ClientRow({ client }: { client: ClientContact }) {
 
   if (!editing) {
     return (
-      <div className="flex items-center justify-between border border-slate-100 rounded-md px-4 py-3">
+      <div className="flex items-center justify-between border border-line rounded-md px-4 py-3">
         <div>
-          <div className="text-sm font-semibold text-teal-900">
-            {client.name} <span className="font-normal text-slate-400">({client.type})</span>
+          <div className="text-sm font-semibold text-primary">
+            {client.name} <span className="font-normal text-placeholder">({client.type})</span>
           </div>
-          <div className="text-xs text-slate-500">{client.email || "No email on file"}</div>
+          <div className="text-xs text-placeholder">{client.email || "No email on file"}</div>
         </div>
         <div className="flex items-center gap-3">
           {client.email && (
             <form action={inviteClient}>
               <input type="hidden" name="client_id" value={client.id} />
-              <button className="text-xs text-teal-800 hover:underline">{client.user_id ? "Resend invite" : "Invite to portal"}</button>
+              <button className="text-xs text-primary hover:underline">{client.user_id ? "Resend invite" : "Invite to portal"}</button>
             </form>
           )}
-          <button onClick={() => setEditing(true)} className="text-xs text-teal-800 hover:underline">
+          <button onClick={() => setEditing(true)} className="text-xs text-primary hover:underline">
             Edit
           </button>
           <form action={removeClient}>
             <input type="hidden" name="id" value={client.id} />
-            <button className="text-xs text-red-600 hover:underline">Remove</button>
+            <button className="text-xs text-error hover:underline">Remove</button>
           </form>
         </div>
       </div>
@@ -339,7 +339,7 @@ function ClientRow({ client }: { client: ClientContact }) {
   }
 
   return (
-    <form action={formAction} className="border border-slate-200 rounded-md p-4 space-y-3">
+    <form action={formAction} className="border border-line rounded-md p-4 space-y-3">
       <input type="hidden" name="id" value={client.id} />
       <div className="grid sm:grid-cols-2 gap-3">
         <div>
@@ -367,12 +367,12 @@ function ClientRow({ client }: { client: ClientContact }) {
           <input type="email" name="email" defaultValue={client.email || ""} className={inputCls} />
         </div>
       </div>
-      {state?.error && <div className="text-sm text-red-600">{state.error}</div>}
+      {state?.error && <div className="text-sm text-error">{state.error}</div>}
       <div className="flex gap-2">
-        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">
+        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
           {pending ? "Saving…" : "Save"}
         </button>
-        <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-sm text-slate-600 hover:bg-slate-50">
+        <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-sm text-muted hover:bg-hover">
           Cancel
         </button>
       </div>

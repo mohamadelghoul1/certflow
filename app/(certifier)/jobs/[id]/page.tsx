@@ -79,7 +79,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           <h1 className="text-[28px] font-bold text-heading tracking-tight">{job.address}</h1>
           <span
             className={`px-3 py-1 rounded-full text-xs font-semibold ${
-              job.status === "complete" ? "bg-emerald-50 text-accent" : "bg-blue-50 text-secondary"
+              job.status === "complete" ? "bg-success-bg text-accent" : "bg-info-bg text-secondary"
             }`}
           >
             {job.pathway} · {job.status === "complete" ? "Complete" : "Active"}

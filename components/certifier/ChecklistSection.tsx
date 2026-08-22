@@ -57,7 +57,7 @@ export async function ChecklistSection({
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               {allComplete && (
-                <span className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                <span className="w-9 h-9 rounded-full bg-success-bg flex items-center justify-center shrink-0">
                   <CheckCircle2 size={20} className="text-accent" />
                 </span>
               )}
@@ -77,7 +77,7 @@ export async function ChecklistSection({
               <button className="text-xs font-semibold text-secondary hover:underline whitespace-nowrap">Notify client of update</button>
             </form>
           </div>
-          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mt-4">
+          <div className="h-2 w-full bg-surface rounded-full overflow-hidden mt-4">
             <div className={`h-full rounded-full transition-all ${allComplete ? "bg-accent" : "bg-secondary"}`} style={{ width: `${percent}%` }} />
           </div>
         </div>
@@ -121,7 +121,7 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
       <ItemCard>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <span className="w-9 h-9 rounded-lg bg-slate-50 border border-line flex items-center justify-center shrink-0 mt-0.5">
+            <span className="w-9 h-9 rounded-lg bg-surface border border-line flex items-center justify-center shrink-0 mt-0.5">
               <DocumentIcon title={item.title} />
             </span>
             <div className="flex-1 min-w-0">
@@ -145,7 +145,7 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
           </div>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
+        <div className="mt-4 pt-4 border-t border-line flex flex-wrap items-center gap-2">
           <ItemStatusActions itemId={item.id} jobId={jobId} firmId={firmId} requiresStamping={item.requires_stamping} />
         </div>
 

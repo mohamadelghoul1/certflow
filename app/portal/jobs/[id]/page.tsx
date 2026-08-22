@@ -11,10 +11,10 @@ import type { ChecklistItem, Amendment, Certifier, Inspection, Defect, OcRecord 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
 
 const OUTCOME_META: Record<string, { label: string; style: string }> = {
-  pending: { label: "Pending", style: "bg-slate-100 text-slate-600" },
-  passed: { label: "Passed", style: "bg-emerald-50 text-emerald-700" },
-  failed: { label: "Failed", style: "bg-red-50 text-red-700" },
-  passed_subject_to: { label: "Satisfactory (minor issues) subject to documents being provided", style: "bg-amber-50 text-amber-700" },
+  pending: { label: "Pending", style: "bg-surface text-muted" },
+  passed: { label: "Passed", style: "bg-success-bg text-success" },
+  failed: { label: "Failed", style: "bg-error-bg text-error" },
+  passed_subject_to: { label: "Satisfactory (minor issues) subject to documents being provided", style: "bg-warning-bg text-warning-text" },
 };
 
 export default async function PortalJobPage({ params }: { params: Promise<{ id: string }> }) {
@@ -43,11 +43,11 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/portal" className="text-xs text-slate-400 hover:text-teal-800">
+        <Link href="/portal" className="text-xs text-placeholder hover:text-primary">
           ← All projects
         </Link>
-        <h1 className="text-xl font-bold text-teal-900 mt-1">{job.address}</h1>
-        <div className="text-sm text-slate-500">
+        <h1 className="text-xl font-bold text-primary mt-1">{job.address}</h1>
+        <div className="text-sm text-placeholder">
           {job.pathway} · {job.description}
         </div>
       </div>
@@ -60,9 +60,9 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
       />
 
       {job.pathway_sent_to_client && (
-        <div className="bg-white rounded-lg border border-slate-200 p-5">
-          <div className="font-bold text-teal-900 mb-1">{job.pathway} certificate issued</div>
-          <div className="text-xs text-slate-500 mb-3">Issued {formatISODate(job.pathway_generated_date)}</div>
+        <div className="bg-white rounded-lg border border-line p-5">
+          <div className="font-bold text-primary mb-1">{job.pathway} certificate issued</div>
+          <div className="text-xs text-placeholder mb-3">Issued {formatISODate(job.pathway_generated_date)}</div>
           {/* The certifier's own uploaded copy wins when there is one — it's
               the version they actually edited and signed off. Falling back to
               the generated certificate means a released certificate is always
@@ -70,11 +70,11 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
               with nothing but "not yet uploaded", even though the certificate
               had been issued and sent. */}
           {job.pathway_approval_uploaded && pathwayApprovalUrl ? (
-            <a href={pathwayApprovalUrl} target="_blank" rel="noreferrer" className="text-sm text-teal-800 font-semibold hover:underline">
+            <a href={pathwayApprovalUrl} target="_blank" rel="noreferrer" className="text-sm text-primary font-semibold hover:underline">
               Download certificate
             </a>
           ) : (
-            <a href={`/api/portal/certificate/pathway/${job.id}/word`} className="text-sm text-teal-800 font-semibold hover:underline">
+            <a href={`/api/portal/certificate/pathway/${job.id}/word`} className="text-sm text-primary font-semibold hover:underline">
               Download certificate
             </a>
           )}
@@ -100,7 +100,7 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
 
       <OcSection ocRecords={(ocRecords || []).filter((r) => r.sent_to_client)} />
 
-      <div className="text-[11px] text-slate-400 text-center">Signed in as {profile.email}</div>
+      <div className="text-[11px] text-placeholder text-center">Signed in as {profile.email}</div>
     </div>
   );
 }
@@ -110,28 +110,28 @@ async function StageSection({ title, items, jobId, firmId, footer }: { title: st
   const progress = checklistProgress(items);
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200">
-      <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-        <div className="font-bold text-teal-900">{title}</div>
-        {progress && <span className="text-xs text-slate-400">{progress} approved</span>}
+    <div className="bg-white rounded-lg border border-line">
+      <div className="px-5 py-3 border-b border-line flex items-center justify-between">
+        <div className="font-bold text-primary">{title}</div>
+        {progress && <span className="text-xs text-placeholder">{progress} approved</span>}
       </div>
       <div className="p-5 space-y-3">
         {items.map((item) => {
           const status = displayStatus(item);
           const unresolved = item.amendments.filter((a) => !a.resolved);
           return (
-            <div key={item.id} className="border border-slate-100 rounded-md p-4">
+            <div key={item.id} className="border border-line rounded-md p-4">
               <div className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${status.dot}`} />
-                <span className="text-sm font-semibold text-teal-900">{item.title}</span>
+                <span className="text-sm font-semibold text-primary">{item.title}</span>
               </div>
-              <div className="text-xs text-slate-500 mt-0.5">{item.description}</div>
-              <div className="text-xs mt-1 font-medium text-slate-600">{status.label}</div>
+              <div className="text-xs text-placeholder mt-0.5">{item.description}</div>
+              <div className="text-xs mt-1 font-medium text-muted">{status.label}</div>
 
               {unresolved.length > 0 && (
                 <div className="mt-2 space-y-1.5">
                   {unresolved.map((a) => (
-                    <div key={a.id} className="text-xs bg-amber-50 text-amber-800 rounded-md px-3 py-2">
+                    <div key={a.id} className="text-xs bg-warning-bg text-warning-text rounded-md px-3 py-2">
                       {a.text}
                     </div>
                   ))}
@@ -147,7 +147,7 @@ async function StageSection({ title, items, jobId, firmId, footer }: { title: st
           );
         })}
       </div>
-      {footer && <div className="px-5 pb-4 text-xs text-emerald-700">{footer}</div>}
+      {footer && <div className="px-5 pb-4 text-xs text-success">{footer}</div>}
     </div>
   );
 }
@@ -169,8 +169,8 @@ async function InspectionsSection({
   void firmId;
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200">
-      <div className="px-5 py-3 border-b border-slate-100 font-bold text-teal-900">Inspections</div>
+    <div className="bg-white rounded-lg border border-line">
+      <div className="px-5 py-3 border-b border-line font-bold text-primary">Inspections</div>
       <div className="p-5 space-y-3">
         {inspections.map((insp) => {
           const meta = OUTCOME_META[insp.outcome];
@@ -189,13 +189,13 @@ async function InspectionCard({ insp, jobId, meta, inspectorName }: { insp: Insp
   const canBook = insp.outcome === "pending";
 
   return (
-    <div className="border border-slate-100 rounded-md p-4">
+    <div className="border border-line rounded-md p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold text-teal-900">{insp.title}</div>
-          <div className="text-xs text-slate-500">{insp.description}</div>
-          {insp.date && <div className="text-xs text-slate-600 mt-1">Scheduled: {formatISODate(insp.date)}</div>}
-          {inspectorName && <div className="text-xs text-slate-400">Inspector: {inspectorName}</div>}
+          <div className="text-sm font-semibold text-primary">{insp.title}</div>
+          <div className="text-xs text-placeholder">{insp.description}</div>
+          {insp.date && <div className="text-xs text-muted mt-1">Scheduled: {formatISODate(insp.date)}</div>}
+          {inspectorName && <div className="text-xs text-placeholder">Inspector: {inspectorName}</div>}
         </div>
         <span className={`px-2 py-0.5 rounded text-[11px] font-semibold shrink-0 ${meta.style}`}>{meta.label}</span>
       </div>
@@ -203,7 +203,7 @@ async function InspectionCard({ insp, jobId, meta, inspectorName }: { insp: Insp
       {insp.defects.length > 0 && (
         <div className="mt-2 space-y-1.5">
           {insp.defects.map((d) => (
-            <div key={d.id} className={`text-xs rounded-md px-3 py-2 ${d.resolved ? "bg-slate-50 text-slate-400 line-through" : "bg-amber-50 text-amber-800"}`}>
+            <div key={d.id} className={`text-xs rounded-md px-3 py-2 ${d.resolved ? "bg-surface text-placeholder line-through" : "bg-warning-bg text-warning-text"}`}>
               {d.text}
             </div>
           ))}
@@ -213,13 +213,13 @@ async function InspectionCard({ insp, jobId, meta, inspectorName }: { insp: Insp
       {canBook && (
         <div className="mt-3">
           <BookInspectionForm inspectionId={insp.id} jobId={jobId} />
-          <div className="text-[11px] text-slate-400 mt-1">Weekend dates aren&apos;t available — we&apos;ll suggest the next working day automatically.</div>
+          <div className="text-[11px] text-placeholder mt-1">Weekend dates aren&apos;t available — we&apos;ll suggest the next working day automatically.</div>
         </div>
       )}
-      {insp.booked_by_client && !insp.confirmed && <div className="text-xs text-amber-700 mt-2">Awaiting confirmation from your certifier.</div>}
+      {insp.booked_by_client && !insp.confirmed && <div className="text-xs text-warning-text mt-2">Awaiting confirmation from your certifier.</div>}
 
       {insp.report_sent && reportUrl && (
-        <a href={reportUrl} target="_blank" rel="noreferrer" className="inline-block mt-3 text-xs text-teal-800 font-semibold hover:underline">
+        <a href={reportUrl} target="_blank" rel="noreferrer" className="inline-block mt-3 text-xs text-primary font-semibold hover:underline">
           View inspection report
         </a>
       )}
@@ -230,8 +230,8 @@ async function InspectionCard({ insp, jobId, meta, inspectorName }: { insp: Insp
 async function OcSection({ ocRecords }: { ocRecords: OcRecord[] }) {
   if (ocRecords.length === 0) return null;
   return (
-    <div className="bg-white rounded-lg border border-slate-200">
-      <div className="px-5 py-3 border-b border-slate-100 font-bold text-teal-900">Occupation Certificates</div>
+    <div className="bg-white rounded-lg border border-line">
+      <div className="px-5 py-3 border-b border-line font-bold text-primary">Occupation Certificates</div>
       <div className="p-5 space-y-3">
         {ocRecords.map((r) => (
           <OcRecordCard key={r.id} record={r} />
@@ -244,17 +244,17 @@ async function OcSection({ ocRecords }: { ocRecords: OcRecord[] }) {
 async function OcRecordCard({ record }: { record: OcRecord }) {
   const url = await signedUrl(record.approval_file_path);
   return (
-    <div className="border border-slate-100 rounded-md p-4">
-      <div className="text-sm font-semibold text-teal-900">
+    <div className="border border-line rounded-md p-4">
+      <div className="text-sm font-semibold text-primary">
         {record.type === "whole" ? "Whole OC" : "Partial OC"} {record.description ? `— ${record.description}` : ""}
       </div>
-      <div className="text-xs text-slate-500">Issued {formatISODate(record.generated_date)}</div>
+      <div className="text-xs text-placeholder">Issued {formatISODate(record.generated_date)}</div>
       {record.approval_uploaded && url ? (
-        <a href={url} target="_blank" rel="noreferrer" className="inline-block mt-2 text-xs text-teal-800 font-semibold hover:underline">
+        <a href={url} target="_blank" rel="noreferrer" className="inline-block mt-2 text-xs text-primary font-semibold hover:underline">
           Download certificate
         </a>
       ) : (
-        <a href={`/api/portal/certificate/oc/${record.job_id}/${record.id}/word`} className="inline-block mt-2 text-xs text-teal-800 font-semibold hover:underline">
+        <a href={`/api/portal/certificate/oc/${record.job_id}/${record.id}/word`} className="inline-block mt-2 text-xs text-primary font-semibold hover:underline">
           Download certificate
         </a>
       )}

@@ -5,7 +5,7 @@ import { issuePathwayCertificate, issueModification } from "@/lib/actions/jobs";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Certifier } from "@/types/db";
 
-const selectCls = "px-2 py-1.5 rounded border border-slate-200 text-xs";
+const selectCls = "px-2 py-1.5 rounded border border-line text-xs";
 
 export function IssueCertificateForm({
   jobId,
@@ -30,10 +30,10 @@ export function IssueCertificateForm({
           </option>
         ))}
       </select>
-      <button disabled={pending} className="text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-md disabled:opacity-60">
+      <button disabled={pending} className="text-xs font-semibold text-white bg-success hover:bg-success px-3 py-1.5 rounded-md disabled:opacity-60">
         {pending ? "Issuing…" : isRegenerate ? "Regenerate certificate" : "Issue certificate"}
       </button>
-      {state?.error && <span className="text-xs text-red-600">{state.error}</span>}
+      {state?.error && <span className="text-xs text-error">{state.error}</span>}
     </form>
   );
 }
@@ -52,10 +52,10 @@ export function IssueModificationForm({ jobId, modificationId, assignedCertifier
           </option>
         ))}
       </select>
-      <button disabled={pending} className="text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-md disabled:opacity-60">
+      <button disabled={pending} className="text-xs font-semibold text-white bg-success hover:bg-success px-3 py-1.5 rounded-md disabled:opacity-60">
         {pending ? "Issuing…" : "Issue modification"}
       </button>
-      {state?.error && <span className="text-xs text-red-600">{state.error}</span>}
+      {state?.error && <span className="text-xs text-error">{state.error}</span>}
     </form>
   );
 }

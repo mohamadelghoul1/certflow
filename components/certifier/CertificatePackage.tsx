@@ -22,17 +22,17 @@ function SignButton({
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(signAction, undefined);
   if (signed) {
-    return <span className="px-3 py-2 rounded-md bg-emerald-50 text-emerald-700 text-sm font-semibold">{signedLabel || "Signed"}</span>;
+    return <span className="px-3 py-2 rounded-md bg-success-bg text-success text-sm font-semibold">{signedLabel || "Signed"}</span>;
   }
   return (
     <form action={formAction} className="flex items-center gap-2">
       {Object.entries(signFields || {}).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
-      <button disabled={pending} className="px-4 py-2 rounded-md bg-emerald-700 text-white text-sm font-semibold hover:bg-emerald-800 disabled:opacity-60">
+      <button disabled={pending} className="px-4 py-2 rounded-md bg-success text-white text-sm font-semibold hover:bg-success disabled:opacity-60">
         {pending ? "Signing…" : "Sign"}
       </button>
-      {state?.error && <span className="text-xs text-red-600">{state.error}</span>}
+      {state?.error && <span className="text-xs text-error">{state.error}</span>}
     </form>
   );
 }
@@ -93,20 +93,20 @@ export function CertificatePackage({
   const canExportWord = !signAction || !signed;
 
   return (
-    <div className="min-h-screen bg-slate-100 print:bg-white">
+    <div className="min-h-screen bg-surface print:bg-white">
       <Suspense fallback={null}>
         <AutoPrint />
       </Suspense>
       <div className="max-w-3xl mx-auto py-6 px-4 print:hidden flex items-center justify-between flex-wrap gap-2">
-        <Link href={backHref} className="text-sm text-slate-500 hover:text-teal-800">
+        <Link href={backHref} className="text-sm text-placeholder hover:text-primary">
           ← Back to project
         </Link>
         <div className="flex items-center gap-2">
-          <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">
+          <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
             Print / Save as PDF
           </button>
           {canExportWord && (
-            <a href={wordExportHref} className="px-4 py-2 rounded-md border border-teal-800 text-teal-800 text-sm font-semibold hover:bg-teal-50">
+            <a href={wordExportHref} className="px-4 py-2 rounded-md border border-primary text-primary text-sm font-semibold hover:bg-hover">
               Export as Word
             </a>
           )}
@@ -115,7 +115,7 @@ export function CertificatePackage({
       </div>
       {uploadAction && uploadPathPrefix && (
         <div className="max-w-3xl mx-auto px-4 print:hidden -mt-3 mb-4 flex items-center gap-3 flex-wrap">
-          <span className="text-xs text-slate-500">Edited this in Word and want your changes reflected here? Upload the finished file:</span>
+          <span className="text-xs text-placeholder">Edited this in Word and want your changes reflected here? Upload the finished file:</span>
           <ActionUpload action={uploadAction} fields={uploadFields || {}} pathPrefix={uploadPathPrefix} label={uploadedUrl ? "Replace uploaded copy" : "Upload edited/signed copy"} />
           {uploadedUrl && (
             <a href={uploadedUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
@@ -126,7 +126,7 @@ export function CertificatePackage({
       )}
       {signAction && !signed && (
         <div className="max-w-3xl mx-auto px-4 print:hidden -mt-3 mb-4">
-          <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          <div className="text-xs text-warning-text bg-warning-bg border border-warning/50 rounded-md px-3 py-2">
             Not yet signed — the signature line below is blank. Export to Word first if you need to amend anything, then press Sign once it&apos;s ready.
           </div>
         </div>

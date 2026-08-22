@@ -17,8 +17,8 @@ import {
 import { X, AlertTriangle } from "lucide-react";
 import { AddressLookupField } from "@/components/certifier/AddressLookupField";
 
-const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
-const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
+const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
+const labelCls = "block text-xs font-semibold text-placeholder mb-1";
 
 type CouncilState = {
   lga: string;
@@ -34,8 +34,8 @@ const emptyCouncil: CouncilState = { lga: "", streetNumber: "", street: "", subu
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 mb-5">
-      <div className="px-5 py-3 border-b border-slate-100 font-bold text-teal-900">{title}</div>
+    <div className="bg-white rounded-lg border border-line mb-5">
+      <div className="px-5 py-3 border-b border-line font-bold text-primary">{title}</div>
       <div className="p-5 space-y-4">{children}</div>
     </div>
   );
@@ -82,7 +82,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
 
   return (
     <form action={formAction}>
-      <div className="bg-teal-50 border border-teal-100 rounded-md px-4 py-3 mb-5 text-sm text-teal-800">
+      <div className="bg-hover border border-line rounded-md px-4 py-3 mb-5 text-sm text-primary">
         This information is captured once and stays attached to the project — you can come back and edit it later from the Details tab.
       </div>
 
@@ -113,7 +113,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
                   key={t}
                   type="button"
                   onClick={() => setTypes((prev) => (active ? prev.filter((v) => v !== t) : [...prev, t]))}
-                  className={`px-3 py-1.5 rounded-full border text-xs font-medium ${active ? "bg-teal-800 text-white border-teal-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                  className={`px-3 py-1.5 rounded-full border text-xs font-medium ${active ? "bg-primary text-white border-primary" : "border-line text-muted hover:bg-hover"}`}
                 >
                   {t}
                 </button>
@@ -122,9 +122,9 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
             {types
               .filter((t) => !JOB_TYPES.includes(t))
               .map((t) => (
-                <span key={t} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-teal-50 text-teal-800 border border-teal-200">
+                <span key={t} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-hover text-primary border border-line">
                   {t}
-                  <button type="button" onClick={() => setTypes((prev) => prev.filter((v) => v !== t))} className="hover:text-teal-900">
+                  <button type="button" onClick={() => setTypes((prev) => prev.filter((v) => v !== t))} className="hover:text-primary">
                     <X size={11} />
                   </button>
                 </span>
@@ -142,7 +142,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
                 setCustomType("");
               }}
               placeholder="Type your own and press Enter to add"
-              className="flex-1 px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600"
+              className="flex-1 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
             />
             <button
               type="button"
@@ -151,7 +151,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
                 if (text && !types.includes(text)) setTypes((prev) => [...prev, text]);
                 setCustomType("");
               }}
-              className="px-3 py-2 rounded-md bg-teal-800 text-white text-sm font-medium hover:bg-teal-900"
+              className="px-3 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary-700"
             >
               Add
             </button>
@@ -168,7 +168,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
                 key={p}
                 type="button"
                 onClick={() => setPathway(p)}
-                className={`flex-1 py-2 rounded-md text-sm font-semibold border ${pathway === p ? "bg-teal-800 text-white border-teal-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                className={`flex-1 py-2 rounded-md text-sm font-semibold border ${pathway === p ? "bg-primary text-white border-primary" : "border-line text-muted hover:bg-hover"}`}
               >
                 {p === "CDC" ? "Complying Development (CDC)" : "Construction Certificate (CC)"}
               </button>
@@ -218,8 +218,8 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
             </datalist>
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
               {BCA_VOLUMES.map((v) => (
-                <label key={v} className="flex items-center gap-1.5 text-xs text-slate-600">
-                  <input type="checkbox" name="bcaVolumes" value={v} className="accent-teal-700" />
+                <label key={v} className="flex items-center gap-1.5 text-xs text-muted">
+                  <input type="checkbox" name="bcaVolumes" value={v} className="accent-icon" />
                   {v}
                 </label>
               ))}
@@ -278,8 +278,8 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
       </Section>
 
       <Section title="Owner details">
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" name="ownerSameAsApplicant" defaultChecked className="accent-teal-700" />
+        <label className="flex items-center gap-2 text-sm text-muted">
+          <input type="checkbox" name="ownerSameAsApplicant" defaultChecked className="accent-icon" />
           Use the applicant&apos;s details as the owner
         </label>
         <div>
@@ -318,14 +318,14 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
                     type="button"
                     key={part}
                     onClick={() => toggleCodePart(part)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium border ${active ? "bg-teal-800 text-white border-teal-800" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border ${active ? "bg-primary text-white border-primary" : "bg-white text-muted border-line hover:bg-hover"}`}
                   >
                     {part}
                   </button>
                 );
               })}
             </div>
-            <div className="text-xs text-slate-400 mt-2">{codePartsArr.length === 0 ? "Nothing selected yet." : `Certificate will show: ${epiForCodeParts(codePartsArr)}`}</div>
+            <div className="text-xs text-placeholder mt-2">{codePartsArr.length === 0 ? "Nothing selected yet." : `Certificate will show: ${epiForCodeParts(codePartsArr)}`}</div>
             {codePartsArr.map((p) => (
               <input key={p} type="hidden" name="codeParts" value={p} />
             ))}
@@ -384,8 +384,8 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
           <label className={labelCls}>Building classification(s)</label>
           <div className="flex flex-wrap gap-3">
             {BUILDING_CLASSIFICATIONS.map((c) => (
-              <label key={c} className="flex items-center gap-1.5 text-xs text-slate-600">
-                <input type="checkbox" name="classifications" value={c} className="accent-teal-700" />
+              <label key={c} className="flex items-center gap-1.5 text-xs text-muted">
+                <input type="checkbox" name="classifications" value={c} className="accent-icon" />
                 {c}
               </label>
             ))}
@@ -455,15 +455,15 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
       </Section>
 
       {state?.error && (
-        <div className="flex items-start gap-2 text-sm text-red-800 bg-red-50 border border-red-200 rounded-md px-4 py-3 mb-4">
-          <AlertTriangle size={16} className="shrink-0 mt-0.5 text-red-600" />
+        <div className="flex items-start gap-2 text-sm text-error bg-error-bg border border-error/40 rounded-md px-4 py-3 mb-4">
+          <AlertTriangle size={16} className="shrink-0 mt-0.5 text-error" />
           <span>{state.error}</span>
         </div>
       )}
-      <p className="text-xs text-slate-400 mb-2">
+      <p className="text-xs text-placeholder mb-2">
         A project can only be created once the details a certificate needs are filled in — the address, scope, lot, council, applicant, certifier, NCC version, classification and cost.
       </p>
-      <button disabled={pending} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900 disabled:opacity-60">
+      <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
         {pending ? "Creating…" : "Create project"}
       </button>
     </form>

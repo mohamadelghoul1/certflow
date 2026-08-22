@@ -40,26 +40,26 @@ export function QuoteDocument({
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 print:bg-white">
+    <div className="min-h-screen bg-surface print:bg-white">
       <div className="max-w-3xl mx-auto py-6 px-4 print:hidden flex items-center justify-between flex-wrap gap-2">
-        <Link href={backHref} className="text-sm text-slate-500 hover:text-teal-800">
+        <Link href={backHref} className="text-sm text-placeholder hover:text-primary">
           ← Back to quote
         </Link>
         <div className="flex gap-2 flex-wrap">
-          <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900">
+          <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
             Print / Save as PDF
           </button>
-          <button onClick={exportWord} className="px-4 py-2 rounded-md border border-teal-800 text-teal-800 text-sm font-semibold hover:bg-teal-50">
+          <button onClick={exportWord} className="px-4 py-2 rounded-md border border-primary text-primary text-sm font-semibold hover:bg-hover">
             Export as Word
           </button>
-          <a href={mailtoHref} className="flex items-center gap-1.5 px-4 py-2 rounded-md border border-teal-800 text-teal-800 text-sm font-semibold hover:bg-teal-50">
+          <a href={mailtoHref} className="flex items-center gap-1.5 px-4 py-2 rounded-md border border-primary text-primary text-sm font-semibold hover:bg-hover">
             <Mail size={14} /> Email to client
           </a>
         </div>
       </div>
       {!hasApplicantEmail && (
         <div className="max-w-3xl mx-auto px-4 print:hidden">
-          <div className="px-4 py-2 mb-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-md">
+          <div className="px-4 py-2 mb-2 text-xs text-warning-text bg-warning-bg border border-warning/50 rounded-md">
             No applicant email on file — add one on the quote so &quot;Email to client&quot; can pre-fill the recipient.
           </div>
         </div>
@@ -87,11 +87,11 @@ export function QuoteTermsEditor({ quoteId, activeTerms, hasOverride }: { quoteI
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           rows={6}
-          className="w-full px-3 py-2 rounded-md border border-slate-300 text-sm font-sans outline-none focus:ring-2 focus:ring-teal-600"
+          className="w-full px-3 py-2 rounded-md border border-line text-sm font-sans outline-none focus:ring-2 focus:ring-icon"
         />
         <div className="flex gap-2 mt-2 print:hidden">
-          <button className="px-3 py-1.5 rounded-md bg-teal-800 text-white text-xs font-semibold hover:bg-teal-900">Save</button>
-          <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-xs text-slate-500 hover:bg-slate-50">
+          <button className="px-3 py-1.5 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-700">Save</button>
+          <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-xs text-placeholder hover:bg-hover">
             Cancel
           </button>
         </div>
@@ -102,14 +102,14 @@ export function QuoteTermsEditor({ quoteId, activeTerms, hasOverride }: { quoteI
   return (
     <div>
       <div className="print:hidden flex items-center gap-2 mb-2">
-        <button onClick={() => { setDraft(activeTerms); setEditing(true); }} className="flex items-center gap-1 text-xs text-teal-700 font-medium hover:underline">
+        <button onClick={() => { setDraft(activeTerms); setEditing(true); }} className="flex items-center gap-1 text-xs text-secondary font-medium hover:underline">
           <Pencil size={12} /> Edit closing text
         </button>
         {hasOverride && (
           <form action={updateQuoteTerms}>
             <input type="hidden" name="quote_id" value={quoteId} />
             <input type="hidden" name="terms_override" value="" />
-            <button className="text-xs text-slate-400 hover:underline">Reset to auto-generated</button>
+            <button className="text-xs text-placeholder hover:underline">Reset to auto-generated</button>
           </form>
         )}
       </div>

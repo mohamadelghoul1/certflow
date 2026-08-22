@@ -21,7 +21,7 @@ export function SignCertificateButton({ jobId }: { jobId: string }) {
       >
         <PenLine size={12} /> {pending ? "Signing…" : "Sign"}
       </button>
-      {state?.error && <span className="text-[11px] text-red-600">{state.error}</span>}
+      {state?.error && <span className="text-[11px] text-error">{state.error}</span>}
     </form>
   );
 }

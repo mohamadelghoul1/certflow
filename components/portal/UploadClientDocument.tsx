@@ -33,12 +33,12 @@ export function UploadClientDocument({ itemId, pathPrefix, hasFile }: { itemId: 
 
   return (
     <div>
-      <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-800 hover:underline cursor-pointer">
+      <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline cursor-pointer">
         <UploadCloud size={14} />
         {busy ? "Uploading…" : hasFile ? "Upload a new version" : "Upload document"}
         <input type="file" className="hidden" onChange={handleChange} disabled={busy} />
       </label>
-      {error && <div className="text-xs text-red-600 mt-1">{error}</div>}
+      {error && <div className="text-xs text-error mt-1">{error}</div>}
     </div>
   );
 }

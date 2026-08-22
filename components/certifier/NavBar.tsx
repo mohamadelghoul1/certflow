@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NavLink } from "@/components/certifier/NavLink";
 import { signOut } from "@/lib/actions/auth";
 import { NavDropdown } from "@/components/certifier/NavDropdown";
 import { LogOut } from "lucide-react";
@@ -40,27 +41,21 @@ export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmN
           createLabel="New quote"
           itemHrefBase="/quotes"
         />
-        <Link href="/reports" className="py-4 px-3 text-sm font-medium text-slate-300 hover:text-white shrink-0 whitespace-nowrap">
-          Reports
-        </Link>
-        <Link href="/audit" className="py-4 px-3 text-sm font-medium text-slate-300 hover:text-white shrink-0 whitespace-nowrap">
-          Audit
-        </Link>
-        <Link href="/settings" className="py-4 px-3 text-sm font-medium text-slate-300 hover:text-white shrink-0 whitespace-nowrap">
-          Settings
-        </Link>
+        <NavLink href="/reports">Reports</NavLink>
+        <NavLink href="/audit">Audit</NavLink>
+        <NavLink href="/settings">Settings</NavLink>
         </div>
       </div>
       <div className="flex items-center gap-3 shrink-0">
-        <span className="text-slate-400 text-xs hidden sm:inline">{firmName}</span>
+        <span className="text-white/70 text-xs hidden sm:inline">{firmName}</span>
         <span
           title={userName}
-          className="w-8 h-8 rounded-full bg-white/10 border border-white/10 text-white text-xs font-semibold flex items-center justify-center shrink-0"
+          className="w-8 h-8 rounded-full bg-icon border border-white text-white text-xs font-semibold flex items-center justify-center shrink-0"
         >
           {initialsOf(userName)}
         </span>
         <form action={signOut}>
-          <button aria-label="Sign out" title="Sign out" className="p-2 rounded-md text-slate-300 hover:text-white hover:bg-white/5">
+          <button aria-label="Sign out" title="Sign out" className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10">
             <LogOut size={15} />
           </button>
         </form>

@@ -17,22 +17,22 @@ export default async function PortalHomePage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-teal-900 mb-6">Your projects</h1>
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+      <h1 className="text-xl font-bold text-primary mb-6">Your projects</h1>
+      <div className="bg-white rounded-lg border border-line overflow-hidden">
         {jobs.map((j) => (
-          <Link key={j.id} href={`/portal/jobs/${j.id}`} className="flex items-center justify-between px-5 py-4 border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
+          <Link key={j.id} href={`/portal/jobs/${j.id}`} className="flex items-center justify-between px-5 py-4 border-b border-line last:border-b-0 hover:bg-hover">
             <div>
-              <div className="font-semibold text-sm text-teal-900">{j.address}</div>
-              <div className="text-xs text-slate-500">
+              <div className="font-semibold text-sm text-primary">{j.address}</div>
+              <div className="text-xs text-placeholder">
                 {j.pathway} · {j.description}
               </div>
             </div>
-            <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${j.status === "complete" ? "bg-emerald-50 text-emerald-700" : "bg-teal-50 text-teal-700"}`}>
+            <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${j.status === "complete" ? "bg-success-bg text-success" : "bg-hover text-secondary"}`}>
               {j.status === "complete" ? "Complete" : "Active"}
             </span>
           </Link>
         ))}
-        {jobs.length === 0 && <div className="px-5 py-8 text-center text-sm text-slate-400">No projects linked to your account yet.</div>}
+        {jobs.length === 0 && <div className="px-5 py-8 text-center text-sm text-placeholder">No projects linked to your account yet.</div>}
       </div>
     </div>
   );

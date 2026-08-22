@@ -9,13 +9,14 @@ import Link from "next/link";
 // construction once the certificate has been issued, and complete when
 // it's marked so.
 //
-// Colours are slots 1, 2, 3 and 7 of the validated categorical palette
-// (blue / orange / aqua / violet). That set passes the lightness, chroma,
-// colour-blind separation and normal-vision checks with all four pairs in
-// play; the yellow the design used sits too close to orange for
-// full-colour vision to separate reliably. Aqua falls below 3:1 against
-// the card, which is why every slice is named and counted in the legend
-// beside the ring rather than identified by colour alone.
+// Colours come from the brand's own chart assignments: accent for in
+// assessment, warning for ready to issue, primary for under construction,
+// success for complete. Checked with the palette validator — the two
+// tests that decide whether slices can be told apart both pass with all
+// pairs in play (colour-blind ΔE 16.3, normal vision 16.8, against floors
+// of 8 and 15). Two slices fall under 3:1 against the card, which is why
+// every one is named and counted in the legend beside the ring rather
+// than identified by colour alone, and each arc carries its own tooltip.
 export type Slice = { label: string; value: number; color: string; href: string };
 
 const RADIUS = 54;
@@ -74,12 +75,12 @@ export function ProjectsDonut({ slices }: { slices: Slice[] }) {
 
       <div className="flex-1 min-w-[150px] space-y-1.5">
         {slices.map((s) => (
-          <Link key={s.label} href={s.href} className="flex items-center gap-2 text-sm hover:bg-slate-50 rounded px-1 -mx-1 py-0.5">
+          <Link key={s.label} href={s.href} className="flex items-center gap-2 text-sm hover:bg-hover rounded px-1 -mx-1 py-0.5">
             <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: s.color }} />
-            <span className="text-slate-700 flex-1 truncate">{s.label}</span>
+            <span className="text-muted flex-1 truncate">{s.label}</span>
             <span className="text-muted tabular-nums">
               {s.value}
-              {total > 0 && <span className="text-slate-400"> ({Math.round((s.value / total) * 100)}%)</span>}
+              {total > 0 && <span className="text-placeholder"> ({Math.round((s.value / total) * 100)}%)</span>}
             </span>
           </Link>
         ))}

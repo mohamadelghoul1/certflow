@@ -28,12 +28,12 @@ export function SendToClientButton({
         <button
           disabled={disabled || pending}
           title={disabled ? disabledReason : undefined}
-          className="text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 px-3 py-1.5 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-xs font-semibold text-white bg-success hover:bg-success px-3 py-1.5 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {pending ? "Sending…" : "Send to client"}
         </button>
       </form>
-      {state?.error && <span className="text-xs text-red-600">{state.error}</span>}
+      {state?.error && <span className="text-xs text-error">{state.error}</span>}
     </div>
   );
 }

@@ -4,19 +4,65 @@
   color-scheme: light;
 }
 
+/* The CertFlow colour system.
+ *
+ * Every colour in the app comes from here, so a brand change is a change
+ * to this block rather than a hunt through the components.
+ *
+ * Two deliberate departures from the written spec, both for legibility:
+ *
+ *  - Warning *text* uses --color-warning-text, not WARNING-500. The
+ *    specified #F9A825 on its own #FFF8E1 background measures 1.85:1,
+ *    which is unreadable; the darker tone measures 5.21:1. WARNING-500
+ *    itself is kept for the chart slice, icons and borders, where it
+ *    isn't carrying words.
+ *
+ *  - ACCENT-500 is an icon and accent colour only, never text. At 2.96:1
+ *    on white it is fine beside a label but not as the label.
+ */
 @theme {
-  --color-primary: #0f1c2e;
-  --color-secondary: #2f6fed;
-  --color-accent: #2bbf6a;
-  --color-surface: #f7f9fc;
-  --color-line: #e4e7eb;
-  --color-heading: #1f2937;
-  --color-muted: #6b7280;
+  /* Brand */
+  --color-primary: #1a3a5f; /* PRIMARY-900 — nav, primary buttons */
+  --color-primary-700: #244a73; /* button hover */
+  --color-secondary: #2f5c8f; /* PRIMARY-500 — links and interactive text */
+  --color-icon: #2fa6a0; /* ACCENT-500 — icons, focus rings, tick boxes */
+  --color-icon-300: #6fc7c2;
+
+  /* Neutrals */
+  --color-surface: #f5f7fa; /* NEUTRAL-50 — app background, table headers */
+  --color-card: #ffffff; /* NEUTRAL-100 */
+  --color-line: #e2e6eb; /* NEUTRAL-200 — borders and dividers */
+  --color-placeholder: #9ca3af; /* NEUTRAL-400 — placeholder, disabled */
+  --color-muted: #4a4a4d; /* NEUTRAL-600 — body and label text */
+  --color-heading: #1c1c1e; /* NEUTRAL-800 — headings */
+
+  /* Status. --color-accent stays the "approved" green the whole app reads
+     as done, so green keeps meaning approved and nothing else. */
+  --color-accent: #2e7d32;
+  --color-success: #2e7d32;
+  --color-success-bg: #e8f5e9;
+  --color-warning: #f9a825;
+  --color-warning-text: #8a6100;
+  --color-warning-bg: #fff8e1;
+  --color-error: #c62828;
+  --color-error-bg: #fdecea;
+  --color-info: #1565c0;
+  --color-info-bg: #e3f2fd;
+
+  /* Interaction */
+  --color-hover: #f0f4f7;
+  --color-active: #e6eef5;
+
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
 }
 
 body {
   background: var(--color-surface);
+  color: var(--color-muted);
 }
 
 /* Generated documents (certificates, letters, inspection reports) print at
@@ -31,23 +77,23 @@ body {
   }
 }
 
-/* Shared "premium card" treatment: soft shadow that lifts slightly on
-   hover, used across the dashboard's stat cards, panels, and task
-   columns so they read as one consistent design language. */
+/* Shared card treatment: the system's card shadow, lifting to the hover
+   shadow, used across the dashboard's tiles, panels and task columns so
+   they read as one design language. */
 .card-lift {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   transition: transform 180ms ease-out, box-shadow 180ms ease-out;
 }
 .card-lift:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px -8px rgba(15, 28, 46, 0.18);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
 }
 
-/* Universal "pressed" feedback — a brief green ring + slight press-down on
-   every button, link, checkbox, and disclosure toggle in the app, so it's
-   always visible that a tap/click registered, even before its effect
-   (a save, a navigation) shows up. Transition duration is longer on the
-   way out than a plain :active would give, so the flash is still visible
-   even on a very quick tap. */
+/* Universal "pressed" feedback — a brief accent ring and slight press-down
+   on every button, link, checkbox and disclosure toggle, so it's always
+   visible that a tap registered, even before its effect (a save, a
+   navigation) shows up. The transition is longer on the way out than a
+   plain :active would give, so the flash survives a very quick tap. */
 button:not(:disabled),
 a,
 summary,
@@ -60,6 +106,6 @@ a:active,
 summary:active,
 input[type="checkbox"]:active,
 input[type="radio"]:active {
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.55);
+  box-shadow: 0 0 0 3px rgba(47, 166, 160, 0.55);
   transform: scale(0.97);
 }

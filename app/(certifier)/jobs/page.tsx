@@ -50,7 +50,7 @@ export default async function JobsListPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-teal-900 mb-6">Projects</h1>
+      <h1 className="text-xl font-bold text-primary mb-6">Projects</h1>
       <JobsList jobs={jobs} certifiers={certifiers || []} />
     </div>
   );

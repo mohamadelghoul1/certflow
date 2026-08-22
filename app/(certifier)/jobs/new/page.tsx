@@ -12,7 +12,7 @@ export default async function NewJobPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-xl font-bold text-teal-900 mb-6">New project</h1>
+      <h1 className="text-xl font-bold text-primary mb-6">New project</h1>
       <NewJobForm certifiers={certifiers || []} clients={clients || []} />
     </div>
   );

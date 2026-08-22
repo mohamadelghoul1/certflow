@@ -96,7 +96,7 @@ export function ItemCard({ children }: { children: React.ReactNode }) {
   const { status } = useItemStatus();
   const approved = status === "approved";
   return (
-    <div className={`card-lift rounded-xl border shadow-sm p-6 ${approved ? "border-accent/40 bg-emerald-50/40" : "border-line bg-white"}`}>{children}</div>
+    <div className={`card-lift rounded-xl border shadow-sm p-6 ${approved ? "border-accent/40 bg-success-bg" : "border-line bg-white"}`}>{children}</div>
   );
 }
 
@@ -106,7 +106,7 @@ export function ItemStatusBadge() {
 
   if (uploading) {
     return (
-      <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+      <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-info-bg text-info">
         <UploadCloud size={12} className="animate-pulse" /> Uploading…
       </span>
     );
@@ -114,27 +114,27 @@ export function ItemStatusBadge() {
 
   if (dot.includes("amber")) {
     return (
-      <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700">
+      <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-warning-bg text-warning-text">
         <AlertTriangle size={12} /> {label}
       </span>
     );
   }
   if (dot.includes("emerald")) {
     return (
-      <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-accent">
+      <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-success-bg text-accent">
         <CheckCircle2 size={12} /> {label}
       </span>
     );
   }
   if (dot.includes("blue")) {
     return (
-      <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+      <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-info-bg text-info">
         <Clock size={12} /> {label}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+    <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-surface text-muted">
       <Circle size={12} /> {label}
     </span>
   );
@@ -165,7 +165,7 @@ export function ItemStatusActions({ itemId, jobId, firmId, requiresStamping }: {
     if (status === "approved") {
       return (
         <>
-          <button type="button" onClick={reopen} className="flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-slate-50">
+          <button type="button" onClick={reopen} className="flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-hover">
             <RotateCcw size={13} /> Reopen
           </button>
           <StampToggle itemId={itemId} jobId={jobId} requiresStamping={requiresStamping} />
@@ -191,7 +191,7 @@ export function ItemStatusActions({ itemId, jobId, firmId, requiresStamping }: {
           <button
             type="button"
             onClick={() => setReviewing(true)}
-            className="flex items-center gap-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 hover:bg-blue-100"
+            className="flex items-center gap-1.5 text-sm font-medium text-info bg-info-bg border border-info/40 rounded-full px-4 py-1.5 hover:bg-info-bg"
           >
             <Clock size={13} /> Client uploaded — awaiting review
           </button>
@@ -215,7 +215,7 @@ export function ItemStatusActions({ itemId, jobId, firmId, requiresStamping }: {
               // thing (which would then need its own resolve/track flow).
               document.getElementById(`amendment-input-${itemId}`)?.focus();
             }}
-            className="flex items-center gap-1.5 text-sm font-medium text-amber-800 border border-amber-300 rounded-full px-4 py-1.5 hover:bg-amber-50"
+            className="flex items-center gap-1.5 text-sm font-medium text-warning-text border border-warning/50 rounded-full px-4 py-1.5 hover:bg-warning-bg"
           >
             <AlertTriangle size={13} /> Request modification
           </button>
@@ -229,7 +229,7 @@ export function ItemStatusActions({ itemId, jobId, firmId, requiresStamping }: {
     // Nothing uploaded yet, or changes are outstanding — the ball is with
     // the client, so there's nothing to decide here beyond the note.
     if (unresolved > 0) {
-      return <span className="text-xs text-amber-700">Waiting on the client to address {unresolved} requested change{unresolved === 1 ? "" : "s"}.</span>;
+      return <span className="text-xs text-warning-text">Waiting on the client to address {unresolved} requested change{unresolved === 1 ? "" : "s"}.</span>;
     }
     return null;
   }

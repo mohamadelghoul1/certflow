@@ -30,7 +30,7 @@ export function JobTabs({ tabs, initialTab, content }: { tabs: TabMeta[]; initia
   return (
     <SelectTabContext.Provider value={select}>
       <div className="mb-8 overflow-x-auto">
-        <div className="inline-flex gap-1 bg-slate-100 rounded-full p-1">
+        <div className="inline-flex gap-1 bg-surface rounded-full p-1">
           {tabs.map((t) => (
             <button
               key={t.key}

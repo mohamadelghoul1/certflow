@@ -35,18 +35,18 @@ export function BookInspectionForm({ inspectionId, jobId }: { inspectionId: stri
   return (
     <form onSubmit={handleSubmit} className="flex items-end gap-2">
       <div>
-        <label className="block text-[11px] text-slate-400 mb-1">Preferred date</label>
+        <label className="block text-[11px] text-placeholder mb-1">Preferred date</label>
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="px-2 py-1.5 rounded border border-slate-200 text-xs"
+          className="px-2 py-1.5 rounded border border-line text-xs"
         />
       </div>
-      <button disabled={busy} className="text-xs font-semibold text-white bg-teal-800 hover:bg-teal-900 px-3 py-1.5 rounded-md disabled:opacity-60">
+      <button disabled={busy} className="text-xs font-semibold text-white bg-primary hover:bg-primary-700 px-3 py-1.5 rounded-md disabled:opacity-60">
         {busy ? "Booking…" : "Book inspection"}
       </button>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && <span className="text-xs text-error">{error}</span>}
     </form>
   );
 }

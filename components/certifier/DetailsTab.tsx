@@ -27,13 +27,13 @@ import { DeleteJobButton } from "@/components/certifier/DeleteJobButton";
 import { useSelectTab } from "@/components/certifier/JobTabs";
 import type { Job, ClientContact } from "@/types/db";
 
-const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
-const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
+const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
+const labelCls = "block text-xs font-semibold text-placeholder mb-1";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border-t border-slate-100 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0 space-y-4">
-      <div className="text-xs font-bold uppercase tracking-wide text-slate-400">{title}</div>
+    <div className="border-t border-line pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0 space-y-4">
+      <div className="text-xs font-bold uppercase tracking-wide text-placeholder">{title}</div>
       {children}
     </div>
   );
@@ -63,13 +63,13 @@ function ContactRow({
 
   if (!editing) {
     return (
-      <div className="flex items-center justify-between gap-3 text-sm text-slate-700">
+      <div className="flex items-center justify-between gap-3 text-sm text-muted">
         <span>
-          {contact.name} <span className="text-slate-400">({contact.type})</span>
-          {(contact.email || contact.phone) && <span className="text-slate-400"> · {[contact.email, contact.phone].filter(Boolean).join(" · ")}</span>}
+          {contact.name} <span className="text-placeholder">({contact.type})</span>
+          {(contact.email || contact.phone) && <span className="text-placeholder"> · {[contact.email, contact.phone].filter(Boolean).join(" · ")}</span>}
         </span>
         <div className="flex items-center gap-3 shrink-0">
-          <button type="button" onClick={() => setEditing(true)} className="text-xs text-teal-800 hover:underline">
+          <button type="button" onClick={() => setEditing(true)} className="text-xs text-primary hover:underline">
             Edit
           </button>
           {onRemove}
@@ -79,7 +79,7 @@ function ContactRow({
   }
 
   return (
-    <form action={formAction} className="border border-slate-200 rounded-md p-3 space-y-2">
+    <form action={formAction} className="border border-line rounded-md p-3 space-y-2">
       <input type="hidden" name="job_id" value={jobId} />
       <input type="hidden" name="client_id" value={contact.id} />
       <div className="grid sm:grid-cols-2 gap-2">
@@ -108,12 +108,12 @@ function ContactRow({
           <input type="email" name="email" defaultValue={contact.email || ""} className={inputCls} />
         </div>
       </div>
-      {state?.error && <div className="text-xs text-red-600">{state.error}</div>}
+      {state?.error && <div className="text-xs text-error">{state.error}</div>}
       <div className="flex gap-2">
-        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-teal-800 text-white text-xs font-semibold hover:bg-teal-900 disabled:opacity-60">
+        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-700 disabled:opacity-60">
           {pending ? "Saving…" : "Save changes"}
         </button>
-        <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-xs text-slate-600 hover:bg-slate-50">
+        <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-xs text-muted hover:bg-hover">
           Cancel
         </button>
       </div>
@@ -221,7 +221,7 @@ export function DetailsTab({
 
   return (
     <div className="space-y-6">
-      <form id={detailsFormId} action={formAction} className="bg-white rounded-lg border border-slate-200 p-5">
+      <form id={detailsFormId} action={formAction} className="bg-white rounded-lg border border-line p-5">
         <input type="hidden" name="job_id" value={job.id} />
         <input type="hidden" name="pathway" value={job.pathway} />
 
@@ -247,8 +247,8 @@ export function DetailsTab({
               </datalist>
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                 {BCA_VOLUMES.map((v) => (
-                  <label key={v} className="flex items-center gap-1.5 text-xs text-slate-600">
-                    <input type="checkbox" name="bcaVolumes" value={v} defaultChecked={(d.bcaVolumes || []).includes(v)} className="accent-teal-700" />
+                  <label key={v} className="flex items-center gap-1.5 text-xs text-muted">
+                    <input type="checkbox" name="bcaVolumes" value={v} defaultChecked={(d.bcaVolumes || []).includes(v)} className="accent-icon" />
                     {v}
                   </label>
                 ))}
@@ -318,8 +318,8 @@ export function DetailsTab({
         </Section>
 
         <Section title="Owner details">
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" name="ownerSameAsApplicant" defaultChecked={d.ownerSameAsApplicant !== false} className="accent-teal-700" />
+          <label className="flex items-center gap-2 text-sm text-muted">
+            <input type="checkbox" name="ownerSameAsApplicant" defaultChecked={d.ownerSameAsApplicant !== false} className="accent-icon" />
             Use the applicant&apos;s details as the owner
           </label>
           <div>
@@ -354,14 +354,14 @@ export function DetailsTab({
                       type="button"
                       key={part}
                       onClick={() => toggleCodePart(part)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border ${active ? "bg-teal-800 text-white border-teal-800" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border ${active ? "bg-primary text-white border-primary" : "bg-white text-muted border-line hover:bg-hover"}`}
                     >
                       {part}
                     </button>
                   );
                 })}
               </div>
-              <div className="text-xs text-slate-400 mt-2">{codePartsArr.length === 0 ? "Nothing selected yet." : `Certificate will show: ${epiForCodeParts(codePartsArr)}`}</div>
+              <div className="text-xs text-placeholder mt-2">{codePartsArr.length === 0 ? "Nothing selected yet." : `Certificate will show: ${epiForCodeParts(codePartsArr)}`}</div>
               {codePartsArr.map((p) => (
                 <input key={p} type="hidden" name="codeParts" value={p} />
               ))}
@@ -379,8 +379,8 @@ export function DetailsTab({
             </div>
           )}
           {d.certificateDetails?.determinationDate && (
-            <div className="text-xs text-slate-500">
-              Date of determination: <span className="font-medium text-slate-700">{formatISODate(d.certificateDetails.determinationDate)}</span> — set automatically when the{" "}
+            <div className="text-xs text-placeholder">
+              Date of determination: <span className="font-medium text-muted">{formatISODate(d.certificateDetails.determinationDate)}</span> — set automatically when the{" "}
               {job.pathway} is issued.
             </div>
           )}
@@ -426,8 +426,8 @@ export function DetailsTab({
             <label className={labelCls}>Building classification(s)</label>
             <div className="flex flex-wrap gap-3">
               {BUILDING_CLASSIFICATIONS.map((c) => (
-                <label key={c} className="flex items-center gap-1.5 text-xs text-slate-600">
-                  <input type="checkbox" name="classifications" value={c} defaultChecked={d.proposal?.classifications?.includes(c)} className="accent-teal-700" />
+                <label key={c} className="flex items-center gap-1.5 text-xs text-muted">
+                  <input type="checkbox" name="classifications" value={c} defaultChecked={d.proposal?.classifications?.includes(c)} className="accent-icon" />
                   {c}
                 </label>
               ))}
@@ -494,14 +494,14 @@ export function DetailsTab({
         </Section>
 
         <Section title="Scope of works">
-          <p className="text-xs text-slate-400 -mt-2">Shown as &ldquo;Description of Building Works&rdquo; on the certificate and &ldquo;Scope of Building Works&rdquo; on the inspections notice.</p>
+          <p className="text-xs text-placeholder -mt-2">Shown as &ldquo;Description of Building Works&rdquo; on the certificate and &ldquo;Scope of Building Works&rdquo; on the inspections notice.</p>
           <textarea name="description" defaultValue={job.description || ""} rows={2} className={inputCls} />
         </Section>
 
       </form>
 
-      <div className="bg-white rounded-lg border border-slate-200 p-5">
-        <div className="font-bold text-teal-900 mb-3">Client portal access</div>
+      <div className="bg-white rounded-lg border border-line p-5">
+        <div className="font-bold text-primary mb-3">Client portal access</div>
         <div className="flex items-center gap-2">
           <select name="client_id" form={detailsFormId} value={portalClientId} onChange={(e) => setPortalClientId(e.target.value)} className={inputCls}>
             <option value="">— None —</option>
@@ -512,15 +512,15 @@ export function DetailsTab({
             ))}
           </select>
         </div>
-        <p className="text-xs text-slate-400 mt-2">Assign an existing client for portal access, or add a new one under Settings. Saved when you press Save details at the bottom of the page.</p>
+        <p className="text-xs text-placeholder mt-2">Assign an existing client for portal access, or add a new one under Settings. Saved when you press Save details at the bottom of the page.</p>
         {primaryClient && (
           <div className="mt-2">
             <ContactRow jobId={job.id} contact={primaryClient} />
           </div>
         )}
 
-        <div className="mt-4 pt-4 border-t border-slate-100">
-          <div className="text-xs font-semibold text-slate-500 mb-2">Additional shared access (e.g. the owner, alongside the primary contact)</div>
+        <div className="mt-4 pt-4 border-t border-line">
+          <div className="text-xs font-semibold text-placeholder mb-2">Additional shared access (e.g. the owner, alongside the primary contact)</div>
           <div className="space-y-1.5 mb-2">
             {sharedClients.map((c) => (
               <ContactRow
@@ -531,12 +531,12 @@ export function DetailsTab({
                   <form action={removeSharedAccess}>
                     <input type="hidden" name="job_id" value={job.id} />
                     <input type="hidden" name="client_id" value={c.id} />
-                    <button className="text-xs text-red-500 hover:underline">Remove</button>
+                    <button className="text-xs text-error hover:underline">Remove</button>
                   </form>
                 }
               />
             ))}
-            {sharedClients.length === 0 && <div className="text-xs text-slate-400">No additional people have access yet.</div>}
+            {sharedClients.length === 0 && <div className="text-xs text-placeholder">No additional people have access yet.</div>}
           </div>
           {availableToShare.length > 0 && (
             <form action={addSharedAccess} onSubmit={() => setShareClientId("")} className="flex items-center gap-2 mb-2">
@@ -551,7 +551,7 @@ export function DetailsTab({
               </select>
               <button
                 disabled={!shareClientId}
-                className="px-3 py-2 rounded-md bg-teal-800 text-white text-xs font-semibold hover:bg-teal-900 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-2 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-700 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Add
               </button>
@@ -559,7 +559,7 @@ export function DetailsTab({
           )}
 
           {addingNewClient ? (
-            <form action={addClientAction} className="border border-slate-200 rounded-md p-3 space-y-2 mt-2">
+            <form action={addClientAction} className="border border-line rounded-md p-3 space-y-2 mt-2">
               <input type="hidden" name="job_id" value={job.id} />
               <div className="grid sm:grid-cols-2 gap-2">
                 <div>
@@ -587,27 +587,27 @@ export function DetailsTab({
                   <input type="email" name="email" className={inputCls} />
                 </div>
               </div>
-              {addClientState?.error && <div className="text-xs text-red-600">{addClientState.error}</div>}
+              {addClientState?.error && <div className="text-xs text-error">{addClientState.error}</div>}
               <div className="flex gap-2">
-                <button disabled={addClientPending} className="px-3 py-1.5 rounded-md bg-teal-800 text-white text-xs font-semibold hover:bg-teal-900 disabled:opacity-60">
+                <button disabled={addClientPending} className="px-3 py-1.5 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-700 disabled:opacity-60">
                   {addClientPending ? "Adding…" : "Add & share access"}
                 </button>
-                <button type="button" onClick={() => setAddingNewClient(false)} className="px-3 py-1.5 rounded-md text-xs text-slate-600 hover:bg-slate-50">
+                <button type="button" onClick={() => setAddingNewClient(false)} className="px-3 py-1.5 rounded-md text-xs text-muted hover:bg-hover">
                   Cancel
                 </button>
               </div>
             </form>
           ) : (
-            <button type="button" onClick={() => setAddingNewClient(true)} className="text-xs font-medium text-teal-800 hover:underline">
+            <button type="button" onClick={() => setAddingNewClient(true)} className="text-xs font-medium text-primary hover:underline">
               + Add a new client and share access
             </button>
           )}
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 p-5">
-        <div className="font-bold text-teal-900 mb-1">Critical stage inspections</div>
-        <p className="text-xs text-slate-400 mb-3">
+      <div className="bg-white rounded-lg border border-line p-5">
+        <div className="font-bold text-primary mb-1">Critical stage inspections</div>
+        <p className="text-xs text-placeholder mb-3">
           Which critical stage inspections apply to this project — shown on the Mandatory Inspections Notice in the certificate package. Click one to edit its wording, or add extra
           inspections specific to this job. Saved when you press Save details at the bottom of the page.
         </p>
@@ -618,15 +618,15 @@ export function DetailsTab({
           the foot of the details card, so it's the last thing reached after
           working down the whole page. `form` ties it back to the details
           form it submits, which is allowed to live anywhere on the page. */}
-      <div className="flex items-center gap-3 bg-white rounded-lg border border-slate-200 p-5">
-        <button form={detailsFormId} disabled={pending} className="px-4 py-2 rounded-md bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900 disabled:opacity-60">
+      <div className="flex items-center gap-3 bg-white rounded-lg border border-line p-5">
+        <button form={detailsFormId} disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
           {pending ? "Saving…" : "Save details"}
         </button>
-        {showSaved && <span className="text-sm font-medium text-emerald-700">Saved ✓</span>}
-        {state?.error && <span className="text-sm text-red-600">{state.error}</span>}
+        {showSaved && <span className="text-sm font-medium text-success">Saved ✓</span>}
+        {state?.error && <span className="text-sm text-error">{state.error}</span>}
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 p-5">
+      <div className="bg-white rounded-lg border border-line p-5">
         <DeleteJobButton jobId={job.id} address={job.address || ""} />
       </div>
     </div>

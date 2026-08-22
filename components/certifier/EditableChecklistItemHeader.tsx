@@ -51,8 +51,8 @@ export function EditableChecklistItemHeader({
         <span className={`w-2 h-2 rounded-full shrink-0 ${statusDot}`} />
         {!editing && (
           <>
-            <span className="text-sm font-semibold text-teal-900">{displayTitle}</span>
-            {version > 0 && <span className="text-[11px] text-slate-400">v{version}</span>}
+            <span className="text-sm font-semibold text-primary">{displayTitle}</span>
+            {version > 0 && <span className="text-[11px] text-placeholder">v{version}</span>}
             <button
               onClick={() => {
                 setDraftTitle(displayTitle);
@@ -60,16 +60,16 @@ export function EditableChecklistItemHeader({
                 setEditing(true);
               }}
               aria-label="Edit document name/description"
-              className="p-0.5 rounded text-slate-300 hover:text-teal-700 shrink-0"
+              className="p-0.5 rounded text-placeholder hover:text-secondary shrink-0"
             >
               <Pencil size={12} />
             </button>
           </>
         )}
-        {editing && <span className="text-sm font-semibold text-teal-900">Editing…</span>}
+        {editing && <span className="text-sm font-semibold text-primary">Editing…</span>}
       </div>
 
-      {!editing && displayDescription && <div className="text-xs text-slate-500 mt-0.5">{displayDescription}</div>}
+      {!editing && displayDescription && <div className="text-xs text-placeholder mt-0.5">{displayDescription}</div>}
 
       {editing && (
         <form
@@ -85,20 +85,20 @@ export function EditableChecklistItemHeader({
             onChange={(e) => setDraftTitle(e.target.value)}
             autoFocus
             placeholder="Document name"
-            className="w-full px-2 py-1 rounded border border-slate-200 text-xs font-semibold"
+            className="w-full px-2 py-1 rounded border border-line text-xs font-semibold"
           />
           <textarea
             value={draftDescription}
             onChange={(e) => setDraftDescription(e.target.value)}
             rows={2}
             placeholder="Description"
-            className="w-full px-2 py-1 rounded border border-slate-200 text-xs"
+            className="w-full px-2 py-1 rounded border border-line text-xs"
           />
           <div className="flex gap-2">
-            <button type="submit" className="text-xs font-semibold text-teal-800 hover:underline">
+            <button type="submit" className="text-xs font-semibold text-primary hover:underline">
               Save
             </button>
-            <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-400 hover:underline">
+            <button type="button" onClick={() => setEditing(false)} className="text-xs text-placeholder hover:underline">
               Cancel
             </button>
           </div>
