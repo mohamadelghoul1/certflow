@@ -7,10 +7,18 @@ import { UploadCloud } from "lucide-react";
 export function FileUpload({
   pathPrefix,
   onUploaded,
+  onStart,
+  onFailed,
   label = "Upload file",
 }: {
   pathPrefix: string;
   onUploaded: (path: string) => Promise<void> | void;
+  // Fired the moment a file is chosen, before the transfer begins, so the
+  // surrounding card can react straight away rather than sitting still
+  // until the whole thing finishes.
+  onStart?: () => void;
+  // Undoes whatever onStart showed, when the transfer doesn't complete.
+  onFailed?: () => void;
   label?: string;
 }) {
   const [busy, setBusy] = useState(false);
@@ -21,6 +29,7 @@ export function FileUpload({
     if (!file) return;
     setBusy(true);
     setError("");
+    onStart?.();
     try {
       const supabase = createClient();
       const path = `${pathPrefix}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
@@ -29,6 +38,7 @@ export function FileUpload({
       await onUploaded(path);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
+      onFailed?.();
     } finally {
       setBusy(false);
       e.target.value = "";

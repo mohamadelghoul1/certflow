@@ -1,10 +1,10 @@
 "use client";
 
 import { createContext, useContext, useOptimistic, useState, useTransition } from "react";
-import { CheckCircle2, Clock, AlertTriangle, Circle, RotateCcw } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Circle, RotateCcw, UploadCloud } from "lucide-react";
 import { displayStatus, unresolvedCount } from "@/lib/business";
 import { approveItem, reopenItem, certifierUploadItem } from "@/lib/actions/jobs";
-import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { FileUpload } from "@/components/certifier/FileUpload";
 import { StampToggle } from "@/components/certifier/StampToggle";
 import type { Amendment, ChecklistItem } from "@/types/db";
 
@@ -17,7 +17,18 @@ type ItemStatus = ChecklistItem["status"];
 // instead of waiting for the server to update the row, revalidate the job
 // page, and stream the whole page back. If the update fails, React drops
 // the optimistic value and both snap back to the real server state.
-type Ctx = { status: ItemStatus; amendments: Amendment[]; approve: () => void; reopen: () => void };
+type Ctx = {
+  status: ItemStatus;
+  amendments: Amendment[];
+  approve: () => void;
+  reopen: () => void;
+  // True only while the file itself is going up. Everything after that —
+  // recording it against the item and refreshing the page — happens
+  // optimistically, so the card stops waiting on it.
+  uploading: boolean;
+  setUploading: (value: boolean) => void;
+  uploadOnBehalf: (path: string) => void;
+};
 
 const ItemStatusContext = createContext<Ctx | null>(null);
 
@@ -42,13 +53,15 @@ export function ItemStatusProvider({
 }) {
   const [optimisticStatus, setOptimisticStatus] = useOptimistic(status);
   const [, startTransition] = useTransition();
+  const [uploading, setUploading] = useState(false);
 
-  function run(next: ItemStatus, action: (fd: FormData) => Promise<void>) {
+  function run(next: ItemStatus, action: (fd: FormData) => Promise<void>, filePath?: string) {
     startTransition(async () => {
       setOptimisticStatus(next);
       const fd = new FormData();
       fd.set("item_id", itemId);
       fd.set("job_id", jobId);
+      if (filePath) fd.set("file_path", filePath);
       await action(fd);
     });
   }
@@ -60,6 +73,14 @@ export function ItemStatusProvider({
         amendments,
         approve: () => run("approved", approveItem),
         reopen: () => run("submitted", reopenItem),
+        uploading,
+        setUploading,
+        // Uploading on the client's behalf leaves the item awaiting
+        // review, exactly as the client uploading would. Flipping to that
+        // straight away means the card is done the moment the file
+        // finishes going up, rather than a few seconds later once the
+        // server has recorded it and streamed the whole job page back.
+        uploadOnBehalf: (path: string) => run("submitted", certifierUploadItem, path),
       }}
     >
       {children}
@@ -80,8 +101,16 @@ export function ItemCard({ children }: { children: React.ReactNode }) {
 }
 
 export function ItemStatusBadge() {
-  const { status, amendments } = useItemStatus();
+  const { status, amendments, uploading } = useItemStatus();
   const { dot, label } = displayStatus({ status, amendments });
+
+  if (uploading) {
+    return (
+      <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+        <UploadCloud size={12} className="animate-pulse" /> Uploading…
+      </span>
+    );
+  }
 
   if (dot.includes("amber")) {
     return (
@@ -127,7 +156,7 @@ export function ItemStatusBadge() {
 // version, so a replacement always gets looked at again rather than
 // silently inheriting the previous approval.
 export function ItemStatusActions({ itemId, jobId, firmId, requiresStamping }: { itemId: string; jobId: string; firmId: string; requiresStamping: boolean }) {
-  const { status, amendments, approve, reopen } = useItemStatus();
+  const { status, amendments, approve, reopen, setUploading, uploadOnBehalf } = useItemStatus();
   const [reviewing, setReviewing] = useState(false);
   const unresolved = unresolvedCount({ status, amendments });
 
@@ -208,7 +237,20 @@ export function ItemStatusActions({ itemId, jobId, firmId, requiresStamping }: {
   return (
     <>
       {stateActions()}
-      <ActionUpload action={certifierUploadItem} fields={{ item_id: itemId, job_id: jobId }} pathPrefix={`${firmId}/${jobId}/checklist/${itemId}`} label="Upload on client's behalf" />
+      {/* Not ActionUpload, which awaits the server action before the page
+          reacts. Here the file goes up, then the item flips to awaiting
+          review immediately while the recording of it finishes in the
+          background. */}
+      <FileUpload
+        pathPrefix={`${firmId}/${jobId}/checklist/${itemId}`}
+        label="Upload on client's behalf"
+        onStart={() => setUploading(true)}
+        onFailed={() => setUploading(false)}
+        onUploaded={(path) => {
+          setUploading(false);
+          uploadOnBehalf(path);
+        }}
+      />
     </>
   );
 }
