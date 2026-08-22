@@ -6,7 +6,7 @@ import Link from "next/link";
 import { DashboardSearch } from "@/components/certifier/DashboardSearch";
 import { TaskBoard } from "@/components/certifier/TaskBoard";
 import { ProjectsDonut } from "@/components/certifier/ProjectsDonut";
-import { AlertTriangle, Building2, CalendarCheck, ClipboardCheck, Activity, CalendarClock, ShieldCheck, Inbox, Zap, Plus, FilePlus, UserPlus, BarChart3, ListChecks, PieChart } from "lucide-react";
+import { AlertTriangle, Building2, CalendarCheck, ClipboardCheck, Activity, CalendarClock, ShieldCheck, Inbox, Zap, Plus, FilePlus, UserPlus, BarChart3, PieChart } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { TaskList, ManualTask } from "@/types/db";
 
@@ -54,17 +54,6 @@ function QuickAction({ href, icon: Icon, label }: { href: string; icon: LucideIc
   );
 }
 
-function QueueRow({ href, label, count }: { href: string; label: string; count: number }) {
-  return (
-    <Link href={href} className="flex items-center justify-between gap-3 px-5 py-2.5 border-t border-slate-100 first:border-t-0 hover:bg-slate-50">
-      <span className="text-sm text-slate-700 truncate">{label}</span>
-      <span className={`shrink-0 min-w-[24px] text-center px-1.5 py-0.5 rounded-md text-xs font-semibold ${count > 0 ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-400"}`}>
-        {count}
-      </span>
-    </Link>
-  );
-}
-
 function EmptyPanel({ icon: Icon, message }: { icon: LucideIcon; message: string }) {
   return (
     <div className="px-4 py-10 flex flex-col items-center text-center">
@@ -88,6 +77,7 @@ type DashboardJob = {
   pathway: "CDC" | "CC";
   status: "active" | "complete";
   pathway_generated: boolean;
+  created_at: string;
   details: { certificateDetails?: { determinationDate?: string } };
   checklists: { kind: string; checklist_items: { status: string; amendments: { resolved: boolean }[] }[] }[];
   inspections: { id: string; title: string; date: string | null; outcome: string; booked_by_client: boolean; confirmed: boolean }[];
@@ -101,7 +91,7 @@ export default async function DashboardPage() {
     supabase
       .from("jobs")
       .select(
-        "id, address, description, pathway, status, pathway_generated, details, " +
+        "id, address, description, pathway, status, pathway_generated, created_at, details, " +
           "checklists(kind, checklist_items(status, amendments(resolved))), " +
           "inspections(id, title, date, outcome, booked_by_client, confirmed)"
       )
@@ -239,14 +229,23 @@ export default async function DashboardPage() {
     }
   }
 
-  const inspectionsThisWeekCount = upcomingInspections.filter((u) => u.daysAway <= 7).length;
   upcomingInspections.sort((a, b) => a.daysAway - b.daysAway);
   const nextInspections = upcomingInspections.slice(0, 5);
 
+  // The strip along the bottom is what the practice has actually done
+  // lately. Everything above it is work outstanding, so nothing here
+  // repeats a tile: "overdue items" was a subset of the attention count,
+  // and "active projects" is what the ring already breaks down.
   const now = new Date();
-  const certificatesThisMonth = issuanceEvents.filter((e) => e.date.getFullYear() === now.getFullYear() && e.date.getMonth() === now.getMonth()).length;
-  // Anything already past its date, as opposed to merely coming up.
-  const overdueCount = tasks.filter((t) => /overdue|expired|lapsed/i.test(t.text)).length;
+  const sameMonth = (value: Date) => value.getFullYear() === now.getFullYear() && value.getMonth() === now.getMonth();
+  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const certificatesThisMonth = issuanceEvents.filter((e) => sameMonth(e.date)).length;
+  const inspectionsThisMonth = allJobs.reduce(
+    (sum, p) => sum + (p.inspections || []).filter((i) => i.date?.startsWith(monthPrefix) && i.outcome !== "pending").length,
+    0
+  );
+  const projectsStartedThisMonth = allJobs.filter((p) => p.created_at?.startsWith(monthPrefix)).length;
 
   const recentActivity = [...auditEvents].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).slice(0, 6);
   const firstName = (profile.full_name || profile.email || "there").split(/[\s@]/)[0];
@@ -267,10 +266,11 @@ export default async function DashboardPage() {
       {/* Two columns from large screens down to one on a phone, where the
           order below is the order it reads in: what needs doing first,
           then what's on today, then the rest. */}
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <Tile icon={AlertTriangle} label="Actions require attention" value={tasks.length} href="#attention" tone="alert" />
         <Tile icon={CalendarCheck} label="Inspections today" value={inspectionsToday.length} href="#today" />
-        <Tile icon={ClipboardCheck} label="Assessments in progress" value={assessmentsInProgress} href="/jobs" />
+        <Tile icon={ClipboardCheck} label="CDC / CC assessments" value={assessmentsInProgress} href="/jobs" />
+        <Tile icon={ClipboardCheck} label="OC assessments" value={ocAssessments} href="/jobs" />
         <Tile icon={ShieldCheck} label="Approvals to issue" value={approvalsToIssue} href="/jobs" />
         <Tile icon={Inbox} label="Documents for review" value={documentsForReview} href="/jobs" />
       </div>
@@ -330,32 +330,9 @@ export default async function DashboardPage() {
             </div>
           </Panel>
 
-          <Panel title="Recent activity" icon={Activity} viewAllHref="/audit">
-            {recentActivity.length === 0 ? (
-              <EmptyPanel icon={Inbox} message="No activity yet." />
-            ) : (
-              recentActivity.map((e, i) => (
-                <div key={i} className="flex items-start justify-between gap-3 px-5 py-3 border-t border-slate-100 first:border-t-0">
-                  <div className="min-w-0">
-                    <div className="text-sm text-slate-700 truncate">{e.action}</div>
-                    <div className="text-xs text-muted truncate">{e.address}</div>
-                  </div>
-                  <div className="text-xs text-muted shrink-0 whitespace-nowrap">{formatISODate(e.date)}</div>
-                </div>
-              ))
-            )}
-          </Panel>
         </div>
 
         <div className="space-y-5">
-          <Panel title="Work queue" icon={ListChecks} viewAllHref="/jobs">
-            <QueueRow href="/jobs" label="CDC / CC assessments" count={assessmentsInProgress} />
-            <QueueRow href="/jobs" label="OC assessments" count={ocAssessments} />
-            <QueueRow href="/jobs" label="Approvals to issue" count={approvalsToIssue} />
-            <QueueRow href="/jobs" label="Documents for review" count={documentsForReview} />
-            <QueueRow href="/jobs" label="Inspections this week" count={inspectionsThisWeekCount} />
-          </Panel>
-
           <Panel title="Upcoming inspections" icon={CalendarClock}>
             {nextInspections.length === 0 ? (
               <EmptyPanel icon={CalendarClock} message="Nothing booked." />
@@ -368,6 +345,22 @@ export default async function DashboardPage() {
                   </div>
                   <div className="text-xs font-medium text-secondary shrink-0 whitespace-nowrap">{formatISODate(u.date)}</div>
                 </Link>
+              ))
+            )}
+          </Panel>
+
+          <Panel title="Recent activity" icon={Activity} viewAllHref="/audit">
+            {recentActivity.length === 0 ? (
+              <EmptyPanel icon={Inbox} message="No activity yet." />
+            ) : (
+              recentActivity.map((e, i) => (
+                <div key={i} className="flex items-start justify-between gap-3 px-5 py-3 border-t border-slate-100 first:border-t-0">
+                  <div className="min-w-0">
+                    <div className="text-sm text-slate-700 truncate">{e.action}</div>
+                    <div className="text-xs text-muted truncate">{e.address}</div>
+                  </div>
+                  <div className="text-xs text-muted shrink-0 whitespace-nowrap">{formatISODate(e.date)}</div>
+                </div>
               ))
             )}
           </Panel>
@@ -387,21 +380,23 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-line bg-white shadow-sm grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 divide-x divide-line">
-        {[
-          { icon: Building2, label: "Active projects", value: activeJobs.length },
-          { icon: ShieldCheck, label: "Certificates issued (this month)", value: certificatesThisMonth },
-          { icon: CalendarCheck, label: "Inspections (this week)", value: inspectionsThisWeekCount },
-          { icon: AlertTriangle, label: "Overdue items", value: overdueCount },
-        ].map(({ icon: Icon, label, value }) => (
-          <div key={label} className="flex items-center gap-3 px-5 py-4">
-            <Icon size={17} strokeWidth={1.6} className={label === "Overdue items" && value > 0 ? "text-red-500" : "text-secondary"} />
-            <div className="min-w-0">
-              <div className="text-xs text-muted leading-tight">{label}</div>
-              <div className={`text-xl font-bold ${label === "Overdue items" && value > 0 ? "text-red-600" : "text-heading"}`}>{value}</div>
+      <div className="mt-6 rounded-xl border border-line bg-white shadow-sm overflow-hidden">
+        <div className="px-5 pt-3 text-xs font-semibold uppercase tracking-wide text-muted">This month</div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-line">
+          {[
+            { icon: ShieldCheck, label: "Certificates issued", value: certificatesThisMonth },
+            { icon: CalendarCheck, label: "Inspections carried out", value: inspectionsThisMonth },
+            { icon: Building2, label: "Projects started", value: projectsStartedThisMonth },
+          ].map(({ icon: Icon, label, value }) => (
+            <div key={label} className="flex items-center gap-3 px-5 py-4">
+              <Icon size={17} strokeWidth={1.6} className="text-secondary" />
+              <div className="min-w-0">
+                <div className="text-xs text-muted leading-tight">{label}</div>
+                <div className="text-xl font-bold text-heading">{value}</div>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <div className="mt-10">
