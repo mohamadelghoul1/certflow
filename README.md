@@ -36,7 +36,15 @@ at this stage (small free tiers on both).
 1. In your new Supabase project, click **SQL Editor** in the left sidebar.
 2. Click **New query**.
 3. Open `supabase/migrations/0001_init.sql` in this repository, copy its entire contents, paste into the SQL editor, and click **Run**. This creates every table, security rule, and the file storage area.
-4. Repeat with `supabase/migrations/0002_client_invite.sql` (new query, paste, run).
+4. Repeat for **every other file** in `supabase/migrations/`, in number order — `0002_client_invite.sql`, then `0003…`, and so on to the highest number. Each one is a new query: open the file, copy all of it, paste, Run.
+
+> **Already set up, and just need the latest changes?** You only need the
+> files with a number higher than the last one you ran. The most recent are
+> `0012_custom_cert_ref.sql` (rename a certificate reference),
+> `0013_inspection_report_text.sql` (edit an inspection report's wording
+> in the app), and `0014_firm_stamp.sql` (upload your own approval stamp).
+> Running one twice is harmless — it just reports that the column already
+> exists.
 
 You should see "Success. No rows returned" both times. If you see a red
 error instead, stop and get help before continuing — don't re-run a

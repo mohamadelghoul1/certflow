@@ -10,7 +10,7 @@ import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import { EditableCertRef } from "@/components/certifier/EditableCertRef";
 import { SignCertificateButton } from "@/components/certifier/SignCertificateButton";
 import Link from "next/link";
-import { ChevronDown, Download, FileText, Printer, CheckCircle2 } from "lucide-react";
+import { ChevronDown, Download, FileText, Layers, Printer, CheckCircle2 } from "lucide-react";
 import type { Job, Certifier, Modification, ChecklistItem, Amendment, PathwayCertificateVersion } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -174,6 +174,16 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
             <Link href={`/certificate/pathway/${job.id}?print=1`} target="_blank" className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
               <Printer size={12} /> Print / Save as PDF
             </Link>
+            {/* One PDF holding the signed approval and every approved
+                document behind it, stamped where the checklist says so —
+                the set that actually gets handed on. Only offered once
+                the approval is signed, since an unsigned bundle isn't a
+                set anyone should be circulating. */}
+            {version.signed_at && (
+              <a href={`/api/jobs/${job.id}/approval-bundle`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+                <Layers size={12} /> Download full approved set (PDF)
+              </a>
+            )}
             {!version.signed_at && <SignCertificateButton jobId={job.id} />}
           </>
         )}

@@ -1,0 +1,13 @@
+-- The firm's own approval stamp image.
+--
+-- CertFlow already draws a stamp on approved documents from the details it
+-- holds — the firm name, the CDC/CC number, the certifier who signed the
+-- approval and their registration number. A firm that has its own stamp
+-- artwork (a scanned rubber stamp, or one their designer made) can upload
+-- it here, and it's placed on the approved documents above that text
+-- rather than instead of it, so the certificate and registration numbers
+-- stay readable even when the artwork doesn't carry them.
+--
+-- Null (the default) keeps the drawn stamp on its own, which is what every
+-- existing firm gets until they upload something.
+alter table firms add column stamp_url text;

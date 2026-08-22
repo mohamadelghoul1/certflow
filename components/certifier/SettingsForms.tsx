@@ -10,6 +10,8 @@ import {
   removeCertifierSignature,
   updateFirmLogo,
   removeFirmLogo,
+  updateFirmStamp,
+  removeFirmStamp,
   addClient,
   updateClient,
   removeClient,
@@ -23,7 +25,7 @@ import { ActionUpload } from "@/components/certifier/ActionUpload";
 const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
 const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
 
-export function FirmForm({ firm, logoUrl }: { firm: Firm | null; logoUrl?: string }) {
+export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoUrl?: string; stampUrl?: string }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateFirm, undefined);
   return (
     <div className="space-y-4">
@@ -43,6 +45,27 @@ export function FirmForm({ firm, logoUrl }: { firm: Firm | null; logoUrl?: strin
             </form>
           )}
         </div>
+      </div>
+
+      <div>
+        <label className={labelCls}>Approval stamp</label>
+        <div className="flex items-center gap-3">
+          {stampUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={stampUrl} alt="Approval stamp" className="h-14 border border-slate-100 rounded bg-white px-2 py-1" />
+          ) : (
+            <span className="text-xs text-slate-400">
+              No stamp uploaded — approved documents are stamped with your firm name, the certificate number, and the signing certifier&rsquo;s name and registration number.
+            </span>
+          )}
+          <ActionUpload action={updateFirmStamp} fields={{}} pathPrefix={`${firm?.id || "firm"}/stamp`} label={stampUrl ? "Replace stamp" : "Upload stamp"} />
+          {stampUrl && (
+            <form action={removeFirmStamp}>
+              <button className="text-xs text-red-500 hover:underline">Remove</button>
+            </form>
+          )}
+        </div>
+        <p className="text-[11px] text-slate-400 mt-1">A PNG or JPEG of your own stamp. It sits above the certificate and registration details, which are always printed.</p>
       </div>
 
       <form action={formAction} className="space-y-4">

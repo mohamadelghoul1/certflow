@@ -140,6 +140,14 @@ export function ItemStatusActions({ itemId, jobId, firmId, requiresStamping }: {
             <RotateCcw size={13} /> Reopen
           </button>
           <StampToggle itemId={itemId} jobId={jobId} requiresStamping={requiresStamping} />
+          {/* What the stamp will actually look like when the approved set
+              is downloaded — the firm's name, the certificate number, and
+              the certifier who signed it with their registration number. */}
+          {requiresStamping && (
+            <a href={`/api/jobs/${jobId}/stamp`} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
+              Preview stamp
+            </a>
+          )}
         </>
       );
     }

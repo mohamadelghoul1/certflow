@@ -101,6 +101,21 @@ export async function removeFirmLogo() {
   revalidatePath("/settings");
 }
 
+export async function updateFirmStamp(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const filePath = String(formData.get("file_path"));
+  await supabase.from("firms").update({ stamp_url: filePath }).eq("id", profile.firm_id);
+  revalidatePath("/settings");
+}
+
+export async function removeFirmStamp() {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  await supabase.from("firms").update({ stamp_url: null }).eq("id", profile.firm_id);
+  revalidatePath("/settings");
+}
+
 export async function addClient(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
