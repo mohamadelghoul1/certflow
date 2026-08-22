@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Search, ExternalLink } from "lucide-react";
-import { extractLotDpFromAddress, matchCouncilByAddress } from "@/lib/constants";
+import { matchCouncilByAddress } from "@/lib/constants";
+import { extractLotDps } from "@/lib/nsw/propertyLookup";
 
 // The NSW Planning Portal's own property search. Always available as a
 // fallback: it's the authoritative source, so if our lookup can't place an
@@ -48,6 +49,31 @@ export function AddressLookupField({
   // What the last lookup actually found, so pressing Look up always says
   // something back rather than appearing to do nothing.
   const [result, setResult] = useState<string | null>(null);
+  // Every Lot/Section/Plan NSW holds for the address. A property can sit
+  // across several parcels, so these are offered as tickboxes and the
+  // ticked ones make up the Lot/Section/DP field — the same way the NSW
+  // Planning Portal presents them.
+  const [lotOptions, setLotOptions] = useState<string[]>([]);
+
+  const selectedLots = lotSectionDp
+    .split(",")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  function setLots(lots: string[]) {
+    onLotSectionDpChange(lots.join(", "));
+  }
+
+  // Ticking keeps the parcels in the order NSW listed them, so the field
+  // reads the same however they were ticked. A lot typed in by hand that
+  // isn't in NSW's list is kept too, rather than dropped on the next tick.
+  function toggleLot(lot: string) {
+    const next = new Set(selectedLots);
+    if (next.has(lot)) next.delete(lot);
+    else next.add(lot);
+    const ordered = [...lotOptions, ...selectedLots];
+    setLots(ordered.filter((l, i) => next.has(l) && ordered.indexOf(l) === i));
+  }
   const suggestDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lookupDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -70,8 +96,8 @@ export function AddressLookupField({
       if (match) latest.current.onCouncilMatched(match.name);
     }
     if (!latest.current.lotSectionDp) {
-      const lotDp = extractLotDpFromAddress(value);
-      if (lotDp) latest.current.onLotSectionDpChange(lotDp);
+      const lots = extractLotDps(value);
+      if (lots.length) latest.current.onLotSectionDpChange(lots.join(", "));
     }
   }
 
@@ -86,10 +112,16 @@ export function AddressLookupField({
       const res = await fetch(`/api/address-details?address=${encodeURIComponent(value)}`);
       const data = await res.json();
 
+      const lots: string[] = Array.isArray(data.lots) ? data.lots : [];
+      setLotOptions(lots);
+
       const found: string[] = [];
-      if (data.lotSectionDp && (force || !latest.current.lotSectionDp)) {
-        latest.current.onLotSectionDpChange(data.lotSectionDp);
-        found.push(data.lotSectionDp);
+      if (lots.length && (force || !latest.current.lotSectionDp)) {
+        // Every parcel is ticked to begin with, which is right for the
+        // common case of a single-lot property; untick the ones that
+        // don't apply.
+        latest.current.onLotSectionDpChange(lots.join(", "));
+        found.push(lots.join(", "));
       }
       if (data.lga && (force || !latest.current.councilLga)) {
         latest.current.onCouncilMatched(data.lga);
@@ -202,9 +234,34 @@ export function AddressLookupField({
         {!looking && !result && councilLga && <div className="text-[11px] text-teal-700 mt-1">Council: {councilLga} — matched from the address, edit below if wrong.</div>}
       </div>
       <div>
-        <label className={labelCls}>Lot / Section / DP</label>
+        <label className={labelCls}>Lot / Section / Plan</label>
+        {lotOptions.length > 0 && (
+          <div className="border border-slate-200 rounded-md p-2 mb-2">
+            <div className="space-y-1">
+              {lotOptions.map((lot, i) => (
+                <label key={lot} className="flex items-center gap-2 text-sm text-slate-700">
+                  <span className="text-slate-400 w-5 shrink-0">{i + 1}.</span>
+                  <input type="checkbox" checked={selectedLots.includes(lot)} onChange={() => toggleLot(lot)} className="accent-teal-700" />
+                  {lot}
+                </label>
+              ))}
+            </div>
+            <div className="flex gap-3 mt-2 pt-2 border-t border-slate-100">
+              <button type="button" onClick={() => setLots(lotOptions)} className="text-[11px] font-semibold text-teal-800 hover:underline">
+                Select all
+              </button>
+              <button type="button" onClick={() => setLots([])} className="text-[11px] text-slate-500 hover:underline">
+                Select none
+              </button>
+            </div>
+          </div>
+        )}
         <input name="lotSectionDp" value={lotSectionDp} onChange={(e) => onLotSectionDpChange(e.target.value)} placeholder="e.g. 12/-/DP12345" className={inputCls} />
-        <div className="text-[11px] text-slate-400 mt-1">Filled in from the address where NSW has it on record — type it in yourself if it&rsquo;s blank or wrong.</div>
+        <div className="text-[11px] text-slate-400 mt-1">
+          {lotOptions.length > 0
+            ? "Tick the parcels this job covers. You can also edit the box directly."
+            : "Filled in from the address where NSW has it on record — type it in yourself if it’s blank or wrong."}
+        </div>
       </div>
     </>
   );

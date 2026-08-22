@@ -144,11 +144,11 @@ though only one firm uses it today.
   the lot or council doesn't appear, nothing is broken — both fields are
   ordinary boxes you type into, exactly as before — and I can correct the
   lookup from whatever the live service actually returns.
-- The address **suggestions** (the dropdown of matching addresses as you
-  type) need `GOOGLE_PLACES_API_KEY` set in Vercel. **Without that key no
-  dropdown appears at all** — that is the usual reason it looks like
-  "nothing happens". You can still type the address in full, and the
-  **Look up lot & council** button beside the field works either way.
+- The address **suggestions** now come from NSW's own ePlanning address
+  search, which needs **no API key and no billing account**. Setting
+  `GOOGLE_PLACES_API_KEY` in Vercel is optional and only worth doing if
+  you need addresses outside NSW; if that key is ever rejected or over
+  quota, the NSW search is used instead rather than showing nothing.
 - **Find a property on the NSW Planning Portal** next to the address field
   opens the Planning Portal's own property search, which is the
   authoritative source — use it whenever our lookup can't place an address.

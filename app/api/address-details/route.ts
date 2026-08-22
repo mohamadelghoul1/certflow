@@ -1,29 +1,33 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireProfile } from "@/lib/auth";
-import { lookupNswProperty } from "@/lib/nsw/propertyLookup";
-import { extractLotDpFromAddress, matchCouncilByAddress } from "@/lib/constants";
+import { lookupNswProperty, extractLotDps } from "@/lib/nsw/propertyLookup";
+import { matchCouncilByAddress } from "@/lib/constants";
 
-// Lot/DP and council for an address the certifier has just picked or
-// typed. Answers from three sources in order of confidence: the address
-// text itself (if it already says "Lot 12 DP123456"), the built-in
-// suburb-to-council directory, and the NSW ePlanning Spatial API.
+// Lot/Section/Plan and council for an address the certifier has picked or
+// typed. Answers from three sources: the address text itself (if it
+// already says "Lot 12 DP123456"), the built-in suburb-to-council
+// directory, and the NSW ePlanning Spatial API.
 //
-// Never an error: anything it can't work out simply comes back absent, and
+// A property can sit across more than one parcel, so lots come back as a
+// list for the certifier to tick — the same way the NSW Planning Portal
+// presents them.
+//
+// Never an error: anything it can't work out simply comes back empty, and
 // the form's own fields stay hand-editable.
 export async function GET(request: NextRequest) {
   await requireProfile("certifier");
 
   const address = request.nextUrl.searchParams.get("address")?.trim() || "";
-  if (address.length < 6) return NextResponse.json({});
+  if (address.length < 6) return NextResponse.json({ lots: [] });
 
-  const fromText = extractLotDpFromAddress(address);
+  const fromText = extractLotDps(address);
   const council = matchCouncilByAddress(address);
 
   // Only ask NSW for what we couldn't work out locally.
-  const remote = fromText && council ? {} : await lookupNswProperty(address);
+  const remote = fromText.length && council ? { lots: [], lga: undefined } : await lookupNswProperty(address);
 
   return NextResponse.json({
-    lotSectionDp: fromText || remote.lotSectionDp,
-    lga: council?.name || remote.lga,
+    lots: fromText.length ? fromText : remote.lots,
+    lga: council?.name || remote.lga || null,
   });
 }

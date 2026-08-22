@@ -200,13 +200,16 @@ export const COUNCIL_DIRECTORY = [
 // Picks Lot/Section/DP out of an address when the certifier pastes it in
 // directly (e.g. "Lot 12 Section 3 DP123456, 45 Smith Street, Suburb NSW"),
 // normalised to match the "Lot/Section/DP" field's own format.
-const LOT_DP_RE = /lot\s*(\d+[a-z]?)(?:\s*,?\s*sec(?:tion)?\s*(\d+))?\s*,?\s*(?:in\s*)?dp\s*(\d+)/i;
+// A lot identifier is not always a number — NSW parcels are routinely
+// lettered ("A/-/DP370654"), so anything alphanumeric counts. The plan
+// number that follows is what makes the match unambiguous.
+const LOT_DP_RE = /lot\s*([0-9a-z]{1,6})(?:\s*,?\s*sec(?:tion)?\s*([0-9a-z]+))?\s*,?\s*(?:in\s*)?(dp|sp)\s*(\d+)/i;
 export function extractLotDpFromAddress(addressText: string): string | null {
   if (!addressText) return null;
   const m = addressText.match(LOT_DP_RE);
   if (!m) return null;
-  const [, lot, section, dp] = m;
-  return `${lot}/${section || "-"}/DP${dp}`;
+  const [, lot, section, plan, planNo] = m;
+  return `${lot.toUpperCase()}/${section ? section.toUpperCase() : "-"}/${plan.toUpperCase()}${planNo}`;
 }
 
 // Finds the council whose suburb the address names.

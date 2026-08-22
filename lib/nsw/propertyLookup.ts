@@ -1,22 +1,22 @@
-// Lot/DP and council LGA for a NSW address, from the NSW ePlanning
-// Spatial API (api.apps1.nsw.gov.au) — a public, keyless service run by
-// the Department of Planning, the same one behind the NSW Planning
-// Portal's own address search.
+// Address search, Lot/Section/Plan and council LGA from the NSW ePlanning
+// Spatial API (api.apps1.nsw.gov.au) — the public, keyless service behind
+// the NSW Planning Portal's own "Find a property" search.
 //
-// Everything here is written to fail soft. A lookup that times out,
-// returns an unexpected shape, or simply doesn't know the address gives
-// back an empty result, and the certifier types the Lot/DP and council in
-// by hand exactly as before — this only ever saves keystrokes, it is
-// never the only way to fill those fields in.
+// Using NSW for the address suggestions as well as the parcel details is
+// deliberate: it needs no API key or billing account, and it only knows
+// NSW addresses, which is the only kind this app deals with.
 //
-// Because the responses are parsed by scanning for the values we want
-// rather than by walking a fixed path, a change to the service's field
-// names degrades to "no suggestion" instead of a crash.
+// Everything here fails soft. A lookup that times out, returns an
+// unexpected shape, or simply doesn't know the address gives back an
+// empty result, and the certifier types the details in by hand exactly as
+// before. Responses are parsed by scanning for the values we want rather
+// than by walking a fixed path, so a change to the service's field names
+// degrades to "no suggestion" instead of an error.
 
 const BASE = "https://api.apps1.nsw.gov.au/eplanning/data/v0";
-const TIMEOUT_MS = 4000;
+const TIMEOUT_MS = 6000;
 
-export type PropertyLookup = { lotSectionDp?: string; lga?: string };
+export type PropertyLookup = { lots: string[]; lga?: string };
 
 async function getJson(url: string): Promise<unknown | null> {
   const controller = new AbortController();
@@ -57,28 +57,41 @@ function findByKey(payload: unknown, pattern: RegExp): string | undefined {
   return found;
 }
 
-// Lot/DP comes back in several spellings depending on the endpoint —
-// "12//DP123456", "12/3/DP123456", "LOT 12 DP 123456" — all of which mean
-// the same parcel. Normalised to the "Lot / Section / DP" field's own
-// format, with "-" standing in for an absent section.
-const SLASHED = /\b(\d+[A-Z]?)\s*\/\s*([0-9A-Z]*|-)\s*\/\s*(DP|SP)\s*(\d+)\b/i;
-const WORDED = /\bLOT\s*(\d+[A-Z]?)\s*(?:,?\s*SEC(?:TION)?\s*([0-9A-Z]+))?\s*,?\s*(?:IN\s*)?(DP|SP)\s*(\d+)\b/i;
+// A lot identifier is not always a number. NSW parcels are routinely
+// lettered ("A/-/DP370654" is a real Sutherland property), and can be a
+// number with a letter suffix ("12A"), so anything alphanumeric counts.
+// The plan number that follows is what makes the match unambiguous.
+const LOT = "[0-9A-Z]{1,6}";
+const SLASHED = new RegExp(`\\b(${LOT})\\s*/\\s*([0-9A-Z]*|-)\\s*/\\s*(DP|SP)\\s*(\\d+)\\b`, "gi");
+const WORDED = new RegExp(`\\bLOT\\s*(${LOT})\\s*(?:,?\\s*SEC(?:TION)?\\s*([0-9A-Z]+))?\\s*,?\\s*(?:IN\\s*)?(DP|SP)\\s*(\\d+)\\b`, "gi");
 
-export function normalizeLotDp(text: string): string | undefined {
-  const match = text.match(SLASHED) || text.match(WORDED);
-  if (!match) return undefined;
-  const [, lot, section, plan, planNo] = match;
-  const sec = section && section !== "-" ? section : "-";
-  return `${lot}/${sec}/${plan.toUpperCase()}${planNo}`;
+function format(lot: string, section: string | undefined, plan: string, planNo: string) {
+  const sec = section && section !== "-" ? section.toUpperCase() : "-";
+  return `${lot.toUpperCase()}/${sec}/${plan.toUpperCase()}${planNo}`;
 }
 
-function findLotDp(payload: unknown): string | undefined {
-  let found: string | undefined;
+// Every Lot/Section/Plan in a piece of text, in the order they appear.
+// A property can sit across several parcels, which is why the portal
+// itself lists them and lets you tick the ones that apply.
+export function extractLotDps(text: string): string[] {
+  const out: string[] = [];
+  for (const re of [SLASHED, WORDED]) {
+    re.lastIndex = 0;
+    for (const m of text.matchAll(re)) out.push(format(m[1], m[2], m[3], m[4]));
+  }
+  return [...new Set(out)];
+}
+
+export function normalizeLotDp(text: string): string | undefined {
+  return extractLotDps(text)[0];
+}
+
+function findLotDps(payload: unknown): string[] {
+  const out: string[] = [];
   walk(payload, (_key, value) => {
-    if (found !== undefined || typeof value !== "string") return;
-    found = normalizeLotDp(value);
+    if (typeof value === "string") out.push(...extractLotDps(value));
   });
-  return found;
+  return [...new Set(out)];
 }
 
 // The property id the follow-up lookups are keyed on — named propId in
@@ -87,28 +100,51 @@ function findPropId(payload: unknown): string | undefined {
   return findByKey(payload, /^prop(erty)?_?id$/i);
 }
 
+function addressStrings(payload: unknown): string[] {
+  const out: string[] = [];
+  walk(payload, (key, value) => {
+    if (/address/i.test(key) && typeof value === "string" && value.trim().length > 5) out.push(value.trim());
+  });
+  return [...new Set(out)];
+}
+
+// Matching NSW addresses for a partial one being typed.
+export async function suggestNswAddresses(input: string, limit = 8): Promise<string[]> {
+  const query = input.trim();
+  if (query.length < 4) return [];
+  const data = await getJson(`${BASE}/FetchAddress?a=${encodeURIComponent(query)}&noOfRecords=${limit}`);
+  if (!data) return [];
+  return addressStrings(data).slice(0, limit);
+}
+
+// The follow-up endpoints that carry parcel details, tried in order.
+// Which one answers depends on the service; whichever returns something
+// recognisable wins, and if none do the certifier types the lot in.
+const LOT_ENDPOINTS = [(id: string) => `${BASE}/FetchLotsFromProperty?propId=${encodeURIComponent(id)}`, (id: string) => `${BASE}/FetchPropertyDetails?propId=${encodeURIComponent(id)}`];
+
 export async function lookupNswProperty(address: string): Promise<PropertyLookup> {
   const query = address.trim();
-  if (query.length < 6) return {};
+  if (query.length < 6) return { lots: [] };
 
   const search = await getJson(`${BASE}/FetchAddress?a=${encodeURIComponent(query)}&noOfRecords=1`);
-  if (!search) return {};
+  if (!search) return { lots: [] };
 
-  const result: PropertyLookup = {};
   // Some address records already carry the parcel description, in which
   // case there's nothing further to ask for.
-  result.lotSectionDp = findLotDp(search);
+  let lots = findLotDps(search);
+  let lga: string | undefined;
 
   const propId = findPropId(search);
-  if (!propId) return result;
+  if (propId) {
+    const lgaData = await getJson(`${BASE}/FetchLGAName?id=${encodeURIComponent(propId)}&Type=property`);
+    if (lgaData) lga = findByKey(lgaData, /lga|council|name/i);
 
-  const [lots, lga] = await Promise.all([
-    result.lotSectionDp ? Promise.resolve(null) : getJson(`${BASE}/FetchLotsFromProperty?propId=${encodeURIComponent(propId)}`),
-    getJson(`${BASE}/FetchLGAName?id=${encodeURIComponent(propId)}&Type=property`),
-  ]);
+    for (const endpoint of LOT_ENDPOINTS) {
+      if (lots.length) break;
+      const data = await getJson(endpoint(propId));
+      if (data) lots = findLotDps(data);
+    }
+  }
 
-  if (!result.lotSectionDp && lots) result.lotSectionDp = findLotDp(lots);
-  if (lga) result.lga = findByKey(lga, /lga|council|name/i);
-
-  return result;
+  return { lots, lga };
 }
