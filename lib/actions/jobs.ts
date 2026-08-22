@@ -198,10 +198,40 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   const details = extractJobDetails(formData, pathway);
   details.certificateDetails!.determinationDate = existingJob?.details?.certificateDetails?.determinationDate || "";
   details.certificateDetails!.consentReferences = existingJob?.details?.certificateDetails?.consentReferences || "";
+
+  // The critical stage inspections and the portal client travel with this
+  // form rather than saving as they're changed, so nothing on the Details
+  // tab is written until Save details is pressed.
+  const inspectionRows = formData.getAll("criticalStageInspections").map(String);
+  const criticalStageInspections = inspectionRows.length
+    ? normalizeCriticalStageInspections(
+        inspectionRows
+          .map((row) => {
+            try {
+              return JSON.parse(row);
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean)
+      )
+    : undefined;
+
+  const clientId = formData.has("client_id") ? String(formData.get("client_id") || "") || null : undefined;
   const address = String(formData.get("address") || "");
   const description = String(formData.get("description") || "");
 
-  await supabase.from("jobs").update({ details, address, description }).eq("id", jobId).eq("firm_id", profile.firm_id);
+  await supabase
+    .from("jobs")
+    .update({
+      details,
+      address,
+      description,
+      ...(criticalStageInspections ? { critical_stage_inspections: criticalStageInspections } : {}),
+      ...(clientId !== undefined ? { client_id: clientId } : {}),
+    })
+    .eq("id", jobId)
+    .eq("firm_id", profile.firm_id);
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pathway/${jobId}`);
   revalidatePath("/certificate/oc/[jobId]/[ocId]", "page");
@@ -792,6 +822,46 @@ export async function uploadOcApproval(formData: FormData) {
   const filePath = String(formData.get("file_path"));
   await supabase.from("oc_records").update({ approval_uploaded: true, approval_date: todayISO(), approval_file_path: filePath }).eq("id", ocId);
   revalidatePath(`/jobs/${jobId}`);
+}
+
+// Deletes a job and everything under it. The database cascades the
+// checklists, items, amendments, inspections, photos, certificate
+// versions, OC records and shared access, so the only thing that needs
+// clearing by hand is the uploaded files — they live in storage under
+// {firm}/{job}/, outside the database's reach.
+//
+// Guarded by requiring the job's own address to be typed back: this
+// destroys a complete project history, including issued certificates, and
+// there is no undo.
+export async function deleteJob(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const typed = String(formData.get("confirm_address") || "").trim();
+
+  const { data: job } = await supabase.from("jobs").select("id, address").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return { error: "That job could not be found." };
+
+  const expected = (job.address || "").trim();
+  if (typed.toLowerCase() !== expected.toLowerCase()) {
+    return { error: "The address you typed doesn't match this job's address, so nothing has been deleted." };
+  }
+
+  // Storage has no recursive delete, so the paths are listed first. A
+  // failure here is not fatal — the job still goes, and orphaned files
+  // are invisible to the app.
+  const prefix = `${profile.firm_id}/${jobId}`;
+  const { data: files } = await supabase.storage.from("certflow-files").list(prefix, { limit: 1000 });
+  if (files?.length) {
+    await supabase.storage.from("certflow-files").remove(files.map((f) => `${prefix}/${f.name}`));
+  }
+
+  const { error } = await supabase.from("jobs").delete().eq("id", jobId).eq("firm_id", profile.firm_id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/jobs");
+  revalidatePath("/dashboard");
+  redirect("/jobs");
 }
 
 export async function markJobComplete(formData: FormData) {

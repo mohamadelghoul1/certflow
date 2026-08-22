@@ -25,11 +25,28 @@ function reducer(state: CriticalStageInspection[], action: Action): CriticalStag
   }
 }
 
-export function CriticalStageInspections({ jobId, items }: { jobId: string; items: CriticalStageInspection[] }) {
-  const [list, dispatch] = useOptimistic(normalizeCriticalStageInspections(items), reducer);
+// `formId` switches this from saving each change straight away to holding
+// them until the details form is saved. Nothing on the Details tab should
+// write to the database while the certifier is still working through the
+// page — the list travels with the form as hidden fields instead.
+export function CriticalStageInspections({ jobId, items, formId }: { jobId: string; items: CriticalStageInspection[]; formId?: string }) {
+  const initial = normalizeCriticalStageInspections(items);
+  const [draft, setDraft] = useState<CriticalStageInspection[]>(initial);
+  const [list, dispatch] = useOptimistic(formId ? draft : initial, reducer);
   const [, startTransition] = useTransition();
 
+  // In draft mode every change goes through the same reducer, so the two
+  // modes can't drift — only where the result is sent differs.
+  function apply(action: Action) {
+    if (formId) {
+      setDraft((prev) => reducer(prev, action));
+      return true;
+    }
+    return false;
+  }
+
   function handleToggle(id: string) {
+    if (apply({ type: "toggle", id })) return;
     startTransition(async () => {
       dispatch({ type: "toggle", id });
       const fd = new FormData();
@@ -40,6 +57,7 @@ export function CriticalStageInspections({ jobId, items }: { jobId: string; item
   }
 
   function handleEdit(id: string, stage: string, inspector: string) {
+    if (apply({ type: "edit", id, stage, inspector })) return;
     startTransition(async () => {
       dispatch({ type: "edit", id, stage, inspector });
       const fd = new FormData();
@@ -53,6 +71,7 @@ export function CriticalStageInspections({ jobId, items }: { jobId: string; item
 
   function handleAdd(stage: string, inspector: string) {
     const item: CriticalStageInspection = { id: `temp-${Math.random().toString(36).slice(2)}`, stage, inspector, enabled: true };
+    if (apply({ type: "add", item })) return;
     startTransition(async () => {
       dispatch({ type: "add", item });
       const fd = new FormData();
@@ -64,6 +83,7 @@ export function CriticalStageInspections({ jobId, items }: { jobId: string; item
   }
 
   function handleRemove(id: string) {
+    if (apply({ type: "remove", id })) return;
     startTransition(async () => {
       dispatch({ type: "remove", id });
       const fd = new FormData();
@@ -86,6 +106,9 @@ export function CriticalStageInspections({ jobId, items }: { jobId: string; item
         />
       ))}
       <AddInspectionForm onAdd={handleAdd} />
+      {/* Carried into the details form so the list saves when Save
+          details is pressed, along with everything else on the page. */}
+      {formId && list.map((insp) => <input key={insp.id} type="hidden" form={formId} name="criticalStageInspections" value={JSON.stringify(insp)} />)}
     </div>
   );
 }

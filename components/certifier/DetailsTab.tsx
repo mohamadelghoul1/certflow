@@ -3,7 +3,6 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import {
   updateJobDetails,
-  assignJobClient,
   updateClientContact,
   addSharedAccess,
   removeSharedAccess,
@@ -24,6 +23,7 @@ import {
 import { formatISODate } from "@/lib/business";
 import { AddressLookupField } from "@/components/certifier/AddressLookupField";
 import { CriticalStageInspections } from "@/components/certifier/CriticalStageInspections";
+import { DeleteJobButton } from "@/components/certifier/DeleteJobButton";
 import { useSelectTab } from "@/components/certifier/JobTabs";
 import type { Job, ClientContact } from "@/types/db";
 
@@ -158,6 +158,7 @@ export function DetailsTab({
     phone: d.council?.contact?.phone || "",
     email: d.council?.contact?.email || "",
   });
+  const [portalClientId, setPortalClientId] = useState(job.client_id || "");
   const [address, setAddress] = useState(job.address || "");
   const [lotSectionDp, setLotSectionDp] = useState(d.certificateDetails?.lotSectionDp || "");
   const [codeParts, setCodeParts] = useState<Set<string>>(new Set(d.certificateDetails?.codeParts || []));
@@ -502,9 +503,8 @@ export function DetailsTab({
 
       <div className="bg-white rounded-lg border border-slate-200 p-5">
         <div className="font-bold text-teal-900 mb-3">Client portal access</div>
-        <form action={assignJobClient} className="flex items-center gap-2">
-          <input type="hidden" name="job_id" value={job.id} />
-          <select name="client_id" defaultValue={job.client_id || ""} onChange={(e) => e.currentTarget.form?.requestSubmit()} className={inputCls}>
+        <div className="flex items-center gap-2">
+          <select name="client_id" form={detailsFormId} value={portalClientId} onChange={(e) => setPortalClientId(e.target.value)} className={inputCls}>
             <option value="">— None —</option>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
@@ -512,8 +512,8 @@ export function DetailsTab({
               </option>
             ))}
           </select>
-        </form>
-        <p className="text-xs text-slate-400 mt-2">Assign an existing client for portal access, or add a new one under Settings.</p>
+        </div>
+        <p className="text-xs text-slate-400 mt-2">Assign an existing client for portal access, or add a new one under Settings. Saved when you press Save details at the bottom of the page.</p>
         {primaryClient && (
           <div className="mt-2">
             <ContactRow jobId={job.id} contact={primaryClient} />
@@ -610,9 +610,9 @@ export function DetailsTab({
         <div className="font-bold text-teal-900 mb-1">Critical stage inspections</div>
         <p className="text-xs text-slate-400 mb-3">
           Which critical stage inspections apply to this project — shown on the Mandatory Inspections Notice in the certificate package. Click one to edit its wording, or add extra
-          inspections specific to this job.
+          inspections specific to this job. Saved when you press Save details at the bottom of the page.
         </p>
-        <CriticalStageInspections jobId={job.id} items={job.critical_stage_inspections} />
+        <CriticalStageInspections jobId={job.id} items={job.critical_stage_inspections} formId={detailsFormId} />
       </div>
 
       {/* The Save button sits at the very bottom of the page rather than at
@@ -625,6 +625,10 @@ export function DetailsTab({
         </button>
         {showSaved && <span className="text-sm font-medium text-emerald-700">Saved ✓</span>}
         {state?.error && <span className="text-sm text-red-600">{state.error}</span>}
+      </div>
+
+      <div className="bg-white rounded-lg border border-slate-200 p-5">
+        <DeleteJobButton jobId={job.id} address={job.address || ""} />
       </div>
     </div>
   );
