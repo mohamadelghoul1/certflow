@@ -116,13 +116,30 @@ database is multi-tenant-ready (every row carries a `firm_id`, enforced by
 Postgres Row Level Security) per the brief's Section 12 guidance, even
 though only one firm uses it today.
 
+**Needs a live test before you rely on it**
+
+- **Automatic Lot/DP and council lookup from the address.** Typing a
+  development address (on New Job or the Details tab) suggests matching
+  addresses, then fills in the Lot/Section/DP and the council for you. It
+  reads the lot and council straight from the address text where it can,
+  falls back to the built-in council directory, and otherwise asks the NSW
+  ePlanning Spatial API — a free, public NSW government service that needs
+  no account or key. **This last step could not be tested while building
+  it** (the build environment has no outbound internet), so please try a
+  few real addresses once it's deployed and tell me what comes back. If
+  the lot or council doesn't appear, nothing is broken — both fields are
+  ordinary boxes you type into, exactly as before — and I can correct the
+  lookup from whatever the live service actually returns.
+- The address **suggestions** need `GOOGLE_PLACES_API_KEY` set in Vercel.
+  Without it you just type the address in full, and the lot/council lookup
+  still runs on what you typed.
+
 **Deliberately not built yet** — these all need a paid third-party account
 with an API key only you can obtain, exactly as the build brief describes:
 
 - **Real email sending** for status-change notifications (brief §10) — currently only the client-invite email exists, via Supabase's basic default sender.
 - **Real payment collection via Stripe** (§16) — the "Mark as paid" button is real and manual; actual card charging isn't wired up.
 - **NSW Planning Portal reporting** (§9) — this is a **legal requirement** for the firm to report certificates/inspections within 2 business days; it needs the firm's own API subscription key from the NSW Planning Portal team before it can be built.
-- **NSW Planning Portal zoning/address lookup** (§8) — Lot/DP and address autocomplete.
 - **Combined stamped PDF bundle** (§11) — merging approved documents into one stamped PDF (the per-document "requires stamping" toggle is already in place, ready for this).
 - **Multi-certifier-firm billing/signup** (§13) — this is intentionally a later phase, once the certifier side is proven on this firm's real jobs.
 - **Offline inspection capture** (§14) — a mobile-specific, offline-first rebuild.

@@ -22,6 +22,7 @@ import {
   epiForCodeParts,
 } from "@/lib/constants";
 import { formatISODate } from "@/lib/business";
+import { AddressLookupField } from "@/components/certifier/AddressLookupField";
 import { CriticalStageInspections } from "@/components/certifier/CriticalStageInspections";
 import { useSelectTab } from "@/components/certifier/JobTabs";
 import type { Job, ClientContact } from "@/types/db";
@@ -157,6 +158,8 @@ export function DetailsTab({
     phone: d.council?.contact?.phone || "",
     email: d.council?.contact?.email || "",
   });
+  const [address, setAddress] = useState(job.address || "");
+  const [lotSectionDp, setLotSectionDp] = useState(d.certificateDetails?.lotSectionDp || "");
   const [codeParts, setCodeParts] = useState<Set<string>>(new Set(d.certificateDetails?.codeParts || []));
   const [shareClientId, setShareClientId] = useState("");
   const availableToShare = clients.filter((c) => c.id !== job.client_id && !sharedClients.some((s) => s.id === c.id));
@@ -254,14 +257,15 @@ export function DetailsTab({
               </div>
             </div>
           </div>
-          <div>
-            <label className={labelCls}>Development street address</label>
-            <input name="address" defaultValue={job.address || ""} className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Lot/Section/DP</label>
-            <input name="lotSectionDp" defaultValue={d.certificateDetails?.lotSectionDp || ""} className={inputCls} />
-          </div>
+          <AddressLookupField
+            address={address}
+            onAddressChange={setAddress}
+            lotSectionDp={lotSectionDp}
+            onLotSectionDpChange={setLotSectionDp}
+            onCouncilMatched={selectCouncil}
+            councilLga={council.lga}
+            addressLabel="Development street address"
+          />
         </Section>
 
         <Section title="Company / primary contact">

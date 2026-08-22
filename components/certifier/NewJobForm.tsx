@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useState } from "react";
 import { createJob } from "@/lib/actions/jobs";
 import type { ActionState } from "@/lib/actions/auth";
 import {
@@ -12,11 +12,10 @@ import {
   NSW_STATE,
   SEPP_CODE_PARTS,
   COUNCIL_DIRECTORY,
-  matchCouncilByAddress,
-  extractLotDpFromAddress,
   epiForCodeParts,
 } from "@/lib/constants";
 import { X } from "lucide-react";
+import { AddressLookupField } from "@/components/certifier/AddressLookupField";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-teal-600";
 const labelCls = "block text-xs font-semibold text-slate-500 mb-1";
@@ -48,9 +47,6 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
   const [customType, setCustomType] = useState("");
   const [pathway, setPathway] = useState<"CDC" | "CC">("CDC");
   const [address, setAddress] = useState("");
-  const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
-  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
-  const addressDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [lotSectionDp, setLotSectionDp] = useState("");
   const [council, setCouncil] = useState<CouncilState>(emptyCouncil);
   const [codeParts, setCodeParts] = useState<Set<string>>(new Set());
@@ -73,45 +69,6 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
     }
   }
 
-  function applyAddress(v: string) {
-    setAddress(v);
-    if (!council.lga) {
-      const match = matchCouncilByAddress(v);
-      if (match) selectCouncil(match.name);
-    }
-    if (!lotSectionDp) {
-      const lotDp = extractLotDpFromAddress(v);
-      if (lotDp) setLotSectionDp(lotDp);
-    }
-  }
-
-  function handleAddressChange(v: string) {
-    applyAddress(v);
-
-    if (addressDebounce.current) clearTimeout(addressDebounce.current);
-    const trimmed = v.trim();
-    if (trimmed.length < 4) {
-      setAddressSuggestions([]);
-      return;
-    }
-    addressDebounce.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/address-autocomplete?input=${encodeURIComponent(trimmed)}`);
-        const data = await res.json();
-        setAddressSuggestions(data.suggestions || []);
-        setShowAddressSuggestions(true);
-      } catch {
-        setAddressSuggestions([]);
-      }
-    }, 300);
-  }
-
-  function selectAddressSuggestion(v: string) {
-    applyAddress(v);
-    setAddressSuggestions([]);
-    setShowAddressSuggestions(false);
-  }
-
   function toggleCodePart(part: string) {
     setCodeParts((prev) => {
       const next = new Set(prev);
@@ -129,46 +86,15 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
       </div>
 
       <Section title="Project basics">
-        <div className="relative">
-          <label className={labelCls}>Property address</label>
-          <input
-            name="address"
-            required
-            value={address}
-            onChange={(e) => handleAddressChange(e.target.value)}
-            onFocus={() => addressSuggestions.length > 0 && setShowAddressSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowAddressSuggestions(false), 150)}
-            autoComplete="off"
-            placeholder="e.g. Lot 12 DP123456, 12 Example Street, Suburb NSW 2000"
-            className={inputCls}
-          />
-          {showAddressSuggestions && addressSuggestions.length > 0 && (
-            <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg overflow-hidden">
-              {addressSuggestions.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onMouseDown={() => selectAddressSuggestion(s)}
-                  className="block w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 border-t border-slate-50 first:border-t-0"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-          {council.lga && <div className="text-[11px] text-teal-700 mt-1">Council: {council.lga} — auto-matched from the address, edit below if wrong.</div>}
-        </div>
-        <div>
-          <label className={labelCls}>Lot / Section / DP</label>
-          <input
-            name="lotSectionDp"
-            value={lotSectionDp}
-            onChange={(e) => setLotSectionDp(e.target.value)}
-            placeholder="e.g. 12/-/DP12345"
-            className={inputCls}
-          />
-          <div className="text-[11px] text-slate-400 mt-1">Filled in automatically if the address includes &ldquo;Lot ... DP ...&rdquo; — edit if wrong.</div>
-        </div>
+        <AddressLookupField
+          address={address}
+          onAddressChange={setAddress}
+          lotSectionDp={lotSectionDp}
+          onLotSectionDpChange={setLotSectionDp}
+          onCouncilMatched={selectCouncil}
+          councilLga={council.lga}
+          required
+        />
         <div>
           <label className={labelCls}>Scope of works</label>
           <textarea name="description" rows={2} placeholder="e.g. Construction of a secondary dwelling" className={inputCls} />
