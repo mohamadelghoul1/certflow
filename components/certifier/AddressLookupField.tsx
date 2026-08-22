@@ -37,6 +37,8 @@ export function AddressLookupField({
   onLotSectionDpChange,
   onCouncilMatched,
   councilLga,
+  zoning,
+  onZoningChange,
   addressLabel = "Property address",
   required = false,
 }: {
@@ -46,6 +48,8 @@ export function AddressLookupField({
   onLotSectionDpChange: (value: string) => void;
   onCouncilMatched: (lga: string) => void;
   councilLga: string;
+  zoning: string;
+  onZoningChange: (value: string) => void;
   addressLabel?: string;
   required?: boolean;
 }) {
@@ -91,9 +95,9 @@ export function AddressLookupField({
   // them, by which time the values captured in that closure are stale.
   // Kept up to date in an effect rather than during render, which React
   // doesn't allow.
-  const latest = useRef({ lotSectionDp, councilLga, onLotSectionDpChange, onCouncilMatched });
+  const latest = useRef({ lotSectionDp, councilLga, zoning, onLotSectionDpChange, onCouncilMatched, onZoningChange });
   useEffect(() => {
-    latest.current = { lotSectionDp, councilLga, onLotSectionDpChange, onCouncilMatched };
+    latest.current = { lotSectionDp, councilLga, zoning, onLotSectionDpChange, onCouncilMatched, onZoningChange };
   });
 
   // What the address text alone tells us, applied straight away — no
@@ -135,6 +139,10 @@ export function AddressLookupField({
       if (data.lga && (force || !latest.current.councilLga)) {
         latest.current.onCouncilMatched(data.lga);
         found.push(data.lga);
+      }
+      if (data.zone && (force || !latest.current.zoning)) {
+        latest.current.onZoningChange(data.zone);
+        found.push(data.zone);
       }
 
       if (force) {
@@ -308,6 +316,11 @@ export function AddressLookupField({
             ? "Tick the parcels this job covers. You can also edit the box directly."
             : "Filled in from the address where NSW has it on record — type it in yourself if it’s blank or wrong."}
         </div>
+      </div>
+      <div>
+        <label className={labelCls}>Land zoning</label>
+        <input name="zoning" value={zoning} onChange={(e) => onZoningChange(e.target.value)} placeholder="e.g. R2 Low Density Residential" className={inputCls} />
+        <div className="text-[11px] text-slate-400 mt-1">Filled in from the NSW planning layers with the lot — type it in yourself if it&rsquo;s blank or wrong.</div>
       </div>
     </>
   );

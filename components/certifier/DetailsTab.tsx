@@ -160,6 +160,7 @@ export function DetailsTab({
   });
   const [portalClientId, setPortalClientId] = useState(job.client_id || "");
   const [address, setAddress] = useState(job.address || "");
+  const [zoning, setZoning] = useState(d.zoning || "");
   const [lotSectionDp, setLotSectionDp] = useState(d.certificateDetails?.lotSectionDp || "");
   const [codeParts, setCodeParts] = useState<Set<string>>(new Set(d.certificateDetails?.codeParts || []));
   const [shareClientId, setShareClientId] = useState("");
@@ -237,10 +238,6 @@ export function DetailsTab({
               </div>
             </div>
             <div>
-              <label className={labelCls}>Zoning</label>
-              <input name="zoning" defaultValue={d.zoning || ""} className={inputCls} />
-            </div>
-            <div>
               <label className={labelCls}>BCA / NCC version</label>
               <input name="bcaVersion" list="bca-version-list-edit" defaultValue={d.bcaVersion || ""} placeholder="e.g. NCC 2022 Amendment 2" className={inputCls} />
               <datalist id="bca-version-list-edit">
@@ -265,6 +262,8 @@ export function DetailsTab({
             onLotSectionDpChange={setLotSectionDp}
             onCouncilMatched={selectCouncil}
             councilLga={council.lga}
+            zoning={zoning}
+            onZoningChange={setZoning}
             addressLabel="Development street address"
           />
         </Section>

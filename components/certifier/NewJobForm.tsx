@@ -48,6 +48,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
   const [pathway, setPathway] = useState<"CDC" | "CC">("CDC");
   const [address, setAddress] = useState("");
   const [lotSectionDp, setLotSectionDp] = useState("");
+  const [zoning, setZoning] = useState("");
   const [council, setCouncil] = useState<CouncilState>(emptyCouncil);
   const [codeParts, setCodeParts] = useState<Set<string>>(new Set());
 
@@ -93,6 +94,8 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
           onLotSectionDpChange={setLotSectionDp}
           onCouncilMatched={selectCouncil}
           councilLga={council.lga}
+          zoning={zoning}
+          onZoningChange={setZoning}
           required
         />
         <div>
@@ -203,10 +206,6 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
           <div>
             <label className={labelCls}>Project number</label>
             <input name="projectNumber" placeholder="Auto number" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Zoning</label>
-            <input name="zoning" placeholder="e.g. R2 Low Density Residential" className={inputCls} />
           </div>
           <div>
             <label className={labelCls}>BCA / NCC version</label>

@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   // Only ask NSW for what we couldn't work out locally — unless we're
   // diagnosing, in which case ask regardless so there's something to see.
   const askNsw = debug || !fromText.length || !council;
-  const remote = askNsw ? await lookupNswProperty(address, log) : { lots: [], lga: undefined };
+  const remote = askNsw ? await lookupNswProperty(address, log) : { lots: [], lga: undefined, zone: undefined };
 
   const body: Record<string, unknown> = {
     lots: fromText.length ? fromText : remote.lots,
@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
       councilFromDirectory: council?.name || null,
       lotsFromNsw: remote.lots,
       lgaFromNsw: remote.lga || null,
+      zoneFromNsw: remote.zone || null,
       addressSuggestions: await suggestNswAddresses(address, 8, log),
       calls: log,
     };

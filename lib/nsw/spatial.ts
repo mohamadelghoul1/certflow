@@ -152,7 +152,48 @@ export async function suggestNswAddresses(input: string, limit = 8, log?: Attemp
   return filterByWords(addresses, words).slice(0, limit);
 }
 
-export type PropertyLookup = { lots: string[]; lga?: string };
+export type PropertyLookup = { lots: string[]; lga?: string; zone?: string };
+
+// Land zoning is not in the parcel service — it comes from the planning
+// layers, which live on NSW's ePlanning map servers rather than on
+// portal.spatial. The host and layer number differ between deployments,
+// so several are tried and the first that answers with something
+// zone-shaped wins.
+const ZONE_SOURCES = [
+  "https://mapprod3.environment.nsw.gov.au/arcgis/rest/services/ePlanning/Planning_Portal_Principal_Planning/MapServer/19",
+  "https://mapprod1.environment.nsw.gov.au/arcgis/rest/services/ePlanning/Planning_Portal_Principal_Planning/MapServer/19",
+  "https://mapprod3.environment.nsw.gov.au/arcgis/rest/services/Planning/EPI_Primary_Planning_Layers/MapServer/19",
+  "https://mapprod1.environment.nsw.gov.au/arcgis/rest/services/Planning/EPI_Primary_Planning_Layers/MapServer/19",
+];
+
+// NSW zoning records carry the code and the description in separate
+// fields — SYM_CODE "R2" and LAY_CLASS "Low Density Residential" — which
+// together make the "R2 Low Density Residential" wording the certificate
+// already uses. Both are matched by pattern rather than by exact name,
+// since these layers are not consistently named across deployments.
+function zoneFrom(attributes: Json): string | null {
+  const entries = Object.entries(attributes).filter(([, v]) => typeof v === "string" && v.trim());
+  const pick = (re: RegExp) => entries.find(([k]) => re.test(k))?.[1] as string | undefined;
+
+  const code = pick(/^(sym_?code|zone_?code|zone)$/i)?.trim();
+  const label = pick(/(lay_?class|zone_?name|zone_?desc|class)/i)?.trim();
+  if (code && label) return code === label ? code : `${code} ${label}`;
+  return code || label || null;
+}
+
+async function lookupZone(point: { x: number; y: number }, wkid: number, log?: Attempt[]): Promise<string | undefined> {
+  for (const base of ZONE_SOURCES) {
+    const url =
+      `${base}/query?geometry=${encodeURIComponent(`${point.x},${point.y}`)}` +
+      `&geometryType=esriGeometryPoint&inSR=${wkid}&spatialRel=esriSpatialRelIntersects` +
+      `&outFields=*&returnGeometry=false&resultRecordCount=1&f=json`;
+    const data = await getJson(url, log);
+    const attributes = features(data)[0]?.attributes;
+    const zone = attributes ? zoneFrom(attributes) : null;
+    if (zone) return zone;
+  }
+  return undefined;
+}
 
 export async function lookupNswProperty(address: string, log?: Attempt[]): Promise<PropertyLookup> {
   if (address.trim().length < 6) return { lots: [] };
@@ -183,9 +224,13 @@ export async function lookupNswProperty(address: string, log?: Attempt[]): Promi
     `&geometryType=esriGeometryPoint&inSR=${wkid}&spatialRel=esriSpatialRelIntersects` +
     `&outFields=lotidstring,lotnumber,sectionnumber,planlabel&returnGeometry=false&resultRecordCount=12&f=json`;
 
-  const lots = features(await getJson(lotUrl, log))
+  // Parcels and zoning are independent lookups against the same point,
+  // so they run together rather than one after the other.
+  const [lotData, zone] = await Promise.all([getJson(lotUrl, log), lookupZone(point, wkid, log)]);
+
+  const lots = features(lotData)
     .map((f) => (f.attributes ? lotLabel(f.attributes) : null))
     .filter((l): l is string => !!l);
 
-  return { lots: [...new Set(lots)] };
+  return { lots: [...new Set(lots)], zone };
 }

@@ -119,5 +119,26 @@ export async function probeNswEndpoints(address: string) {
   const geo = await get(`${PORTAL}/NSW_Geocoded_Addressing_Theme/MapServer?f=json`);
   report.geocodedAddressing = { status: geo.status, layers: layerList(geo.data).map((l) => `${l.id}: ${l.name}`) };
 
+  // Land zoning is not in the parcel service — it's on NSW's ePlanning
+  // map servers, whose host and layer numbering differ by deployment.
+  // Listing their layers names the zoning layer instead of guessing it.
+  const zoneServices = [
+    "https://mapprod3.environment.nsw.gov.au/arcgis/rest/services/ePlanning/Planning_Portal_Principal_Planning/MapServer",
+    "https://mapprod1.environment.nsw.gov.au/arcgis/rest/services/ePlanning/Planning_Portal_Principal_Planning/MapServer",
+    "https://mapprod3.environment.nsw.gov.au/arcgis/rest/services/Planning/EPI_Primary_Planning_Layers/MapServer",
+  ];
+  const zoning: Record<string, unknown> = {};
+  for (const base of zoneServices) {
+    const svc = await get(`${base}?f=json`);
+    const layers = layerList(svc.data);
+    zoning[base] = {
+      status: svc.status,
+      // Only the zoning-ish layers — these services carry dozens.
+      layers: layers.filter((l) => /zon|land use/i.test(l.name)).map((l) => `${l.id}: ${l.name}`),
+      allLayerCount: layers.length,
+    };
+  }
+  report.zoningServices = zoning;
+
   return report;
 }
