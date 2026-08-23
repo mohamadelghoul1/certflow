@@ -198,17 +198,23 @@ export function DetailsTab({
   const codePartsArr = [...codeParts];
 
   useEffect(() => {
-    if (wasPending.current && !pending && !state?.error) {
-      setShowSaved(true);
-      // Details are almost always filled in on the way to working on the
-      // certificate, so saving hands straight over to that tab instead of
-      // leaving the certifier at the bottom of a long form.
-      selectTab("pathway");
-      window.scrollTo({ top: 0 });
-      const t = setTimeout(() => setShowSaved(false), 2500);
-      return () => clearTimeout(t);
-    }
+    // The flag is cleared before anything else, so a save hands over
+    // exactly once. It used to be set after an early return, which left
+    // it stuck on and made every later render look like a fresh save —
+    // so the tab kept being forced back and clicking Details bounced
+    // straight out again.
+    const justSaved = wasPending.current && !pending;
     wasPending.current = pending;
+    if (!justSaved || state?.error) return;
+
+    setShowSaved(true);
+    // Details are almost always filled in on the way to working on the
+    // certificate, so saving hands straight over to that tab instead of
+    // leaving the certifier at the bottom of a long form.
+    selectTab("pathway");
+    window.scrollTo({ top: 0 });
+    const t = setTimeout(() => setShowSaved(false), 2500);
+    return () => clearTimeout(t);
   }, [pending, state, selectTab]);
 
   const wasAddClientPending = useRef(false);

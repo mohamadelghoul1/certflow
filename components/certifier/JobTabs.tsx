@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 
 type TabMeta = { key: string; label: string; progress?: string | null };
 
@@ -21,11 +21,14 @@ export function useSelectTab() {
 export function JobTabs({ tabs, initialTab, content }: { tabs: TabMeta[]; initialTab: string; content: Record<string, React.ReactNode> }) {
   const [active, setActive] = useState(initialTab);
 
-  function select(key: string) {
+  // Stable identity: this function is the context value, so recreating it
+  // on every render made every consumer re-render, and any effect that
+  // depends on it re-run — which is what made the jump-to-CDC after
+  // saving fire over and over instead of once.
+  const select = useCallback((key: string) => {
     setActive(key);
-    const url = `${window.location.pathname}?tab=${key}`;
-    window.history.replaceState(null, "", url);
-  }
+    window.history.replaceState(null, "", `${window.location.pathname}?tab=${key}`);
+  }, []);
 
   return (
     <SelectTabContext.Provider value={select}>
