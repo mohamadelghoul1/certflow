@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { stampPdf, type StampDetails } from "@/lib/pdf/stamp";
+import { stampPdf, type StampDetails, type StampPlacement } from "@/lib/pdf/stamp";
 
 // One PDF containing the whole approval: the signed approval itself, then
 // every approved document behind it in checklist order — the set a builder
@@ -23,6 +23,9 @@ export type BundleDocument = {
   bytes?: Uint8Array | null;
   contentType?: string | null;
   stamp?: boolean;
+  // Where the certifier dragged the stamp on this document. Null puts it
+  // in the bottom-right corner, as it was before it could be moved.
+  placement?: StampPlacement | null;
 };
 
 export type BundleInput = {
@@ -118,7 +121,7 @@ export async function buildApprovalBundle(input: BundleInput): Promise<Uint8Arra
 
     if (bytes && isPdf(bytes, doc.contentType)) {
       if (doc.stamp) {
-        const stamped = await stampPdf(bytes, input.stampDetails);
+        const stamped = await stampPdf(bytes, input.stampDetails, doc.placement ?? null);
         if (stamped) bytes = stamped;
       }
       included = await appendPdf(bundle, bytes);

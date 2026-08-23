@@ -7,6 +7,9 @@ import { ItemStatusProvider, ItemCard, ItemStatusBadge, ItemStatusActions } from
 import { EditableChecklistItemHeader } from "@/components/certifier/EditableChecklistItemHeader";
 import { AmendmentsList } from "@/components/certifier/AmendmentsList";
 import { DocumentDetailsForm } from "@/components/certifier/DocumentDetailsForm";
+import { StampPositioner } from "@/components/certifier/StampPositioner";
+import { stampLines } from "@/lib/pdf/stamp";
+import type { StampPreview } from "@/lib/pdf/stampDetails";
 import { CheckCircle2, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
 import type { ChecklistItem, Amendment } from "@/types/db";
 
@@ -35,6 +38,7 @@ export async function ChecklistSection({
   label,
   library,
   items,
+  stamp = null,
 }: {
   jobId: string;
   firmId: string;
@@ -42,6 +46,9 @@ export async function ChecklistSection({
   label: string;
   library: LibItem[];
   items: ItemWithAmendments[];
+  // Only the pathway checklist stamps its documents, so the other
+  // checklists are rendered without it and show no positioner.
+  stamp?: StampPreview | null;
 }) {
   const pickerLibrary = library.map((l) => ({ title: l.title, desc: l.description || "", category: l.category || "Other" }));
   const existingTitles = items.map((i) => i.title);
@@ -86,7 +93,7 @@ export async function ChecklistSection({
       {items.length > 0 && (
         <div className="space-y-4">
           {items.map((item) => (
-            <ItemRow key={item.id} item={item} jobId={jobId} firmId={firmId} />
+            <ItemRow key={item.id} item={item} jobId={jobId} firmId={firmId} stamp={stamp} />
           ))}
         </div>
       )}
@@ -112,7 +119,7 @@ function DocumentMeta({ item }: { item: ChecklistItem }) {
   return <div className="text-xs text-muted mt-0.5">{parts.join(" · ")}</div>;
 }
 
-async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobId: string; firmId: string }) {
+async function ItemRow({ item, jobId, firmId, stamp }: { item: ItemWithAmendments; jobId: string; firmId: string; stamp: StampPreview | null }) {
   const status = displayStatus(item);
   const fileUrl = await signedUrl(item.file_path);
 
@@ -147,6 +154,20 @@ async function ItemRow({ item, jobId, firmId }: { item: ItemWithAmendments; jobI
 
         <div className="mt-4 pt-4 border-t border-line flex flex-wrap items-center gap-2">
           <ItemStatusActions itemId={item.id} jobId={jobId} firmId={firmId} requiresStamping={item.requires_stamping} />
+          {/* Only worth offering once there is a document to put a stamp
+              on and a decision that it needs one. */}
+          {stamp && item.requires_stamping && fileUrl && (
+            <StampPositioner
+              itemId={item.id}
+              jobId={jobId}
+              fileUrl={fileUrl}
+              lines={stampLines(stamp.details)}
+              textWidth={stamp.textWidth}
+              textHeight={stamp.textHeight}
+              stampImageUrl={stamp.imageUrl}
+              initial={item.stamp_x !== null && item.stamp_y !== null ? { x: item.stamp_x, y: item.stamp_y, scale: item.stamp_scale ?? 1 } : null}
+            />
+          )}
         </div>
 
         <details className="mt-3">

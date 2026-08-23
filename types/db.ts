@@ -15,6 +15,11 @@ export type Firm = {
   // The firm's own stamp artwork, placed above the drawn stamp on
   // approved documents. Null keeps the drawn stamp on its own.
   stamp_url: string | null;
+  // The last placement the firm used, so a document that has never been
+  // positioned starts where the previous one was put.
+  stamp_x: number | null;
+  stamp_y: number | null;
+  stamp_scale: number | null;
 };
 
 export type Certifier = {
@@ -187,6 +192,12 @@ export type ChecklistItem = {
   requires_stamping: boolean;
   file_path: string | null;
   sort_order: number;
+  // Where the approval stamp sits on this document, as a fraction of the
+  // page from its top-left, and how big it is. Null means the
+  // bottom-right corner at normal size. See migration 0015.
+  stamp_x: number | null;
+  stamp_y: number | null;
+  stamp_scale: number | null;
 };
 
 export type Amendment = {

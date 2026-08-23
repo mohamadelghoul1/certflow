@@ -1,6 +1,8 @@
 import { resolvePathwayCertRef, formatISODate, todayISO } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { fetchStampImage, type StampDetails } from "@/lib/pdf/stamp";
+import { fetchStampImage, measureStampText, type StampDetails } from "@/lib/pdf/stamp";
+import { requireProfile } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import type { Job, Firm, Certifier, Profile } from "@/types/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -37,4 +39,31 @@ export async function buildStampDetails(supabase: SupabaseClient, job: Job, prof
     date: formatISODate(job.pathway_signed_at || todayISO()),
     image: await fetchStampImage(await signedUrl(firm?.stamp_url)),
   };
+}
+
+// What the on-screen stamp positioner needs: the same details the printed
+// stamp carries, its measured size, and a URL for the firm's artwork.
+// Deliberately does not download the artwork the way buildStampDetails
+// does — the browser fetches it itself, and a job screen shouldn't pull
+// an image server-side just to draw a button.
+export type StampPreview = { details: StampDetails; textWidth: number; textHeight: number; imageUrl: string | null };
+
+export async function buildStampPreview(job: Job, certRefOverride?: string | null): Promise<StampPreview | null> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const { data: firm } = await supabase.from("firms").select("*").eq("id", profile.firm_id).single();
+  const typedFirm = (firm || null) as Firm | null;
+  const certifier = await resolveStampCertifier(supabase, job, profile);
+  const d = job.details || {};
+  const details: StampDetails = {
+    firmName: typedFirm?.name || "",
+    certRef: resolvePathwayCertRef(certRefOverride, job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version),
+    pathway: job.pathway,
+    certifierName: certifier?.name || "",
+    registrationNo: certifier?.registration_no || "",
+    date: formatISODate(job.pathway_signed_at || todayISO()),
+    image: null,
+  };
+  const { textWidth, textHeight } = await measureStampText(details);
+  return { details, textWidth, textHeight, imageUrl: await signedUrl(typedFirm?.stamp_url) };
 }

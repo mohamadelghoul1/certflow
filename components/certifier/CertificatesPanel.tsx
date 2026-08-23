@@ -3,6 +3,7 @@ import { signedUrl } from "@/lib/storage";
 import { reportPathwayToPortal, setVisiblePathwayVersion, startModification, uploadModificationApproval, uploadPathwayApproval, notifyClientMessage, sendPathwayCertificateToClient } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
+import { buildStampPreview } from "@/lib/pdf/stampDetails";
 import { IssueCertificateForm, IssueModificationForm } from "@/components/certifier/IssueCertificateForm";
 import { DeletePathwayVersionButton } from "@/components/certifier/DeletePathwayVersionButton";
 import { DeleteModificationButton } from "@/components/certifier/DeleteModificationButton";
@@ -37,12 +38,16 @@ export async function CertificatesPanel({
   versions: PathwayCertificateVersion[];
 }) {
   const complete = stageComplete(pathwayItems);
+  // What the stamp will say and how big it is, worked out once for the
+  // whole checklist rather than per document.
+  const activeVersion = versions.find((v) => v.version === job.pathway_version);
+  const stamp = await buildStampPreview(job, activeVersion?.cert_ref);
 
   return (
     <div className="space-y-6">
       <div>
         <div className="text-sm font-semibold text-heading mb-2">{job.pathway} checklist</div>
-        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} label={job.pathway} library={library} items={pathwayItems} />
+        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} label={job.pathway} library={library} items={pathwayItems} stamp={stamp} />
       </div>
 
       <div className="border border-line rounded-xl p-6 shadow-sm bg-white">

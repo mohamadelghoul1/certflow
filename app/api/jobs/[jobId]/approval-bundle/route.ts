@@ -71,6 +71,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     bytes: files[idx]?.bytes || null,
     contentType: files[idx]?.contentType || null,
     stamp: item.requires_stamping,
+    placement:
+      item.stamp_x !== null && item.stamp_y !== null
+        ? { x: Number(item.stamp_x), y: Number(item.stamp_y), scale: Number(item.stamp_scale ?? 1) }
+        : null,
   }));
 
   // The approval that leads the set. The signed copy the certifier

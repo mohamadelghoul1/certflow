@@ -352,6 +352,38 @@ export async function updateItemMeta(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// Where the approval stamp sits on one document, and how big it is —
+// dragged onto a preview of the plan itself rather than typed in. Also
+// remembered on the firm, so the next plan starts where this one was put
+// instead of back in the corner.
+export async function setStampPlacement(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const itemId = String(formData.get("item_id"));
+  const jobId = String(formData.get("job_id"));
+
+  const x = Number(formData.get("x"));
+  const y = Number(formData.get("y"));
+  const scale = Number(formData.get("scale"));
+  // A fraction of the page and a sane size, whatever arrives.
+  const clamp = (value: number, min: number, max: number) => (Number.isFinite(value) ? Math.min(Math.max(value, min), max) : min);
+  const placement = { stamp_x: clamp(x, 0, 1), stamp_y: clamp(y, 0, 1), stamp_scale: clamp(scale, 0.25, 4) };
+
+  await supabase.from("checklist_items").update(placement).eq("id", itemId);
+  await supabase.from("firms").update(placement).eq("id", profile.firm_id);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+// Back to the bottom-right corner at normal size.
+export async function clearStampPlacement(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const itemId = String(formData.get("item_id"));
+  const jobId = String(formData.get("job_id"));
+  await supabase.from("checklist_items").update({ stamp_x: null, stamp_y: null, stamp_scale: null }).eq("id", itemId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
 export async function toggleStamping(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
