@@ -29,6 +29,7 @@ function extractQuoteFields(formData: FormData) {
     ownerIsApplicant,
     scopeOfWorks,
     fields: {
+      quote_number: String(formData.get("quote_number") || "").trim() || null,
       state: String(formData.get("state") || "NSW"),
       project_type: String(formData.get("project_type") || "") || null,
       pathway,

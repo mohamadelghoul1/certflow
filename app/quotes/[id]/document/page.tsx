@@ -48,7 +48,8 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
   const activeTerms = quote.terms_override || defaultTerms;
 
   const mailtoTo = applicant.email || "";
-  const mailtoSubject = `Fee Quote ${quote.id.slice(0, 8).toUpperCase()} — ${quote.proposal_address || "Your project"}`;
+  const quoteNumber = quote.quote_number?.trim() || quote.id.slice(0, 8).toUpperCase();
+  const mailtoSubject = `Fee Quote ${quoteNumber} — ${quote.proposal_address || "Your project"}`;
   const mailtoBody = [
     `Hi ${applicant.name || "there"},`,
     "",
@@ -67,7 +68,7 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
   return (
     <QuoteDocument
       backHref={`/quotes/${id}`}
-      filename={`Quote-${id.slice(0, 8)}.doc`}
+      filename={`Quote-${quoteNumber.replace(/[^\w-]+/g, "-")}.doc`}
       mailtoHref={mailtoHref}
       hasApplicantEmail={!!applicant.email}
     >
@@ -87,7 +88,7 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
         <div className="border-b border-heading mb-4" />
 
         <div className="flex justify-between text-sm mb-6">
-          <div>Quote Number: {id.slice(0, 8).toUpperCase()}</div>
+          <div>Quote Number: {quoteNumber}</div>
           <div>Date: {today()}</div>
         </div>
 

@@ -45,6 +45,10 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
   return (
     <form action={formAction}>
       <Section title="Quote details">
+        <div>
+          <label className={labelCls}>Quote number</label>
+          <input name="quote_number" placeholder="Leave blank to use the automatic number" autoComplete="off" className={inputCls} />
+        </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>State</label>

@@ -80,6 +80,10 @@ export function QuoteEditForm({
       </div>
 
       <Section title="Quote details">
+        <div>
+          <label className={labelCls}>Quote number</label>
+          <input name="quote_number" defaultValue={quote.quote_number || ""} placeholder={`Leave blank to use the automatic number (${quote.id.slice(0, 8).toUpperCase()})`} autoComplete="off" className={inputCls} />
+        </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>State</label>

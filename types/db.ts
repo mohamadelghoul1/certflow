@@ -58,6 +58,9 @@ export type Profile = {
 export type Quote = {
   id: string;
   firm_id: string;
+  // The firm's own quote number; the automatic id-derived one is used
+  // when this is blank.
+  quote_number: string | null;
   state: string | null;
   project_type: string | null;
   pathway: "CDC" | "CC";
