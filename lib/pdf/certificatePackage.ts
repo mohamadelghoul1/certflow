@@ -139,31 +139,50 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
 
   // 3. The certificate itself
   l.pageBreak();
-  l.documentTitle(pathwayFull.toUpperCase(), { subtitle: `${isCdc ? "Complying Development Certificate" : "Construction Certificate"} No: ${ref}` });
+  const issuedUnder = isCdc
+    ? "Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979"
+    : "Issued under Part 6 the Environmental Planning and Assessment Act 1979";
+  l.documentTitle(isCdc ? `${pathwayFull} ${ref}`.toUpperCase() : `${pathwayFull} – ${projRef}`.toUpperCase(), {
+    subtitle: isCdc ? [`PROJECT REFERENCE ${projRef}`, issuedUnder] : issuedUnder,
+  });
+  l.text(
+    isCdc
+      ? "This CDC approval does not allow any work to commence. Principal Certifier must be appointed, and Home Building Compensation Fund (HBCF) has been issued by a licenced builder or Owner Builder Permit is issued by Building Commission NSW and all council fees/bonds have been paid."
+      : "This Construction Certificate does not give authorisation of any construction works to commence until a Principal Certifier has been appointed.",
+    { bold: true, gapAfter: 10 }
+  );
 
+  // Field for field the same certificate the Word export and the
+  // on-screen copy produce. This section used to be its own arrangement —
+  // different headings, a different title block, conditions set as a
+  // full-width section rather than a row — which is why the same job came
+  // out as a different document depending on which button was pressed.
   l.heading("APPLICANT DETAILS", { rule: true });
   l.fieldRow("Applicant:", applicantName || "");
   l.fieldRow("Address:", formatAddress(d.applicantAddress) || "");
   l.fieldRow("Phone:", applicantPhone || "");
-  l.fieldRow("Owner:", ownerName || "");
-  l.fieldRow("Owner address:", ownerAddress || "");
-  l.fieldRow("Owner phone:", ownerPhone || "");
 
-  l.heading(isCdc ? "COMPLYING DEVELOPMENT" : "RELEVANT DEVELOPMENT CONSENTS", { rule: true });
-  l.fieldRow("Consent Authority / Local Government Area:", d.council?.lga || "");
+  l.heading("OWNER DETAILS", { rule: true });
+  l.fieldRow(isCdc ? "Owner" : "Owner:", ownerName || "");
+  l.fieldRow("Address:", ownerAddress || "");
+  l.fieldRow("Phone:", ownerPhone || "");
+
   if (isCdc) {
-    l.fieldRow("Decision Made Under:", cd.relevantInstrument || "");
-    l.fieldRow("Relevant Part of Code:", cd.relevantPartOfCode || "");
+    l.heading(`${pathwayFull.toUpperCase()} DETAILS`, { rule: true });
     l.fieldRow("NSW Planning Portal Ref Number:", cd.planningPortalRef || "");
-    l.fieldRow("CDC Number:", ref);
+    l.fieldRow("Local Government Area:", d.council?.lga || "");
+    l.fieldRow("Relevant Environmental Planning Instrument", cd.relevantInstrument || "");
+    l.fieldRow("Relevant Part of Code", cd.relevantPartOfCode || "");
     l.fieldRow("Date of Determination:", formatISODate(cd.determinationDate));
-    l.fieldRow("This certificate lapses on:", /^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate);
+    l.fieldRow("Date of Lapse:", /^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate);
   } else {
+    l.heading("RELEVANT DEVELOPMENT CONSENTS", { rule: true });
+    l.fieldRow("Consent Authority / Local Government Area:", d.council?.lga || "");
     l.fieldRow("Development Consent Number:", cd.developmentConsentNumber || "");
     l.fieldRow("Development Consent Date:", formatISODate(cd.developmentConsentDate));
     l.fieldRow("NSW Planning Portal Ref Number:", cd.planningPortalRef || "");
     l.fieldRow("Construction Certificate Number:", ref);
-    l.fieldRow("Date of Issue:", issuedDate);
+    l.fieldRow("Date of Issue of Construction Certificate:", issuedDate);
   }
 
   l.heading("PROPOSAL", { rule: true });
@@ -174,29 +193,33 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   l.fieldRow("BCA/NCC Version:", formatBcaVersion(d.bcaVersion, d.bcaVolumes));
   l.fieldRow("Description of Building Works:", job.description || "");
   l.fieldRow(isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)", formatCurrency(d.proposal?.estimatedCost) || "");
-  l.fieldRow("Attachments:", "Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon");
+  l.fieldRow(isCdc ? "Attachments" : "Attachments:", "Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon");
 
   if (isCdc) {
-    l.heading("CONDITIONS", { rule: true });
-    l.text(
-      "Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying Development) Codes 2008 & State Environmental Planning Policy (Housing) 2021",
-      { justify: true, gapAfter: 4 }
+    // Conditions is a row of the same table, not a section of its own —
+    // the label sits in the label column and everything it says lines up
+    // under the values beside it.
+    const labelWidth = l.contentWidth * 0.33;
+    const valueX = MARGIN + labelWidth + 8;
+    const valueWidth = l.contentWidth - labelWidth - 8;
+    l.fieldRow(
+      "Conditions:",
+      "Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying Development) Codes 2008 & State Environmental Planning Policy (Housing) 2021"
     );
     l.text(
       "Any monetary contribution fee’s and/or any other Council fee’s/bonds that are required by council MUST be paid prior to commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from Council and a copy of such approval provided to the PC prior to the works commencing.",
-      { justify: true, gapAfter: 4 }
+      { x: valueX, width: valueWidth, justify: true, gapAfter: 3 }
     );
-    conditions.forEach((c) => l.bullet(c.text));
+    conditions.forEach((c) => l.text(`\u2022  ${c.text}`, { x: valueX + 6, width: valueWidth - 6, gapAfter: 2 }));
   }
-  l.gap(SPACE_AFTER);
   l.fieldRow(isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", "See attached Notice");
 
-  // Kept together with the declaration, signature and closing note below
-  // it: read as a unit, that block is one statement of who issued the
-  // certificate and on what authority, and splitting it strands a line of
-  // it on a page of its own. The reserve covers the whole block at 11pt.
-  l.ensure(300);
-  l.heading("REGISTERED CERTIFIER", { rule: true });
+  // The certifying block starts its own page, the way the on-screen
+  // document does: who issued the certificate and on what authority reads
+  // as one statement, and a certificate whose declaration and signature
+  // are split across a page break reads as an error.
+  l.pageBreak();
+  l.heading("REGISTERED CERTIFIER", { rule: true, gapBefore: 0 });
   l.fieldRow("Registered Certifier:", issuedBy?.name || "");
   l.fieldRow("Registration Body:", issuedBy?.registration_body || "");
   l.fieldRow("Registration No:", issuedBy?.registration_no || "");

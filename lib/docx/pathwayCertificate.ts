@@ -147,13 +147,13 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
         : []),
       { kind: "row", label: isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", value: "See attached Notice" },
     ]),
-    // The certifying-authority block is its own table so it can be held
-    // together: read as a unit, the certifier's name, registration body
-    // and registration number are one statement, and Word was free to
-    // paginate the big certificate table between any two of them. It also
-    // stays with the declaration and signature that follow it, so the
-    // whole "who issued this and on what authority" end of the
-    // certificate lands on a single page.
+    // The certifying block starts its own page, the way the on-screen
+    // document and the PDF approved set do: who issued the certificate and
+    // on what authority reads as one statement, and a certificate whose
+    // declaration and signature are split across a page break reads as an
+    // error. Its own table as well, so Word cannot paginate between the
+    // certifier's name, registration body and registration number.
+    pageBreak(),
     fieldTable(
       [
         { kind: "heading", text: "REGISTERED CERTIFIER" },
@@ -242,6 +242,10 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
         { spacingAfter: 0 }
       ),
     ]),
+    // The notice is dated the same way the on-screen copy and the PDF
+    // approved set date it — this line was missing here, so the same
+    // notice read differently depending on which button produced it.
+    p(`Dated: ${issuedDate}`, { align: AlignmentType.RIGHT, spacingBefore: 120 }),
     ...signatureBlock(images.signature),
     ...signatory(issuedBy?.name, `Principal Certifier / ${issuedBy?.registration_no || "—"}`)
   );

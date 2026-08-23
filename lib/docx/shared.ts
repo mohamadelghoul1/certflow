@@ -76,8 +76,15 @@ export const PAGE_PROPERTIES = {
   },
 };
 
-// 0.15cm of padding inside every table cell.
+// 0.15cm of padding inside a bordered grid cell, where it sits between
+// the text and a visible rule and has to be seen.
 const CELL_PADDING = convertMillimetersToTwip(1.5);
+// The borderless label/value rows are a different job: nothing is drawn
+// around them, so the padding only adds pitch. At 1.5mm each row stood
+// 22.3pt tall against the same row's 19.8pt in the PDF approved set,
+// which is why the Word certificate ran to three pages where the PDF took
+// two. 0.9mm brings the two to the same row height.
+const FIELD_CELL_PADDING = convertMillimetersToTwip(0.9);
 const ROW_HEIGHT = convertMillimetersToTwip(7); // 0.7cm
 
 export function run(text: string, opts: { bold?: boolean; italic?: boolean; size?: number; color?: string; uppercase?: boolean; light?: boolean } = {}) {
@@ -264,7 +271,7 @@ function cell(children: readonly (Paragraph | Table)[], opts: { widthPct?: numbe
     // the body text above them.
     margins: opts.padded
       ? { top: CELL_PADDING, bottom: CELL_PADDING, left: CELL_PADDING, right: CELL_PADDING }
-      : { top: CELL_PADDING, bottom: CELL_PADDING, left: 0, right: CELL_PADDING },
+      : { top: FIELD_CELL_PADDING, bottom: FIELD_CELL_PADDING, left: 0, right: CELL_PADDING },
   });
 }
 
