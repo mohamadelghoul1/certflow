@@ -1,4 +1,4 @@
-import { Layout, MARGIN, MARGIN_TOP, A4, MUTED, LINE, HEADING_COLOR, INK, BODY_SIZE, SMALL_SIZE, TITLE_SIZE, INSPECTION_HEADER_FILL } from "@/lib/pdf/layout";
+import { Layout, MARGIN, MARGIN_TOP, A4, MUTED, LINE, HEADING_COLOR, INK, BODY_SIZE, SMALL_SIZE, TITLE_SIZE, SPACE_AFTER, INSPECTION_HEADER_FILL } from "@/lib/pdf/layout";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatISODate, letterheadAddressLines } from "@/lib/business";
 
@@ -105,12 +105,22 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   formatAddressLines(d.council?.address).forEach((line) => l.text(line, { gapAfter: 2 }));
   l.gap(4);
   l.text("Dear Sir/Madam,");
-  l.text(`Re: ${job.address || ""}`, { bold: true });
+  l.inline([{ text: "Re: ", bold: true }, { text: job.address || "" }]);
+  l.inline([{ text: `${pathwayFull} No.  `, bold: true }, { text: ref }]);
+  l.inline(
+    isCdc
+      ? [{ text: "Planning Instrument Decision Made Under:  ", bold: true }, { text: cd.relevantInstrument || "—" }]
+      : [{ text: "Development Application No.:  ", bold: true }, { text: cd.developmentConsentNumber || "—" }]
+  );
   councilBody.forEach((line) => l.text(line, { justify: true, gapAfter: 12 }));
+  l.text("Please find enclosed the following documentation:");
+  l.bullet(`${pathwayFull} No. ${ref}`);
+  l.bullet(`Copy of the application for the ${pathwayFull}.`);
+  l.bullet(`Documentation used to determine the application for the ${pathwayFull} as detailed in Schedule 1 of the Certificate.`);
   l.signatureRule();
-  l.text("Yours faithfully,");
+  l.text("Yours sincerely,");
   await signature();
-  l.signatory(issuedBy?.name || "—", `Registered Certifier / ${issuedBy?.registration_no || "—"}`);
+  l.signatory(issuedBy?.name || "—", `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`);
 
   // 2. Applicant letter
   l.pageBreak();
@@ -119,17 +129,17 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   formatAddressLines(d.applicantAddress).forEach((line) => l.text(line, { gapAfter: 2 }));
   l.gap(4);
   l.text("Dear Sir/Madam,");
-  l.text(`Re: ${job.address || ""}`, { bold: true });
+  l.inline([{ text: "Re: ", bold: true }, { text: job.address || "" }]);
+  l.inline([{ text: `${pathwayFull} No.:  `, bold: true }, { text: ref }]);
+  l.text(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true });
   applicantBody.forEach((line) => l.text(line, { justify: true, gapAfter: 12 }));
   if (requiredDocsList.length) {
-    l.gap(2);
-    requiredDocsList.forEach((line) => l.bullet(line));
-    l.gap(4);
+    l.callout("Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:", requiredDocsList);
   }
   l.signatureRule();
-  l.text("Yours faithfully,");
+  l.text("Yours sincerely,");
   await signature();
-  l.signatory(issuedBy?.name || "—", `Registered Certifier / ${issuedBy?.registration_no || "—"}`);
+  l.signatory(issuedBy?.name || "—", `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`);
 
   // 3. The certificate itself
   l.pageBreak();
@@ -182,10 +192,14 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
     );
     conditions.forEach((c) => l.bullet(c.text));
   }
+  l.gap(SPACE_AFTER);
   l.fieldRow(isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", "See attached Notice");
 
-  // Kept together with the declaration and signature below it.
-  l.ensure(190);
+  // Kept together with the declaration, signature and closing note below
+  // it: read as a unit, that block is one statement of who issued the
+  // certificate and on what authority, and splitting it strands a line of
+  // it on a page of its own. The reserve covers the whole block at 11pt.
+  l.ensure(300);
   l.heading("REGISTERED CERTIFIER", { rule: true });
   l.fieldRow("Registered Certifier:", issuedBy?.name || "");
   l.fieldRow("Registration Body:", issuedBy?.registration_body || "");
@@ -209,7 +223,19 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
     { bold: true }
   );
 
-  // 4. Mandatory inspections notice
+  // 4. Schedule 1 to the certificate: the documents it relies on.
+  //    Sits directly under the certificate it belongs to, rather than at
+  //    the back of the pack behind the inspections notice.
+  l.pageBreak();
+  l.documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON", { subtitle: "Every document requested from the applicant during assessment, for reference." });
+  l.table(
+    ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
+    allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),
+    [21, 27, 13, 12, 15, 12],
+    { zebra: true, centerColumns: [5], rowHeight: 15 }
+  );
+
+  // 5. Mandatory inspections notice
   l.pageBreak();
   l.documentTitle("NOTICE TO APPLICANT OF MANDATORY CRITICAL STAGE INSPECTIONS", {
     subtitle: "Made under Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 — Section 58",
@@ -261,7 +287,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   await signature();
   l.signatory(issuedBy?.name || "—", `Principal Certifier / ${issuedBy?.registration_no || "—"}`);
 
-  // 4b. Schedule 1, on its own page
+  // 5b. Schedule 1 to the notice, on its own page
   l.pageBreak();
   l.documentTitle("SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS", { subtitle: `${pathwayFull} ${ref} — ${job.address || ""}` });
   l.table(
@@ -269,16 +295,6 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
     selectedInspections.map((r, i) => [`${i + 1}.`, r.stage, r.inspector]),
     [8, 62, 30],
     { headerFill: INSPECTION_HEADER_FILL, centerColumns: [0], rowHeight: 23 }
-  );
-
-  // 5. Documents requested
-  l.pageBreak();
-  l.documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON", { subtitle: "Every document requested from the applicant during assessment, for reference." });
-  l.table(
-    ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
-    allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),
-    [21, 27, 13, 12, 15, 12],
-    { zebra: true, centerColumns: [5], rowHeight: 15 }
   );
 
   return l.save();

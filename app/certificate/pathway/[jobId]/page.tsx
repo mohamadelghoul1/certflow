@@ -404,7 +404,43 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
           <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
 
-        {/* 4. Mandatory inspections notice */}
+        {/* 4. Schedule 1 to the certificate: the documents it relies on.
+            Sits directly under the certificate it belongs to, rather than
+            at the back of the pack behind the inspections notice. */}
+        <Section>
+          <DocumentHeader firm={firm} logoUrl={logoUrl} />
+          <div className="text-sm">
+            <div className="text-base font-bold mb-1">SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON</div>
+            <div className="text-xs text-placeholder mb-3">Every document requested from the applicant during assessment, for reference.</div>
+            <table className="w-full border border-line text-sm">
+              <thead>
+                <tr className="bg-surface">
+                  <th className="border border-line px-3 py-1.5 w-32 text-left">Prepared by</th>
+                  <th className="border border-line px-3 py-1.5 text-left">Document</th>
+                  <th className="border border-line px-3 py-1.5 w-28 text-left">Reference no.</th>
+                  <th className="border border-line px-3 py-1.5 w-20 text-left">Revision</th>
+                  <th className="border border-line px-3 py-1.5 w-24 text-left">Date</th>
+                  <th className="border border-line px-3 py-1.5 w-24 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allItems.map((i) => (
+                  <tr key={i.id}>
+                    <td className="border border-line px-3 py-1.5">{i.prepared_by || "—"}</td>
+                    <td className="border border-line px-3 py-1.5">{i.title}</td>
+                    <td className="border border-line px-3 py-1.5">{i.drawing_number || "—"}</td>
+                    <td className="border border-line px-3 py-1.5">{i.revision || "—"}</td>
+                    <td className="border border-line px-3 py-1.5">{formatISODate(i.document_date)}</td>
+                    <td className="border border-line px-3 py-1.5 capitalize">{i.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <DocFooter projRef={projRef} website={firm?.website} />
+        </Section>
+
+        {/* 5. Mandatory inspections notice */}
         <Section>
           <DocumentHeader firm={firm} logoUrl={logoUrl} />
           <div className="text-sm space-y-3">
@@ -484,10 +520,10 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
           <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
 
-        {/* 4b. Schedule 1 — the schedule the notice refers to, on its own
+        {/* 5b. Schedule 1 to the notice — the schedule it refers to, on its own
             page so it can be handed to the builder as a standalone list of
             the inspections to book. */}
-        <Section>
+        <Section last>
           <DocumentHeader firm={firm} logoUrl={logoUrl} />
           <div className="text-sm space-y-3">
             <div className="font-bold text-base mb-1">SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS</div>
@@ -516,37 +552,6 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
           <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
 
-        {/* 5. Checklist summary */}
-        <Section last>
-          <div className="text-sm">
-            <div className="text-base font-bold mb-1">SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON</div>
-            <div className="text-xs text-placeholder mb-3">Every document requested from the applicant during assessment, for reference.</div>
-            <table className="w-full border border-line text-sm">
-              <thead>
-                <tr className="bg-surface">
-                  <th className="border border-line px-3 py-1.5 w-32 text-left">Prepared by</th>
-                  <th className="border border-line px-3 py-1.5 text-left">Document</th>
-                  <th className="border border-line px-3 py-1.5 w-28 text-left">Reference no.</th>
-                  <th className="border border-line px-3 py-1.5 w-20 text-left">Revision</th>
-                  <th className="border border-line px-3 py-1.5 w-24 text-left">Date</th>
-                  <th className="border border-line px-3 py-1.5 w-24 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allItems.map((i) => (
-                  <tr key={i.id}>
-                    <td className="border border-line px-3 py-1.5">{i.prepared_by || "—"}</td>
-                    <td className="border border-line px-3 py-1.5">{i.title}</td>
-                    <td className="border border-line px-3 py-1.5">{i.drawing_number || "—"}</td>
-                    <td className="border border-line px-3 py-1.5">{i.revision || "—"}</td>
-                    <td className="border border-line px-3 py-1.5">{formatISODate(i.document_date)}</td>
-                    <td className="border border-line px-3 py-1.5 capitalize">{i.status}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Section>
       </div>
     </CertificatePackage>
   );

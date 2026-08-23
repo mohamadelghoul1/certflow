@@ -49,6 +49,11 @@ export const TABLE_HEADER_FILL = rgb(0xf2 / 255, 0xf2 / 255, 0xf2 / 255);
 export const INSPECTION_HEADER_FILL = rgb(0xd9 / 255, 0xe2 / 255, 0xf3 / 255);
 export const ZEBRA_FILL = rgb(0xfa / 255, 0xfa / 255, 0xfa / 255);
 
+// The amber "you must provide" / "failure to request an inspection" box,
+// the same pair of colours the Word version uses.
+const CALLOUT_FILL = rgb(0xff / 255, 0xfb / 255, 0xeb / 255);
+const CALLOUT_BORDER = rgb(0xfd / 255, 0xe6 / 255, 0x8a / 255);
+
 const GRID_LINE = rgb(0xbf / 255, 0xbf / 255, 0xbf / 255);
 const CELL_PAD = 1.5 * MM; // 0.15cm
 const ROW_HEIGHT = 7 * MM; // 0.7cm
@@ -64,6 +69,10 @@ export type TextOpts = {
   gapAfter?: number;
   lineHeight?: number;
 };
+
+// One run of a mixed-weight line, e.g. a bold "Re: " followed by the
+// address in normal weight.
+export type InlinePart = { text: string; bold?: boolean; color?: RGB };
 
 export type TableOpts = {
   headerFill?: RGB;
@@ -289,6 +298,103 @@ export class Layout {
     drawRow(headers, true, opts.headerFill ?? TABLE_HEADER_FILL);
     rows.forEach((row, i) => drawRow(row, false, opts.zebra && i % 2 === 1 ? ZEBRA_FILL : null));
     this.y -= SPACE_AFTER;
+  }
+
+  // A line built from runs of different weights — a bold label followed
+  // by its value, the shape every "Re:" and "Certificate No.:" line in the
+  // letters takes. Wraps by word, keeping each word in its own weight.
+  inline(parts: InlinePart[], opts: { size?: number; gapAfter?: number; width?: number; x?: number } = {}) {
+    const size = opts.size ?? BODY_SIZE;
+    const width = opts.width ?? this.contentWidth;
+    const x = opts.x ?? MARGIN;
+    const lead = size * LINE_FACTOR;
+
+    type Token = { text: string; bold?: boolean; color?: RGB; width: number; space: boolean };
+    const tokens: Token[] = [];
+    for (const part of parts) {
+      for (const chunk of part.text.split(/(\s+)/)) {
+        if (!chunk) continue;
+        tokens.push({
+          text: chunk,
+          bold: part.bold,
+          color: part.color,
+          width: this.font(part.bold).widthOfTextAtSize(chunk, size),
+          space: /^\s+$/.test(chunk),
+        });
+      }
+    }
+
+    const lines: Token[][] = [[]];
+    let used = 0;
+    for (const token of tokens) {
+      if (!token.space && used + token.width > width && used > 0) {
+        lines.push([]);
+        used = 0;
+      }
+      // A space that would start a wrapped line is dropped, so the text
+      // still lines up with the left margin.
+      if (token.space && used === 0) continue;
+      lines[lines.length - 1].push(token);
+      used += token.width;
+    }
+
+    for (const line of lines) {
+      this.ensure(lead);
+      this.y -= lead;
+      let cursor = x;
+      // Neighbouring words in the same weight are drawn as one string, not
+      // one call each: a PDF reader reconstructs the spaces between words
+      // from what is inside a drawn string, so word-by-word placement would
+      // read back as "YagoonaNSW" however right it looked on the page.
+      let run = "";
+      let runStart = x;
+      let runStyle: { bold?: boolean; color?: RGB } | null = null;
+      const flush = () => {
+        if (run.trim()) this.page.drawText(run, { x: runStart, y: this.y, size, font: this.font(runStyle?.bold), color: runStyle?.color ?? INK });
+        run = "";
+      };
+      for (const token of line) {
+        const sameStyle = runStyle && runStyle.bold === token.bold && runStyle.color === token.color;
+        if (!sameStyle) {
+          flush();
+          runStart = cursor;
+          runStyle = { bold: token.bold, color: token.color };
+        }
+        run += token.text;
+        cursor += token.width;
+      }
+      flush();
+    }
+    this.y -= opts.gapAfter ?? SPACE_AFTER;
+  }
+
+  // The amber box the letters put their "you must provide" list in. The
+  // height has to be measured before anything is drawn, because the
+  // background rectangle goes down first and the text sits on top of it.
+  callout(body: string, bullets: string[] = [], opts: { size?: number; bold?: boolean } = {}) {
+    const size = opts.size ?? BODY_SIZE;
+    const lead = size * LINE_FACTOR;
+    const pad = 10;
+    const inner = this.contentWidth - pad * 2;
+
+    const bodyLines = body ? this.wrap(body, inner, size, opts.bold) : [];
+    const bulletLines = bullets.map((b) => this.wrap(`\u2022  ${b}`, inner - 10, size));
+    const rows = bodyLines.length + bulletLines.reduce((n, l) => n + l.length, 0);
+    const height = rows * lead + pad * 2;
+    this.ensure(height + 4);
+
+    const top = this.y;
+    this.page.drawRectangle({ x: MARGIN, y: top - height, width: this.contentWidth, height, color: CALLOUT_FILL, borderColor: CALLOUT_BORDER, borderWidth: 0.5 });
+
+    let cursor = top - pad;
+    const draw = (line: string, indent: number, bold?: boolean) => {
+      cursor -= lead;
+      this.page.drawText(line, { x: MARGIN + pad + indent, y: cursor + 3, size, font: this.font(bold), color: INK });
+    };
+    bodyLines.forEach((line) => draw(line, 0, opts.bold));
+    bulletLines.forEach((lines) => lines.forEach((line, i) => draw(line, i === 0 ? 6 : 16)));
+
+    this.y = top - height - SPACE_AFTER;
   }
 
   bullet(text: string) {

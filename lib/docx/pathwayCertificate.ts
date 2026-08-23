@@ -183,7 +183,21 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     )
   );
 
-  // 4. Mandatory inspections notice
+  // 4. Schedule 1 to the certificate: the documents it relies on.
+  //    Sits directly under the certificate it belongs to, rather than at
+  //    the back of the pack behind the inspections notice.
+  push(
+    pageBreak(),
+    ...documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON", { subtitle: "Every document requested from the applicant during assessment, for reference." }),
+    gridTable(
+      ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
+      allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),
+      [21, 27, 13, 12, 15, 12],
+      { zebra: true, centerColumns: [5], rowHeight: 300 }
+    )
+  );
+
+  // 5. Mandatory inspections notice
   push(
     pageBreak(),
     ...documentTitle("NOTICE TO APPLICANT OF MANDATORY CRITICAL STAGE INSPECTIONS", {
@@ -235,7 +249,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     ...signatory(issuedBy?.name, `Principal Certifier / ${issuedBy?.registration_no || "—"}`)
   );
 
-  // 4b. Schedule 1 — on its own page, so it can be handed to the builder
+  // 5b. Schedule 1 to the notice — on its own page, so it can be handed to the builder
   // as a standalone list of the inspections to book rather than being
   // buried at the foot of the notice.
   push(
@@ -246,18 +260,6 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       selectedInspections.map((r, idx) => [`${idx + 1}.`, r.stage, r.inspector]),
       [8, 62, 30],
       { headerFill: INSPECTION_HEADER_FILL, centerColumns: [0], rowHeight: 460 }
-    )
-  );
-
-  // 5. Checklist summary
-  push(
-    pageBreak(),
-    ...documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON", { subtitle: "Every document requested from the applicant during assessment, for reference." }),
-    gridTable(
-      ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
-      allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),
-      [21, 27, 13, 12, 15, 12],
-      { zebra: true, centerColumns: [5], rowHeight: 300 }
     )
   );
 
