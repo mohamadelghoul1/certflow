@@ -41,49 +41,57 @@ export function ProjectsDonut({ slices }: { slices: Slice[] }) {
     offset: lengths.slice(0, i).reduce((sum, l) => sum + l, 0),
   }));
 
+  // A container query, not a viewport one. Whether the ring and its legend
+  // fit side by side depends on how wide this card is, not how wide the
+  // window is — and on a desktop the card sits in the narrow side column,
+  // so a viewport breakpoint forced them side by side in ~350px and
+  // pushed the counts out past the card's edge. @md switches to a row only
+  // once the card itself has room for both.
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
-      <svg viewBox="0 0 140 140" role="img" aria-label={`${total} projects by stage`} className="w-[132px] h-[132px] shrink-0 -rotate-90">
-        <circle cx="70" cy="70" r={RADIUS} fill="none" stroke="var(--color-line)" strokeWidth={STROKE} />
-        {arcs.map((s) => {
-          const dash = Math.max(s.length - gap, 1);
-          return (
-            <circle
-              key={s.label}
-              cx="70"
-              cy="70"
-              r={RADIUS}
-              fill="none"
-              stroke={s.color}
-              strokeWidth={STROKE}
-              strokeDasharray={`${dash} ${CIRCUMFERENCE - dash}`}
-              strokeDashoffset={-s.offset}
-            >
-              <title>{`${s.label}: ${s.value} of ${total}`}</title>
-            </circle>
-          );
-        })}
-        <g className="rotate-90 origin-center">
-          <text x="70" y="66" textAnchor="middle" className="fill-heading" style={{ fontSize: 22, fontWeight: 700 }}>
-            {total}
-          </text>
-          <text x="70" y="82" textAnchor="middle" className="fill-muted" style={{ fontSize: 9 }}>
-            {total === 1 ? "Project" : "Projects"}
-          </text>
-        </g>
-      </svg>
+    <div className="@container">
+        <div className="flex flex-col @md:flex-row items-center gap-4 @md:gap-5">
+        <svg viewBox="0 0 140 140" role="img" aria-label={`${total} projects by stage`} className="w-[132px] h-[132px] shrink-0 -rotate-90">
+          <circle cx="70" cy="70" r={RADIUS} fill="none" stroke="var(--color-line)" strokeWidth={STROKE} />
+          {arcs.map((s) => {
+            const dash = Math.max(s.length - gap, 1);
+            return (
+              <circle
+                key={s.label}
+                cx="70"
+                cy="70"
+                r={RADIUS}
+                fill="none"
+                stroke={s.color}
+                strokeWidth={STROKE}
+                strokeDasharray={`${dash} ${CIRCUMFERENCE - dash}`}
+                strokeDashoffset={-s.offset}
+              >
+                <title>{`${s.label}: ${s.value} of ${total}`}</title>
+              </circle>
+            );
+          })}
+          <g className="rotate-90 origin-center">
+            <text x="70" y="66" textAnchor="middle" className="fill-heading" style={{ fontSize: 22, fontWeight: 700 }}>
+              {total}
+            </text>
+            <text x="70" y="82" textAnchor="middle" className="fill-muted" style={{ fontSize: 9 }}>
+              {total === 1 ? "Project" : "Projects"}
+            </text>
+          </g>
+        </svg>
 
-      <div className="w-full sm:flex-1 sm:min-w-[150px] space-y-1.5">
-        {slices.map((s) => (
-          <Link key={s.label} href={s.href} className="flex items-center gap-2 text-sm hover:bg-hover rounded px-1 -mx-1 py-0.5">
-            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: s.color }} />
-            <span className="text-muted flex-1 truncate">{s.label}</span>
-            <span className="text-muted tabular-nums">
-              {s.value}
-              {total > 0 && <span className="text-placeholder"> ({Math.round((s.value / total) * 100)}%)</span>}
-            </span>
-          </Link>
-        ))}
+        <div className="w-full @md:flex-1 @md:min-w-[150px] space-y-1.5">
+          {slices.map((s) => (
+            <Link key={s.label} href={s.href} className="flex items-center gap-2 text-sm hover:bg-hover rounded px-1 -mx-1 py-0.5">
+              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: s.color }} />
+              <span className="text-muted flex-1 min-w-0 truncate">{s.label}</span>
+              <span className="text-muted tabular-nums shrink-0">
+                {s.value}
+                {total > 0 && <span className="text-placeholder"> ({Math.round((s.value / total) * 100)}%)</span>}
+              </span>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
