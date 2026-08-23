@@ -5,8 +5,9 @@ import { createQuote } from "@/lib/actions/quotes";
 import type { ActionState } from "@/lib/actions/auth";
 import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS, VALID_FOR_OPTIONS, defaultScopeOfWorks } from "@/lib/constants";
 import { X, Plus } from "lucide-react";
-import { DateField } from "@/components/DateField";
+import { DateField, todayISO } from "@/components/DateField";
 import { AddressLookupField } from "@/components/certifier/AddressLookupField";
+import { ApplicantAddressField } from "@/components/certifier/ApplicantAddressField";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -31,6 +32,7 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
   const [ownerIsApplicant, setOwnerIsApplicant] = useState(true);
   const [scopeItems, setScopeItems] = useState<string[]>(defaultScopeOfWorks("CDC"));
   const [feeLines, setFeeLines] = useState<FeeLine[]>([{ description: "CDC/PC/OC", amount: "2500" }]);
+  const [validFor, setValidFor] = useState("7 Days");
 
   function handlePathwayChange(p: "CDC" | "CC") {
     setPathway(p);
@@ -85,20 +87,37 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Required start date</label>
-            <DateField name="required_start_date" className={inputCls} />
+            {/* The start is when the engagement began, so it can't be a
+                future day; the end is a deadline, so it can't already have
+                passed. Inside those bounds the calendar picks freely. */}
+            <DateField name="required_start_date" max={todayISO()} className={inputCls} />
           </div>
           <div>
             <label className={labelCls}>Required end date</label>
-            <DateField name="required_end_date" className={inputCls} />
+            <DateField name="required_end_date" min={todayISO()} className={inputCls} />
           </div>
         </div>
         <div>
           <label className={labelCls}>Quote valid for</label>
-          <select name="valid_for" defaultValue="7 Days" className={inputCls}>
-            {VALID_FOR_OPTIONS.map((v) => (
-              <option key={v}>{v}</option>
-            ))}
-          </select>
+          {/* Either one of the usual periods, or a date of the certifier's
+              own choosing — stored as "Until yyyy-mm-dd" so the quote
+              document can say "valid until" that day. */}
+          <div className="flex gap-2 flex-wrap">
+            <select
+              value={validFor.startsWith("Until ") ? "Until a specific date" : validFor}
+              onChange={(e) => setValidFor(e.target.value === "Until a specific date" ? `Until ${todayISO()}` : e.target.value)}
+              className={`${inputCls} sm:w-56`}
+            >
+              {VALID_FOR_OPTIONS.map((v) => (
+                <option key={v}>{v}</option>
+              ))}
+              <option>Until a specific date</option>
+            </select>
+            {validFor.startsWith("Until ") && (
+              <DateField value={validFor.slice(6)} min={todayISO()} onChange={(e) => setValidFor(`Until ${e.target.value}`)} className={`${inputCls} sm:w-48`} />
+            )}
+          </div>
+          <input type="hidden" name="valid_for" value={validFor} />
         </div>
       </Section>
 
@@ -165,20 +184,7 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
             <input type="email" name="applicant_email" className={inputCls} />
           </div>
         </div>
-        <div>
-          <label className={labelCls}>Applicant address</label>
-          <div className="grid sm:grid-cols-5 gap-2">
-            <input name="applicant_streetNumber" placeholder="No." className={inputCls} />
-            <input name="applicant_street" placeholder="Street" className={`${inputCls} sm:col-span-2`} />
-            <input name="applicant_suburb" placeholder="Suburb" className={inputCls} />
-            <input name="applicant_postcode" placeholder="Postcode" className={inputCls} />
-          </div>
-          <select name="applicant_state" defaultValue="NSW" className={`${inputCls} mt-2 sm:w-40`}>
-            {NSW_STATE.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-        </div>
+        <ApplicantAddressField />
         <div>
           <label className={labelCls}>Client — link this quote to a client so it can flow through to the project automatically</label>
           <select name="client_id" className={inputCls} defaultValue="">

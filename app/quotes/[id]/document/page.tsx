@@ -1,7 +1,7 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { today } from "@/lib/business";
+import { today, formatISODate } from "@/lib/business";
 import { QuoteDocument, QuoteTermsEditor } from "@/components/certifier/QuoteDocument";
 import type { Firm, Quote, QuoteFeeLine } from "@/types/db";
 
@@ -29,7 +29,12 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
   const gst = subtotal * 0.1;
   const total = subtotal + gst;
   const pathwayFull = quote.pathway === "CDC" ? "Complying Development Certificate" : "Construction Certificate";
+  // valid_for is either a period ("7 Days") or a certifier-picked cutoff
+  // stored as "Until yyyy-mm-dd" — the wording flips between "for N days"
+  // and "until <date>" to match.
+  const validUntil = quote.valid_for?.startsWith("Until ") ? formatISODate(quote.valid_for.slice(6)) : null;
   const validForDays = (quote.valid_for || "").replace(" Days", "").replace(" Day", "");
+  const validityLine = validUntil ? `valid until ${validUntil}` : `valid for ${validForDays || "7"} days from the date of fee proposal issuance`;
 
   const defaultTerms = [
     `${firmData?.name || "Our firm"} is pleased to submit a fee proposal to provide building approval and certification services for the proposed development.`,
@@ -45,7 +50,7 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
     "",
     `Please find attached our fee quote for ${quote.proposal_address || "your project"}.`,
     `Total (incl. GST): $${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-    `This quote is valid for ${quote.valid_for || "7 Days"} from the date of issue.`,
+    `This quote is ${validUntil ? `valid until ${validUntil}` : `valid for ${quote.valid_for || "7 Days"} from the date of issue`}.`,
     "",
     "Please attach the quote document (downloaded via Export as Word or Print/Save as PDF) before sending.",
     "",
@@ -136,7 +141,7 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        <div className="text-sm font-bold underline mb-4">***Our fee is valid for {validForDays || "7"} days from the date of fee proposal issuance.</div>
+        <div className="text-sm font-bold underline mb-4">***Our fee is {validityLine}.</div>
 
         <QuoteTermsEditor quoteId={id} activeTerms={activeTerms} hasOverride={!!quote.terms_override} />
 

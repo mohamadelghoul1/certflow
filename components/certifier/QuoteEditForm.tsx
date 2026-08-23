@@ -5,9 +5,10 @@ import { updateQuote } from "@/lib/actions/quotes";
 import type { ActionState } from "@/lib/actions/auth";
 import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS, VALID_FOR_OPTIONS } from "@/lib/constants";
 import { AddressLookupField } from "@/components/certifier/AddressLookupField";
+import { ApplicantAddressField } from "@/components/certifier/ApplicantAddressField";
 import type { Quote, QuoteFeeLine } from "@/types/db";
 import { X, Plus } from "lucide-react";
-import { DateField } from "@/components/DateField";
+import { DateField, todayISO } from "@/components/DateField";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -47,6 +48,7 @@ export function QuoteEditForm({
   const [councilLga, setCouncilLga] = useState(quote.council_lga || "");
   const [ownerIsApplicant, setOwnerIsApplicant] = useState(quote.owner_is_applicant);
   const [scopeItems, setScopeItems] = useState<string[]>(quote.scope_of_works && quote.scope_of_works.length > 0 ? quote.scope_of_works : [""]);
+  const [validFor, setValidFor] = useState(quote.valid_for || "7 Days");
   const [feeLines, setFeeLines] = useState<FeeLine[]>(
     initialFeeLines.length > 0
       ? initialFeeLines.map((l) => ({ description: l.description, amount: String(l.amount) }))
@@ -118,20 +120,47 @@ export function QuoteEditForm({
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Required start date</label>
-            <DateField name="required_start_date" defaultValue={quote.required_start_date || ""} className={inputCls} />
+            {/* Start can't be in the future, end can't be in the past —
+                but a saved date already outside the bound stays pickable,
+                so an old quote can still be re-saved untouched. */}
+            <DateField
+              name="required_start_date"
+              defaultValue={quote.required_start_date || ""}
+              max={quote.required_start_date && quote.required_start_date > todayISO() ? quote.required_start_date : todayISO()}
+              className={inputCls}
+            />
           </div>
           <div>
             <label className={labelCls}>Required end date</label>
-            <DateField name="required_end_date" defaultValue={quote.required_end_date || ""} className={inputCls} />
+            <DateField
+              name="required_end_date"
+              defaultValue={quote.required_end_date || ""}
+              min={quote.required_end_date && quote.required_end_date < todayISO() ? quote.required_end_date : todayISO()}
+              className={inputCls}
+            />
           </div>
         </div>
         <div>
           <label className={labelCls}>Quote valid for</label>
-          <select name="valid_for" defaultValue={quote.valid_for || "7 Days"} className={inputCls}>
-            {VALID_FOR_OPTIONS.map((v) => (
-              <option key={v}>{v}</option>
-            ))}
-          </select>
+          {/* Either one of the usual periods, or a date of the certifier's
+              own choosing — stored as "Until yyyy-mm-dd" so the quote
+              document can say "valid until" that day. */}
+          <div className="flex gap-2 flex-wrap">
+            <select
+              value={validFor.startsWith("Until ") ? "Until a specific date" : validFor}
+              onChange={(e) => setValidFor(e.target.value === "Until a specific date" ? `Until ${todayISO()}` : e.target.value)}
+              className={`${inputCls} sm:w-56`}
+            >
+              {VALID_FOR_OPTIONS.map((v) => (
+                <option key={v}>{v}</option>
+              ))}
+              <option>Until a specific date</option>
+            </select>
+            {validFor.startsWith("Until ") && (
+              <DateField value={validFor.slice(6)} onChange={(e) => setValidFor(`Until ${e.target.value}`)} className={`${inputCls} sm:w-48`} />
+            )}
+          </div>
+          <input type="hidden" name="valid_for" value={validFor} />
         </div>
       </Section>
 
@@ -198,20 +227,7 @@ export function QuoteEditForm({
             <input type="email" name="applicant_email" defaultValue={applicant.email || ""} className={inputCls} />
           </div>
         </div>
-        <div>
-          <label className={labelCls}>Applicant address</label>
-          <div className="grid sm:grid-cols-5 gap-2">
-            <input name="applicant_streetNumber" defaultValue={applicant.address?.streetNumber || ""} placeholder="No." className={inputCls} />
-            <input name="applicant_street" defaultValue={applicant.address?.street || ""} placeholder="Street" className={`${inputCls} sm:col-span-2`} />
-            <input name="applicant_suburb" defaultValue={applicant.address?.suburb || ""} placeholder="Suburb" className={inputCls} />
-            <input name="applicant_postcode" defaultValue={applicant.address?.postcode || ""} placeholder="Postcode" className={inputCls} />
-          </div>
-          <select name="applicant_state" defaultValue={applicant.address?.state || "NSW"} className={`${inputCls} mt-2 sm:w-40`}>
-            {NSW_STATE.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-        </div>
+        <ApplicantAddressField defaults={applicant.address} />
         <div>
           <label className={labelCls}>Client — link this quote to a client so it can flow through to the project automatically</label>
           <select name="client_id" className={inputCls} defaultValue={quote.client_id || ""}>
