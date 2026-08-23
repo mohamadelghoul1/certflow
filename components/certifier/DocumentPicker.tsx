@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { addChecklistItems } from "@/lib/actions/jobs";
 
@@ -52,7 +53,10 @@ export function DocumentPicker({ jobId, checklistId, library, existingTitles }: 
     );
   }
 
-  return (
+  // Portalled to <body>: rendered in place, a hover transform on an
+  // ancestor card would re-anchor this fixed overlay to the card and make
+  // it jump — see StampPositioner for the full story.
+  return createPortal(
     <div className="fixed inset-0 bg-heading/40 flex items-center justify-center z-50 p-4" onClick={() => setOpen(false)}>
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-line">
@@ -110,6 +114,7 @@ export function DocumentPicker({ jobId, checklistId, library, existingTitles }: 
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { createTaskList, deleteTaskList, moveTaskList, addTask, toggleTaskComplete, updateTaskText, deleteTask } from "@/lib/actions/tasks";
 import { Plus, X, Trash2, ChevronLeft, ChevronRight, MoreVertical } from "lucide-react";
 import type { TaskList, ManualTask } from "@/types/db";
@@ -181,7 +182,10 @@ function TaskListColumn({
           </button>
           {menuOpen && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+              {/* Portalled: inside the lifted column, this fixed
+                  click-away layer would anchor to the column instead of
+                  covering the screen. */}
+              {createPortal(<div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />, document.body)}
               <div className="absolute right-0 top-full mt-1 z-20 w-36 bg-white border border-line rounded-md shadow-lg py-1">
                 <button
                   onClick={() => {

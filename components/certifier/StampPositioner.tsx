@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { Stamp, X } from "lucide-react";
 import { setStampPlacement, clearStampPlacement } from "@/lib/actions/jobs";
 
@@ -268,7 +269,16 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
     });
   }
 
-  return (
+  // Portalled to <body> rather than rendered where it sits in the tree.
+  // The dialog lives inside a checklist card whose hover effect applies a
+  // transform, and a transformed ancestor becomes the anchor for
+  // position:fixed descendants — so the moment the cursor entered the
+  // card, the "fixed" dialog re-anchored from the viewport to the card
+  // and jumped. The jump moved it off the cursor, un-hovering the card,
+  // snapping it back, and so on: the flicker loop, and a Save button
+  // that ran away from every click. From <body> no ancestor can ever
+  // capture it.
+  return createPortal(
     <div className="fixed inset-0 z-50 bg-black/50 flex items-start sm:items-center justify-center p-3 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Position the approval stamp">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl my-auto">
         <div className="flex items-center justify-between px-5 py-3 border-b border-line">
@@ -413,6 +423,7 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
