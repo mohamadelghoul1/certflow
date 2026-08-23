@@ -155,8 +155,21 @@ export function suggestedInspectionBookingDate(isoDateStr: string, now = new Dat
   return toISODateOnly(adjusted);
 }
 
+// A firm that numbers its jobs "CDC-26001" would otherwise get the pathway
+// prepended a second time, and every certificate, letter and download would
+// read "CDC-CDC-26001/01". Where the project number already leads with the
+// pathway it is used as it stands. Only a real prefix counts — the pathway
+// followed by a separator, with something after it — so a project number
+// like "CCTV-12" is left alone, and "CDC-" on its own still gets a
+// reference rather than being stripped down to nothing.
+function withoutPathwayPrefix(prefix: string, projectNumberOrId: string) {
+  const trimmed = (projectNumberOrId || "").trim();
+  const match = new RegExp(`^${prefix}[-_ ]+(?=.)`, "i").exec(trimmed);
+  return match ? trimmed.slice(match[0].length) : trimmed;
+}
+
 export function pathwayCertRef(pathway: "CDC" | "CC", projectNumberOrId: string, version: number) {
-  return `${pathway}-${projectNumberOrId}/${String(version || 1).padStart(2, "0")}`;
+  return `${pathway}-${withoutPathwayPrefix(pathway, projectNumberOrId)}/${String(version || 1).padStart(2, "0")}`;
 }
 
 // A certifier can override the generated reference per version / per OC
@@ -172,7 +185,7 @@ export function resolvePathwayCertRef(customRef: string | null | undefined, path
 // sequence = this OC's 1-based position among every OC issued for the job
 // (partial and whole together), oldest first.
 export function ocCertRef(projectNumberOrId: string, sequence: number) {
-  return `OC-${projectNumberOrId}/${String(sequence || 1).padStart(2, "0")}`;
+  return `OC-${withoutPathwayPrefix("OC", projectNumberOrId)}/${String(sequence || 1).padStart(2, "0")}`;
 }
 
 export function resolveOcCertRef(customRef: string | null | undefined, projectNumberOrId: string, sequence: number) {
