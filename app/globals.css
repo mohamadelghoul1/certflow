@@ -147,6 +147,19 @@ body {
   .cert-doc li + li {
     margin-top: 1px;
   }
+  /* Each printed sheet becomes a column the full height of the paper, so
+     the project footer sits at the foot of every page — the way the Word
+     export and the generated PDF set it — rather than directly under
+     wherever the content happens to end. A hair under 297mm so rounding
+     never spills a section onto a blank sheet. */
+  .cert-doc .cert-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 296mm;
+  }
+  .cert-doc .cert-page .doc-footer {
+    margin-top: auto;
+  }
 }
 
 /* Shared card treatment: the system's card shadow, lifting to the hover

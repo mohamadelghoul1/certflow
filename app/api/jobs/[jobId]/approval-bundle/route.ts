@@ -106,6 +106,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     approvalLabel,
     documents,
     stampDetails,
+    // The same footer line the generated approval carries — certRef minus
+    // its "/01" version suffix is the project number as the documents
+    // print it (e.g. CDC-26001).
+    footer: { projectRef: certRef.split("/")[0], website: firmData?.website },
   });
 
   return new NextResponse(new Uint8Array(bytes), {

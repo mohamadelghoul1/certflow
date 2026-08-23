@@ -40,6 +40,11 @@ export type BundleInput = {
   approvalLabel?: string;
   documents: BundleDocument[];
   stampDetails: StampDetails;
+  // The "Project No.: … · website" line the generated documents carry at
+  // the foot of every page, drawn onto the attached documents too so the
+  // whole set reads as one document. The approval's own pages already
+  // have it and are left alone.
+  footer?: { projectRef: string; website?: string | null } | null;
 };
 
 const A4: [number, number] = [595.28, 841.89];
@@ -114,6 +119,24 @@ export async function buildApprovalBundle(input: BundleInput): Promise<Uint8Arra
     notes.push({ title: input.approvalLabel || "Approval", detail: "Not included — the approval could not be generated for this job.", included: false });
   }
 
+  // Everything after this point — the attached documents and any closing
+  // page — gets the project footer drawn on; the approval before it
+  // already carries its own.
+  const approvalPageCount = bundle.getPageCount();
+
+  const drawFooters = () => {
+    if (!input.footer) return;
+    const site = (input.footer.website || "").trim();
+    const label = site ? `Project No.: ${input.footer.projectRef}  ·  ${site}` : `Project No.: ${input.footer.projectRef}`;
+    const pages = bundle.getPages();
+    for (let i = approvalPageCount; i < pages.length; i++) {
+      const page = pages[i];
+      const { width } = page.getSize();
+      const w = regular.widthOfTextAtSize(label, 7);
+      page.drawText(label, { x: (width - w) / 2, y: 14, size: 7, font: regular, color: MUTED });
+    }
+  };
+
   for (const doc of input.documents) {
     let bytes = doc.bytes || null;
     let included = false;
@@ -141,7 +164,10 @@ export async function buildApprovalBundle(input: BundleInput): Promise<Uint8Arra
 
   // Nothing to flag: the set is exactly the approval and its documents.
   const missing = notes.filter((n) => !n.included);
-  if (missing.length === 0) return bundle.save();
+  if (missing.length === 0) {
+    drawFooters();
+    return bundle.save();
+  }
 
   // Wraps a value into the width it has, so a long note doesn't run off
   // the edge of the sheet.
@@ -186,5 +212,6 @@ export async function buildApprovalBundle(input: BundleInput): Promise<Uint8Arra
     y -= detailLines.length * 10 + 10;
   }
 
+  drawFooters();
   return bundle.save();
 }

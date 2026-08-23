@@ -36,7 +36,7 @@ function TableSectionHeading({ children }: { children: React.ReactNode }) {
 function Section({ children, last }: { children: React.ReactNode; last?: boolean }) {
   return (
     <div
-      className={`bg-white p-8 mb-6 shadow-sm print:shadow-none print:mb-0 print:p-[14mm] ${!last ? "print:break-after-page" : ""}`}
+      className={`cert-page bg-white p-8 mb-6 shadow-sm print:shadow-none print:mb-0 print:p-[14mm] ${!last ? "print:break-after-page" : ""}`}
       data-page-break={!last ? "after" : undefined}
     >
       {children}
@@ -51,7 +51,7 @@ function Section({ children, last }: { children: React.ReactNode; last?: boolean
 // footers"), not something CSS or JS on the page can control.
 function DocFooter({ projRef, website }: { projRef: string; website?: string | null }) {
   return (
-    <table className="w-full text-[11px] text-placeholder border-t border-line mt-6 pt-2">
+    <table className="doc-footer w-full text-[11px] text-placeholder border-t border-line mt-6 pt-2">
       <tbody>
         <tr>
           <td>Project No.: {projRef}</td>
@@ -124,7 +124,7 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
   } = data;
 
   return (
-    <div className="cert-doc max-w-3xl mx-auto px-4 pb-10 print:px-0 print:max-w-none">
+    <div className="cert-doc max-w-3xl mx-auto px-4 pb-10 print:px-0 print:pb-0 print:max-w-none">
       <div className="text-xs text-placeholder px-2 pb-2 print:hidden">
         1. Council letter · 2. Applicant letter · 3. Certificate · 4. Certificate (cont.) · 5. Mandatory inspections notice · 6. Checklist summary
       </div>
