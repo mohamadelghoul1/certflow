@@ -52,7 +52,11 @@ export function displayStatus(item: ChecklistItemLike) {
   if (item.status === "requested") return { dot: "bg-slate-300", label: "Requested" };
   if (n > 0) return { dot: "bg-amber-500", label: `Amendment needed (${n})` };
   if (item.status === "approved") return { dot: "bg-emerald-600", label: "Approved" };
-  return { dot: "bg-blue-500", label: "Submitted — awaiting review" };
+  // Names who the document is waiting on. "Awaiting review" alone left it
+  // unclear whether the client still owed something or the certifier did —
+  // and this label is read by both of them, in the checklist and in the
+  // client's own portal.
+  return { dot: "bg-blue-500", label: "Submitted — awaiting certifier review" };
 }
 export function checklistProgress(items: ChecklistItemLike[]) {
   if (items.length === 0) return null;

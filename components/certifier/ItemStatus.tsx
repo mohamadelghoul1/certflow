@@ -188,13 +188,23 @@ export function ItemStatusActions({ itemId, jobId, firmId, requiresStamping }: {
     if (status === "submitted" && unresolved === 0) {
       if (!reviewing) {
         return (
-          <button
-            type="button"
-            onClick={() => setReviewing(true)}
-            className="flex items-center gap-1.5 text-sm font-medium text-info bg-info-bg border border-info/40 rounded-full px-4 py-1.5 hover:bg-info-bg"
-          >
-            <Clock size={13} /> Client uploaded — awaiting review
-          </button>
+          <>
+            {/* What happened, then what's needed — and by whom. The single
+                "awaiting review" label didn't say who was holding it up,
+                which is ambiguous once more than one firm is using this:
+                staff couldn't tell whether the client still owed something
+                or the certifier did. */}
+            <span className="flex items-center gap-1.5 text-sm text-muted bg-surface border border-line rounded-full px-3 py-1.5">
+              <Clock size={13} /> Client uploaded
+            </span>
+            <button
+              type="button"
+              onClick={() => setReviewing(true)}
+              className="flex items-center gap-1.5 text-sm font-medium text-info bg-info-bg border border-info/40 rounded-full px-4 py-1.5 hover:bg-info-bg"
+            >
+              Awaiting certifier review
+            </button>
+          </>
         );
       }
       return (
