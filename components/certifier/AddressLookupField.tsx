@@ -41,7 +41,11 @@ export function AddressLookupField({
   onZoningChange,
   addressLabel = "Property address",
   required = false,
+  lotRequired = required,
   zoningRequired = false,
+  addressName = "address",
+  lotName = "lotSectionDp",
+  showZoning = true,
 }: {
   address: string;
   onAddressChange: (value: string) => void;
@@ -49,14 +53,23 @@ export function AddressLookupField({
   onLotSectionDpChange: (value: string) => void;
   onCouncilMatched: (lga: string) => void;
   councilLga: string;
-  zoning: string;
-  onZoningChange: (value: string) => void;
+  zoning?: string;
+  onZoningChange?: (value: string) => void;
   addressLabel?: string;
   // Set on New Job, where these have to be there before the project can
   // be created. Left off on the Details tab, which edits a job that
   // already exists.
   required?: boolean;
+  // A quote is priced before the parcel is always known, so its lot can
+  // stay optional even while the address is required.
+  lotRequired?: boolean;
   zoningRequired?: boolean;
+  // The form field names the surrounding form's action reads — quotes
+  // store these as proposal_address / lot_section_plan.
+  addressName?: string;
+  lotName?: string;
+  // Quotes don't record zoning; jobs do.
+  showZoning?: boolean;
 }) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -100,9 +113,9 @@ export function AddressLookupField({
   // them, by which time the values captured in that closure are stale.
   // Kept up to date in an effect rather than during render, which React
   // doesn't allow.
-  const latest = useRef({ lotSectionDp, councilLga, zoning, onLotSectionDpChange, onCouncilMatched, onZoningChange });
+  const latest = useRef({ lotSectionDp, councilLga, onLotSectionDpChange, onCouncilMatched });
   useEffect(() => {
-    latest.current = { lotSectionDp, councilLga, zoning, onLotSectionDpChange, onCouncilMatched, onZoningChange };
+    latest.current = { lotSectionDp, councilLga, onLotSectionDpChange, onCouncilMatched };
   });
 
   // What the address text alone tells us, applied straight away — no
@@ -215,7 +228,7 @@ export function AddressLookupField({
       <div className="relative">
         <label className={labelCls}>{addressLabel}</label>
         <input
-          name="address"
+          name={addressName}
           required={required}
           value={address}
           onChange={(e) => handleChange(e.target.value)}
@@ -283,20 +296,22 @@ export function AddressLookupField({
             </div>
           </div>
         )}
-        <input name="lotSectionDp" value={lotSectionDp} onChange={(e) => onLotSectionDpChange(e.target.value)} required={required} placeholder="e.g. 12/-/DP12345" className={inputCls} />
+        <input name={lotName} value={lotSectionDp} onChange={(e) => onLotSectionDpChange(e.target.value)} required={lotRequired} placeholder="e.g. 12/-/DP12345" className={inputCls} />
         <div className="text-[11px] text-placeholder mt-1">
           {lotOptions.length > 0
             ? "Tick the parcels this job covers. You can also edit the box directly."
             : "Filled in from the address where NSW has it on record — type it in yourself if it’s blank or wrong."}
         </div>
       </div>
-      <div>
-        <label className={labelCls}>Land zoning</label>
-        <input name="zoning" value={zoning} onChange={(e) => onZoningChange(e.target.value)} required={zoningRequired} placeholder="e.g. R2 Low Density Residential" className={inputCls} />
-        <div className="text-[11px] text-placeholder mt-1">
-          Zoning isn&rsquo;t available from the NSW lookup, so type it in here — the Planning Portal link above shows it for the address.
+      {showZoning && (
+        <div>
+          <label className={labelCls}>Land zoning</label>
+          <input name="zoning" value={zoning ?? ""} onChange={(e) => onZoningChange?.(e.target.value)} required={zoningRequired} placeholder="e.g. R2 Low Density Residential" className={inputCls} />
+          <div className="text-[11px] text-placeholder mt-1">
+            Zoning isn&rsquo;t available from the NSW lookup, so type it in here — the Planning Portal link above shows it for the address.
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

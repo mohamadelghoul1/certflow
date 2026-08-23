@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { defaultScopeOfWorks, defaultCriticalStageInspections } from "@/lib/constants";
+import { defaultScopeOfWorks, defaultCriticalStageInspections, COUNCIL_DIRECTORY } from "@/lib/constants";
 import { INSPECTION_LIBRARY } from "@/lib/constants";
 import type { ActionState } from "@/lib/actions/auth";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -37,7 +37,6 @@ function extractQuoteFields(formData: FormData) {
       valid_for: String(formData.get("valid_for") || "7 Days"),
       proposal_address: String(formData.get("proposal_address") || ""),
       lot_section_plan: String(formData.get("lot_section_plan") || ""),
-      project_title: String(formData.get("project_title") || ""),
       certifier_id: String(formData.get("certifier_id") || "") || null,
       classifications: formData.getAll("classifications").map(String),
       development_description: String(formData.get("development_description") || ""),
@@ -174,22 +173,32 @@ export async function generateJobFromQuote(formData: FormData) {
   const { data: quote } = await supabase.from("quotes").select("*").eq("id", quoteId).eq("firm_id", profile.firm_id).single();
   if (!quote || quote.status !== "accepted") return;
 
-  const applicant = quote.applicant as { name?: string; email?: string; phone?: string };
+  const applicant = quote.applicant as { name?: string; email?: string; phone?: string; address?: Record<string, string> };
   const owner = quote.owner as { name?: string; email?: string; phone?: string };
+
+  // The quote is the intake: everything the client already told us goes
+  // onto the job, so the Details tab opens with only the genuinely new
+  // questions left to answer.
+  const councilMatch = COUNCIL_DIRECTORY.find((c) => c.name === (quote.council_lga || ""));
+  const scopeList = (quote.scope_of_works || []) as string[];
 
   const { data: job } = await supabase
     .from("jobs")
     .insert({
       firm_id: profile.firm_id,
       address: quote.proposal_address || "",
-      description: quote.development_description || "",
+      description: quote.development_description || scopeList.filter((s) => s.trim()).join("; ") || "",
       pathway: quote.pathway,
+      job_types: quote.project_type ? [quote.project_type] : [],
       assigned_certifier_id: quote.certifier_id,
       client_id: quote.client_id,
       critical_stage_inspections: defaultCriticalStageInspections(),
       details: {
         contact: { nameOrCompany: applicant?.name || "", email: applicant?.email || "", phone: applicant?.phone || "" },
-        council: { lga: quote.council_lga || "" },
+        applicantAddress: applicant?.address,
+        council: councilMatch
+          ? { lga: councilMatch.name, address: councilMatch.address, contact: { phone: councilMatch.phone, email: councilMatch.email } }
+          : { lga: quote.council_lga || "" },
         ownerSameAsApplicant: quote.owner_is_applicant,
         owner: quote.owner_is_applicant ? undefined : { name: owner?.name || "", phone: owner?.phone || "" },
         proposal: { classifications: quote.classifications || [] },

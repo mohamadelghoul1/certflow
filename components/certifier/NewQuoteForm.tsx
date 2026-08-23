@@ -3,9 +3,10 @@
 import { useActionState, useState } from "react";
 import { createQuote } from "@/lib/actions/quotes";
 import type { ActionState } from "@/lib/actions/auth";
-import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS, VALID_FOR_OPTIONS, matchCouncilByAddress, defaultScopeOfWorks } from "@/lib/constants";
+import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS, VALID_FOR_OPTIONS, defaultScopeOfWorks } from "@/lib/constants";
 import { X, Plus } from "lucide-react";
 import { DateField } from "@/components/DateField";
+import { AddressLookupField } from "@/components/certifier/AddressLookupField";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -25,18 +26,11 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createQuote, undefined);
   const [pathway, setPathway] = useState<"CDC" | "CC">("CDC");
   const [proposalAddress, setProposalAddress] = useState("");
+  const [lotSectionPlan, setLotSectionPlan] = useState("");
   const [councilLga, setCouncilLga] = useState("");
   const [ownerIsApplicant, setOwnerIsApplicant] = useState(true);
   const [scopeItems, setScopeItems] = useState<string[]>(defaultScopeOfWorks("CDC"));
   const [feeLines, setFeeLines] = useState<FeeLine[]>([{ description: "CDC/PC/OC", quantity: "1", amount: "2500" }]);
-
-  function handleAddressChange(v: string) {
-    setProposalAddress(v);
-    if (!councilLga) {
-      const match = matchCouncilByAddress(v);
-      if (match) setCouncilLga(match.name);
-    }
-  }
 
   function handlePathwayChange(p: "CDC" | "CC") {
     setPathway(p);
@@ -61,12 +55,15 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
           </div>
           <div>
             <label className={labelCls}>Project type</label>
-            <select name="project_type" defaultValue="" className={inputCls}>
-              <option value="">None</option>
+            {/* A plain text box backed by the standard list, so the usual
+                types are one click away but anything can be typed in —
+                a quote arrives before the job is pinned down. */}
+            <input name="project_type" list="quote-project-types" placeholder="Pick from the list or type your own" autoComplete="off" className={inputCls} />
+            <datalist id="quote-project-types">
               {JOB_TYPES.map((t) => (
-                <option key={t}>{t}</option>
+                <option key={t} value={t} />
               ))}
-            </select>
+            </datalist>
           </div>
         </div>
         <div>
@@ -106,19 +103,20 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
       </Section>
 
       <Section title="Proposal">
-        <div>
-          <label className={labelCls}>Proposal address</label>
-          <input name="proposal_address" required value={proposalAddress} onChange={(e) => handleAddressChange(e.target.value)} placeholder="Start typing an address" className={inputCls} />
-          {councilLga && <div className="text-[11px] text-secondary mt-1">Council: {councilLga} — auto-matched, edit below if wrong.</div>}
-        </div>
-        <div>
-          <label className={labelCls}>Lot/Section/Plan</label>
-          <input name="lot_section_plan" placeholder="e.g. 12/-/DP12345" className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Project title</label>
-          <input name="project_title" placeholder="e.g. Smith Residence — 99 Aviary Road, Sydney" className={inputCls} />
-        </div>
+        <AddressLookupField
+          addressLabel="Proposal address"
+          addressName="proposal_address"
+          lotName="lot_section_plan"
+          address={proposalAddress}
+          onAddressChange={setProposalAddress}
+          lotSectionDp={lotSectionPlan}
+          onLotSectionDpChange={setLotSectionPlan}
+          onCouncilMatched={setCouncilLga}
+          councilLga={councilLga}
+          showZoning={false}
+          required
+          lotRequired={false}
+        />
         <div>
           <label className={labelCls}>Certifier</label>
           <select name="certifier_id" className={inputCls} defaultValue="">

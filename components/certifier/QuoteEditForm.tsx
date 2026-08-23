@@ -3,7 +3,8 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updateQuote } from "@/lib/actions/quotes";
 import type { ActionState } from "@/lib/actions/auth";
-import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS, VALID_FOR_OPTIONS, matchCouncilByAddress } from "@/lib/constants";
+import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS, VALID_FOR_OPTIONS } from "@/lib/constants";
+import { AddressLookupField } from "@/components/certifier/AddressLookupField";
 import type { Quote, QuoteFeeLine } from "@/types/db";
 import { X, Plus } from "lucide-react";
 import { DateField } from "@/components/DateField";
@@ -42,6 +43,7 @@ export function QuoteEditForm({
 
   const [pathway, setPathway] = useState<"CDC" | "CC">(quote.pathway);
   const [proposalAddress, setProposalAddress] = useState(quote.proposal_address || "");
+  const [lotSectionPlan, setLotSectionPlan] = useState(quote.lot_section_plan || "");
   const [councilLga, setCouncilLga] = useState(quote.council_lga || "");
   const [ownerIsApplicant, setOwnerIsApplicant] = useState(quote.owner_is_applicant);
   const [scopeItems, setScopeItems] = useState<string[]>(quote.scope_of_works && quote.scope_of_works.length > 0 ? quote.scope_of_works : [""]);
@@ -59,14 +61,6 @@ export function QuoteEditForm({
     }
     wasPending.current = pending;
   }, [pending, state]);
-
-  function handleAddressChange(v: string) {
-    setProposalAddress(v);
-    if (!councilLga) {
-      const match = matchCouncilByAddress(v);
-      if (match) setCouncilLga(match.name);
-    }
-  }
 
   const subtotal = feeLines.reduce((sum, l) => sum + (Number(l.amount) || 0) * (Number(l.quantity) || 1), 0);
   const gst = subtotal * 0.1;
@@ -96,12 +90,14 @@ export function QuoteEditForm({
           </div>
           <div>
             <label className={labelCls}>Project type</label>
-            <select name="project_type" defaultValue={quote.project_type || ""} className={inputCls}>
-              <option value="">None</option>
+            {/* Backed by the standard list but free to type over — same as
+                the New Quote form. */}
+            <input name="project_type" list="quote-project-types" defaultValue={quote.project_type || ""} placeholder="Pick from the list or type your own" autoComplete="off" className={inputCls} />
+            <datalist id="quote-project-types">
               {JOB_TYPES.map((t) => (
-                <option key={t}>{t}</option>
+                <option key={t} value={t} />
               ))}
-            </select>
+            </datalist>
           </div>
         </div>
         <div>
@@ -140,19 +136,20 @@ export function QuoteEditForm({
       </Section>
 
       <Section title="Proposal">
-        <div>
-          <label className={labelCls}>Proposal address</label>
-          <input name="proposal_address" required value={proposalAddress} onChange={(e) => handleAddressChange(e.target.value)} placeholder="Start typing an address" className={inputCls} />
-          {councilLga && <div className="text-[11px] text-secondary mt-1">Council: {councilLga} — auto-matched, edit below if wrong.</div>}
-        </div>
-        <div>
-          <label className={labelCls}>Lot/Section/Plan</label>
-          <input name="lot_section_plan" defaultValue={quote.lot_section_plan || ""} placeholder="e.g. 12/-/DP12345" className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Project title</label>
-          <input name="project_title" defaultValue={quote.project_title || ""} placeholder="e.g. Smith Residence — 99 Aviary Road, Sydney" className={inputCls} />
-        </div>
+        <AddressLookupField
+          addressLabel="Proposal address"
+          addressName="proposal_address"
+          lotName="lot_section_plan"
+          address={proposalAddress}
+          onAddressChange={setProposalAddress}
+          lotSectionDp={lotSectionPlan}
+          onLotSectionDpChange={setLotSectionPlan}
+          onCouncilMatched={setCouncilLga}
+          councilLga={councilLga}
+          showZoning={false}
+          required
+          lotRequired={false}
+        />
         <div>
           <label className={labelCls}>Certifier</label>
           <select name="certifier_id" className={inputCls} defaultValue={quote.certifier_id || ""}>

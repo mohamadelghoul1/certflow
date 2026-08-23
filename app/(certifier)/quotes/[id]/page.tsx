@@ -50,18 +50,22 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             </form>
           )}
           {quote.status === "sent" && (
-            <>
-              <form action={setQuoteStatus}>
-                <input type="hidden" name="quote_id" value={id} />
-                <input type="hidden" name="status" value="declined" />
-                <button className="px-3.5 py-2 rounded-md border border-error/40 text-sm text-error font-medium hover:bg-error-bg">Mark declined</button>
-              </form>
-              <form action={setQuoteStatus}>
-                <input type="hidden" name="quote_id" value={id} />
-                <input type="hidden" name="status" value="accepted" />
-                <button className="px-3.5 py-2 rounded-md border border-success/40 text-sm text-success font-medium hover:bg-success-bg">Mark accepted</button>
-              </form>
-            </>
+            <form action={setQuoteStatus}>
+              <input type="hidden" name="quote_id" value={id} />
+              <input type="hidden" name="status" value="declined" />
+              <button className="px-3.5 py-2 rounded-md border border-error/40 text-sm text-error font-medium hover:bg-error-bg">Mark declined</button>
+            </form>
+          )}
+          {/* Accepting is offered from draft as well as sent — plenty of
+              quotes are agreed over the phone before anything formal goes
+              out, and the accepted tick is what unlocks creating the
+              project from this quote. */}
+          {(quote.status === "draft" || quote.status === "sent") && (
+            <form action={setQuoteStatus}>
+              <input type="hidden" name="quote_id" value={id} />
+              <input type="hidden" name="status" value="accepted" />
+              <button className="px-3.5 py-2 rounded-md border border-success/40 text-sm text-success font-medium hover:bg-success-bg">Mark accepted</button>
+            </form>
           )}
           {quote.status === "accepted" && !quote.linked_job_id && (
             <form action={generateJobFromQuote}>
