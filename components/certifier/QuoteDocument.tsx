@@ -1,44 +1,26 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Mail, Pencil } from "lucide-react";
 import { updateQuoteTerms } from "@/lib/actions/quotes";
 
-function downloadAsWordDoc(filename: string, innerHtml: string) {
-  const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title></head><body>`;
-  const footer = `</body></html>`;
-  const blob = new Blob(["﻿", header + innerHtml + footer], { type: "application/msword" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 export function QuoteDocument({
   backHref,
-  filename,
+  wordHref,
   mailtoHref,
   hasApplicantEmail,
   children,
 }: {
   backHref: string;
-  filename: string;
+  // The server route that generates a real .docx — the old client-side
+  // HTML-cloning export came out of Word unstyled, since Word knows
+  // nothing of the app's CSS.
+  wordHref: string;
   mailtoHref: string;
   hasApplicantEmail: boolean;
   children: React.ReactNode;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  function exportWord() {
-    if (!ref.current) return;
-    downloadAsWordDoc(filename, ref.current.innerHTML);
-  }
-
   return (
     <div className="min-h-screen bg-surface print:bg-white">
       <div className="max-w-3xl mx-auto py-6 px-4 print:hidden flex items-center justify-between flex-wrap gap-2">
@@ -49,9 +31,9 @@ export function QuoteDocument({
           <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
             Print / Save as PDF
           </button>
-          <button onClick={exportWord} className="px-4 py-2 rounded-md border border-primary text-primary text-sm font-semibold hover:bg-hover">
+          <a href={wordHref} className="px-4 py-2 rounded-md border border-primary text-primary text-sm font-semibold hover:bg-hover">
             Export as Word
-          </button>
+          </a>
           <a href={mailtoHref} className="flex items-center gap-1.5 px-4 py-2 rounded-md border border-primary text-primary text-sm font-semibold hover:bg-hover">
             <Mail size={14} /> Email to client
           </a>
@@ -64,7 +46,7 @@ export function QuoteDocument({
           </div>
         </div>
       )}
-      <div ref={ref}>{children}</div>
+      <div>{children}</div>
     </div>
   );
 }

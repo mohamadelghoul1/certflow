@@ -103,11 +103,12 @@ const CELL_PADDING = convertMillimetersToTwip(1.5);
 const FIELD_CELL_PADDING = convertMillimetersToTwip(0.1);
 const ROW_HEIGHT = convertMillimetersToTwip(4); // 0.4cm
 
-export function run(text: string, opts: { bold?: boolean; italic?: boolean; size?: number; color?: string; uppercase?: boolean; light?: boolean } = {}) {
+export function run(text: string, opts: { bold?: boolean; italic?: boolean; underline?: boolean; size?: number; color?: string; uppercase?: boolean; light?: boolean } = {}) {
   return new TextRun({
     text,
     bold: opts.bold,
     italics: opts.italic,
+    underline: opts.underline ? {} : undefined,
     size: opts.size ?? BODY_SIZE,
     color: opts.color ?? TEXT_COLOR,
     font: opts.light ? FONT_LIGHT : FONT,
@@ -121,6 +122,7 @@ export function p(
   opts: {
     bold?: boolean;
     italic?: boolean;
+    underline?: boolean;
     size?: number;
     color?: string;
     spacingBefore?: number;
@@ -392,7 +394,7 @@ export function gridTable(
   headers: string[],
   rows: string[][],
   columnWidths?: number[],
-  opts: { headerFill?: string; zebra?: boolean; centerColumns?: number[]; rowHeight?: number } = {}
+  opts: { headerFill?: string; zebra?: boolean; centerColumns?: number[]; rowHeight?: number; size?: number } = {}
 ) {
   const widths = columnWidths ?? headers.map(() => Math.round(100 / headers.length));
   const centered = new Set(opts.centerColumns ?? []);
@@ -404,7 +406,7 @@ export function gridTable(
         tableHeader: true,
         height: { value: opts.rowHeight ?? ROW_HEIGHT, rule: HeightRule.ATLEAST },
         children: headers.map((h, i) =>
-          cell([p(h, { bold: true, spacingAfter: 0, align: align(i) })], {
+          cell([p(h, { bold: true, size: opts.size, spacingAfter: 0, align: align(i) })], {
             widthPct: widths[i],
             borders: GRID_CELL_BORDERS,
             shading: opts.headerFill ?? TABLE_HEADER_FILL,
@@ -417,7 +419,7 @@ export function gridTable(
           new TableRow({
             height: { value: opts.rowHeight ?? ROW_HEIGHT, rule: HeightRule.ATLEAST },
             children: r.map((v, i) =>
-              cell([p(v, { spacingAfter: 0, align: align(i) })], {
+              cell([p(v, { size: opts.size, spacingAfter: 0, align: align(i) })], {
                 widthPct: widths[i],
                 borders: GRID_BODY_BORDERS,
                 shading: opts.zebra && rowIndex % 2 === 1 ? ZEBRA_FILL : undefined,

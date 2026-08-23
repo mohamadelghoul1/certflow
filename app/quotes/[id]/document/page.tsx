@@ -1,74 +1,34 @@
 import { requireProfile } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { today, formatISODate } from "@/lib/business";
-import { signedUrl } from "@/lib/storage";
+import { today } from "@/lib/business";
+import { getQuoteDocumentData } from "@/lib/quotes/quoteData";
 import { QuoteDocument, QuoteTermsEditor } from "@/components/certifier/QuoteDocument";
-import type { Firm, Quote, QuoteFeeLine } from "@/types/db";
 
 export default async function QuoteDocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { profile } = await requireProfile("certifier");
-  const supabase = await createClient();
 
-  const [{ data: rawQuote }, { data: lines }, { data: firm }] = await Promise.all([
-    supabase.from("quotes").select("*").eq("id", id).eq("firm_id", profile.firm_id).single(),
-    supabase.from("quote_fee_lines").select("*").eq("quote_id", id).order("sort_order"),
-    supabase.from("firms").select("*").eq("id", profile.firm_id).single(),
-  ]);
-  if (!rawQuote) notFound();
-  const quote = rawQuote as Quote;
-  const feeLines = (lines || []) as QuoteFeeLine[];
-  const applicant = (quote.applicant || {}) as { name?: string; email?: string; phone?: string };
-  const firmData = firm as Firm | null;
+  const data = await getQuoteDocumentData(id, profile.firm_id);
+  if (!data) notFound();
+  const { quote, feeLines, firm: firmData, applicant, certifierName, subtotal, gst, total, pathwayFull, validUntil, validityLine, activeTerms, quoteNumber, logoUrl } = data;
 
   // The logo is embedded as data rather than linked by its signed URL, so
-  // the Export-as-Word copy of this page keeps showing it long after the
+  // a printed or saved copy of this page keeps showing it long after the
   // URL would have expired.
   let logoSrc: string | null = null;
-  if (firmData?.logo_url) {
-    const logoUrl = await signedUrl(firmData.logo_url, 600);
-    if (logoUrl) {
-      try {
-        const res = await fetch(logoUrl);
-        if (res.ok) {
-          const buffer = Buffer.from(await res.arrayBuffer());
-          logoSrc = `data:${res.headers.get("content-type") || "image/png"};base64,${buffer.toString("base64")}`;
-        }
-      } catch {
-        // The page still renders with the firm name alone.
+  if (logoUrl) {
+    try {
+      const res = await fetch(logoUrl);
+      if (res.ok) {
+        const buffer = Buffer.from(await res.arrayBuffer());
+        logoSrc = `data:${res.headers.get("content-type") || "image/png"};base64,${buffer.toString("base64")}`;
       }
+    } catch {
+      // The page still renders with the firm name alone.
     }
   }
 
-  const certifierName = quote.certifier_id
-    ? (await supabase.from("certifiers").select("name").eq("id", quote.certifier_id).single()).data?.name || firmData?.name
-    : firmData?.name;
-
-  const subtotal = feeLines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
-  const gst = subtotal * 0.1;
-  const total = subtotal + gst;
-  const pathwayFull = quote.pathway === "CDC" ? "Complying Development Certificate" : "Construction Certificate";
-  // The quote's validity is its required end date — the separate
-  // "valid for" choice was removed as a duplicate of it. Older quotes
-  // that stored an "Until yyyy-mm-dd" cutoff keep honouring it, and a
-  // quote with no end date falls back to the classic 7-day wording.
-  const validUntil = quote.valid_for?.startsWith("Until ")
-    ? formatISODate(quote.valid_for.slice(6))
-    : quote.required_end_date
-      ? formatISODate(quote.required_end_date)
-      : null;
-  const validityLine = validUntil ? `valid until ${validUntil}` : `valid for 7 days from the date of fee proposal issuance`;
-
-  const defaultTerms = [
-    `${firmData?.name || "Our firm"} is pleased to submit a fee proposal to provide building approval and certification services for the proposed development.`,
-    `We pride ourselves on our ability to deliver easier and faster building approvals, and to add value and exceed client expectations at every stage of the approval process.`,
-    `Thank you for the opportunity. We look forward to establishing a working relationship with your business and your staff.`,
-  ].join("\n\n");
-  const activeTerms = quote.terms_override || defaultTerms;
-
   const mailtoTo = applicant.email || "";
-  const quoteNumber = quote.quote_number?.trim() || quote.id.slice(0, 8).toUpperCase();
   const mailtoSubject = `Fee Quote ${quoteNumber} — ${quote.proposal_address || "Your project"}`;
   const mailtoBody = [
     `Hi ${applicant.name || "there"},`,
@@ -88,7 +48,7 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
   return (
     <QuoteDocument
       backHref={`/quotes/${id}`}
-      filename={`Quote-${quoteNumber.replace(/[^\w-]+/g, "-")}.doc`}
+      wordHref={`/api/quotes/${id}/word`}
       mailtoHref={mailtoHref}
       hasApplicantEmail={!!applicant.email}
     >
