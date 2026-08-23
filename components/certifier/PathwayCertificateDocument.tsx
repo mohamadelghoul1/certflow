@@ -1,5 +1,6 @@
 import { formatISODate } from "@/lib/business";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
+import { LetterBodyEditor } from "@/components/certifier/LetterBodyEditor";
 import { formatAddress, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 
 // The CDC/CC package as it appears on screen and, more importantly, as it
@@ -172,11 +173,7 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
               )}
             </div>
           </div>
-          {councilBody.map((para, i) => (
-            <div key={i} className="whitespace-pre-line">
-              {para}
-            </div>
-          ))}
+          <LetterBodyEditor jobId={job.id} letter="council" paragraphs={councilBody} hasOverride={!!job.council_letter_override} />
           <div>
             Please find enclosed the following documentation:
             <ul className="list-disc pl-5 mt-1 space-y-0.5">
@@ -216,11 +213,7 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
           <div className="font-bold">
             Enclosed is a copy of the approved {pathwayFull} for the subject development, and a copy of the stamped plans.
           </div>
-          {applicantBody.map((para, i) => (
-            <div key={i} className="whitespace-pre-line">
-              {para}
-            </div>
-          ))}
+          <LetterBodyEditor jobId={job.id} letter="applicant" paragraphs={applicantBody} hasOverride={!!job.applicant_letter_override} />
           <div className="bg-warning-bg border border-warning/50 rounded-md px-4 py-3">
             Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:
             <ul className="list-disc pl-5 mt-1 space-y-0.5">

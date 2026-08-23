@@ -1132,3 +1132,23 @@ export async function removeCriticalStageInspection(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pathway/${jobId}`);
 }
+
+// The certifier's own wording for the covering letters in the approval
+// package. Stored per job as the whole letter body, blank paragraphs
+// separating paragraphs; clearing it returns the letter to the standard
+// wording. Every surface — on-screen, the PDF approved set and the Word
+// export — reads the same override through pathwayData.
+export async function updateLetterBody(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const field = String(formData.get("letter")) === "applicant" ? "applicant_letter_override" : "council_letter_override";
+  const text = String(formData.get("text") || "").trim();
+  await supabase
+    .from("jobs")
+    .update({ [field]: text || null })
+    .eq("id", jobId)
+    .eq("firm_id", profile.firm_id);
+  revalidatePath(`/certificate/pathway/${jobId}`);
+  revalidatePath(`/jobs/${jobId}`);
+}
