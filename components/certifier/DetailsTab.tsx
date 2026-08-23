@@ -239,7 +239,7 @@ export function DetailsTab({
             </div>
             <div>
               <label className={labelCls}>BCA / NCC version</label>
-              <input name="bcaVersion" list="bca-version-list-edit" defaultValue={d.bcaVersion || ""} placeholder="e.g. NCC 2022 Amendment 2" className={inputCls} />
+              <input name="bcaVersion" list="bca-version-list-edit" defaultValue={d.bcaVersion || ""} placeholder="e.g. NCC 2022" className={inputCls} />
               <datalist id="bca-version-list-edit">
                 {BCA_VERSIONS.map((v) => (
                   <option key={v} value={v} />

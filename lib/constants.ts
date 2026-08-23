@@ -101,11 +101,11 @@ export const JOB_TYPES = ["Secondary Dwelling", "Dual Occupancy", "Alterations &
 // assessed against more than one (e.g. a dwelling plus a Class 10 shed).
 export const BCA_VOLUMES = ["Volume One", "Volume Two", "Volume Three"];
 
-// The three versions this firm actually assesses against. The field
-// itself is free text with these as suggestions, so a job already
-// recorded against an amendment or an older BCA keeps its value and still
-// prints correctly — this list only decides what's offered when typing.
-export const BCA_VERSIONS = ["NCC 2022", "NCC 2019", "NCC 2016"];
+// The versions this firm assesses against, oldest first. The field itself
+// is free text with these as suggestions, so a job already recorded
+// against something else keeps its value and still prints correctly —
+// this list only decides what's offered when typing.
+export const BCA_VERSIONS = ["NCC 2016", "NCC 2019", "NCC 2019.1", "NCC 2022", "NCC 2022 Amendment 1", "NCC 2022 Amendment 2"];
 
 export const BUILDING_CLASSIFICATIONS = [
   "Class 1a — Single dwelling",
