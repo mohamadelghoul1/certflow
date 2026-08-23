@@ -202,7 +202,7 @@ export default async function DashboardPage() {
   let approvalsToIssue = 0;
   let documentsForReview = 0;
   let ocAssessments = 0;
-  const stageCounts = { assessment: 0, readyToIssue: 0, underConstruction: 0, complete: 0 };
+  const stageCounts = { assessment: 0, readyToIssue: 0, awaitingCommencement: 0, underConstruction: 0, complete: 0 };
 
   for (const p of allJobs) {
     if (p.status === "complete") {
@@ -210,8 +210,23 @@ export default async function DashboardPage() {
     } else {
       const pathwayItems = (p.checklists || []).find((c) => c.kind === "pathway")?.checklist_items || [];
       const pathwayDone = pathwayItems.length > 0 && pathwayItems.every((i) => i.status === "approved");
-      if (p.pathway_generated) stageCounts.underConstruction += 1;
-      else if (pathwayDone) stageCounts.readyToIssue += 1;
+
+      // Issuing the certificate does not put a job on site. The applicant
+      // still has to appoint a principal certifier and lodge the notice of
+      // commencement, which can take weeks — so a job sits in "awaiting
+      // commencement" until its NOC checklist is settled, and only then
+      // counts as under construction.
+      //
+      // A NOC checklist with no items at all means the firm's document
+      // library has no NOC documents in it. There is nothing to determine
+      // in that case, so it must not hold a job back for ever.
+      const nocItems = (p.checklists || []).find((c) => c.kind === "noc")?.checklist_items || [];
+      const nocSettled = nocItems.length === 0 || nocItems.every((i) => i.status === "approved");
+
+      if (p.pathway_generated) {
+        if (nocSettled) stageCounts.underConstruction += 1;
+        else stageCounts.awaitingCommencement += 1;
+      } else if (pathwayDone) stageCounts.readyToIssue += 1;
       else stageCounts.assessment += 1;
 
       if (!p.pathway_generated) {
@@ -381,6 +396,7 @@ export default async function DashboardPage() {
                 slices={[
                   { label: "In assessment", value: stageCounts.assessment, color: "#2FA6A0", href: "/jobs" },
                   { label: "Ready to issue", value: stageCounts.readyToIssue, color: "#F9A825", href: "/jobs" },
+                  { label: "Awaiting commencement", value: stageCounts.awaitingCommencement, color: "#8E44AD", href: "/jobs" },
                   { label: "Under construction", value: stageCounts.underConstruction, color: "#1A3A5F", href: "/jobs" },
                   { label: "Complete", value: stageCounts.complete, color: "#2E7D32", href: "/jobs" },
                 ]}

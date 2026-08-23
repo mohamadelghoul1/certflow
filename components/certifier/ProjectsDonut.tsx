@@ -5,18 +5,20 @@ import Link from "next/link";
 //
 // The stages are derived from the job's own state rather than being a
 // status someone sets by hand — a job is in assessment until its
-// CDC/CC checklist is finished, ready to issue once it is, under
-// construction once the certificate has been issued, and complete when
-// it's marked so.
+// CDC/CC checklist is finished, ready to issue once it is, awaiting
+// commencement once the certificate has been issued but the notice of
+// commencement is still outstanding, under construction once that is
+// settled, and complete when it's marked so.
 //
 // Colours come from the brand's own chart assignments: accent for in
-// assessment, warning for ready to issue, primary for under construction,
-// success for complete. Checked with the palette validator — the two
-// tests that decide whether slices can be told apart both pass with all
-// pairs in play (colour-blind ΔE 16.3, normal vision 16.8, against floors
-// of 8 and 15). Two slices fall under 3:1 against the card, which is why
-// every one is named and counted in the legend beside the ring rather
-// than identified by colour alone, and each arc carries its own tooltip.
+// assessment, warning for ready to issue, violet for awaiting
+// commencement, primary for under construction, success for complete.
+// Checked with the palette validator — the two tests that decide whether
+// slices can be told apart both pass with all pairs in play (colour-blind
+// ΔE 15.4, normal vision 16.8, against floors of 8 and 15). Two slices
+// fall under 3:1 against the card, which is why every one is named and
+// counted in the legend beside the ring rather than identified by colour
+// alone, and each arc carries its own tooltip.
 export type Slice = { label: string; value: number; color: string; href: string };
 
 const RADIUS = 54;
