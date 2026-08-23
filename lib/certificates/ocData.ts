@@ -22,6 +22,12 @@ export type OcCertificateData = {
   projRef: string;
   typeLabel: string;
   consentRef: string;
+  // The development consent the work was approved under. Only a CC job
+  // has one — a complying development certificate is the consent — so
+  // these are blank on a CDC job and every place that prints them leaves
+  // the line out rather than showing an empty field.
+  daNumber: string;
+  daDate: string;
   d: JobDetails;
   issuedDate: string;
   applicantName: string;
@@ -66,5 +72,8 @@ export async function getOcCertificateData(jobId: string, ocId: string, firmId: 
   const issuedDate = formatISODate(record.generated_date);
   const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "Applicant";
 
-  return { job, firm: firm || null, record, issuedBy: issuedBy || null, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, d, issuedDate, applicantName };
+  const daNumber = (d.certificateDetails?.developmentConsentNumber || "").trim();
+  const daDate = d.certificateDetails?.developmentConsentDate ? formatISODate(d.certificateDetails.developmentConsentDate) : "";
+
+  return { job, firm: firm || null, record, issuedBy: issuedBy || null, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, daNumber, daDate, d, issuedDate, applicantName };
 }

@@ -45,7 +45,7 @@ function projectFooter(projRef: string, website: string | null | undefined) {
 
 
 export async function buildOcCertificateDocx(data: OcCertificateData, images: { logo: ImageAsset | null; signature: ImageAsset | null }): Promise<Buffer> {
-  const { job, firm, record, issuedBy, approvedItems, ref, projRef, typeLabel, consentRef, d, issuedDate, applicantName } = data;
+  const { job, firm, record, issuedBy, approvedItems, ref, projRef, typeLabel, consentRef, daNumber, daDate, d, issuedDate, applicantName } = data;
 
   const footer = projectFooter(projRef, firm?.website);
   const children: FileChild[] = [];
@@ -61,7 +61,11 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
     p("Dear Sir/Madam,"),
     mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }]),
     mixed([{ text: `${typeLabel} No.  `, bold: true }, { text: ref }]),
-    p(`${firm?.name || ""} Pty Ltd has issued a ${typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on ${job.pathway} No. ${consentRef}. Please find enclosed a copy for your records.`),
+    // The consent number goes in the letter, its dates do not — the
+    // council files against the number.
+    p(
+      `${firm?.name || ""} Pty Ltd has issued a ${typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on ${job.pathway} No. ${consentRef}${daNumber ? `, issued under Development Consent No. ${daNumber}` : ""}. Please find enclosed a copy for your records.`
+    ),
     signatureRule(),
     p("Yours sincerely,", { spacingBefore: 120 }),
     ...signatureBlock(images.signature),
@@ -101,6 +105,10 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
       { kind: "row", label: "Development description", value: record.description || job.description },
       { kind: "row", label: "Building classification(s)", value: (d.proposal?.classifications || []).join(", ") },
       { kind: "row", label: `${job.pathway} relied upon`, value: consentRef },
+      // A CDC job has no development consent behind it, so these two rows
+      // only appear on an OC that follows a construction certificate.
+      ...(daNumber ? [{ kind: "row" as const, label: "Development Consent (DA) No.", value: daNumber }] : []),
+      ...(daDate ? [{ kind: "row" as const, label: "Development Consent (DA) date", value: daDate }] : []),
       { kind: "row", label: "Date of issue", value: issuedDate },
     ]),
     headingRule("DOCUMENTS RELIED UPON"),

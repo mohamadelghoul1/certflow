@@ -62,7 +62,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
 
   const data = await getOcCertificateData(jobId, ocId, profile.firm_id);
   if (!data) notFound();
-  const { job, firm, record, issuedBy, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, d, issuedDate, applicantName } = data;
+  const { job, firm, record, issuedBy, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, daNumber, daDate, d, issuedDate, applicantName } = data;
 
   return (
     <CertificatePackage
@@ -121,7 +121,11 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
             </div>
             <div>
               {firm?.name} Pty Ltd has issued a {typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for
-              the above premises, relying on {job.pathway} No. {consentRef}. Please find enclosed a copy for your records.
+              the above premises, relying on {job.pathway} No. {consentRef}
+              {/* The consent the CC itself was issued under — the reference
+                  the council files the certificate against. Its number only:
+                  a letter is not the place for the consent's dates. */}
+              {daNumber ? `, issued under Development Consent No. ${daNumber}` : ""}. Please find enclosed a copy for your records.
             </div>
             <div className="pt-4">Yours sincerely,</div>
             <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
@@ -210,6 +214,8 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
                 <CertRow label="Development description" value={record.description || job.description} />
                 <CertRow label="Building classification(s)" value={(d.proposal?.classifications || []).join(", ")} />
                 <CertRow label={`${job.pathway} relied upon`} value={consentRef} />
+                {daNumber && <CertRow label="Development Consent (DA) No." value={daNumber} />}
+                {daDate && <CertRow label="Development Consent (DA) date" value={daDate} />}
                 <CertRow label="Date of issue" value={issuedDate} />
               </tbody>
             </table>
