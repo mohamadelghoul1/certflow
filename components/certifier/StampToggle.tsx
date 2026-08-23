@@ -1,39 +1,22 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
 import { Stamp } from "lucide-react";
-import { toggleStamping } from "@/lib/actions/jobs";
 
-// Flips instantly instead of waiting on the server. As a plain form the
-// button only changed once the action had updated the row, revalidated the
-// job page, and streamed the whole thing back — a few seconds of looking
-// broken for what is just a yes/no flag. useOptimistic shows the new state
-// straight away and lets that round trip finish in the background; if it
-// fails, React drops the optimistic value and the button snaps back to
-// whatever the server actually holds.
-export function StampToggle({ itemId, jobId, requiresStamping }: { itemId: string; jobId: string; requiresStamping: boolean }) {
-  const [optimistic, setOptimistic] = useOptimistic(requiresStamping);
-  const [, startTransition] = useTransition();
-
+// Purely presentational: the optimistic value and the toggle action live
+// in ItemStatusActions, one level up. They used to live here — which made
+// this button flip instantly while "Preview stamp" and "Position stamp",
+// gated on the server-confirmed value next door, lagged a whole round
+// trip behind it. One shared optimistic value moves all three together.
+export function StampToggle({ value, onToggle }: { value: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"
       className={`flex items-center gap-1.5 text-sm font-medium px-4 py-1.5 rounded-full border ${
-        optimistic ? "bg-warning-bg border-warning/50 text-warning-text" : "border-line text-muted hover:bg-hover"
+        value ? "bg-warning-bg border-warning/50 text-warning-text" : "border-line text-muted hover:bg-hover"
       }`}
-      onClick={() => {
-        startTransition(async () => {
-          const next = !optimistic;
-          setOptimistic(next);
-          const fd = new FormData();
-          fd.set("item_id", itemId);
-          fd.set("job_id", jobId);
-          fd.set("value", next.toString());
-          await toggleStamping(fd);
-        });
-      }}
+      onClick={onToggle}
     >
-      <Stamp size={13} /> {optimistic ? "Stamp required" : "Stamp not required"}
+      <Stamp size={13} /> {value ? "Stamp required" : "Stamp not required"}
     </button>
   );
 }

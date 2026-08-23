@@ -3,7 +3,7 @@
 import { createContext, useContext, useOptimistic, useState, useTransition } from "react";
 import { CheckCircle2, Clock, AlertTriangle, Circle, RotateCcw, UploadCloud } from "lucide-react";
 import { displayStatus, unresolvedCount } from "@/lib/business";
-import { approveItem, reopenItem, certifierUploadItem } from "@/lib/actions/jobs";
+import { approveItem, reopenItem, certifierUploadItem, toggleStamping } from "@/lib/actions/jobs";
 import { FileUpload } from "@/components/certifier/FileUpload";
 import { StampToggle } from "@/components/certifier/StampToggle";
 import type { Amendment, ChecklistItem } from "@/types/db";
@@ -175,6 +175,26 @@ export function ItemStatusActions({
   const [reviewing, setReviewing] = useState(false);
   const unresolved = unresolvedCount({ status, amendments });
 
+  // One optimistic value for the whole stamping row. Held here rather
+  // than inside StampToggle so the moment the toggle flips, "Preview
+  // stamp" and "Position stamp" appear with it — gated on the
+  // server-confirmed prop they trailed the toggle by the whole save
+  // round trip. If the save fails, React drops the optimistic value and
+  // all three fall back together.
+  const [optimisticStamping, setOptimisticStamping] = useOptimistic(requiresStamping);
+  const [, startStampTransition] = useTransition();
+  function toggleStamp() {
+    startStampTransition(async () => {
+      const next = !optimisticStamping;
+      setOptimisticStamping(next);
+      const fd = new FormData();
+      fd.set("item_id", itemId);
+      fd.set("job_id", jobId);
+      fd.set("value", next.toString());
+      await toggleStamping(fd);
+    });
+  }
+
   function stateActions() {
     // Done — the only things left are undoing it, and whether it needs stamping.
     if (status === "approved") {
@@ -183,16 +203,16 @@ export function ItemStatusActions({
           <button type="button" onClick={reopen} className="flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-hover">
             <RotateCcw size={13} /> Reopen
           </button>
-          <StampToggle itemId={itemId} jobId={jobId} requiresStamping={requiresStamping} />
+          <StampToggle value={optimisticStamping} onToggle={toggleStamp} />
           {/* What the stamp will actually look like when the approved set
               is downloaded — the firm's name, the certificate number, and
               the certifier who signed it with their registration number. */}
-          {requiresStamping && (
+          {optimisticStamping && (
             <a href={`/api/jobs/${jobId}/stamp`} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
               Preview stamp
             </a>
           )}
-          {requiresStamping && stampPositioner}
+          {optimisticStamping && stampPositioner}
         </>
       );
     }
