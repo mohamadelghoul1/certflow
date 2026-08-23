@@ -29,12 +29,16 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
   const gst = subtotal * 0.1;
   const total = subtotal + gst;
   const pathwayFull = quote.pathway === "CDC" ? "Complying Development Certificate" : "Construction Certificate";
-  // valid_for is either a period ("7 Days") or a certifier-picked cutoff
-  // stored as "Until yyyy-mm-dd" — the wording flips between "for N days"
-  // and "until <date>" to match.
-  const validUntil = quote.valid_for?.startsWith("Until ") ? formatISODate(quote.valid_for.slice(6)) : null;
-  const validForDays = (quote.valid_for || "").replace(" Days", "").replace(" Day", "");
-  const validityLine = validUntil ? `valid until ${validUntil}` : `valid for ${validForDays || "7"} days from the date of fee proposal issuance`;
+  // The quote's validity is its required end date — the separate
+  // "valid for" choice was removed as a duplicate of it. Older quotes
+  // that stored an "Until yyyy-mm-dd" cutoff keep honouring it, and a
+  // quote with no end date falls back to the classic 7-day wording.
+  const validUntil = quote.valid_for?.startsWith("Until ")
+    ? formatISODate(quote.valid_for.slice(6))
+    : quote.required_end_date
+      ? formatISODate(quote.required_end_date)
+      : null;
+  const validityLine = validUntil ? `valid until ${validUntil}` : `valid for 7 days from the date of fee proposal issuance`;
 
   const defaultTerms = [
     `${firmData?.name || "Our firm"} is pleased to submit a fee proposal to provide building approval and certification services for the proposed development.`,

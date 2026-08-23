@@ -34,7 +34,6 @@ function extractQuoteFields(formData: FormData) {
       pathway,
       required_start_date: String(formData.get("required_start_date") || "") || null,
       required_end_date: String(formData.get("required_end_date") || "") || null,
-      valid_for: String(formData.get("valid_for") || "7 Days"),
       proposal_address: String(formData.get("proposal_address") || ""),
       lot_section_plan: String(formData.get("lot_section_plan") || ""),
       certifier_id: String(formData.get("certifier_id") || "") || null,

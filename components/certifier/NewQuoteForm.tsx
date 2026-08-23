@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { createQuote } from "@/lib/actions/quotes";
 import type { ActionState } from "@/lib/actions/auth";
-import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS, VALID_FOR_OPTIONS, defaultScopeOfWorks } from "@/lib/constants";
+import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS, defaultScopeOfWorks } from "@/lib/constants";
 import { X, Plus } from "lucide-react";
 import { DateField, todayISO } from "@/components/DateField";
 import { AddressLookupField } from "@/components/certifier/AddressLookupField";
@@ -32,7 +32,6 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
   const [ownerIsApplicant, setOwnerIsApplicant] = useState(true);
   const [scopeItems, setScopeItems] = useState<string[]>(defaultScopeOfWorks("CDC"));
   const [feeLines, setFeeLines] = useState<FeeLine[]>([{ description: "CDC/PC/OC", amount: "2500" }]);
-  const [validFor, setValidFor] = useState("7 Days");
 
   function handlePathwayChange(p: "CDC" | "CC") {
     setPathway(p);
@@ -96,28 +95,6 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
             <label className={labelCls}>Required end date</label>
             <DateField name="required_end_date" min={todayISO()} className={inputCls} />
           </div>
-        </div>
-        <div>
-          <label className={labelCls}>Quote valid for</label>
-          {/* Either one of the usual periods, or a date of the certifier's
-              own choosing — stored as "Until yyyy-mm-dd" so the quote
-              document can say "valid until" that day. */}
-          <div className="flex gap-2 flex-wrap">
-            <select
-              value={validFor.startsWith("Until ") ? "Until a specific date" : validFor}
-              onChange={(e) => setValidFor(e.target.value === "Until a specific date" ? `Until ${todayISO()}` : e.target.value)}
-              className={`${inputCls} sm:w-56`}
-            >
-              {VALID_FOR_OPTIONS.map((v) => (
-                <option key={v}>{v}</option>
-              ))}
-              <option>Until a specific date</option>
-            </select>
-            {validFor.startsWith("Until ") && (
-              <DateField value={validFor.slice(6)} min={todayISO()} onChange={(e) => setValidFor(`Until ${e.target.value}`)} className={`${inputCls} sm:w-48`} />
-            )}
-          </div>
-          <input type="hidden" name="valid_for" value={validFor} />
         </div>
       </Section>
 
