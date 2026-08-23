@@ -69,10 +69,11 @@ function extractQuoteFields(formData: FormData) {
 
 function extractFeeLines(formData: FormData) {
   const feeDescriptions = formData.getAll("fee_description").map(String);
-  const feeQuantities = formData.getAll("fee_quantity").map(String);
   const feeAmounts = formData.getAll("fee_amount").map(String);
+  // Each line is a description and its fee — the quantity column is gone
+  // from the form, so every stored line carries the neutral quantity of 1.
   return feeDescriptions
-    .map((description, idx) => ({ description, quantity: feeQuantities[idx] || "1", amount: Number(feeAmounts[idx]) || 0, sort_order: idx }))
+    .map((description, idx) => ({ description, quantity: "1", amount: Number(feeAmounts[idx]) || 0, sort_order: idx }))
     .filter((l) => l.description.trim().length > 0);
 }
 
@@ -163,6 +164,28 @@ export async function updateQuoteTerms(formData: FormData) {
   await supabase.from("quotes").update({ terms_override: termsOverride || null }).eq("id", quoteId);
   revalidatePath(`/quotes/${quoteId}`);
   revalidatePath(`/quotes/${quoteId}/document`);
+}
+
+export async function deleteQuote(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const quoteId = String(formData.get("quote_id"));
+  const typed = String(formData.get("confirm_address") || "").trim();
+
+  const { data: quote } = await supabase.from("quotes").select("id, proposal_address, linked_job_id").eq("id", quoteId).eq("firm_id", profile.firm_id).single();
+  if (!quote) return { error: "That quote could not be found." };
+
+  const expected = (quote.proposal_address || "").trim();
+  if (typed.toLowerCase() !== expected.toLowerCase()) {
+    return { error: "The address you typed doesn't match this quote's proposal address, so nothing has been deleted." };
+  }
+
+  // The fee lines go with the quote via the schema's cascade. A project
+  // already generated from this quote is its own record and stays.
+  const { error } = await supabase.from("quotes").delete().eq("id", quoteId).eq("firm_id", profile.firm_id);
+  if (error) return { error: error.message };
+
+  redirect("/quotes");
 }
 
 export async function generateJobFromQuote(formData: FormData) {

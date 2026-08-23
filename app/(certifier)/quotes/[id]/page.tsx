@@ -5,6 +5,7 @@ import Link from "next/link";
 import { QUOTE_STATUS_META } from "@/lib/constants";
 import { setQuoteStatus, markQuotePaid, generateJobFromQuote } from "@/lib/actions/quotes";
 import { QuoteEditForm } from "@/components/certifier/QuoteEditForm";
+import { DeleteQuoteButton } from "@/components/certifier/DeleteQuoteButton";
 import { Check } from "lucide-react";
 import type { Quote, QuoteFeeLine } from "@/types/db";
 
@@ -88,6 +89,10 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       </div>
 
       <QuoteEditForm quote={quote} feeLines={(lines || []) as QuoteFeeLine[]} certifiers={certifiers || []} clients={clients || []} />
+
+      <div className="mt-8 pt-4 border-t border-line">
+        <DeleteQuoteButton quoteId={id} address={quote.proposal_address || ""} hasProject={!!quote.linked_job_id} />
+      </div>
     </div>
   );
 }

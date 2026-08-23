@@ -20,7 +20,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-type FeeLine = { description: string; quantity: string; amount: string };
+type FeeLine = { description: string; amount: string };
 
 export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string; name: string }[]; clients: { id: string; name: string; type: string }[] }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createQuote, undefined);
@@ -30,14 +30,14 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
   const [councilLga, setCouncilLga] = useState("");
   const [ownerIsApplicant, setOwnerIsApplicant] = useState(true);
   const [scopeItems, setScopeItems] = useState<string[]>(defaultScopeOfWorks("CDC"));
-  const [feeLines, setFeeLines] = useState<FeeLine[]>([{ description: "CDC/PC/OC", quantity: "1", amount: "2500" }]);
+  const [feeLines, setFeeLines] = useState<FeeLine[]>([{ description: "CDC/PC/OC", amount: "2500" }]);
 
   function handlePathwayChange(p: "CDC" | "CC") {
     setPathway(p);
     setFeeLines((prev) => (prev.length === 1 && prev[0].description === `${pathway}/PC/OC` ? [{ ...prev[0], description: `${p}/PC/OC` }] : prev));
   }
 
-  const subtotal = feeLines.reduce((sum, l) => sum + (Number(l.amount) || 0) * (Number(l.quantity) || 1), 0);
+  const subtotal = feeLines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
   const gst = subtotal * 0.1;
   const total = subtotal + gst;
 
@@ -140,8 +140,9 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
           </div>
         </div>
         <div>
-          <label className={labelCls}>Development description</label>
-          <textarea name="development_description" rows={2} placeholder="e.g. New dwelling, house" className={inputCls} />
+          <label className={labelCls}>Job description</label>
+          <textarea name="development_description" rows={2} placeholder="e.g. Construction of a new two-storey dwelling" className={inputCls} />
+          <div className="text-[11px] text-placeholder mt-1">Carried straight onto the project as its description when this quote is accepted and converted.</div>
         </div>
       </Section>
 
@@ -152,7 +153,7 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
         </label>
         <div className="grid sm:grid-cols-3 gap-4">
           <div>
-            <label className={labelCls}>Applicant name</label>
+            <label className={labelCls}>Applicant full name</label>
             <input name="applicant_name" className={inputCls} />
           </div>
           <div>
@@ -239,25 +240,19 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
         <div className="space-y-2">
           <div className="flex gap-2 items-center text-xs text-placeholder px-1">
             <span className="flex-1">Description</span>
-            <span className="w-16 text-center">Qty</span>
-            <span className="w-32 text-right pr-8">Unit price</span>
+            <span className="w-32 text-right pr-8">Fee</span>
           </div>
           {feeLines.map((line, idx) => (
-            <div key={idx} className="flex gap-2 items-center">
-              <input
+            <div key={idx} className="flex gap-2 items-start">
+              {/* field-sizing-content grows the box with the text where the
+                  browser supports it; the resize handle covers the rest. */}
+              <textarea
                 name="fee_description"
                 value={line.description}
                 onChange={(e) => setFeeLines((prev) => prev.map((l, i) => (i === idx ? { ...l, description: e.target.value } : l)))}
-                placeholder="e.g. CDC/PC/OC"
-                className={`${inputCls} flex-1`}
-              />
-              <input
-                type="number"
-                name="fee_quantity"
-                value={line.quantity}
-                onChange={(e) => setFeeLines((prev) => prev.map((l, i) => (i === idx ? { ...l, quantity: e.target.value } : l)))}
-                placeholder="1"
-                className={`${inputCls} w-16 text-center`}
+                placeholder="Describe the item — e.g. Complying Development Certificate assessment and issue"
+                rows={1}
+                className={`${inputCls} flex-1 resize-y field-sizing-content min-h-9`}
               />
               <input
                 type="number"
@@ -272,7 +267,7 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
               </button>
             </div>
           ))}
-          <button type="button" onClick={() => setFeeLines((prev) => [...prev, { description: "", quantity: "1", amount: "" }])} className="flex items-center gap-1.5 text-sm text-secondary font-medium hover:underline">
+          <button type="button" onClick={() => setFeeLines((prev) => [...prev, { description: "", amount: "" }])} className="flex items-center gap-1.5 text-sm text-secondary font-medium hover:underline">
             <Plus size={14} /> Add fee line
           </button>
           <div className="flex flex-col items-end gap-0.5 pt-2 border-t border-line mt-2 text-sm">

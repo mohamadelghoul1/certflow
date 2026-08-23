@@ -21,7 +21,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-type FeeLine = { description: string; quantity: string; amount: string };
+type FeeLine = { description: string; amount: string };
 
 export function QuoteEditForm({
   quote,
@@ -49,8 +49,8 @@ export function QuoteEditForm({
   const [scopeItems, setScopeItems] = useState<string[]>(quote.scope_of_works && quote.scope_of_works.length > 0 ? quote.scope_of_works : [""]);
   const [feeLines, setFeeLines] = useState<FeeLine[]>(
     initialFeeLines.length > 0
-      ? initialFeeLines.map((l) => ({ description: l.description, quantity: l.quantity || "1", amount: String(l.amount) }))
-      : [{ description: `${quote.pathway}/PC/OC`, quantity: "1", amount: "2500" }]
+      ? initialFeeLines.map((l) => ({ description: l.description, amount: String(l.amount) }))
+      : [{ description: `${quote.pathway}/PC/OC`, amount: "2500" }]
   );
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export function QuoteEditForm({
     wasPending.current = pending;
   }, [pending, state]);
 
-  const subtotal = feeLines.reduce((sum, l) => sum + (Number(l.amount) || 0) * (Number(l.quantity) || 1), 0);
+  const subtotal = feeLines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
   const gst = subtotal * 0.1;
   const total = subtotal + gst;
 
@@ -173,8 +173,9 @@ export function QuoteEditForm({
           </div>
         </div>
         <div>
-          <label className={labelCls}>Development description</label>
-          <textarea name="development_description" defaultValue={quote.development_description || ""} rows={2} placeholder="e.g. New dwelling, house" className={inputCls} />
+          <label className={labelCls}>Job description</label>
+          <textarea name="development_description" defaultValue={quote.development_description || ""} rows={2} placeholder="e.g. Construction of a new two-storey dwelling" className={inputCls} />
+          <div className="text-[11px] text-placeholder mt-1">Carried straight onto the project as its description when this quote is accepted and converted.</div>
         </div>
       </Section>
 
@@ -185,7 +186,7 @@ export function QuoteEditForm({
         </label>
         <div className="grid sm:grid-cols-3 gap-4">
           <div>
-            <label className={labelCls}>Applicant name</label>
+            <label className={labelCls}>Applicant full name</label>
             <input name="applicant_name" defaultValue={applicant.name || ""} className={inputCls} />
           </div>
           <div>
@@ -272,25 +273,19 @@ export function QuoteEditForm({
         <div className="space-y-2">
           <div className="flex gap-2 items-center text-xs text-placeholder px-1">
             <span className="flex-1">Description</span>
-            <span className="w-16 text-center">Qty</span>
-            <span className="w-32 text-right pr-8">Unit price</span>
+            <span className="w-32 text-right pr-8">Fee</span>
           </div>
           {feeLines.map((line, idx) => (
-            <div key={idx} className="flex gap-2 items-center">
-              <input
+            <div key={idx} className="flex gap-2 items-start">
+              {/* field-sizing-content grows the box with the text where the
+                  browser supports it; the resize handle covers the rest. */}
+              <textarea
                 name="fee_description"
                 value={line.description}
                 onChange={(e) => setFeeLines((prev) => prev.map((l, i) => (i === idx ? { ...l, description: e.target.value } : l)))}
-                placeholder="e.g. CDC/PC/OC"
-                className={`${inputCls} flex-1`}
-              />
-              <input
-                type="number"
-                name="fee_quantity"
-                value={line.quantity}
-                onChange={(e) => setFeeLines((prev) => prev.map((l, i) => (i === idx ? { ...l, quantity: e.target.value } : l)))}
-                placeholder="1"
-                className={`${inputCls} w-16 text-center`}
+                placeholder="Describe the item — e.g. Complying Development Certificate assessment and issue"
+                rows={1}
+                className={`${inputCls} flex-1 resize-y field-sizing-content min-h-9`}
               />
               <input
                 type="number"
@@ -305,7 +300,7 @@ export function QuoteEditForm({
               </button>
             </div>
           ))}
-          <button type="button" onClick={() => setFeeLines((prev) => [...prev, { description: "", quantity: "1", amount: "" }])} className="flex items-center gap-1.5 text-sm text-secondary font-medium hover:underline">
+          <button type="button" onClick={() => setFeeLines((prev) => [...prev, { description: "", amount: "" }])} className="flex items-center gap-1.5 text-sm text-secondary font-medium hover:underline">
             <Plus size={14} /> Add fee line
           </button>
           <div className="flex flex-col items-end gap-0.5 pt-2 border-t border-line mt-2 text-sm">

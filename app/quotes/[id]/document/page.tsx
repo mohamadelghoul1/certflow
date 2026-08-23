@@ -25,7 +25,7 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
     ? (await supabase.from("certifiers").select("name").eq("id", quote.certifier_id).single()).data?.name || firmData?.name
     : firmData?.name;
 
-  const subtotal = feeLines.reduce((sum, l) => sum + (Number(l.amount) || 0) * (Number(l.quantity) || 1), 0);
+  const subtotal = feeLines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
   const gst = subtotal * 0.1;
   const total = subtotal + gst;
   const pathwayFull = quote.pathway === "CDC" ? "Complying Development Certificate" : "Construction Certificate";
@@ -106,16 +106,16 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
           <thead>
             <tr style={{ backgroundColor: "#B8B49A" }}>
               <th className="text-left font-semibold px-3 py-2 border border-line">Description</th>
-              <th className="text-center font-semibold px-3 py-2 border border-line w-24">Quantity</th>
-              <th className="text-right font-semibold px-3 py-2 border border-line w-28">Unit Price</th>
+              <th className="text-right font-semibold px-3 py-2 border border-line w-28">Fee</th>
             </tr>
           </thead>
           <tbody>
             {feeLines.map((l) => (
               <tr key={l.id}>
-                <td className="px-3 py-1.5 border border-line">{l.description || "—"}</td>
-                <td className="px-3 py-1.5 border border-line text-center">{l.quantity || "1"}</td>
-                <td className="px-3 py-1.5 border border-line text-right">{l.amount ? Number(l.amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "—"}</td>
+                {/* whitespace-pre-line keeps the line breaks typed into a
+                    multi-line description. */}
+                <td className="px-3 py-1.5 border border-line whitespace-pre-line">{l.description || "—"}</td>
+                <td className="px-3 py-1.5 border border-line text-right align-top">{l.amount ? Number(l.amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "—"}</td>
               </tr>
             ))}
           </tbody>
