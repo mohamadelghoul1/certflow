@@ -558,6 +558,32 @@ async function mirrorVisiblePathwayVersion(
     .eq("id", jobId);
 }
 
+// The NSW Planning Portal reference, entered on its own from the
+// certificate panel. It is on the Details page too, but it is often the
+// last thing to come back from the Portal — long after the rest of the
+// job was filled in — so it can be typed in at the moment it is needed
+// without leaving the tab.
+export async function setPlanningPortalRef(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const ref = String(formData.get("planningPortalRef") || "").trim();
+  if (!ref) return { error: "Enter the Planning Portal reference number." };
+
+  const { data: job } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return { error: "Project not found." };
+
+  // Merged into the details rather than written over them, so this can't
+  // wipe anything else recorded against the certificate.
+  const details = (job.details || {}) as JobDetails;
+  await supabase
+    .from("jobs")
+    .update({ details: { ...details, certificateDetails: { ...details.certificateDetails, planningPortalRef: ref } } })
+    .eq("id", jobId);
+  revalidatePath(`/jobs/${jobId}`);
+  return undefined;
+}
+
 export async function issuePathwayCertificate(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
@@ -567,6 +593,14 @@ export async function issuePathwayCertificate(_prev: ActionState, formData: Form
 
   const { data: job } = await supabase.from("jobs").select("id, details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
   if (!job) return { error: "Project not found." };
+
+  // The certificate carries the NSW Planning Portal reference, so it
+  // cannot be issued without one. Checked here as well as in the form —
+  // a disabled button is a courtesy, not a control.
+  const jobDetails = (job.details || {}) as JobDetails;
+  if (!jobDetails.certificateDetails?.planningPortalRef?.trim()) {
+    return { error: "Enter the NSW Planning Portal reference number before issuing." };
+  }
 
   const { data: existing } = await supabase.from("pathway_certificate_versions").select("version").eq("job_id", jobId).order("version", { ascending: false }).limit(1);
   const nextVersion = (existing?.[0]?.version || 0) + 1;

@@ -4,6 +4,7 @@ import { reportPathwayToPortal, setVisiblePathwayVersion, startModification, upl
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { buildStampPreview } from "@/lib/pdf/stampDetails";
+import { PlanningPortalRefField } from "@/components/certifier/PlanningPortalRefField";
 import { IssueCertificateForm, IssueModificationForm } from "@/components/certifier/IssueCertificateForm";
 import { DeletePathwayVersionButton } from "@/components/certifier/DeletePathwayVersionButton";
 import { DeleteModificationButton } from "@/components/certifier/DeleteModificationButton";
@@ -41,6 +42,7 @@ export async function CertificatesPanel({
   // What the stamp will say and how big it is, worked out once for the
   // whole checklist rather than per document.
   const activeVersion = versions.find((v) => v.version === job.pathway_version);
+  const portalRef = job.details?.certificateDetails?.planningPortalRef || "";
   const stamp = await buildStampPreview(job, activeVersion?.cert_ref);
 
   return (
@@ -60,7 +62,18 @@ export async function CertificatesPanel({
           version only reaches the client once you sign it and press Send to client.
         </p>
 
-        {complete && <IssueCertificateForm jobId={job.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} isRegenerate={job.pathway_generated} />}
+        {complete && (
+          <>
+            <PlanningPortalRefField jobId={job.id} value={portalRef} />
+            <IssueCertificateForm
+              jobId={job.id}
+              assignedCertifierId={job.assigned_certifier_id}
+              certifiers={certifiers}
+              isRegenerate={job.pathway_generated}
+              hasPortalRef={portalRef.trim().length > 0}
+            />
+          </>
+        )}
 
         {job.pathway_generated && (
           <div className="mt-3 flex items-center gap-4 flex-wrap">

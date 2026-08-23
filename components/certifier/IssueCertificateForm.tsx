@@ -12,11 +12,16 @@ export function IssueCertificateForm({
   assignedCertifierId,
   certifiers,
   isRegenerate,
+  hasPortalRef,
 }: {
   jobId: string;
   assignedCertifierId: string | null;
   certifiers: Certifier[];
   isRegenerate: boolean;
+  // The certificate prints the NSW Planning Portal reference, so there is
+  // nothing to issue until one has been recorded. The server refuses too —
+  // this only saves the certifier a press to find that out.
+  hasPortalRef: boolean;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(issuePathwayCertificate, undefined);
   return (
@@ -30,7 +35,11 @@ export function IssueCertificateForm({
           </option>
         ))}
       </select>
-      <button disabled={pending} className="text-xs font-semibold text-white bg-success hover:bg-success px-3 py-1.5 rounded-md disabled:opacity-60">
+      <button
+        disabled={pending || !hasPortalRef}
+        title={hasPortalRef ? undefined : "Enter the NSW Planning Portal reference first"}
+        className="text-xs font-semibold text-white bg-success hover:bg-success px-3 py-1.5 rounded-md disabled:opacity-60 disabled:cursor-not-allowed"
+      >
         {pending ? "Issuing…" : isRegenerate ? "Regenerate certificate" : "Issue certificate"}
       </button>
       {state?.error && <span className="text-xs text-error">{state.error}</span>}
