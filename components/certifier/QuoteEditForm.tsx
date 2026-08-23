@@ -273,19 +273,33 @@ export function QuoteEditForm({
         <div className="space-y-2">
           <div className="flex gap-2 items-center text-xs text-placeholder px-1">
             <span className="flex-1">Description</span>
-            <span className="w-20 text-right pr-8">Fee</span>
+            <span className="w-24 text-right pr-8">Fee</span>
           </div>
           {feeLines.map((line, idx) => (
             <div key={idx} className="flex gap-2 items-start">
-              {/* field-sizing-content grows the box with the text where the
-                  browser supports it; the resize handle covers the rest. */}
+              {/* The ref and onInput keep the box exactly as tall as its
+                  text, so a long description wraps onto more lines while a
+                  short one stays a single row. Sized with flex, not
+                  field-sizing: that collapsed the box to its narrowest
+                  content instead of filling the row. */}
               <textarea
                 name="fee_description"
                 value={line.description}
                 onChange={(e) => setFeeLines((prev) => prev.map((l, i) => (i === idx ? { ...l, description: e.target.value } : l)))}
+                ref={(el) => {
+                  if (el) {
+                    el.style.height = "auto";
+                    el.style.height = `${el.scrollHeight + 2}px`;
+                  }
+                }}
+                onInput={(e) => {
+                  const el = e.currentTarget;
+                  el.style.height = "auto";
+                  el.style.height = `${el.scrollHeight + 2}px`;
+                }}
                 placeholder="Describe the item — e.g. Complying Development Certificate assessment and issue"
                 rows={1}
-                className={`${inputCls} flex-1 resize-y field-sizing-content min-h-9`}
+                className="flex-1 min-w-0 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon resize-none overflow-hidden"
               />
               <input
                 type="number"
@@ -293,7 +307,7 @@ export function QuoteEditForm({
                 value={line.amount}
                 onChange={(e) => setFeeLines((prev) => prev.map((l, i) => (i === idx ? { ...l, amount: e.target.value } : l)))}
                 placeholder="0.00"
-                className={`${inputCls} w-20 px-2`}
+                className="w-24 shrink-0 px-2 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
               />
               <button type="button" onClick={() => setFeeLines((prev) => prev.filter((_, i) => i !== idx))} className="p-2 rounded-full hover:bg-surface text-placeholder">
                 <X size={14} />
