@@ -13,7 +13,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   const [logo, signature, photos] = await Promise.all([
     fetchImageAsset(data.logoUrl, 64, 190),
-    fetchImageAsset(data.signatureUrl, 84, 280),
+    fetchImageAsset(data.signatureUrl, 68, 240),
     Promise.all(data.photoUrls.map((url) => fetchImageAssetByWidth(url, 260, 260))),
   ]);
 

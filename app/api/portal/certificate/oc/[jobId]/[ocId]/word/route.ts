@@ -30,7 +30,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const data = await getOcCertificateData(jobId, ocId, job.firm_id, admin);
   if (!data) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const [logo, signature] = await Promise.all([fetchImageAsset(data.logoUrl, 64, 190), fetchImageAsset(data.signatureUrl, 84, 280)]);
+  const [logo, signature] = await Promise.all([fetchImageAsset(data.logoUrl, 64, 190), fetchImageAsset(data.signatureUrl, 68, 240)]);
   const buffer = await buildOcCertificateDocx(data, { logo, signature });
 
   return new NextResponse(new Uint8Array(buffer), {

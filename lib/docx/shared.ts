@@ -33,7 +33,7 @@ export const SECTION_GAP = 300; // 15pt between major sections
 // Letters set their body paragraphs a little further apart than ordinary
 // prose. One value, so the council letter and the applicant letter always
 // look like the same letter.
-export const LETTER_PARA_AFTER = 100; // 5pt
+export const LETTER_PARA_AFTER = 80; // 4pt
 // Letter bodies are set a touch tighter than the 1.15 used elsewhere, so a
 // long letter still closes with its signature on the same page instead of
 // pushing three lines onto a second sheet.
@@ -70,7 +70,7 @@ export const PAGE_PROPERTIES = {
       bottom: convertMillimetersToTwip(20),
       left: convertMillimetersToTwip(20),
       right: convertMillimetersToTwip(20),
-      header: convertMillimetersToTwip(7),
+      header: convertMillimetersToTwip(5),
       footer: convertMillimetersToTwip(10),
     },
   },
@@ -421,7 +421,7 @@ export function calloutBox(children: Paragraph[]) {
             width: { size: 100, type: WidthType.PERCENTAGE },
             shading: { type: ShadingType.CLEAR, fill: "FFFBEB" },
             borders: { top: CALLOUT_BORDER, bottom: CALLOUT_BORDER, left: CALLOUT_BORDER, right: CALLOUT_BORDER },
-            margins: { top: 50, bottom: 50, left: 110, right: 110 },
+            margins: { top: 40, bottom: 40, left: 100, right: 100 },
           }),
         ],
       }),
