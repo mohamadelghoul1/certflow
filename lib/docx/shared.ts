@@ -6,7 +6,7 @@
 // import quirk applies here: no mso-* properties, no CSSOM
 // normalization traps, no default "Table Grid" style fighting a plain
 // border:none.
-import { Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, VerticalAlignTable, ImageRun, ShadingType, HeightRule, convertMillimetersToTwip } from "docx";
+import { Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, VerticalAlignTable, ImageRun, ShadingType, HeightRule, TableLayoutType, convertMillimetersToTwip } from "docx";
 import type { IBorderOptions, ITableCellBorders, TableVerticalAlign } from "docx";
 
 // The document style, in one place. Sizes are docx half-points (22 = 11pt)
@@ -75,6 +75,14 @@ const GRID_BODY_BORDERS: ITableCellBorders = { top: GRID_LINE_LIGHT, bottom: GRI
 
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
+
+// Every table is laid out FIXED at absolute twip widths rather than
+// percentages. Desktop Word quietly recalculates percentage columns, but
+// Word on Mac, iOS and the web honours the written grid literally — and
+// the docx library writes a 100-twip (1.8mm) grid column for a
+// percentage cell, which those Words render as a one-letter-wide strip.
+const CONTENT_WIDTH = convertMillimetersToTwip(A4_WIDTH_MM - 28); // page minus the 14mm margins
+const pctW = (pct: number) => Math.round((CONTENT_WIDTH * pct) / 100);
 
 // 1.4cm all round, the same margin the on-screen document prints at, so
 // the three surfaces wrap at the same width and break at the same places.
@@ -287,7 +295,7 @@ export function pageBreak() {
 function cell(children: readonly (Paragraph | Table)[], opts: { widthPct?: number; borders?: ITableCellBorders; verticalAlign?: TableVerticalAlign; shading?: string; columnSpan?: number; padded?: boolean } = {}) {
   return new TableCell({
     children,
-    width: opts.widthPct !== undefined ? { size: opts.widthPct, type: WidthType.PERCENTAGE } : undefined,
+    width: opts.widthPct !== undefined ? { size: pctW(opts.widthPct), type: WidthType.DXA } : undefined,
     borders: opts.borders ?? NO_CELL_BORDERS,
     verticalAlign: opts.verticalAlign ?? VerticalAlignTable.TOP,
     shading: opts.shading ? { type: ShadingType.CLEAR, fill: opts.shading } : undefined,
@@ -301,10 +309,15 @@ function cell(children: readonly (Paragraph | Table)[], opts: { widthPct?: numbe
   });
 }
 
-function borderlessTable(rows: TableRow[]) {
+function borderlessTable(rows: TableRow[], columnsPct: number[] = [50, 50]) {
   return new Table({
     rows,
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+    layout: TableLayoutType.FIXED,
+    // The explicit grid is what Word on Mac, iOS and the web actually
+    // lay the columns out from; without it the library writes 100-twip
+    // placeholder columns that those Words render one letter wide.
+    columnWidths: columnsPct.map(pctW),
     borders: { top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER, insideHorizontal: NO_BORDER, insideVertical: NO_BORDER },
   });
 }
@@ -314,11 +327,15 @@ function borderlessTable(rows: TableRow[]) {
 export function splitRow(left: string | Paragraph[], right: string | Paragraph[], opts: { leftPct?: number; bold?: boolean; size?: number; color?: string } = {}) {
   const leftChildren = typeof left === "string" ? [p(left, { bold: opts.bold, size: opts.size, color: opts.color, spacingAfter: 0 })] : left;
   const rightChildren = typeof right === "string" ? [p(right, { bold: opts.bold, size: opts.size, color: opts.color, align: AlignmentType.RIGHT, spacingAfter: 0 })] : right;
-  return borderlessTable([
-    new TableRow({
-      children: [cell(leftChildren, { widthPct: opts.leftPct ?? 50 }), cell(rightChildren, { widthPct: 100 - (opts.leftPct ?? 50) })],
-    }),
-  ]);
+  const leftPct = opts.leftPct ?? 50;
+  return borderlessTable(
+    [
+      new TableRow({
+        children: [cell(leftChildren, { widthPct: leftPct }), cell(rightChildren, { widthPct: 100 - leftPct })],
+      }),
+    ],
+    [leftPct, 100 - leftPct]
+  );
 }
 
 // A two-column grid of images + captions, one row per pair — the
@@ -338,7 +355,7 @@ export function photoGrid(items: { image: Paragraph; caption: Paragraph }[]) {
       })
     );
   }
-  return borderlessTable(rows);
+  return borderlessTable(rows, [50, 50]);
 }
 
 export type FieldRow = { kind: "heading"; text: string } | { kind: "row"; label: string; value?: string | null; children?: readonly Paragraph[] };
@@ -375,7 +392,8 @@ export function fieldTable(rows: FieldRow[], opts: { keepTogether?: boolean } = 
           cell(valueChildren, { widthPct: 72 }),
         ],
       });
-    })
+    }),
+    [28, 72]
   );
 }
 
@@ -429,7 +447,9 @@ export function gridTable(
           })
       ),
     ],
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+    layout: TableLayoutType.FIXED,
+    columnWidths: widths.map(pctW),
   });
 }
 
@@ -451,7 +471,7 @@ export function calloutBox(children: Paragraph[]) {
         children: [
           new TableCell({
             children,
-            width: { size: 100, type: WidthType.PERCENTAGE },
+            width: { size: CONTENT_WIDTH, type: WidthType.DXA },
             shading: { type: ShadingType.CLEAR, fill: "FFFBEB" },
             borders: { top: CALLOUT_BORDER, bottom: CALLOUT_BORDER, left: CALLOUT_BORDER, right: CALLOUT_BORDER },
             margins: { top: 40, bottom: 40, left: 100, right: 100 },
@@ -459,7 +479,9 @@ export function calloutBox(children: Paragraph[]) {
         ],
       }),
     ],
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: CONTENT_WIDTH, type: WidthType.DXA },
+    layout: TableLayoutType.FIXED,
+    columnWidths: [CONTENT_WIDTH],
   });
 }
 
