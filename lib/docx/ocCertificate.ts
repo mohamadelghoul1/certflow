@@ -1,7 +1,7 @@
 import { Document, Paragraph, Header, Footer, AlignmentType, Packer } from "docx";
 import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
-import { p, mixed, pageBreak, splitRow, fieldTable, gridTable, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR } from "@/lib/docx/shared";
+import { p, mixed, pageBreak, splitRow, fieldTable, gridTable, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, headingRule, BODY_SIZE, signatureRule, signatory } from "@/lib/docx/shared";
 import type { OcCertificateData } from "@/lib/certificates/ocData";
 import { formatAddress } from "@/lib/certificates/pathwayData";
 import { formatISODate, letterheadAddressLines } from "@/lib/business";
@@ -17,13 +17,13 @@ import { formatISODate, letterheadAddressLines } from "@/lib/business";
 
 function letterheadHeader(firm: OcCertificateData["firm"], logo: ImageAsset | null) {
   const left = logo
-    ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 })]
-    : [p(firm?.name || "", { bold: true, size: 24, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 })];
+    ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0 })]
+    : [p(firm?.name || "", { bold: true, size: TITLE_SIZE, color: HEADING_COLOR, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0 })];
   const right = [
-    ...letterheadAddressLines(firm?.postal_address).map((line, i) => p(i === 0 ? `Postal: ${line}` : line, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })),
-    ...letterheadAddressLines(firm?.office_address).map((line, i) => p(i === 0 ? `Office: ${line}` : line, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })),
-    p(`(p): ${firm?.phone || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
-    p(`(e): ${firm?.email || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
+    ...letterheadAddressLines(firm?.postal_address).map((line, i) => p(i === 0 ? `Postal: ${line}` : line, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 })),
+    ...letterheadAddressLines(firm?.office_address).map((line, i) => p(i === 0 ? `Office: ${line}` : line, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 })),
+    p(`(p): ${firm?.phone || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 }),
+    p(`(e): ${firm?.email || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 }),
   ];
   return splitRow(left, right);
 }
@@ -31,16 +31,16 @@ function letterheadHeader(firm: OcCertificateData["firm"], logo: ImageAsset | nu
 function certificateHeader(firm: OcCertificateData["firm"], ref: string) {
   const left = [
     p(firm?.name || "", { bold: true, size: 28, spacingAfter: 0 }),
-    p(`ABN ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 }),
-    p(firm?.office_address || "—", { size: 16, color: MUTED_COLOR, spacingAfter: 0 }),
-    p(`${firm?.phone || ""} · ${firm?.email || ""}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 }),
+    p(`ABN ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, spacingAfter: 0 }),
+    p(firm?.office_address || "—", { size: SMALL_SIZE, color: MUTED_COLOR, spacingAfter: 0 }),
+    p(`${firm?.phone || ""} · ${firm?.email || ""}`, { size: SMALL_SIZE, color: MUTED_COLOR, spacingAfter: 0 }),
   ];
-  const right = [p("Reference", { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }), p(ref, { bold: true, align: AlignmentType.RIGHT, spacingAfter: 0 })];
+  const right = [p("Reference", { size: SMALL_SIZE, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }), p(ref, { bold: true, align: AlignmentType.RIGHT, spacingAfter: 0 })];
   return splitRow(left, right, { leftPct: 60 });
 }
 
 function projectFooter(projRef: string, website: string | null | undefined) {
-  return new Footer({ children: [splitRow(`Project No.: ${projRef}`, website || "", { size: 16, color: MUTED_COLOR })] });
+  return new Footer({ children: [footerLine(`Project No.: ${projRef}`, website)] });
 }
 
 
@@ -62,11 +62,10 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
     mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }]),
     mixed([{ text: `${typeLabel} No.  `, bold: true }, { text: ref }]),
     p(`${firm?.name || ""} Pty Ltd has issued a ${typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on ${job.pathway} No. ${consentRef}. Please find enclosed a copy for your records.`),
-    p("Yours sincerely,", { spacingBefore: 240 }),
+    signatureRule(),
+    p("Yours sincerely,", { spacingBefore: 120 }),
     ...signatureBlock(images.signature),
-    p(issuedBy?.name || "—"),
-    p(`Registered Certifier / ${issuedBy?.registration_no || "—"}`, { size: 16, color: MUTED_COLOR }),
-    p(`${firm?.name || ""} Pty Ltd`, { size: 16, color: MUTED_COLOR })
+    ...signatory(issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
   );
 
   // 2. Applicant/owner letter
@@ -81,19 +80,21 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
     mixed([{ text: `${typeLabel} No.:  `, bold: true }, { text: ref }]),
     p(`Enclosed is a copy of the issued ${typeLabel} for the subject development. One copy has been forwarded directly to ${d.council?.lga || "Council"} for their records.`),
     p(`Please retain this certificate, as it authorises ${record.type === "whole" ? "occupation and use of the building" : "occupation and use of the part of the building described below"}.`),
-    p("Yours sincerely,", { spacingBefore: 240 }),
+    signatureRule(),
+    p("Yours sincerely,", { spacingBefore: 120 }),
     ...signatureBlock(images.signature),
-    p(issuedBy?.name || "—"),
-    p(`Registered Certifier / ${issuedBy?.registration_no || "—"}`, { size: 16, color: MUTED_COLOR }),
-    p(`${firm?.name || ""} Pty Ltd`, { size: 16, color: MUTED_COLOR })
+    ...signatory(issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
   );
 
   // 3. Occupation Certificate & schedule
   push(
     pageBreak(),
     certificateHeader(firm, ref),
-    p(typeLabel.toUpperCase(), { bold: true, size: 32, align: AlignmentType.CENTER, spacingBefore: 200, spacingAfter: 40 }),
-    p("Issued under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979", { size: 16, color: MUTED_COLOR, align: AlignmentType.CENTER, spacingAfter: 200 }),
+    ...documentTitle(typeLabel, {
+      uppercase: true,
+      center: true,
+      subtitle: "Issued under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979",
+    }),
     fieldTable([
       { kind: "row", label: "Property address", value: job.address },
       { kind: "row", label: "Lot/Section/DP", value: d.certificateDetails?.lotSectionDp },
@@ -102,22 +103,21 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
       { kind: "row", label: `${job.pathway} relied upon`, value: consentRef },
       { kind: "row", label: "Date of issue", value: issuedDate },
     ]),
-    p("Documents relied upon", { bold: true, size: 16, uppercase: true, spacingBefore: 200, spacingAfter: 80 }),
+    headingRule("DOCUMENTS RELIED UPON"),
     approvedItems.length > 0
       ? gridTable(
           ["Prepared by", "Document", "Reference no.", "Revision", "Date"],
           approvedItems.map((item) => [item.prepared_by || "—", item.title, item.drawing_number || "—", item.revision || "—", formatISODate(item.document_date)]),
-          [20, 32, 18, 13, 17]
+          [20, 32, 18, 13, 17],
+          { zebra: true, rowHeight: 300 }
         )
       : p("No approved documents.", { color: MUTED_COLOR }),
-    p("Certifying authority", { size: 16, color: MUTED_COLOR, uppercase: true, spacingBefore: 300, spacingAfter: 20 }),
-    p(issuedBy?.name || "—", { bold: true, spacingAfter: 0 }),
-    p(`${issuedBy?.registration_no || "—"} · ${issuedBy?.registration_body || "—"}`, { color: MUTED_COLOR, spacingAfter: 0 }),
-    p(`Issued ${issuedDate}`, { color: MUTED_COLOR })
+    headingRule("CERTIFYING AUTHORITY"),
+    ...signatory(issuedBy?.name, `${issuedBy?.registration_no || "—"} · ${issuedBy?.registration_body || "—"}`, `Issued ${issuedDate}`)
   );
 
   const doc = new Document({
-    styles: { default: { document: { run: { font: FONT, size: 20, color: TEXT_COLOR } } } },
+    styles: { default: { document: { run: { font: FONT, size: BODY_SIZE, color: TEXT_COLOR } } } },
     sections: [{ properties: PAGE_PROPERTIES, footers: { default: footer }, children }],
   });
 

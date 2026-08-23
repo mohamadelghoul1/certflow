@@ -1,34 +1,75 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, setWordSpacing, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
 
 // A small layout engine over pdf-lib.
 //
 // pdf-lib draws text at coordinates and nothing more — no wrapping, no
 // tables, no flowing onto a new page. The certificate package needs all
 // three, so this adds them: a cursor that moves down the page, text that
-// wraps to a width, label/value rows, bordered tables, and a page break
-// when the cursor runs out of room.
+// wraps (and justifies) to a width, label/value rows, bordered tables,
+// and a page break when the cursor runs out of room.
 //
 // It exists because the approved set has to be a PDF. The .docx builder
 // can't be reused for it — Word documents can't be merged into a PDF
 // without converting them, which needs software this doesn't have.
+//
+// The measurements below deliberately mirror lib/docx/shared.ts, so the
+// PDF in the approved set and the Word export read as the same document:
+// same margins, same type sizes, same colours, same table rules. The one
+// thing that can't match is the typeface — Segoe UI is licensed to
+// Microsoft and can't be embedded here, so this uses Helvetica, the
+// closest neutral sans among the fonts every PDF reader already has.
 
 export const A4: [number, number] = [595.28, 841.89];
-export const MARGIN = 46;
 
-export const INK = rgb(0.06, 0.09, 0.16);
-export const MUTED = rgb(0.42, 0.45, 0.5);
-export const LINE = rgb(0.78, 0.81, 0.85);
-export const HEADRULE = rgb(0.12, 0.16, 0.22);
+const MM = 2.834645669; // PostScript points per millimetre
+export const MARGIN = 20 * MM; // 2.0cm sides and bottom
+export const MARGIN_TOP = 22 * MM; // 2.2cm
+
+// Type sizes, matching the Word document's 11/13/14/9pt scale.
+export const BODY_SIZE = 11;
+export const HEADING_SIZE = 13;
+export const TITLE_SIZE = 14;
+export const SMALL_SIZE = 9;
+export const SIGNATURE_NAME_SIZE = 11.5;
+
+// Word's "1.15 lines" works out at roughly 1.32x the point size once its
+// own single-line leading is taken into account.
+const LINE_FACTOR = 1.32;
+export const SPACE_AFTER = 6; // 6pt after a paragraph
+export const HEADING_BEFORE = 12; // 12pt before a section heading
+export const SECTION_GAP = 15;
+
+export const INK = rgb(0x1c / 255, 0x1c / 255, 0x1e / 255);
+export const MUTED = rgb(0x55 / 255, 0x55 / 255, 0x55 / 255);
+export const LINE = rgb(0xd9 / 255, 0xd9 / 255, 0xd9 / 255);
+export const HEADING_COLOR = rgb(0x1f / 255, 0x4e / 255, 0x79 / 255);
+export const HEADRULE = LINE;
+
+export const TABLE_HEADER_FILL = rgb(0xf2 / 255, 0xf2 / 255, 0xf2 / 255);
+export const INSPECTION_HEADER_FILL = rgb(0xd9 / 255, 0xe2 / 255, 0xf3 / 255);
+export const ZEBRA_FILL = rgb(0xfa / 255, 0xfa / 255, 0xfa / 255);
+
+const GRID_LINE = rgb(0xbf / 255, 0xbf / 255, 0xbf / 255);
+const CELL_PAD = 1.5 * MM; // 0.15cm
+const ROW_HEIGHT = 7 * MM; // 0.7cm
 
 export type TextOpts = {
   size?: number;
   bold?: boolean;
   color?: RGB;
   align?: "left" | "right" | "center";
+  justify?: boolean;
   width?: number;
   x?: number;
   gapAfter?: number;
   lineHeight?: number;
+};
+
+export type TableOpts = {
+  headerFill?: RGB;
+  zebra?: boolean;
+  centerColumns?: number[];
+  rowHeight?: number;
 };
 
 export class Layout {
@@ -59,7 +100,7 @@ export class Layout {
 
   newPage() {
     this.page = this.doc.addPage(A4);
-    this.y = A4[1] - MARGIN;
+    this.y = A4[1] - MARGIN_TOP;
     this.header?.(this);
     this.footer?.(this);
     return this.page;
@@ -68,7 +109,7 @@ export class Layout {
   // Starts a fresh page unless the current one is still empty, so a
   // deliberate page break never leaves a blank sheet behind.
   pageBreak() {
-    if (!this.page || this.y < A4[1] - MARGIN - 1) this.newPage();
+    if (!this.page || this.y < A4[1] - MARGIN_TOP - 1) this.newPage();
   }
 
   ensure(space: number) {
@@ -90,100 +131,168 @@ export class Layout {
         } else {
           line = candidate;
         }
+        // A single word too wide for the measure has no break point of
+        // its own — a long reference number in a narrow table column,
+        // say. Left whole it overruns the cell border into the next
+        // column, so break it across lines by character.
+        while (font.widthOfTextAtSize(line, size) > width && line.length > 1) {
+          let fit = line.length - 1;
+          while (fit > 1 && font.widthOfTextAtSize(line.slice(0, fit), size) > width) fit--;
+          out.push(line.slice(0, fit));
+          line = line.slice(fit);
+        }
       }
       out.push(line);
     }
     return out.length ? out : [""];
   }
 
+  // Draws one line with the gaps between words stretched so it fills the
+  // measure exactly. Done with the PDF word-spacing operator rather than
+  // by placing each word at its own coordinate: the line stays a single
+  // string with real spaces in it, so the finished document still copies,
+  // searches and reads aloud correctly.
+  private drawJustified(line: string, x: number, width: number, size: number, bold: boolean | undefined, color: RGB) {
+    const font = this.font(bold);
+    const spaces = (line.match(/ /g) || []).length;
+    const extra = spaces ? (width - font.widthOfTextAtSize(line, size)) / spaces : 0;
+    this.page.pushOperators(setWordSpacing(extra));
+    this.page.drawText(line, { x, y: this.y, size, font, color });
+    this.page.pushOperators(setWordSpacing(0));
+  }
+
   text(content: string, opts: TextOpts = {}) {
-    const size = opts.size ?? 9;
+    const size = opts.size ?? BODY_SIZE;
     const width = opts.width ?? this.contentWidth;
     const x = opts.x ?? MARGIN;
-    const lineHeight = opts.lineHeight ?? size + 3.5;
+    const lineHeight = opts.lineHeight ?? size * LINE_FACTOR;
     const font = this.font(opts.bold);
+    const color = opts.color ?? INK;
 
-    for (const line of this.wrap(content, width, size, opts.bold)) {
-      this.ensure(lineHeight);
-      let lineX = x;
-      if (opts.align === "right") lineX = x + width - font.widthOfTextAtSize(line, size);
-      else if (opts.align === "center") lineX = x + (width - font.widthOfTextAtSize(line, size)) / 2;
-      this.y -= lineHeight;
-      this.page.drawText(line, { x: lineX, y: this.y, size, font, color: opts.color ?? INK });
+    // Wrapped one source paragraph at a time, because justification has
+    // to leave each paragraph's *last* line ragged — stretching it would
+    // spray a three-word closing line across the whole measure.
+    for (const paragraph of String(content ?? "").split("\n")) {
+      const lines = this.wrap(paragraph, width, size, opts.bold);
+      lines.forEach((line, i) => {
+        this.ensure(lineHeight);
+        this.y -= lineHeight;
+        if (opts.justify && i < lines.length - 1 && line.includes(" ")) {
+          this.drawJustified(line, x, width, size, opts.bold, color);
+          return;
+        }
+        let lineX = x;
+        if (opts.align === "right") lineX = x + width - font.widthOfTextAtSize(line, size);
+        else if (opts.align === "center") lineX = x + (width - font.widthOfTextAtSize(line, size)) / 2;
+        this.page.drawText(line, { x: lineX, y: this.y, size, font, color });
+      });
     }
-    this.y -= opts.gapAfter ?? 6;
+    this.y -= opts.gapAfter ?? SPACE_AFTER;
   }
 
+  // A section heading: 13pt, the same blue as the Word document, ruled
+  // underneath, 12pt of air above it and 6pt below.
   heading(content: string, opts: { size?: number; rule?: boolean; gapBefore?: number } = {}) {
-    this.y -= opts.gapBefore ?? 8;
-    this.text(content, { size: opts.size ?? 10, bold: true, gapAfter: opts.rule ? 3 : 5 });
-    if (opts.rule) this.rule();
+    const rule = opts.rule ?? true;
+    this.ensure((opts.gapBefore ?? HEADING_BEFORE) + HEADING_SIZE * LINE_FACTOR + 14);
+    this.y -= opts.gapBefore ?? HEADING_BEFORE;
+    this.text(content, { size: opts.size ?? HEADING_SIZE, bold: true, color: HEADING_COLOR, gapAfter: rule ? 3 : SPACE_AFTER });
+    if (rule) this.rule();
   }
 
-  rule(color = LINE, thickness = 0.7) {
+  // The document's own title, with an optional subtitle inside the same
+  // ruled block — a project reference, or the Act it's issued under.
+  documentTitle(content: string, opts: { subtitle?: string | string[]; center?: boolean } = {}) {
+    const subtitles = (Array.isArray(opts.subtitle) ? opts.subtitle : opts.subtitle ? [opts.subtitle] : []).filter(Boolean);
+    const align = opts.center ? "center" : "left";
+    this.ensure(TITLE_SIZE * LINE_FACTOR + subtitles.length * (SMALL_SIZE * LINE_FACTOR) + 24);
+    this.text(content, { size: TITLE_SIZE, bold: true, color: HEADING_COLOR, align, gapAfter: subtitles.length ? 2 : 3 });
+    subtitles.forEach((line, i) => this.text(line, { size: SMALL_SIZE, color: MUTED, align, gapAfter: i === subtitles.length - 1 ? 3 : 2 }));
+    this.rule();
+    this.y -= 2;
+  }
+
+  rule(color = LINE, thickness = 0.5) {
     this.ensure(6);
     this.page.drawLine({ start: { x: MARGIN, y: this.y }, end: { x: A4[0] - MARGIN, y: this.y }, thickness, color });
     this.y -= 8;
+  }
+
+  // The hairline above a letter's closing block.
+  signatureRule() {
+    this.y -= SECTION_GAP;
+    this.rule();
+  }
+
+  // The signatory's name, then their title and firm.
+  signatory(name: string, ...lines: string[]) {
+    this.text(name || "—", { size: SIGNATURE_NAME_SIZE, bold: true, gapAfter: 1 });
+    lines.filter(Boolean).forEach((line, i) => this.text(line, { color: MUTED, gapAfter: i === lines.length - 1 ? SPACE_AFTER : 1 }));
   }
 
   gap(amount = 8) {
     this.y -= amount;
   }
 
-  // A bold label beside its value, both wrapping independently — the
-  // shape every certificate field uses.
-  fieldRow(label: string, value: string, labelWidth = 165) {
-    const size = 9;
+  // A bold, right-aligned label beside its value, both wrapping
+  // independently — the shape every certificate field uses.
+  fieldRow(label: string, value: string, labelWidth = this.contentWidth * 0.33) {
+    const size = BODY_SIZE;
+    const lead = size * LINE_FACTOR;
     const valueWidth = this.contentWidth - labelWidth - 8;
     const labelLines = this.wrap(label, labelWidth, size, true);
     const valueLines = this.wrap(value || "—", valueWidth, size);
     const rows = Math.max(labelLines.length, valueLines.length);
-    this.ensure(rows * 12.5 + 4);
+    const height = Math.max(rows * lead + 4, ROW_HEIGHT);
+    this.ensure(height);
 
     const top = this.y;
     labelLines.forEach((line, i) => {
-      this.page.drawText(line, { x: MARGIN, y: top - 10 - i * 12.5, size, font: this.bold, color: INK });
+      const w = this.bold.widthOfTextAtSize(line, size);
+      this.page.drawText(line, { x: MARGIN + labelWidth - w, y: top - lead + 2 - i * lead, size, font: this.bold, color: INK });
     });
     valueLines.forEach((line, i) => {
-      this.page.drawText(line, { x: MARGIN + labelWidth + 8, y: top - 10 - i * 12.5, size, font: this.regular, color: INK });
+      this.page.drawText(line, { x: MARGIN + labelWidth + 8, y: top - lead + 2 - i * lead, size, font: this.regular, color: INK });
     });
-    this.y = top - rows * 12.5 - 4;
+    this.y = top - height;
   }
 
   // A bordered table whose column widths are percentages of the content
   // width. Rows that don't fit carry the header onto the next page.
-  table(headers: string[], rows: string[][], widthsPct: number[]) {
-    const size = 8;
-    const pad = 4;
-    const widths = widthsPct.map((p) => (this.contentWidth * p) / 100);
+  table(headers: string[], rows: string[][], widthsPct: number[], opts: TableOpts = {}) {
+    const size = BODY_SIZE;
+    const lead = size * LINE_FACTOR;
+    const widths = widthsPct.map((pct) => (this.contentWidth * pct) / 100);
+    const centered = new Set(opts.centerColumns ?? []);
+    const minHeight = opts.rowHeight ?? ROW_HEIGHT;
 
-    const drawRow = (cells: string[], bold: boolean, shaded: boolean) => {
-      const wrapped = cells.map((c, i) => this.wrap(c || "—", widths[i] - pad * 2, size, bold));
-      const height = Math.max(...wrapped.map((w) => w.length)) * (size + 3) + pad * 2;
+    const drawRow = (cells: string[], bold: boolean, fill: RGB | null) => {
+      const wrapped = cells.map((c, i) => this.wrap(c || "—", widths[i] - CELL_PAD * 2, size, bold));
+      const height = Math.max(Math.max(...wrapped.map((w) => w.length)) * lead + CELL_PAD * 2, minHeight);
       this.ensure(height);
 
       const top = this.y;
-      if (shaded) {
-        this.page.drawRectangle({ x: MARGIN, y: top - height, width: this.contentWidth, height, color: rgb(0.95, 0.96, 0.97) });
-      }
+      if (fill) this.page.drawRectangle({ x: MARGIN, y: top - height, width: this.contentWidth, height, color: fill });
       let x = MARGIN;
       wrapped.forEach((lines, i) => {
-        this.page.drawRectangle({ x, y: top - height, width: widths[i], height, borderColor: LINE, borderWidth: 0.6 });
+        this.page.drawRectangle({ x, y: top - height, width: widths[i], height, borderColor: GRID_LINE, borderWidth: bold ? 0.5 : 0.25 });
         lines.forEach((line, li) => {
-          this.page.drawText(line, { x: x + pad, y: top - pad - (size + 1) - li * (size + 3), size, font: this.font(bold), color: INK });
+          const w = this.font(bold).widthOfTextAtSize(line, size);
+          const cellX = centered.has(i) ? x + (widths[i] - w) / 2 : x + CELL_PAD;
+          this.page.drawText(line, { x: cellX, y: top - CELL_PAD - lead + 3 - li * lead, size, font: this.font(bold), color: INK });
         });
         x += widths[i];
       });
       this.y = top - height;
     };
 
-    drawRow(headers, true, true);
-    for (const row of rows) drawRow(row, false, false);
-    this.y -= 8;
+    drawRow(headers, true, opts.headerFill ?? TABLE_HEADER_FILL);
+    rows.forEach((row, i) => drawRow(row, false, opts.zebra && i % 2 === 1 ? ZEBRA_FILL : null));
+    this.y -= SPACE_AFTER;
   }
 
   bullet(text: string) {
-    this.text(`•  ${text}`, { x: MARGIN + 8, width: this.contentWidth - 8, gapAfter: 2 });
+    this.text(`•  ${text}`, { x: MARGIN + 8, width: this.contentWidth - 8, gapAfter: 3 });
   }
 
   async image(bytes: Uint8Array, type: "png" | "jpeg", targetHeight: number) {

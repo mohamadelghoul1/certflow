@@ -1,4 +1,4 @@
-import { Layout, MARGIN, A4, MUTED, HEADRULE } from "@/lib/pdf/layout";
+import { Layout, MARGIN, MARGIN_TOP, A4, MUTED, LINE, HEADING_COLOR, INK, BODY_SIZE, SMALL_SIZE, TITLE_SIZE, INSPECTION_HEADER_FILL } from "@/lib/pdf/layout";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatISODate, letterheadAddressLines } from "@/lib/business";
 
@@ -45,7 +45,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   // Letterhead and footer are redrawn on every page, the way the section
   // header and footer work in the Word version.
   l.header = (layout) => {
-    const top = A4[1] - MARGIN;
+    const top = A4[1] - MARGIN_TOP;
     let leftBottom = top;
 
     if (logo) {
@@ -54,40 +54,41 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
       layout.page.drawImage(logo, { x: MARGIN, y: top - height, width, height });
       leftBottom = top - height;
     } else {
-      layout.page.drawText(firm?.name || "", { x: MARGIN, y: top - 11, size: 11, font: layout.bold, color: HEADRULE });
-      leftBottom = top - 14;
+      layout.page.drawText(firm?.name || "", { x: MARGIN, y: top - TITLE_SIZE, size: TITLE_SIZE, font: layout.bold, color: HEADING_COLOR });
+      leftBottom = top - TITLE_SIZE - 3;
     }
-    layout.page.drawText(`ABN: ${firm?.abn || "—"}`, { x: MARGIN, y: leftBottom - 10, size: 7, font: layout.regular, color: MUTED });
+    layout.page.drawText(`ABN: ${firm?.abn || "—"}`, { x: MARGIN, y: leftBottom - SMALL_SIZE - 2, size: SMALL_SIZE, font: layout.regular, color: MUTED });
 
     const right: string[] = [];
     letterheadAddressLines(firm?.postal_address).forEach((line, i) => right.push(i === 0 ? `Postal: ${line}` : line));
     letterheadAddressLines(firm?.office_address).forEach((line, i) => right.push(i === 0 ? `Office: ${line}` : line));
     right.push(`(p): ${firm?.phone || "—"}`, `(e): ${firm?.email || "—"}`);
+    const lead = SMALL_SIZE * 1.32;
     right.forEach((line, i) => {
-      const w = layout.regular.widthOfTextAtSize(line, 7);
-      layout.page.drawText(line, { x: A4[0] - MARGIN - w, y: top - 8 - i * 9, size: 7, font: layout.regular, color: MUTED });
+      const w = layout.regular.widthOfTextAtSize(line, SMALL_SIZE);
+      layout.page.drawText(line, { x: A4[0] - MARGIN - w, y: top - SMALL_SIZE - i * lead, size: SMALL_SIZE, font: layout.regular, color: MUTED });
     });
 
-    const ruleY = Math.min(leftBottom - 18, top - 8 - right.length * 9 - 6);
-    layout.page.drawLine({ start: { x: MARGIN, y: ruleY }, end: { x: A4[0] - MARGIN, y: ruleY }, thickness: 1.2, color: HEADRULE });
-    layout.y = ruleY - 16;
+    const ruleY = Math.min(leftBottom - SMALL_SIZE - 10, top - SMALL_SIZE - right.length * lead - 4);
+    layout.page.drawLine({ start: { x: MARGIN, y: ruleY }, end: { x: A4[0] - MARGIN, y: ruleY }, thickness: 0.5, color: LINE });
+    layout.y = ruleY - 18;
   };
 
   l.footer = (layout) => {
-    const y = MARGIN - 12;
-    layout.page.drawLine({ start: { x: MARGIN, y: y + 10 }, end: { x: A4[0] - MARGIN, y: y + 10 }, thickness: 0.5, color: MUTED });
-    layout.page.drawText(`Project No.: ${projRef}`, { x: MARGIN, y, size: 7, font: layout.regular, color: MUTED });
-    const site = firm?.website || "";
-    const w = layout.regular.widthOfTextAtSize(site, 7);
-    layout.page.drawText(site, { x: A4[0] - MARGIN - w, y, size: 7, font: layout.regular, color: MUTED });
+    const site = (firm?.website || "").trim();
+    const label = site ? `Project No.: ${projRef}  ·  ${site}` : `Project No.: ${projRef}`;
+    const y = MARGIN - 14;
+    layout.page.drawLine({ start: { x: MARGIN, y: y + 12 }, end: { x: A4[0] - MARGIN, y: y + 12 }, thickness: 0.5, color: LINE });
+    const w = layout.regular.widthOfTextAtSize(label, SMALL_SIZE);
+    layout.page.drawText(label, { x: (A4[0] - w) / 2, y, size: SMALL_SIZE, font: layout.regular, color: MUTED });
   };
 
   const splitLine = (left: string, right: string) => {
     l.ensure(14);
     l.y -= 12;
-    l.page.drawText(left, { x: MARGIN, y: l.y, size: 9, font: l.regular, color: HEADRULE });
-    const w = l.regular.widthOfTextAtSize(right, 9);
-    l.page.drawText(right, { x: A4[0] - MARGIN - w, y: l.y, size: 9, font: l.regular, color: HEADRULE });
+    l.page.drawText(left, { x: MARGIN, y: l.y, size: BODY_SIZE, font: l.regular, color: INK });
+    const w = l.regular.widthOfTextAtSize(right, BODY_SIZE);
+    l.page.drawText(right, { x: A4[0] - MARGIN - w, y: l.y, size: BODY_SIZE, font: l.regular, color: INK });
     l.y -= 6;
   };
 
@@ -105,12 +106,11 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   l.gap(4);
   l.text("Dear Sir/Madam,");
   l.text(`Re: ${job.address || ""}`, { bold: true });
-  councilBody.forEach((line) => l.text(line, { gapAfter: 7 }));
-  l.gap(6);
+  councilBody.forEach((line) => l.text(line, { justify: true, gapAfter: 12 }));
+  l.signatureRule();
   l.text("Yours faithfully,");
   await signature();
-  l.text(issuedBy?.name || "—", { gapAfter: 1 });
-  l.text(`Registered Certifier / ${issuedBy?.registration_no || "—"}`, { size: 7.5, color: MUTED });
+  l.signatory(issuedBy?.name || "—", `Registered Certifier / ${issuedBy?.registration_no || "—"}`);
 
   // 2. Applicant letter
   l.pageBreak();
@@ -120,21 +120,20 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   l.gap(4);
   l.text("Dear Sir/Madam,");
   l.text(`Re: ${job.address || ""}`, { bold: true });
-  applicantBody.forEach((line) => l.text(line, { gapAfter: 7 }));
+  applicantBody.forEach((line) => l.text(line, { justify: true, gapAfter: 12 }));
   if (requiredDocsList.length) {
     l.gap(2);
     requiredDocsList.forEach((line) => l.bullet(line));
     l.gap(4);
   }
+  l.signatureRule();
   l.text("Yours faithfully,");
   await signature();
-  l.text(issuedBy?.name || "—", { gapAfter: 1 });
-  l.text(`Registered Certifier / ${issuedBy?.registration_no || "—"}`, { size: 7.5, color: MUTED });
+  l.signatory(issuedBy?.name || "—", `Registered Certifier / ${issuedBy?.registration_no || "—"}`);
 
   // 3. The certificate itself
   l.pageBreak();
-  l.text(pathwayFull.toUpperCase(), { size: 13, bold: true, gapAfter: 2 });
-  l.text(`${isCdc ? "Complying Development Certificate" : "Construction Certificate"} No: ${ref}`, { size: 9, color: MUTED, gapAfter: 10 });
+  l.documentTitle(pathwayFull.toUpperCase(), { subtitle: `${isCdc ? "Complying Development Certificate" : "Construction Certificate"} No: ${ref}` });
 
   l.heading("APPLICANT DETAILS", { rule: true });
   l.fieldRow("Applicant:", applicantName || "");
@@ -152,7 +151,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
     l.fieldRow("NSW Planning Portal Ref Number:", cd.planningPortalRef || "");
     l.fieldRow("CDC Number:", ref);
     l.fieldRow("Date of Determination:", formatISODate(cd.determinationDate));
-    l.fieldRow("This certificate lapses on:", lapseDate);
+    l.fieldRow("This certificate lapses on:", /^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate);
   } else {
     l.fieldRow("Development Consent Number:", cd.developmentConsentNumber || "");
     l.fieldRow("Development Consent Date:", formatISODate(cd.developmentConsentDate));
@@ -175,11 +174,11 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
     l.heading("CONDITIONS", { rule: true });
     l.text(
       "Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying Development) Codes 2008 & State Environmental Planning Policy (Housing) 2021",
-      { gapAfter: 4 }
+      { justify: true, gapAfter: 4 }
     );
     l.text(
       "Any monetary contribution fee’s and/or any other Council fee’s/bonds that are required by council MUST be paid prior to commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from Council and a copy of such approval provided to the PC prior to the works commencing.",
-      { gapAfter: 4 }
+      { justify: true, gapAfter: 4 }
     );
     conditions.forEach((c) => l.bullet(c.text));
   }
@@ -195,12 +194,13 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   l.text(
     isCdc
       ? `I, ${issuedBy?.name || "—"}, certify that the development is complying development and (if carried out as specified in the certificate) will comply with all development standards applicable to the development and with such other requirements prescribed by this regulation concerning the issue of the certificate.`
-      : "I certify that building work completed in accordance with the documents accompanying the application for the certificate, including modifications verified by the certifier shown on the documents, will comply with the requirements referred to in the Act, Part 6."
+      : "I certify that building work completed in accordance with the documents accompanying the application for the certificate, including modifications verified by the certifier shown on the documents, will comply with the requirements referred to in the Act, Part 6.",
+    { justify: true }
   );
   l.gap(4);
   l.text(`Dated:  ${issuedDate}`);
   await signature();
-  l.text(issuedBy?.name || "—");
+  l.signatory(issuedBy?.name || "—");
   l.gap(4);
   l.text(
     isCdc
@@ -211,8 +211,9 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
 
   // 4. Mandatory inspections notice
   l.pageBreak();
-  l.text("NOTICE TO APPLICANT OF MANDATORY CRITICAL STAGE INSPECTIONS", { size: 12, bold: true, gapAfter: 2 });
-  l.text("Made under Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 — Section 58", { size: 8, color: MUTED, gapAfter: 10 });
+  l.documentTitle("NOTICE TO APPLICANT OF MANDATORY CRITICAL STAGE INSPECTIONS", {
+    subtitle: "Made under Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 — Section 58",
+  });
 
   l.heading("APPLICANT DETAILS", { rule: true });
   l.fieldRow("Name of the person having benefit of the Development Consent:", applicantName || "");
@@ -240,42 +241,44 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
 
   l.gap(4);
   l.text(
-    `I, ${issuedBy?.name || "—"} of ${firm?.name || ""} Pty Ltd, located at ${firm?.office_address || "—"}, acting as the principal certifier, hereby give notice in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in Schedule 1 are to be carried out in respect of the building work.`
+    `I, ${issuedBy?.name || "—"} of ${firm?.name || ""} Pty Ltd, located at ${firm?.office_address || "—"}, acting as the principal certifier, hereby give notice in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in Schedule 1 are to be carried out in respect of the building work.`,
+    { justify: true }
   );
   l.text(
-    "The applicant, being the person having benefit of the development consent, is required under Section 58 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to notify the principal contractor (if not an owner-builder) of the applicable mandatory critical stage inspections specified under this notice."
+    "The applicant, being the person having benefit of the development consent, is required under Section 58 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to notify the principal contractor (if not an owner-builder) of the applicable mandatory critical stage inspections specified under this notice.",
+    { justify: true }
   );
   l.text(
-    "To allow a principal certifier or another certifying authority time to carry out mandatory critical stage inspections, the principal contractor for the building site, or the owner builder, must notify the principal certifier at least 48 hours before building work is commenced at the site if a mandatory critical stage inspection is required before the commencement of the work in accordance with Section 58 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021."
+    "To allow a principal certifier or another certifying authority time to carry out mandatory critical stage inspections, the principal contractor for the building site, or the owner builder, must notify the principal certifier at least 48 hours before building work is commenced at the site if a mandatory critical stage inspection is required before the commencement of the work in accordance with Section 58 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021.",
+    { justify: true }
   );
   l.text(
     "Failure to request a mandatory critical stage inspection will prohibit the principal certifier under Section 58 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to issue an occupation certificate.",
-    { bold: true }
+    { bold: true, justify: true }
   );
   l.gap(2);
   l.text(`Dated: ${issuedDate}`, { align: "right" });
   await signature();
-  l.text(issuedBy?.name || "—", { gapAfter: 1 });
-  l.text(`Principal Certifier / ${issuedBy?.registration_no || "—"}`, { size: 7.5, color: MUTED });
+  l.signatory(issuedBy?.name || "—", `Principal Certifier / ${issuedBy?.registration_no || "—"}`);
 
   // 4b. Schedule 1, on its own page
   l.pageBreak();
-  l.text("SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS", { size: 12, bold: true, gapAfter: 2 });
-  l.text(`${pathwayFull} ${ref} — ${job.address || ""}`, { size: 8, color: MUTED, gapAfter: 10 });
+  l.documentTitle("SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS", { subtitle: `${pathwayFull} ${ref} — ${job.address || ""}` });
   l.table(
     ["No.", "Critical Stage Inspection", "Inspector"],
     selectedInspections.map((r, i) => [`${i + 1}.`, r.stage, r.inspector]),
-    [8, 62, 30]
+    [8, 62, 30],
+    { headerFill: INSPECTION_HEADER_FILL, centerColumns: [0], rowHeight: 23 }
   );
 
   // 5. Documents requested
   l.pageBreak();
-  l.text(`DOCUMENTS REQUESTED — ${job.pathway} CHECKLIST`, { size: 12, bold: true, gapAfter: 2 });
-  l.text("Every document requested from the applicant during assessment, for reference.", { size: 8, color: MUTED, gapAfter: 10 });
+  l.documentTitle(`DOCUMENTS REQUESTED — ${job.pathway} CHECKLIST`, { subtitle: "Every document requested from the applicant during assessment, for reference." });
   l.table(
     ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
     allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),
-    [18, 30, 16, 11, 13, 12]
+    [21, 27, 13, 12, 15, 12],
+    { zebra: true, centerColumns: [5], rowHeight: 15 }
   );
 
   return l.save();

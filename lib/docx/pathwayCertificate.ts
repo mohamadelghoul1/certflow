@@ -1,7 +1,7 @@
 import { Document, Paragraph, Header, Footer, AlignmentType, Packer } from "docx";
 import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
-import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR } from "@/lib/docx/shared";
+import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, BODY_SIZE, signatureRule, signatory } from "@/lib/docx/shared";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatISODate, letterheadAddressLines } from "@/lib/business";
 
@@ -12,19 +12,19 @@ import { formatISODate, letterheadAddressLines } from "@/lib/business";
 
 function letterheadHeader(firm: PathwayCertificateData["firm"], logo: ImageAsset | null) {
   const left = logo
-    ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 })]
-    : [p(firm?.name || "", { bold: true, size: 24, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 })];
+    ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0 })]
+    : [p(firm?.name || "", { bold: true, size: TITLE_SIZE, color: HEADING_COLOR, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0 })];
   const right = [
-    ...letterheadAddressLines(firm?.postal_address).map((line, i) => p(i === 0 ? `Postal: ${line}` : line, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })),
-    ...letterheadAddressLines(firm?.office_address).map((line, i) => p(i === 0 ? `Office: ${line}` : line, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })),
-    p(`(p): ${firm?.phone || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
-    p(`(e): ${firm?.email || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
+    ...letterheadAddressLines(firm?.postal_address).map((line, i) => p(i === 0 ? `Postal: ${line}` : line, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 })),
+    ...letterheadAddressLines(firm?.office_address).map((line, i) => p(i === 0 ? `Office: ${line}` : line, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 })),
+    p(`(p): ${firm?.phone || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 }),
+    p(`(e): ${firm?.email || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 }),
   ];
-  return new Header({ children: [splitRow(left, right)] });
+  return new Header({ children: [splitRow(left, right), ruleLine()] });
 }
 
 function projectFooter(projRef: string, website: string | null | undefined) {
-  return new Footer({ children: [splitRow(`Project No.: ${projRef}`, website || "", { size: 16, color: MUTED_COLOR })] });
+  return new Footer({ children: [footerLine(`Project No.: ${projRef}`, website)] });
 }
 
 export async function buildPathwayCertificateDocx(data: PathwayCertificateData, images: { logo: ImageAsset | null; signature: ImageAsset | null }): Promise<Buffer> {
@@ -47,16 +47,15 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     isCdc
       ? mixed([{ text: "Planning Instrument Decision Made Under:  ", bold: true }, { text: cd.relevantInstrument || "—" }])
       : mixed([{ text: "Development Application No.:  ", bold: true }, { text: cd.developmentConsentNumber || "—" }]),
-    ...councilBody.map((para) => p(para)),
+    ...councilBody.map((para) => p(para, { justify: true, spacingAfter: 240 })),
     p("Please find enclosed the following documentation:"),
     bullet(`${pathwayFull} No. ${ref}`),
     bullet(`Copy of the application for the ${pathwayFull}.`),
     bullet(`Documentation used to determine the application for the ${pathwayFull} as detailed in Schedule 1 of the Certificate.`),
-    p("Yours sincerely,", { spacingBefore: 240 }),
+    signatureRule(),
+    p("Yours sincerely,", { spacingBefore: 120 }),
     ...signatureBlock(images.signature),
-    p(issuedBy?.name || "—"),
-    p(`Registered Certifier / ${issuedBy?.registration_no || "—"}`, { size: 16, color: MUTED_COLOR }),
-    p(`${firm?.name || ""} Pty Ltd`, { size: 16, color: MUTED_COLOR })
+    ...signatory(issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
   );
 
   // 2. Applicant letter
@@ -69,26 +68,30 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }]),
     mixed([{ text: `${pathwayFull} No.:  `, bold: true }, { text: ref }]),
     p(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true }),
-    ...applicantBody.map((para) => p(para)),
+    ...applicantBody.map((para) => p(para, { justify: true, spacingAfter: 240 })),
     calloutBox([
       p("Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:", { spacingAfter: 60 }),
       ...requiredDocsList.map((item) => bullet(item)),
     ]),
-    p("Yours sincerely,", { spacingBefore: 240 }),
+    signatureRule(),
+    p("Yours sincerely,", { spacingBefore: 120 }),
     ...signatureBlock(images.signature),
-    p(issuedBy?.name || "—"),
-    p(`Registered Certifier / ${issuedBy?.registration_no || "—"}`, { size: 16, color: MUTED_COLOR }),
-    p(`${firm?.name || ""} Pty Ltd`, { size: 16, color: MUTED_COLOR })
+    ...signatory(issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
   );
 
   // 3. Certificate
+  // The Act the certificate is issued under belongs inside the title's
+  // ruled block with the project reference — set below the rule it read as
+  // stray small print floating between the title and the certificate.
+  const issuedUnder = isCdc
+    ? "Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979"
+    : "Issued under Part 6 the Environmental Planning and Assessment Act 1979";
   const certTitle = isCdc
-    ? [p(`${pathwayFull} ${ref}`, { bold: true, uppercase: true, spacingAfter: 0 }), p(`PROJECT REFERENCE ${projRef}`, { bold: true, uppercase: true, spacingAfter: 60 })]
-    : [p(`${pathwayFull} – ${projRef}`, { bold: true, uppercase: true, spacingAfter: 60 })];
+    ? documentTitle(`${pathwayFull} ${ref}`, { uppercase: true, subtitle: [`PROJECT REFERENCE ${projRef}`, issuedUnder] })
+    : documentTitle(`${pathwayFull} – ${projRef}`, { uppercase: true, subtitle: issuedUnder });
   push(
     pageBreak(),
     ...certTitle,
-    p(isCdc ? "Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979" : "Issued under Part 6 the Environmental Planning and Assessment Act 1979", { size: 16, color: MUTED_COLOR, spacingAfter: 120 }),
     p(
       isCdc
         ? "This CDC approval does not allow any work to commence. Principal Certifier must be appointed, and Home Building Compensation Fund (HBCF) has been issued by a licenced builder or Owner Builder Permit is issued by Building Commission NSW and all council fees/bonds have been paid."
@@ -171,7 +174,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     ),
     mixed([{ text: "Dated:  " }, { text: issuedDate }], { spacingBefore: 200 }),
     ...signatureBlock(images.signature),
-    p(issuedBy?.name || "—"),
+    ...signatory(issuedBy?.name),
     p(
       isCdc
         ? "N.B. Prior to the commencement of work section 6.6 of the Environment Planning and Assessment Act 1979 must be satisfied."
@@ -183,8 +186,9 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
   // 4. Mandatory inspections notice
   push(
     pageBreak(),
-    p("NOTICE TO APPLICANT OF MANDATORY CRITICAL STAGE INSPECTIONS", { bold: true, size: 24, spacingAfter: 60 }),
-    p("Made under Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 — Section 58", { size: 16, color: MUTED_COLOR, spacingAfter: 160 }),
+    ...documentTitle("NOTICE TO APPLICANT OF MANDATORY CRITICAL STAGE INSPECTIONS", {
+      subtitle: "Made under Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 — Section 58",
+    }),
     fieldTable([
       { kind: "heading", text: "APPLICANT DETAILS" },
       { kind: "row", label: "Name of the person having benefit of the Development Consent:", value: applicantName },
@@ -228,8 +232,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       ),
     ]),
     ...signatureBlock(images.signature),
-    p(issuedBy?.name || "—"),
-    p(`Principal Certifier / ${issuedBy?.registration_no || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 200 })
+    ...signatory(issuedBy?.name, `Principal Certifier / ${issuedBy?.registration_no || "—"}`)
   );
 
   // 4b. Schedule 1 — on its own page, so it can be handed to the builder
@@ -237,29 +240,29 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
   // buried at the foot of the notice.
   push(
     pageBreak(),
-    p("SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS", { bold: true, size: 24, spacingAfter: 40 }),
-    p(`${pathwayFull} ${ref} — ${job.address || ""}`, { size: 16, color: MUTED_COLOR, spacingAfter: 160 }),
+    ...documentTitle("SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS", { subtitle: `${pathwayFull} ${ref} — ${job.address || ""}` }),
     gridTable(
       ["No.", "Critical Stage Inspection", "Inspector"],
       selectedInspections.map((r, idx) => [`${idx + 1}.`, r.stage, r.inspector]),
-      [8, 62, 30]
+      [8, 62, 30],
+      { headerFill: INSPECTION_HEADER_FILL, centerColumns: [0], rowHeight: 460 }
     )
   );
 
   // 5. Checklist summary
   push(
     pageBreak(),
-    p(`DOCUMENTS REQUESTED — ${job.pathway} CHECKLIST`, { bold: true, size: 24, spacingAfter: 40 }),
-    p("Every document requested from the applicant during assessment, for reference.", { size: 16, color: MUTED_COLOR, spacingAfter: 160 }),
+    ...documentTitle(`DOCUMENTS REQUESTED — ${job.pathway} CHECKLIST`, { subtitle: "Every document requested from the applicant during assessment, for reference." }),
     gridTable(
       ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
       allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),
-      [18, 30, 16, 11, 13, 12]
+      [21, 27, 13, 12, 15, 12],
+      { zebra: true, centerColumns: [5], rowHeight: 300 }
     )
   );
 
   const doc = new Document({
-    styles: { default: { document: { run: { font: FONT, size: 20, color: TEXT_COLOR } } } },
+    styles: { default: { document: { run: { font: FONT, size: BODY_SIZE, color: TEXT_COLOR } } } },
     sections: [{ properties: PAGE_PROPERTIES, headers: { default: header }, footers: { default: footer }, children }],
   });
 

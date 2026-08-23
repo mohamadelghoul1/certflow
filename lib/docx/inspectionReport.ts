@@ -1,7 +1,7 @@
 import { Document, Paragraph, Header, Footer, AlignmentType, Packer } from "docx";
 import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
-import { p, mixed, pageBreak, splitRow, fieldTable, gridTable, headingRule, photoGrid, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, type FieldRow } from "@/lib/docx/shared";
+import { p, mixed, pageBreak, splitRow, fieldTable, gridTable, headingRule, photoGrid, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, type FieldRow, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, BODY_SIZE, signatory } from "@/lib/docx/shared";
 import { formatAddress } from "@/lib/certificates/pathwayData";
 import { formatISODate, letterheadAddressLines } from "@/lib/business";
 import type { InspectionReportData } from "@/lib/certificates/inspectionReportData";
@@ -29,19 +29,19 @@ function rows(...items: (FieldRow | null)[]): FieldRow[] {
 
 function letterheadHeader(firm: InspectionReportData["firm"], logo: ImageAsset | null) {
   const left = logo
-    ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 })]
-    : [p(firm?.name || "", { bold: true, size: 24, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: 16, color: MUTED_COLOR, spacingAfter: 0 })];
+    ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0 })]
+    : [p(firm?.name || "", { bold: true, size: TITLE_SIZE, color: HEADING_COLOR, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0 })];
   const right = [
-    ...letterheadAddressLines(firm?.postal_address).map((line, i) => p(i === 0 ? `Postal: ${line}` : line, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })),
-    ...letterheadAddressLines(firm?.office_address).map((line, i) => p(i === 0 ? `Office: ${line}` : line, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })),
-    p(`(p): ${firm?.phone || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
-    p(`(e): ${firm?.email || "—"}`, { size: 16, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
+    ...letterheadAddressLines(firm?.postal_address).map((line, i) => p(i === 0 ? `Postal: ${line}` : line, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 })),
+    ...letterheadAddressLines(firm?.office_address).map((line, i) => p(i === 0 ? `Office: ${line}` : line, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 })),
+    p(`(p): ${firm?.phone || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 }),
+    p(`(e): ${firm?.email || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 }),
   ];
-  return new Header({ children: [splitRow(left, right)] });
+  return new Header({ children: [splitRow(left, right), ruleLine()] });
 }
 
 function projectFooter(certRef: string, website: string | null | undefined) {
-  return new Footer({ children: [splitRow(`Project No.: ${certRef}`, website || "", { size: 16, color: MUTED_COLOR })] });
+  return new Footer({ children: [footerLine(`Project No.: ${certRef}`, website)] });
 }
 
 export async function buildInspectionReportDocx(data: InspectionReportData, images: { logo: ImageAsset | null; signature: ImageAsset | null; photos: (ImageAsset | null)[] }): Promise<Buffer> {
@@ -53,8 +53,7 @@ export async function buildInspectionReportDocx(data: InspectionReportData, imag
   const push = (...items: FileChild[]) => children.push(...items);
 
   push(
-    p(`INSPECTION REPORT – ${certRef} – ${inspection.title}`, { bold: true, size: 24, spacingAfter: 0 }),
-    p(job.address || "", { color: MUTED_COLOR, spacingAfter: 200 }),
+    ...documentTitle(`INSPECTION REPORT – ${certRef} – ${inspection.title}`, { subtitle: job.address || "" }),
 
     headingRule("APPLICANT DETAILS"),
     fieldTable(rows({ kind: "row", label: "Applicant:", value: applicantName }, { kind: "row", label: "Address:", value: formatAddress(d.applicantAddress) }, { kind: "row", label: "Phone:", value: d.contact?.phone || d.contact?.mobile }, { kind: "row", label: "Email:", value: d.contact?.email })),
@@ -74,11 +73,16 @@ export async function buildInspectionReportDocx(data: InspectionReportData, imag
     headingRule("INSPECTION DETAILS"),
     fieldTable(rows({ kind: "row", label: "Inspector:", value: inspector?.name }, { kind: "row", label: "Inspection date:", value: formatISODate(inspection.date) }, { kind: "row", label: "Registration No.:", value: inspector?.registration_no })),
 
-    p("INSPECTION RESULTS", { bold: true, spacingBefore: 200, spacingAfter: 20 }),
-    p(introText, { size: 16, color: MUTED_COLOR, spacingAfter: 120 }),
-    gridTable(["Inspection Area", "Inspection Outcome", "Reinspections"], [[`1. ${inspection.title}`, OUTCOME_TEXT[inspection.outcome] || "Pending", REINSPECTION_TEXT[inspection.outcome] || "No re-inspections required for this inspection."]], [30, 40, 30]),
+    headingRule("INSPECTION RESULTS"),
+    p(introText, { size: SMALL_SIZE, color: MUTED_COLOR, spacingAfter: 120 }),
+    gridTable(
+      ["Inspection Area", "Inspection Outcome", "Reinspections"],
+      [[`1. ${inspection.title}`, OUTCOME_TEXT[inspection.outcome] || "Pending", REINSPECTION_TEXT[inspection.outcome] || "No re-inspections required for this inspection."]],
+      [30, 40, 30],
+      { headerFill: INSPECTION_HEADER_FILL, rowHeight: 460 }
+    ),
 
-    p("REQUIRED DOCUMENTS", { bold: true, spacingBefore: 200, spacingAfter: 20 })
+    headingRule("REQUIRED DOCUMENTS")
   );
 
   if (inspection.defects.length === 0) {
@@ -92,30 +96,29 @@ export async function buildInspectionReportDocx(data: InspectionReportData, imag
   }
 
   if (notes) {
-    push(p("NOTES", { bold: true, spacingBefore: 200, spacingAfter: 20 }), p(notes, { spacingAfter: 60 }));
+    push(headingRule("NOTES"), p(notes, { spacingAfter: 60 }));
   }
 
   push(headingRule("SIGNED BY:"), ...signatureBlock(images.signature));
-  push(p(`${inspector?.name || "—"} – Inspector`, { spacingAfter: 0 }), p(formatISODate(inspection.date), { color: MUTED_COLOR }));
+  push(...signatory(`${inspector?.name || "—"} – Inspector`, formatISODate(inspection.date)));
 
   if (inspection.inspection_photos.length > 0) {
     push(
       pageBreak(),
-      p("PHOTOGRAPHIC EVIDENCE", { bold: true, size: 24, spacingAfter: 20 }),
-      p(`${inspection.title} – ${certRef}`, { color: MUTED_COLOR, spacingAfter: 200 }),
+      ...documentTitle("PHOTOGRAPHIC EVIDENCE", { subtitle: `${inspection.title} – ${certRef}` }),
       photoGrid(
         inspection.inspection_photos.map((photo, i) => ({
           image: images.photos[i]
             ? new Paragraph({ children: [image(images.photos[i]!.buffer, images.photos[i]!.type, images.photos[i]!.width, images.photos[i]!.height)], spacing: { after: 40 } })
             : new Paragraph({ spacing: { after: 40 } }),
-          caption: p(`${i + 1}. ${photo.caption || ""}`, { size: 16, color: MUTED_COLOR }),
+          caption: p(`${i + 1}. ${photo.caption || ""}`, { size: SMALL_SIZE, color: MUTED_COLOR }),
         }))
       )
     );
   }
 
   const doc = new Document({
-    styles: { default: { document: { run: { font: FONT, size: 20, color: TEXT_COLOR } } } },
+    styles: { default: { document: { run: { font: FONT, size: BODY_SIZE, color: TEXT_COLOR } } } },
     sections: [{ properties: PAGE_PROPERTIES, headers: { default: header }, footers: { default: footer }, children }],
   });
 
