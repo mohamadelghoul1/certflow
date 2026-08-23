@@ -88,6 +88,17 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
   // Fractions of the page, top-left corner of the stamp.
   const [pos, setPos] = useState({ x: initial?.x ?? 0.7, y: initial?.y ?? 0.85 });
 
+  // Hold the page behind the dialog still. Without this a drag that runs
+  // past the edge of the plan scrolls the job page underneath, which
+  // reads as the whole screen lurching mid-drag.
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, []);
+
   // Page 1, drawn at whatever width the dialog gives it.
   useEffect(() => {
     let cancelled = false;
@@ -178,12 +189,28 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
     const startY = e.clientY;
     const from = { ...view };
 
+    // A pointer reports far more often than the screen refreshes — on a
+    // fast mouse several times per frame. Re-rendering on every one of
+    // those made the drag flicker; this keeps only the latest position
+    // and applies it once per frame, so the stamp moves as smoothly as
+    // the display can show it.
+    let frame = 0;
+    let latest: { x: number; y: number } | null = null;
+
+    const apply = () => {
+      frame = 0;
+      if (latest) setPos(latest);
+    };
+
     const move = (ev: PointerEvent) => {
       const dx = (ev.clientX - startX) / pageSize.width;
       const dy = (ev.clientY - startY) / pageSize.height;
-      setPos(clampPos(from.x + dx, from.y + dy));
+      latest = clampPos(from.x + dx, from.y + dy);
+      if (!frame) frame = requestAnimationFrame(apply);
     };
     const up = () => {
+      if (frame) cancelAnimationFrame(frame);
+      if (latest) setPos(latest);
       target.releasePointerCapture(e.pointerId);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
@@ -245,8 +272,19 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
                     onPointerDown={onPointerDown}
                     role="application"
                     aria-label="Approval stamp — drag to move"
-                    className="absolute cursor-grab active:cursor-grabbing touch-none select-none"
-                    style={{ left: view.x * pageSize.width, top: view.y * pageSize.height, width: stampW, height: stampH }}
+                    className="absolute left-0 top-0 cursor-grab active:cursor-grabbing touch-none select-none"
+                    // Moved with a transform rather than left/top. Changing
+                    // left/top re-lays-out and repaints the plan canvas
+                    // underneath on every frame of a drag, which is what
+                    // made the whole dialog flicker; a transform on its own
+                    // compositing layer moves the stamp without touching
+                    // the page beneath it.
+                    style={{
+                      transform: `translate3d(${view.x * pageSize.width}px, ${view.y * pageSize.height}px, 0)`,
+                      width: stampW,
+                      height: stampH,
+                      willChange: "transform",
+                    }}
                   >
                     {stampImageUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
