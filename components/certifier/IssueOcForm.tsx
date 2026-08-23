@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { issueOc } from "@/lib/actions/jobs";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Certifier } from "@/types/db";
+import { portalRefPlaceholder, portalRefPrefix } from "@/lib/business";
 
 export function IssueOcForm({ jobId, assignedCertifierId, certifiers }: { jobId: string; assignedCertifierId: string | null; certifiers: Certifier[] }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(issueOc, undefined);
@@ -20,6 +21,20 @@ export function IssueOcForm({ jobId, assignedCertifierId, certifiers }: { jobId:
       <div className="flex-1 min-w-[160px]">
         <label className="block text-[11px] text-placeholder mb-1">Description (scope, for partials)</label>
         <input name="description" className="w-full px-2 py-1.5 rounded border border-line text-xs" />
+      </div>
+      {/* Each occupation certificate is its own Portal application — a
+          partial and a final OC on the same job come back with different
+          numbers — so the reference is entered here, with the certificate,
+          rather than taken from the job. */}
+      <div>
+        <label className="block text-[11px] text-placeholder mb-1">NSW Planning Portal number</label>
+        <input
+          name="portal_ref"
+          required
+          placeholder={portalRefPlaceholder("OC")}
+          title={`Type the digits and the ${portalRefPrefix("OC")} prefix is added for you`}
+          className="px-2 py-1.5 rounded border border-line text-xs w-40"
+        />
       </div>
       <div>
         <label className="block text-[11px] text-placeholder mb-1">Certifier</label>

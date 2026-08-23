@@ -64,7 +64,7 @@ export async function CertificatesPanel({
 
         {complete && (
           <>
-            <PlanningPortalRefField jobId={job.id} value={portalRef} />
+            <PlanningPortalRefField jobId={job.id} value={portalRef} kind={job.pathway} />
             <IssueCertificateForm
               jobId={job.id}
               assignedCertifierId={job.assigned_certifier_id}
@@ -259,7 +259,18 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
           <ChecklistSection jobId={job.id} firmId={firmId} checklistId={mod.checklistId} label={`Modification${mod.reason ? ` — ${mod.reason}` : ""}`} library={library} items={mod.items} />
         )}
 
-        {complete && !mod.generated && <IssueModificationForm jobId={job.id} modificationId={mod.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} />}
+        {complete && !mod.generated && (
+          <>
+            <PlanningPortalRefField jobId={job.id} value={job.details?.certificateDetails?.planningPortalRef || ""} kind={job.pathway} />
+            <IssueModificationForm
+              jobId={job.id}
+              modificationId={mod.id}
+              assignedCertifierId={job.assigned_certifier_id}
+              certifiers={certifiers}
+              hasPortalRef={(job.details?.certificateDetails?.planningPortalRef || "").trim().length > 0}
+            />
+          </>
+        )}
 
         {mod.generated && (
           <div className="mt-3 flex items-center gap-4">

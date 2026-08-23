@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Pencil } from "lucide-react";
 import { setPlanningPortalRef } from "@/lib/actions/jobs";
 import type { ActionState } from "@/lib/actions/auth";
+import { portalRefPlaceholder, portalRefPrefix, type PortalRefKind } from "@/lib/business";
 
 // The NSW Planning Portal reference, entered right where the certificate
 // is issued.
@@ -16,10 +17,14 @@ import type { ActionState } from "@/lib/actions/auth";
 // it. Once it is recorded it collapses to a line of text with an Edit
 // button, so a wrong one can still be corrected here.
 
-export function PlanningPortalRefField({ jobId, value }: { jobId: string; value: string }) {
+export function PlanningPortalRefField({ jobId, value, kind }: { jobId: string; value: string; kind: PortalRefKind }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setPlanningPortalRef, undefined);
   const [editing, setEditing] = useState(false);
   const recorded = value.trim();
+  // A construction certificate is lodged on the Portal as a certificate
+  // application, so it carries a CFT number rather than the CDC number a
+  // complying development application gets.
+  const hint = portalRefPlaceholder(kind);
 
   if (recorded && !editing) {
     return (
@@ -37,13 +42,14 @@ export function PlanningPortalRefField({ jobId, value }: { jobId: string; value:
   return (
     <form action={formAction} className="mt-3 flex items-end gap-2 flex-wrap">
       <input type="hidden" name="job_id" value={jobId} />
+      <input type="hidden" name="kind" value={kind} />
       <label className="flex flex-col gap-1">
         <span className="text-xs font-medium text-heading">NSW Planning Portal reference</span>
         <input
           name="planningPortalRef"
           defaultValue={recorded}
           autoFocus={editing}
-          placeholder="e.g. PAN-123456"
+          placeholder={hint}
           className="px-2 py-1.5 rounded border border-line text-xs w-56"
         />
       </label>
@@ -55,7 +61,7 @@ export function PlanningPortalRefField({ jobId, value }: { jobId: string; value:
           Cancel
         </button>
       )}
-      {!recorded && !state?.error && <span className="text-xs text-muted pb-1.5">Needed before the certificate can be issued.</span>}
+      {!recorded && !state?.error && <span className="text-xs text-muted pb-1.5">Needed before the certificate can be issued. Type the digits and the {portalRefPrefix(kind)} prefix is added for you.</span>}
       {state?.error && <span className="text-xs text-error pb-1.5">{state.error}</span>}
     </form>
   );

@@ -79,6 +79,11 @@ async function OcRecordCard({ record, sequence, job, certifiers }: { record: OcR
           <div className="text-xs font-semibold text-heading mt-0.5">
             <EditableCertRef jobId={job.id} recordId={record.id} kind="oc" currentRef={ref} isCustom={!!record.cert_ref} />
           </div>
+          {record.portal_ref && (
+            <div className="text-xs text-muted mt-0.5">
+              NSW Planning Portal: <span className="font-semibold text-heading">{record.portal_ref}</span>
+            </div>
+          )}
           <div className="text-xs text-muted mt-0.5">
             Issued {formatISODate(record.generated_date)} by {issuedBy?.name || "—"}
             {record.signed_at ? ` · Signed ${formatISODate(record.signed_at)}` : " · Not yet signed"}

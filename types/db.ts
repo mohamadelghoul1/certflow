@@ -241,6 +241,9 @@ export type PathwayCertificateVersion = {
 
 export type OcRecord = {
   cert_ref: string | null;
+  // The NSW Planning Portal reference this certificate was lodged under
+  // (the CFT series). Per certificate, not per job — see migration 0016.
+  portal_ref: string | null;
   id: string;
   job_id: string;
   type: "partial" | "whole";

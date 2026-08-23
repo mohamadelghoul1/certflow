@@ -27,6 +27,7 @@ import { DeleteJobButton } from "@/components/certifier/DeleteJobButton";
 import { useSelectTab } from "@/components/certifier/JobTabs";
 import type { Job, ClientContact } from "@/types/db";
 import { DateField } from "@/components/DateField";
+import { portalRefPlaceholder } from "@/lib/business";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -241,7 +242,7 @@ export function DetailsTab({
               </div>
               <div>
                 <label className={labelCls}>NSW Planning Portal ref</label>
-                <input name="planningPortalRef" defaultValue={d.certificateDetails?.planningPortalRef || ""} className={inputCls} />
+                <input name="planningPortalRef" defaultValue={d.certificateDetails?.planningPortalRef || ""} placeholder={portalRefPlaceholder(job.pathway)} className={inputCls} />
               </div>
             </div>
             <div>

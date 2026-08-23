@@ -205,3 +205,32 @@ export function portalReportDeadline(eventDateIso: string) {
   }
   return d.toISOString().slice(0, 10);
 }
+
+
+// NSW ePlanning issues a different reference series depending on what was
+// lodged. A complying development certificate is applied for as a
+// development application and takes the CDC series; a construction
+// certificate or an occupation certificate is lodged as a certificate
+// application and takes the CFT series. Getting the series wrong makes a
+// certificate impossible to trace back to its Portal application, so the
+// prefix is decided here rather than left to whoever is typing.
+export type PortalRefKind = "CDC" | "CC" | "OC";
+
+export function portalRefPrefix(kind: PortalRefKind) {
+  return kind === "CDC" ? "CDC" : "CFT";
+}
+
+export function portalRefPlaceholder(kind: PortalRefKind) {
+  return kind === "CDC" ? "e.g. CDC-331766" : "e.g. CFT-123456";
+}
+
+// A certifier reading a number off the Portal types the digits; the
+// series in front of them never varies, so it is filled in for them.
+// Anything that isn't a bare run of digits is left exactly as typed —
+// a reference that already carries its prefix, or one in a shape this
+// doesn't know about, is the certifier's to decide, not ours to rewrite.
+export function normalizePortalRef(value: string, kind: PortalRefKind) {
+  const trimmed = (value || "").trim();
+  if (!trimmed) return "";
+  return /^\d+$/.test(trimmed) ? `${portalRefPrefix(kind)}-${trimmed}` : trimmed;
+}

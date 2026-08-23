@@ -5,7 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { INSPECTION_LIBRARY, defaultCriticalStageInspections, normalizeCriticalStageInspections, epiForCodeParts } from "@/lib/constants";
-import { todayISO } from "@/lib/business";
+import { todayISO, normalizePortalRef, type PortalRefKind } from "@/lib/business";
 import { notifyJobClient } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
 import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
@@ -111,7 +111,7 @@ function extractJobDetails(formData: FormData, pathway: string): JobDetails {
     siteArea: numericText(formData.get("siteArea")),
     certificateDetails: {
       lotSectionDp: String(formData.get("lotSectionDp") || ""),
-      planningPortalRef: String(formData.get("planningPortalRef") || ""),
+      planningPortalRef: normalizePortalRef(String(formData.get("planningPortalRef") || ""), pathway === "CDC" ? "CDC" : "CC"),
       relevantInstrument,
       relevantPartOfCode,
       codeParts,
@@ -567,7 +567,8 @@ export async function setPlanningPortalRef(_prev: ActionState, formData: FormDat
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
-  const ref = String(formData.get("planningPortalRef") || "").trim();
+  const kind = (String(formData.get("kind") || "CDC") as PortalRefKind);
+  const ref = normalizePortalRef(String(formData.get("planningPortalRef") || ""), kind);
   if (!ref) return { error: "Enter the Planning Portal reference number." };
 
   const { data: job } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
@@ -814,12 +815,21 @@ export async function startModification(formData: FormData) {
 }
 
 export async function issueModification(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireProfile("certifier");
+  const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const modificationId = String(formData.get("modification_id"));
   const certifierId = String(formData.get("certifier_id") || "");
   if (!certifierId) return { error: "Select a certifier before issuing." };
+
+  // A modified certificate carries the same Planning Portal reference the
+  // original does, and prints it, so it is gated the same way.
+  const { data: modJob } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!modJob) return { error: "Project not found." };
+  if (!((modJob.details || {}) as JobDetails).certificateDetails?.planningPortalRef?.trim()) {
+    return { error: "Enter the NSW Planning Portal reference number before issuing." };
+  }
+
   const { data: mod } = await supabase.from("modifications").select("version").eq("id", modificationId).single();
   const { error } = await supabase
     .from("modifications")
@@ -848,7 +858,14 @@ export async function issueOc(_prev: ActionState, formData: FormData): Promise<A
   const description = String(formData.get("description") || "");
   const certifierId = String(formData.get("certifier_id") || "");
   if (!certifierId) return { error: "Select a certifier before issuing." };
-  const { error } = await supabase.from("oc_records").insert({ job_id: jobId, type, description, generated_date: todayISO(), issued_by: certifierId });
+
+  // Each occupation certificate is its own Portal application, so the
+  // reference is recorded against the certificate as it is created rather
+  // than taken from the job.
+  const portalRef = normalizePortalRef(String(formData.get("portal_ref") || ""), "OC");
+  if (!portalRef) return { error: "Enter the NSW Planning Portal reference number before issuing." };
+
+  const { error } = await supabase.from("oc_records").insert({ job_id: jobId, type, description, generated_date: todayISO(), issued_by: certifierId, portal_ref: portalRef });
   if (error) return { error: error.message };
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
