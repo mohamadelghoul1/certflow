@@ -2,6 +2,7 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { today, formatISODate } from "@/lib/business";
+import { signedUrl } from "@/lib/storage";
 import { QuoteDocument, QuoteTermsEditor } from "@/components/certifier/QuoteDocument";
 import type { Firm, Quote, QuoteFeeLine } from "@/types/db";
 
@@ -20,6 +21,25 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
   const feeLines = (lines || []) as QuoteFeeLine[];
   const applicant = (quote.applicant || {}) as { name?: string; email?: string; phone?: string };
   const firmData = firm as Firm | null;
+
+  // The logo is embedded as data rather than linked by its signed URL, so
+  // the Export-as-Word copy of this page keeps showing it long after the
+  // URL would have expired.
+  let logoSrc: string | null = null;
+  if (firmData?.logo_url) {
+    const logoUrl = await signedUrl(firmData.logo_url, 600);
+    if (logoUrl) {
+      try {
+        const res = await fetch(logoUrl);
+        if (res.ok) {
+          const buffer = Buffer.from(await res.arrayBuffer());
+          logoSrc = `data:${res.headers.get("content-type") || "image/png"};base64,${buffer.toString("base64")}`;
+        }
+      } catch {
+        // The page still renders with the firm name alone.
+      }
+    }
+  }
 
   const certifierName = quote.certifier_id
     ? (await supabase.from("certifiers").select("name").eq("id", quote.certifier_id).single()).data?.name || firmData?.name
@@ -75,6 +95,10 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
       <div className="max-w-2xl mx-auto p-8 bg-white text-heading print:max-w-none">
         <div className="flex justify-between items-start pb-3 mb-1">
           <div>
+            {logoSrc && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoSrc} alt={`${firmData?.name || "Firm"} logo`} className="h-16 w-auto object-contain mb-3" />
+            )}
             <div className="text-xl font-black tracking-tight">{firmData?.name}</div>
           </div>
           <div className="text-right text-xs text-muted leading-relaxed">
