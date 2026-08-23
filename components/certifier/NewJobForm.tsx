@@ -16,6 +16,7 @@ import {
 } from "@/lib/constants";
 import { X, AlertTriangle } from "lucide-react";
 import { AddressLookupField } from "@/components/certifier/AddressLookupField";
+import { DateField } from "@/components/DateField";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -338,7 +339,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
             </div>
             <div>
               <label className={labelCls}>Development Consent (DA) Date</label>
-              <input type="date" name="developmentConsentDate" className={inputCls} />
+              <DateField name="developmentConsentDate" className={inputCls} />
             </div>
           </div>
         )}

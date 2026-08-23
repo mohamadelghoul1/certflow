@@ -22,8 +22,8 @@ export function AmendmentsList({ itemId, jobId, amendments }: { itemId: string; 
   const [, startTransition] = useTransition();
   const [text, setText] = useState("");
 
-  function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
+  function handleAdd(e?: React.FormEvent) {
+    e?.preventDefault();
     const trimmed = text.trim();
     if (!trimmed) return;
     const temp: Amendment = { id: `temp-${Math.random().toString(36).slice(2)}`, checklist_item_id: itemId, text: trimmed, resolved: false, created_at: new Date().toISOString(), resolved_at: null };
@@ -86,6 +86,13 @@ export function AmendmentsList({ itemId, jobId, amendments }: { itemId: string; 
           id={`amendment-input-${itemId}`}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          // Clicking away saves the amendment, the same way the document
+          // details boxes do — a typed amendment that's been left behind
+          // was meant to be kept, and losing it because Add went unpressed
+          // is the worse outcome. Add and Enter still work; when Add is
+          // what you click, this fires first and the button's own handler
+          // then finds the box already empty and does nothing.
+          onBlur={() => handleAdd()}
           placeholder="Add an amendment point…"
           className="flex-1 px-2 py-1.5 rounded border border-line text-xs"
         />

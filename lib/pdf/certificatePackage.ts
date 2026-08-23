@@ -273,7 +273,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
 
   // 5. Documents requested
   l.pageBreak();
-  l.documentTitle(`DOCUMENTS REQUESTED — ${job.pathway} CHECKLIST`, { subtitle: "Every document requested from the applicant during assessment, for reference." });
+  l.documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON", { subtitle: "Every document requested from the applicant during assessment, for reference." });
   l.table(
     ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
     allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),

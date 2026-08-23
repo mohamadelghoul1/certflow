@@ -6,6 +6,7 @@ import type { ActionState } from "@/lib/actions/auth";
 import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS, VALID_FOR_OPTIONS, matchCouncilByAddress } from "@/lib/constants";
 import type { Quote, QuoteFeeLine } from "@/types/db";
 import { X, Plus } from "lucide-react";
+import { DateField } from "@/components/DateField";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -121,11 +122,11 @@ export function QuoteEditForm({
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Required start date</label>
-            <input type="date" name="required_start_date" defaultValue={quote.required_start_date || ""} className={inputCls} />
+            <DateField name="required_start_date" defaultValue={quote.required_start_date || ""} className={inputCls} />
           </div>
           <div>
             <label className={labelCls}>Required end date</label>
-            <input type="date" name="required_end_date" defaultValue={quote.required_end_date || ""} className={inputCls} />
+            <DateField name="required_end_date" defaultValue={quote.required_end_date || ""} className={inputCls} />
           </div>
         </div>
         <div>

@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { updateItemMeta } from "@/lib/actions/jobs";
+import { DateField, todayISO } from "@/components/DateField";
 import type { ChecklistItem } from "@/types/db";
 
 const fieldCls = "px-2 py-1.5 rounded border border-line text-xs";
@@ -16,6 +17,7 @@ const fieldCls = "px-2 py-1.5 rounded border border-line text-xs";
 // done with it. Each field saves when it loses focus, and only if its
 // value actually changed, so tabbing straight through costs nothing.
 export function DocumentDetailsForm({ item, jobId }: { item: ChecklistItem; jobId: string }) {
+  const today = todayISO();
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -64,12 +66,20 @@ export function DocumentDetailsForm({ item, jobId }: { item: ChecklistItem; jobI
       />
       <input name="revision" defaultValue={item.revision || ""} placeholder="Revision" onBlur={(e) => save("revision", e.target.value)} className={fieldCls} />
       {/* A date picker commits on selection rather than on the way out, so
-          it saves on change instead of blur. */}
-      <input
-        type="date"
+          it saves on change instead of blur. A document can't be dated in
+          the future, so today is the latest it will accept — `max` greys
+          out later days in the calendar, and the check below catches a
+          date typed straight into the box, which `max` alone doesn't. */}
+      <DateField
         name="document_date"
         defaultValue={item.document_date || ""}
-        onChange={(e) => save("document_date", e.target.value)}
+        max={today}
+        onChange={(e) => {
+          if (e.target.value && e.target.value > today) {
+            e.target.value = today;
+          }
+          save("document_date", e.target.value);
+        }}
         className={fieldCls}
       />
       <div className="sm:col-span-4 text-[11px] h-4">

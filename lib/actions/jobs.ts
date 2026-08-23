@@ -327,11 +327,21 @@ export async function updateItemMeta(formData: FormData) {
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
+  // A document can't be dated in the future. The form's own date box
+  // stops one being picked, but the value still arrives as plain text, so
+  // it's re-checked here rather than trusted.
+  const submittedDate = String(formData.get("document_date") || "");
+  // "Today" has to be today in NSW, not in UTC — the server runs on UTC,
+  // which is still yesterday for the whole Australian morning, so a
+  // document correctly dated today would otherwise be pushed back a day.
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(new Date());
+  const documentDate = submittedDate ? (submittedDate <= today ? submittedDate : today) : null;
+
   await supabase
     .from("checklist_items")
     .update({
       revision: String(formData.get("revision") || ""),
-      document_date: formData.get("document_date") || null,
+      document_date: documentDate,
       prepared_by: String(formData.get("prepared_by") || ""),
       drawing_number: String(formData.get("drawing_number") || ""),
       // clause_ref is deliberately not written. Its box has been removed

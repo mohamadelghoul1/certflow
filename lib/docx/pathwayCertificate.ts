@@ -252,7 +252,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
   // 5. Checklist summary
   push(
     pageBreak(),
-    ...documentTitle(`DOCUMENTS REQUESTED — ${job.pathway} CHECKLIST`, { subtitle: "Every document requested from the applicant during assessment, for reference." }),
+    ...documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON", { subtitle: "Every document requested from the applicant during assessment, for reference." }),
     gridTable(
       ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
       allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),

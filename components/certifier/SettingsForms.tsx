@@ -21,6 +21,7 @@ import type { ActionState } from "@/lib/actions/auth";
 import type { Firm, Certifier, ClientContact } from "@/types/db";
 import { CLIENT_TYPES } from "@/lib/constants";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { DateField } from "@/components/DateField";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -137,11 +138,11 @@ export function CertifierList({ certifiers, firmId, signatureUrls }: { certifier
             <div />
             <div>
               <label className={labelCls}>PI insurance expiry</label>
-              <input type="date" name="pi_insurance_expiry" className={inputCls} />
+              <DateField name="pi_insurance_expiry" className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>Registration expiry</label>
-              <input type="date" name="registration_expiry" className={inputCls} />
+              <DateField name="registration_expiry" className={inputCls} />
             </div>
           </div>
           {addState?.error && <div className="text-sm text-error">{addState.error}</div>}
@@ -228,11 +229,11 @@ function CertifierRow({ certifier, firmId, signatureUrl }: { certifier: Certifie
         <div />
         <div>
           <label className={labelCls}>PI insurance expiry</label>
-          <input type="date" name="pi_insurance_expiry" defaultValue={certifier.pi_insurance_expiry || ""} className={inputCls} />
+          <DateField name="pi_insurance_expiry" defaultValue={certifier.pi_insurance_expiry || ""} className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>Registration expiry</label>
-          <input type="date" name="registration_expiry" defaultValue={certifier.registration_expiry || ""} className={inputCls} />
+          <DateField name="registration_expiry" defaultValue={certifier.registration_expiry || ""} className={inputCls} />
         </div>
       </div>
       {state?.error && <div className="text-sm text-error">{state.error}</div>}

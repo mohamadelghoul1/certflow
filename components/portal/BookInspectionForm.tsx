@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { suggestedInspectionBookingDate } from "@/lib/business";
+import { DateField } from "@/components/DateField";
 
 export function BookInspectionForm({ inspectionId, jobId }: { inspectionId: string; jobId: string }) {
   const [date, setDate] = useState(() => suggestedInspectionBookingDate(""));
@@ -36,8 +37,7 @@ export function BookInspectionForm({ inspectionId, jobId }: { inspectionId: stri
     <form onSubmit={handleSubmit} className="flex items-end gap-2">
       <div>
         <label className="block text-[11px] text-placeholder mb-1">Preferred date</label>
-        <input
-          type="date"
+        <DateField
           value={date}
           onChange={(e) => setDate(e.target.value)}
           className="px-2 py-1.5 rounded border border-line text-xs"

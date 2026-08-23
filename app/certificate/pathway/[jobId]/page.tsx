@@ -519,7 +519,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
         {/* 5. Checklist summary */}
         <Section last>
           <div className="text-sm">
-            <div className="text-base font-bold mb-1">DOCUMENTS REQUESTED — {job.pathway} CHECKLIST</div>
+            <div className="text-base font-bold mb-1">SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON</div>
             <div className="text-xs text-placeholder mb-3">Every document requested from the applicant during assessment, for reference.</div>
             <table className="w-full border border-line text-sm">
               <thead>

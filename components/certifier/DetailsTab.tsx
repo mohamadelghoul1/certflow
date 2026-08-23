@@ -26,6 +26,7 @@ import { CriticalStageInspections } from "@/components/certifier/CriticalStageIn
 import { DeleteJobButton } from "@/components/certifier/DeleteJobButton";
 import { useSelectTab } from "@/components/certifier/JobTabs";
 import type { Job, ClientContact } from "@/types/db";
+import { DateField } from "@/components/DateField";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -380,7 +381,7 @@ export function DetailsTab({
               </div>
               <div>
                 <label className={labelCls}>Development Consent (DA) Date</label>
-                <input type="date" name="developmentConsentDate" defaultValue={d.certificateDetails?.developmentConsentDate || ""} className={inputCls} />
+                <DateField name="developmentConsentDate" defaultValue={d.certificateDetails?.developmentConsentDate || ""} className={inputCls} />
               </div>
             </div>
           )}
