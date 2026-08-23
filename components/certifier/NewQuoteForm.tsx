@@ -240,7 +240,7 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
         <div className="space-y-2">
           <div className="flex gap-2 items-center text-xs text-placeholder px-1">
             <span className="flex-1">Description</span>
-            <span className="w-32 text-right pr-8">Fee</span>
+            <span className="w-20 text-right pr-8">Fee</span>
           </div>
           {feeLines.map((line, idx) => (
             <div key={idx} className="flex gap-2 items-start">
@@ -260,7 +260,7 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
                 value={line.amount}
                 onChange={(e) => setFeeLines((prev) => prev.map((l, i) => (i === idx ? { ...l, amount: e.target.value } : l)))}
                 placeholder="0.00"
-                className={`${inputCls} w-32`}
+                className={`${inputCls} w-20 px-2`}
               />
               <button type="button" onClick={() => setFeeLines((prev) => prev.filter((_, i) => i !== idx))} className="p-2 rounded-full hover:bg-surface text-placeholder">
                 <X size={14} />

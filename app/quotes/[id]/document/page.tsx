@@ -106,7 +106,7 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
           <thead>
             <tr style={{ backgroundColor: "#B8B49A" }}>
               <th className="text-left font-semibold px-3 py-2 border border-line">Description</th>
-              <th className="text-right font-semibold px-3 py-2 border border-line w-28">Fee</th>
+              <th className="text-right font-semibold px-3 py-2 border border-line w-24">Fee</th>
             </tr>
           </thead>
           <tbody>
