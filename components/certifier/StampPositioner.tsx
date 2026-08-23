@@ -8,10 +8,11 @@ import { setStampPlacement, clearStampPlacement } from "@/lib/actions/jobs";
 // Drag the approval stamp onto the plan itself.
 //
 // A title block sits in a different corner on every consultant's sheet,
-// so there is no one right place for the stamp. This shows page 1 of the
-// document with the stamp on top of it, at the size and proportions it
-// will really be printed at, and lets it be dragged and resized until it
-// clears whatever is underneath.
+// so there is no one right place for the stamp. This shows the document
+// with the stamp on top of it, at the size and proportions it will
+// really be printed at, and lets it be dragged and resized until it
+// clears whatever is underneath — with page arrows on a multi-page set,
+// since the one position lands on every sheet.
 //
 // The page is drawn with pdf.js, which only loads when the panel is
 // opened — it is a large library and most visits to a job never position
@@ -50,6 +51,18 @@ const IMAGE_GAP = 6;
 // on the plan inside it. max-w-4xl is 896px; less the dialog's padding.
 const PREVIEW_MAX_WIDTH = 856;
 const PREVIEW_HEIGHT_FRACTION = 0.6;
+
+// The slice of pdf.js's document API this dialog touches, typed here
+// because the library itself is imported dynamically (and its published
+// types don't cover everything the legacy build provides).
+type PdfDocument = {
+  numPages: number;
+  getPage(n: number): Promise<{
+    getViewport(opts: { scale: number }): { width: number; height: number };
+    render(opts: { canvas: HTMLCanvasElement; canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }): { promise: Promise<void> };
+  }>;
+  destroy(): void;
+};
 
 export function StampPositioner({ itemId, jobId, fileUrl, lines, textWidth, textHeight, stampImageUrl, initial }: Props) {
   const [open, setOpen] = useState(false);
@@ -117,9 +130,53 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
     fileUrlRef.current = fileUrl;
   }, [fileUrl]);
 
-  // Page 1, drawn to fit the fixed-size preview frame.
+  // Which sheet is being previewed. The stamp goes on every page at the
+  // same spot, but a title block sits differently on every consultant's
+  // sheet — so the certifier can flip through and check the position
+  // clears all of them before saving.
+  const [pageNum, setPageNum] = useState(1);
+  const [pageCount, setPageCount] = useState(0);
+  const docRef = useRef<PdfDocument | null>(null);
+  // Renders can overlap when pages are flipped quickly; only the newest
+  // one is allowed to finish writing to the canvas.
+  const renderToken = useRef(0);
+
+  const renderPage = useCallback(async (doc: PdfDocument, n: number) => {
+    const token = ++renderToken.current;
+    const page = await doc.getPage(n);
+    if (token !== renderToken.current) return;
+
+    const raw = page.getViewport({ scale: 1 });
+    // Fit inside the frame, whose size is fixed by CSS below and so
+    // is the same on every render. Falling back to the frame's own
+    // max width rather than a smaller guess matters: a guess that
+    // differs from the real width is what produced a second, smaller
+    // layout to flicker between.
+    const maxWidth = Math.min(frameRef.current?.clientWidth || PREVIEW_MAX_WIDTH, PREVIEW_MAX_WIDTH);
+    const maxHeight = Math.round(window.innerHeight * PREVIEW_HEIGHT_FRACTION);
+    const fit = Math.min(maxWidth / raw.width, maxHeight / raw.height);
+    const viewport = page.getViewport({ scale: fit });
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(viewport.width * dpr);
+    canvas.height = Math.floor(viewport.height * dpr);
+    canvas.style.width = `${viewport.width}px`;
+    canvas.style.height = `${viewport.height}px`;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+    await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+    if (token !== renderToken.current) return;
+    setPageSize({ width: viewport.width, height: viewport.height, pdfWidth: raw.width });
+    setLoading(false);
+  }, []);
+
+  // The document, loaded once per file.
   useEffect(() => {
     let cancelled = false;
+    let loaded: PdfDocument | null = null;
     (async () => {
       try {
         // The legacy build deliberately, not the modern one: pdf.js 6's
@@ -132,35 +189,16 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
         // pdf.js parses off the main thread and the dialog stays
         // responsive while a large plan is being read.
         pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/legacy/build/pdf.worker.min.mjs", import.meta.url).toString();
-        const doc = await pdfjs.getDocument({ url: fileUrlRef.current }).promise;
-        const page = await doc.getPage(1);
-        if (cancelled) return;
-
-        const raw = page.getViewport({ scale: 1 });
-        // Fit inside the frame, whose size is fixed by CSS below and so
-        // is the same on every render. Falling back to the frame's own
-        // max width rather than a smaller guess matters: a guess that
-        // differs from the real width is what produced a second, smaller
-        // layout to flicker between.
-        const maxWidth = Math.min(frameRef.current?.clientWidth || PREVIEW_MAX_WIDTH, PREVIEW_MAX_WIDTH);
-        const maxHeight = Math.round(window.innerHeight * PREVIEW_HEIGHT_FRACTION);
-        const fit = Math.min(maxWidth / raw.width, maxHeight / raw.height);
-        const viewport = page.getViewport({ scale: fit });
-
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = Math.floor(viewport.width * dpr);
-        canvas.height = Math.floor(viewport.height * dpr);
-        canvas.style.width = `${viewport.width}px`;
-        canvas.style.height = `${viewport.height}px`;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-        ctx.scale(dpr, dpr);
-        await page.render({ canvas, canvasContext: ctx, viewport }).promise;
-        if (cancelled) return;
-        setPageSize({ width: viewport.width, height: viewport.height, pdfWidth: raw.width });
-        setLoading(false);
+        const doc = (await pdfjs.getDocument({ url: fileUrlRef.current }).promise) as unknown as PdfDocument;
+        if (cancelled) {
+          doc.destroy();
+          return;
+        }
+        loaded = doc;
+        docRef.current = doc;
+        setPageCount(doc.numPages);
+        setPageNum(1);
+        await renderPage(doc, 1);
       } catch {
         if (!cancelled) {
           setError("This document couldn't be previewed. It may not be a PDF, or it may be password protected.");
@@ -170,8 +208,17 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
     })();
     return () => {
       cancelled = true;
+      docRef.current = null;
+      loaded?.destroy();
     };
-  }, [fileKey]);
+  }, [fileKey, renderPage]);
+
+  // Flipping to another sheet redraws the same loaded document — no
+  // refetch, so it's quick.
+  useEffect(() => {
+    const doc = docRef.current;
+    if (doc && pageNum >= 1 && pageNum <= doc.numPages) renderPage(doc, pageNum);
+  }, [pageNum, renderPage]);
 
   // PDF points to on-screen pixels, so the stamp is previewed at the size
   // it will actually be printed.
@@ -378,6 +425,35 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
                 />
                 <span className="tabular-nums w-12">{Math.round(scale * 100)}%</span>
               </label>
+
+              {/* The stamp lands on every sheet at this same spot, so a
+                  multi-page plan gets arrows to check the position clears
+                  each sheet's title block before saving. */}
+              {pageCount > 1 && (
+                <div className="flex items-center gap-1.5 text-sm text-muted" role="group" aria-label="Preview page">
+                  <button
+                    type="button"
+                    onClick={() => setPageNum((p) => Math.max(1, p - 1))}
+                    disabled={pageNum <= 1}
+                    className="w-8 h-8 rounded-md border border-line text-muted hover:bg-hover disabled:opacity-40"
+                    aria-label="Previous page"
+                  >
+                    ‹
+                  </button>
+                  <span className="tabular-nums whitespace-nowrap">
+                    Page {pageNum} of {pageCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPageNum((p) => Math.min(pageCount, p + 1))}
+                    disabled={pageNum >= pageCount}
+                    className="w-8 h-8 rounded-md border border-line text-muted hover:bg-hover disabled:opacity-40"
+                    aria-label="Next page"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
 
               {/* Arrow buttons as well as dragging: on a phone, a fingertip
                   is wider than the gap between a title block and the sheet
