@@ -1,3 +1,5 @@
+import type { Pathway } from "@/lib/business";
+
 // Hand-written types matching supabase/migrations/0001_init.sql.
 // (Not auto-generated — regenerate with `supabase gen types typescript`
 // once you have a live project, if you want full type safety later.)
@@ -63,7 +65,7 @@ export type Quote = {
   quote_number: string | null;
   state: string | null;
   project_type: string | null;
-  pathway: "CDC" | "CC";
+  pathway: Pathway;
   required_start_date: string | null;
   required_end_date: string | null;
   valid_for: string | null;
@@ -139,6 +141,18 @@ export type JobDetails = {
     // fixed field. Shown on generated documents as its own line each.
     consentReferences?: string;
   };
+  // PC_OC jobs only: the CDC or CC another certifier already issued, which
+  // this firm is appointed as Principal Certifier under and issues the
+  // Occupation Certificate against. Left empty on jobs that produce their
+  // own certificate, where certificateDetails above holds the equivalent.
+  priorApproval?: {
+    type?: "CDC" | "CC";
+    number?: string;
+    date?: string;
+    // Who issued it — printed on the OC so the council can trace the
+    // approval back to its author.
+    issuedBy?: string;
+  };
 };
 
 export type CriticalStageInspection = { id: string; stage: string; inspector: string; enabled: boolean };
@@ -149,7 +163,7 @@ export type Job = {
   address: string;
   description: string | null;
   job_types: string[];
-  pathway: "CDC" | "CC";
+  pathway: Pathway;
   assigned_certifier_id: string | null;
   status: "active" | "complete";
   client_id: string | null;

@@ -31,6 +31,7 @@ export async function OcPanel({
 }) {
   const complete = stageComplete(items);
   const hasWhole = ocRecords.some((r) => r.type === "whole");
+  const canIssue = job.pathway === "PC_OC" ? !!job.details?.priorApproval?.number?.trim() : job.pathway_generated;
 
   return (
     <div className="space-y-6">
@@ -39,9 +40,18 @@ export async function OcPanel({
         <ChecklistSection jobId={job.id} firmId={firmId} checklistId={checklistId} label="Occupation Certificate" library={library} items={items} />
       </div>
 
-      {!job.pathway_generated && <div className="text-xs text-muted">Occupation Certificates can&apos;t be issued until the {job.pathway} is issued.</div>}
+      {/* A PC/OC job never issues a certificate here — its approval came
+          from another certifier — so what has to be in place is that
+          approval's number, not one of ours. */}
+      {!canIssue && (
+        <div className="text-xs text-muted">
+          {job.pathway === "PC_OC"
+            ? "Record the previously issued approval on the Details tab before an Occupation Certificate can be issued."
+            : `Occupation Certificates can't be issued until the ${job.pathway} is issued.`}
+        </div>
+      )}
 
-      {job.pathway_generated && complete && <IssueOcForm jobId={job.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} />}
+      {canIssue && complete && <IssueOcForm jobId={job.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} />}
 
       <div className="space-y-3">
         {ocRecords.map((r, i) => (

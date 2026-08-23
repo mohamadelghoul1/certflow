@@ -1,3 +1,4 @@
+import { pathwayLabel } from "@/lib/business";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -27,7 +28,7 @@ export default async function QuotesListPage() {
             <Link key={q.id} href={`/quotes/${q.id}`} className="flex items-center justify-between px-5 py-4 border-b border-line last:border-b-0 hover:bg-hover">
               <div>
                 <div className="font-semibold text-sm text-primary">{q.proposal_address || q.project_title || "Untitled quote"}</div>
-                <div className="text-xs text-placeholder">{q.pathway}</div>
+                <div className="text-xs text-placeholder">{pathwayLabel(q.pathway)}</div>
               </div>
               <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${meta.style}`}>{meta.label}</span>
             </Link>

@@ -62,7 +62,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
 
   const data = await getOcCertificateData(jobId, ocId, profile.firm_id);
   if (!data) notFound();
-  const { job, firm, record, issuedBy, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, daNumber, daDate, d, issuedDate, applicantName } = data;
+  const { job, firm, record, issuedBy, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, consentLabel, daNumber, daDate, d, issuedDate, applicantName } = data;
 
   return (
     <CertificatePackage
@@ -121,7 +121,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
             </div>
             <div>
               {firm?.name} Pty Ltd has issued a {typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for
-              the above premises, relying on {job.pathway} No. {consentRef}
+              the above premises, relying on {consentLabel} No. {consentRef}
               {/* The consent the CC itself was issued under — the reference
                   the council files the certificate against. Its number only:
                   a letter is not the place for the consent's dates. */}
@@ -213,7 +213,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
                 <CertRow label="Lot/Section/DP" value={d.certificateDetails?.lotSectionDp} />
                 <CertRow label="Development description" value={record.description || job.description} />
                 <CertRow label="Building classification(s)" value={(d.proposal?.classifications || []).join(", ")} />
-                <CertRow label={`${job.pathway} relied upon`} value={consentRef} />
+                <CertRow label={`${consentLabel} relied upon`} value={consentRef} />
                 {daNumber && <CertRow label="Development Consent (DA) No." value={daNumber} />}
                 {daDate && <CertRow label="Development Consent (DA) date" value={daDate} />}
                 <CertRow label="Date of issue" value={issuedDate} />

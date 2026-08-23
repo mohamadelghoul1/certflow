@@ -1,4 +1,4 @@
-import { formatISODate, stageComplete, resolvePathwayCertRef } from "@/lib/business";
+import { formatISODate, stageComplete, resolvePathwayCertRef, portalRefKindFor } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { reportPathwayToPortal, setVisiblePathwayVersion, startModification, uploadModificationApproval, uploadPathwayApproval, notifyClientMessage, sendPathwayCertificateToClient } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
@@ -45,6 +45,50 @@ export async function CertificatesPanel({
   const portalRef = job.details?.certificateDetails?.planningPortalRef || "";
   const stamp = await buildStampPreview(job, activeVersion?.cert_ref);
 
+  // A PC/OC job's approval was issued by another certifier: this firm has
+  // nothing to assess or sign here. The checklist stays so their approval
+  // and stamped plans can be filed against the job, and everything that
+  // would issue a certificate of ours is left out.
+  const prior = job.details?.priorApproval;
+  if (job.pathway === "PC_OC") {
+    return (
+      <div className="space-y-6">
+        <div className="border border-line rounded-xl p-6 shadow-sm bg-white">
+          <div className="text-base font-semibold text-heading mb-1">Previously issued approval</div>
+          <p className="text-xs text-muted mb-3">
+            This firm is appointed as Principal Certifier only, so no {prior?.type || "CDC/CC"} is issued here. Record the approval on the Details tab; it is
+            what the inspections are carried out under and what the Occupation Certificate is issued against.
+          </p>
+          <table className="w-full text-sm">
+            <tbody>
+              <tr>
+                <td className="py-1.5 pr-4 font-semibold text-heading w-1/3">Approval</td>
+                <td className="py-1.5 text-muted">{prior?.type || "—"}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 pr-4 font-semibold text-heading">Number</td>
+                <td className="py-1.5 text-muted">{prior?.number || "— not yet recorded"}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 pr-4 font-semibold text-heading">Date issued</td>
+                <td className="py-1.5 text-muted">{prior?.date ? formatISODate(prior.date) : "—"}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 pr-4 font-semibold text-heading">Issued by</td>
+                <td className="py-1.5 text-muted">{prior?.issuedBy || "—"}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-heading mb-2">Approval documents</div>
+          <p className="text-xs text-muted mb-2">The approved plans and documents issued with that certificate — file them here so the inspections and the Occupation Certificate can refer to them.</p>
+          <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} label="Approval" library={library} items={pathwayItems} stamp={stamp} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -64,7 +108,7 @@ export async function CertificatesPanel({
 
         {complete && (
           <>
-            <PlanningPortalRefField jobId={job.id} value={portalRef} kind={job.pathway} />
+            <PlanningPortalRefField jobId={job.id} value={portalRef} kind={portalRefKindFor(job.pathway)} />
             <IssueCertificateForm
               jobId={job.id}
               assignedCertifierId={job.assigned_certifier_id}
@@ -261,7 +305,7 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
 
         {complete && !mod.generated && (
           <>
-            <PlanningPortalRefField jobId={job.id} value={job.details?.certificateDetails?.planningPortalRef || ""} kind={job.pathway} />
+            <PlanningPortalRefField jobId={job.id} value={job.details?.certificateDetails?.planningPortalRef || ""} kind={portalRefKindFor(job.pathway)} />
             <IssueModificationForm
               jobId={job.id}
               modificationId={mod.id}

@@ -1,3 +1,4 @@
+import { pathwayLabel } from "@/lib/business";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
@@ -48,12 +49,12 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
         </Link>
         <h1 className="text-xl font-bold text-primary mt-1">{job.address}</h1>
         <div className="text-sm text-placeholder">
-          {job.pathway} · {job.description}
+          {pathwayLabel(job.pathway)} · {job.description}
         </div>
       </div>
 
       <StageSection
-        title={job.pathway}
+        title={pathwayLabel(job.pathway)}
         items={(pathwayChecklist?.checklist_items as ItemWithAmendments[]) || []}
         jobId={id}
         firmId={job.firm_id}
@@ -61,7 +62,7 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
 
       {job.pathway_sent_to_client && (
         <div className="bg-white rounded-lg border border-line p-5">
-          <div className="font-bold text-primary mb-1">{job.pathway} certificate issued</div>
+          <div className="font-bold text-primary mb-1">{pathwayLabel(job.pathway)} certificate issued</div>
           <div className="text-xs text-placeholder mb-3">Issued {formatISODate(job.pathway_generated_date)}</div>
           {/* The certifier's own uploaded copy wins when there is one — it's
               the version they actually edited and signed off. Falling back to

@@ -1,3 +1,5 @@
+import type { Pathway } from "@/lib/business";
+
 // Reference data ported from the certflow-client-portal.jsx prototype.
 // Kept as plain constants (not DB rows) since every firm on this software
 // starts from the same standard library — a firm can still add ad-hoc items
@@ -81,6 +83,17 @@ export function normalizeCriticalStageInspections(raw: unknown): { id: string; s
     };
   });
 }
+
+// What a PC/OC job's approval checklist starts with. There is no document
+// library entry for this service — the firm isn't assessing an application,
+// it is collecting what the previous certifier already issued so the
+// inspections and the Occupation Certificate can refer to it.
+export const PRIOR_APPROVAL_DOCUMENTS = [
+  { title: "Approved CDC / CC", description: "The certificate already issued for this development by the previous certifier.", category: "Other" },
+  { title: "Approved stamped plans", description: "The plans stamped and approved with that certificate.", category: "Architectural" },
+  { title: "Conditions of the approval", description: "Any conditions attached to the certificate.", category: "Other" },
+  { title: "Appointment of Principal Certifier", description: "Formal appointment of this firm as Principal Certifier, lodged on the NSW Planning Portal.", category: "Other" },
+];
 
 export const INSPECTION_LIBRARY = [
   { title: "Prior to CC/CDC", desc: "Site inspection prior to issue of CC or CDC." },
@@ -238,7 +251,18 @@ export function matchCouncilByAddress(addressText: string) {
   return best?.council || null;
 }
 
-export function defaultScopeOfWorks(pathway: "CDC" | "CC") {
+export function defaultScopeOfWorks(pathway: Pathway) {
+  // A PC/OC engagement starts at the appointment: the certificate has
+  // already been assessed and issued by someone else, so the scope covers
+  // the inspections and the occupation certificate only.
+  if (pathway === "PC_OC") {
+    return [
+      "Appointment as Principal Certifier",
+      "Carrying out All Mandatory Inspections",
+      "Occupation Certificate Assessment",
+      "Determination of an Occupation Certificate",
+    ];
+  }
   const certName = pathway === "CDC" ? "Complying Development Certificate" : "Construction Certificate";
   return [
     "BCA Assessment",

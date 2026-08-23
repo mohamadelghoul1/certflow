@@ -1,3 +1,4 @@
+import { pathwayLabel } from "@/lib/business";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -24,7 +25,7 @@ export default async function PortalHomePage() {
             <div>
               <div className="font-semibold text-sm text-primary">{j.address}</div>
               <div className="text-xs text-placeholder">
-                {j.pathway} · {j.description}
+                {pathwayLabel(j.pathway)} · {j.description}
               </div>
             </div>
             <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${j.status === "complete" ? "bg-success-bg text-success" : "bg-hover text-secondary"}`}>

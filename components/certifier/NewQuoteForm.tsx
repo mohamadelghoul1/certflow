@@ -7,6 +7,7 @@ import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS, defaultScopeOfWorks } f
 import { X, Plus } from "lucide-react";
 import { DateField, todayISO } from "@/components/DateField";
 import { AddressLookupField } from "@/components/certifier/AddressLookupField";
+import { pathwayServiceLabel, type Pathway } from "@/lib/business";
 import { ApplicantAddressField } from "@/components/certifier/ApplicantAddressField";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
@@ -25,7 +26,7 @@ type FeeLine = { description: string; amount: string };
 
 export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string; name: string }[]; clients: { id: string; name: string; type: string }[] }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createQuote, undefined);
-  const [pathway, setPathway] = useState<"CDC" | "CC">("CDC");
+  const [pathway, setPathway] = useState<Pathway>("CDC");
   const [proposalAddress, setProposalAddress] = useState("");
   const [lotSectionPlan, setLotSectionPlan] = useState("");
   const [councilLga, setCouncilLga] = useState("");
@@ -33,9 +34,15 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
   const [scopeItems, setScopeItems] = useState<string[]>(defaultScopeOfWorks("CDC"));
   const [feeLines, setFeeLines] = useState<FeeLine[]>([{ description: "CDC/PC/OC", amount: "2500" }]);
 
-  function handlePathwayChange(p: "CDC" | "CC") {
+  // The single default fee line follows the service, so long as it hasn't
+  // been typed over.
+  function feeLineFor(p: Pathway) {
+    return p === "PC_OC" ? "PC/OC" : `${p}/PC/OC`;
+  }
+
+  function handlePathwayChange(p: Pathway) {
     setPathway(p);
-    setFeeLines((prev) => (prev.length === 1 && prev[0].description === `${pathway}/PC/OC` ? [{ ...prev[0], description: `${p}/PC/OC` }] : prev));
+    setFeeLines((prev) => (prev.length === 1 && prev[0].description === feeLineFor(pathway) ? [{ ...prev[0], description: feeLineFor(p) }] : prev));
   }
 
   const subtotal = feeLines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
@@ -72,16 +79,19 @@ export function NewQuoteForm({ certifiers, clients }: { certifiers: { id: string
           </div>
         </div>
         <div>
-          <label className={labelCls}>Pathway — used if this quote converts into a project</label>
-          <div className="flex gap-2">
-            {(["CDC", "CC"] as const).map((p) => (
+          <label className={labelCls}>Service — used if this quote converts into a project</label>
+          {/* PC_OC is for a client who already holds a CDC or CC issued by
+              someone else and needs this firm only as Principal Certifier
+              through to the Occupation Certificate. */}
+          <div className="grid sm:grid-cols-3 gap-2">
+            {(["CDC", "CC", "PC_OC"] as const).map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => handlePathwayChange(p)}
-                className={`flex-1 py-2 rounded-md text-sm font-semibold border ${pathway === p ? "bg-primary text-white border-primary" : "border-line text-muted hover:bg-hover"}`}
+                className={`py-2 px-2 rounded-md text-xs font-semibold border ${pathway === p ? "bg-primary text-white border-primary" : "border-line text-muted hover:bg-hover"}`}
               >
-                {p}
+                {pathwayServiceLabel(p)}
               </button>
             ))}
           </div>

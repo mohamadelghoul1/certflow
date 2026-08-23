@@ -88,7 +88,7 @@ export function addYears(dateStr?: string | null, years = 0) {
 // acted upon). Build Brief §3: verify against actual NSW practice before
 // relying on this in production.
 export function calcCdcLapseDate(
-  pathway: "CDC" | "CC",
+  pathway: Pathway,
   determinationDate: string | null | undefined,
   nocItems: ChecklistItemLike[],
   inspectionOutcomes: string[]
@@ -155,6 +155,52 @@ export function suggestedInspectionBookingDate(isoDateStr: string, now = new Dat
   return toISODateOnly(adjusted);
 }
 
+// What the firm was engaged to do. The first two produce a certificate of
+// our own and then carry the job through as Principal Certifier; the
+// third is for a client who already holds a CDC or CC issued by someone
+// else and needs us only for the PC appointment and the Occupation
+// Certificate.
+export type Pathway = "CDC" | "CC" | "PC_OC";
+
+// The two that issue a certificate. Anything asking "does this job
+// produce an approval of ours?" asks this rather than testing for PC_OC,
+// so a fourth service type later only has to be added in one place.
+export function issuesCertificate(pathway: Pathway): pathway is "CDC" | "CC" {
+  return pathway === "CDC" || pathway === "CC";
+}
+
+// Short label for pills, tabs and lists.
+export function pathwayLabel(pathway: Pathway) {
+  return pathway === "PC_OC" ? "PC/OC" : pathway;
+}
+
+// The full service, as it reads on a quote or at the top of a job.
+export function pathwayServiceLabel(pathway: Pathway) {
+  return pathway === "PC_OC" ? "PC appointment / OC" : `${pathway} / PC appointment / OC`;
+}
+
+// Spelled out, for a document or a line of prose.
+export function pathwayFullLabel(pathway: Pathway) {
+  if (pathway === "CDC") return "Complying Development Certificate";
+  if (pathway === "CC") return "Construction Certificate";
+  return "Principal Certifier appointment and Occupation Certificate";
+}
+
+export type PriorApproval = { type?: "CDC" | "CC"; number?: string; date?: string; issuedBy?: string };
+
+// The approval the building work is being carried out under, and what to
+// call it. On a CDC or CC job that is this firm's own certificate; on a
+// PC/OC job it is the certificate another certifier already issued, which
+// is what the stamp, the inspection reports and the Occupation
+// Certificate must all name — printing our own reference there would
+// claim an approval this firm never issued.
+export function governingApproval(pathway: Pathway, prior: PriorApproval | undefined, ownRef: string) {
+  if (pathway === "PC_OC") {
+    return { label: prior?.type || "Approval", ref: (prior?.number || "").trim() || "—" };
+  }
+  return { label: pathway, ref: ownRef };
+}
+
 // A firm that numbers its jobs "CDC-26001" would otherwise get the pathway
 // prepended a second time, and every certificate, letter and download would
 // read "CDC-CDC-26001/01". Where the project number already leads with the
@@ -168,8 +214,13 @@ function withoutPathwayPrefix(prefix: string, projectNumberOrId: string) {
   return match ? trimmed.slice(match[0].length) : trimmed;
 }
 
-export function pathwayCertRef(pathway: "CDC" | "CC", projectNumberOrId: string, version: number) {
-  return `${pathway}-${withoutPathwayPrefix(pathway, projectNumberOrId)}/${String(version || 1).padStart(2, "0")}`;
+export function pathwayCertRef(pathway: Pathway, projectNumberOrId: string, version: number) {
+  // A PC/OC job issues no certificate of its own, but still needs a
+  // reference of its own for the footer, its file names and its
+  // inspection reports — "PC-26031/01" rather than a CDC or CC number
+  // that would wrongly imply this firm issued the approval.
+  const prefix = pathway === "PC_OC" ? "PC" : pathway;
+  return `${prefix}-${withoutPathwayPrefix(prefix, projectNumberOrId)}/${String(version || 1).padStart(2, "0")}`;
 }
 
 // A certifier can override the generated reference per version / per OC
@@ -178,7 +229,7 @@ export function pathwayCertRef(pathway: "CDC" | "CC", projectNumberOrId: string,
 // on the cards, the certificates, the letters and the inspection reports —
 // rather than only in the one place it was typed. Blank or whitespace-only
 // falls back to the generated reference.
-export function resolvePathwayCertRef(customRef: string | null | undefined, pathway: "CDC" | "CC", projectNumberOrId: string, version: number) {
+export function resolvePathwayCertRef(customRef: string | null | undefined, pathway: Pathway, projectNumberOrId: string, version: number) {
   return customRef?.trim() || pathwayCertRef(pathway, projectNumberOrId, version);
 }
 
@@ -215,6 +266,13 @@ export function portalReportDeadline(eventDateIso: string) {
 // certificate impossible to trace back to its Portal application, so the
 // prefix is decided here rather than left to whoever is typing.
 export type PortalRefKind = "CDC" | "CC" | "OC";
+
+// Which Portal series a job's own reference belongs to. A PC/OC job
+// lodges an occupation certificate application, so it takes the CFT
+// series the OC and CC share.
+export function portalRefKindFor(pathway: Pathway): PortalRefKind {
+  return pathway === "PC_OC" ? "OC" : pathway;
+}
 
 export function portalRefPrefix(kind: PortalRefKind) {
   return kind === "CDC" ? "CDC" : "CFT";

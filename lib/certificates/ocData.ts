@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { signedUrl } from "@/lib/storage";
-import { formatISODate, resolvePathwayCertRef, resolveOcCertRef } from "@/lib/business";
+import { formatISODate, resolvePathwayCertRef, resolveOcCertRef, governingApproval } from "@/lib/business";
 import type { Job, Firm, OcRecord, JobDetails } from "@/types/db";
 
 // drawing_number is the stored column name; it holds any document
@@ -22,6 +22,8 @@ export type OcCertificateData = {
   projRef: string;
   typeLabel: string;
   consentRef: string;
+  // "CDC" or "CC" — what to call the approval on the certificate.
+  consentLabel: string;
   // The development consent the work was approved under. Only a CC job
   // has one — a complying development certificate is the consent — so
   // these are blank on a CDC job and every place that prints them leaves
@@ -67,7 +69,15 @@ export async function getOcCertificateData(jobId: string, ocId: string, firmId: 
   const ref = resolveOcCertRef(record.cert_ref, job.details?.projectNumber || job.id.slice(0, 8), sequence);
   const projRef = ref.split("/")[0];
   const typeLabel = record.type === "whole" ? "Whole Occupation Certificate" : "Partial Occupation Certificate";
-  const consentRef = job.pathway_generated ? resolvePathwayCertRef(activePathwayVersion?.cert_ref, job.pathway, job.details?.projectNumber || job.id.slice(0, 8), job.pathway_version) : job.details?.projectNumber || "—";
+  // What the occupation certificate is issued against: our own CDC/CC on
+  // a full-service job, and the certificate another certifier issued on a
+  // PC/OC one.
+  const ownRef = job.pathway_generated
+    ? resolvePathwayCertRef(activePathwayVersion?.cert_ref, job.pathway, job.details?.projectNumber || job.id.slice(0, 8), job.pathway_version)
+    : job.details?.projectNumber || "—";
+  const approval = governingApproval(job.pathway, job.details?.priorApproval, ownRef);
+  const consentRef = approval.ref;
+  const consentLabel = approval.label;
   const d = job.details || {};
   const issuedDate = formatISODate(record.generated_date);
   const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "Applicant";
@@ -75,5 +85,5 @@ export async function getOcCertificateData(jobId: string, ocId: string, firmId: 
   const daNumber = (d.certificateDetails?.developmentConsentNumber || "").trim();
   const daDate = d.certificateDetails?.developmentConsentDate ? formatISODate(d.certificateDetails.developmentConsentDate) : "";
 
-  return { job, firm: firm || null, record, issuedBy: issuedBy || null, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, daNumber, daDate, d, issuedDate, applicantName };
+  return { job, firm: firm || null, record, issuedBy: issuedBy || null, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, consentLabel, daNumber, daDate, d, issuedDate, applicantName };
 }

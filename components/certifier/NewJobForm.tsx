@@ -17,7 +17,8 @@ import {
 import { X, AlertTriangle } from "lucide-react";
 import { AddressLookupField } from "@/components/certifier/AddressLookupField";
 import { DateField } from "@/components/DateField";
-import { portalRefPlaceholder } from "@/lib/business";
+import { portalRefPlaceholder, portalRefKindFor, pathwayServiceLabel, type Pathway } from "@/lib/business";
+import { PriorApprovalFields } from "@/components/certifier/PriorApprovalFields";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -47,7 +48,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createJob, undefined);
   const [types, setTypes] = useState<string[]>([]);
   const [customType, setCustomType] = useState("");
-  const [pathway, setPathway] = useState<"CDC" | "CC">("CDC");
+  const [pathway, setPathway] = useState<Pathway>("CDC");
   const [address, setAddress] = useState("");
   const [lotSectionDp, setLotSectionDp] = useState("");
   const [zoning, setZoning] = useState("");
@@ -163,16 +164,19 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
           ))}
         </div>
         <div>
-          <label className={labelCls}>Pathway</label>
-          <div className="flex gap-2">
-            {(["CDC", "CC"] as const).map((p) => (
+          <label className={labelCls}>Service</label>
+          {/* The third is for a client who already holds a CDC or CC from
+              another certifier and needs this firm only as Principal
+              Certifier through to the Occupation Certificate. */}
+          <div className="grid sm:grid-cols-3 gap-2">
+            {(["CDC", "CC", "PC_OC"] as const).map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setPathway(p)}
-                className={`flex-1 py-2 rounded-md text-sm font-semibold border ${pathway === p ? "bg-primary text-white border-primary" : "border-line text-muted hover:bg-hover"}`}
+                className={`py-2 px-2 rounded-md text-xs font-semibold border ${pathway === p ? "bg-primary text-white border-primary" : "border-line text-muted hover:bg-hover"}`}
               >
-                {p === "CDC" ? "Complying Development (CDC)" : "Construction Certificate (CC)"}
+                {pathwayServiceLabel(p)}
               </button>
             ))}
           </div>
@@ -304,12 +308,16 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
         </div>
       </Section>
 
-      <Section title={`${pathway} certificate details`}>
-        <div>
-          <label className={labelCls}>NSW Planning Portal ref number</label>
-          <input name="planningPortalRef" placeholder={portalRefPlaceholder(pathway)} className={inputCls} />
-        </div>
-        {pathway === "CDC" ? (
+      <Section title={pathway === "PC_OC" ? "Previously issued approval" : `${pathway} certificate details`}>
+        {pathway !== "PC_OC" && (
+          <div>
+            <label className={labelCls}>NSW Planning Portal ref number</label>
+            <input name="planningPortalRef" placeholder={portalRefPlaceholder(portalRefKindFor(pathway))} className={inputCls} />
+          </div>
+        )}
+        {pathway === "PC_OC" ? (
+          <PriorApprovalFields />
+        ) : pathway === "CDC" ? (
           <div>
             <label className={labelCls}>Relevant part of code — tick every part of SEPP 2008 this CDC relies on</label>
             <div className="flex flex-wrap gap-2">

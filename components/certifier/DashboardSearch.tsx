@@ -1,10 +1,11 @@
 "use client";
 
+import { pathwayLabel, type Pathway } from "@/lib/business";
 import { useState } from "react";
 import { Search } from "lucide-react";
 import Link from "next/link";
 
-type JobLite = { id: string; address: string; description: string; pathway: string };
+type JobLite = { id: string; address: string; description: string; pathway: Pathway };
 
 export function DashboardSearch({ jobs }: { jobs: JobLite[] }) {
   const [query, setQuery] = useState("");
@@ -32,7 +33,7 @@ export function DashboardSearch({ jobs }: { jobs: JobLite[] }) {
               <Link key={j.id} href={`/jobs/${j.id}?tab=pathway`} className="block px-4 py-3 border-t border-line first:border-t-0 hover:bg-hover">
                 <div className="font-medium text-sm text-heading">{j.address}</div>
                 <div className="text-xs text-muted">
-                  {j.pathway} · {j.description}
+                  {pathwayLabel(j.pathway)} · {j.description}
                 </div>
               </Link>
             ))

@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { INSPECTION_LIBRARY, defaultCriticalStageInspections, normalizeCriticalStageInspections, epiForCodeParts } from "@/lib/constants";
-import { todayISO, normalizePortalRef, type PortalRefKind } from "@/lib/business";
+import { PRIOR_APPROVAL_DOCUMENTS, INSPECTION_LIBRARY, defaultCriticalStageInspections, normalizeCriticalStageInspections, epiForCodeParts } from "@/lib/constants";
+import { todayISO, normalizePortalRef, portalRefKindFor, type PortalRefKind, type Pathway } from "@/lib/business";
 import { notifyJobClient } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
 import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
@@ -42,7 +42,7 @@ function numericText(value: FormDataEntryValue | null): string {
 // full field set as the prototype's single JobForm (used for both create
 // and edit). CDC's relevant instrument/part of code are computed from the
 // ticked SEPP code parts rather than typed in directly.
-function extractJobDetails(formData: FormData, pathway: string): JobDetails {
+function extractJobDetails(formData: FormData, pathway: Pathway): JobDetails {
   const codeParts = formData.getAll("codeParts").map(String);
   const relevantInstrument = pathway === "CDC" && codeParts.length > 0 ? epiForCodeParts(codeParts) : String(formData.get("relevantInstrument") || "");
   const relevantPartOfCode = pathway === "CDC" && codeParts.length > 0 ? codeParts.join(", ") : String(formData.get("relevantPartOfCode") || "");
@@ -111,7 +111,7 @@ function extractJobDetails(formData: FormData, pathway: string): JobDetails {
     siteArea: numericText(formData.get("siteArea")),
     certificateDetails: {
       lotSectionDp: String(formData.get("lotSectionDp") || ""),
-      planningPortalRef: normalizePortalRef(String(formData.get("planningPortalRef") || ""), pathway === "CDC" ? "CDC" : "CC"),
+      planningPortalRef: normalizePortalRef(String(formData.get("planningPortalRef") || ""), portalRefKindFor(pathway)),
       relevantInstrument,
       relevantPartOfCode,
       codeParts,
@@ -123,6 +123,18 @@ function extractJobDetails(formData: FormData, pathway: string): JobDetails {
       // keep printing them on the inspection report.
       consentReferences: "",
     },
+    // Only a PC/OC job asks for these, and only it should carry them —
+    // otherwise a job switched away from PC/OC would keep printing
+    // another certifier's approval on its documents.
+    priorApproval:
+      pathway === "PC_OC"
+        ? {
+            type: String(formData.get("priorApprovalType") || "CDC") === "CC" ? ("CC" as const) : ("CDC" as const),
+            number: String(formData.get("priorApprovalNumber") || "").trim(),
+            date: String(formData.get("priorApprovalDate") || ""),
+            issuedBy: String(formData.get("priorApprovalIssuedBy") || "").trim(),
+          }
+        : undefined,
   };
 }
 
@@ -130,7 +142,7 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
 
-  const pathway = String(formData.get("pathway") || "CDC") as "CDC" | "CC";
+  const pathway = String(formData.get("pathway") || "CDC") as Pathway;
   const jobTypes = formData.getAll("job_types").map(String);
   const clientId = String(formData.get("client_id") || "") || null;
   const certifierId = String(formData.get("assigned_certifier_id") || "") || null;
@@ -173,7 +185,10 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
   for (const { kind, libraryKey } of kinds) {
     const { data: checklist } = await supabase.from("checklists").insert({ job_id: job.id, kind }).select("id").single();
     if (!checklist) continue;
-    const library = await firmLibrary(supabase, profile.firm_id, libraryKey);
+    // A PC/OC job has no application to assess, so its first checklist
+    // collects the previous certifier's approval instead of this firm's
+    // document library for a pathway it never follows.
+    const library = libraryKey === "PC_OC" ? PRIOR_APPROVAL_DOCUMENTS : await firmLibrary(supabase, profile.firm_id, libraryKey);
     const items = library.map((doc, idx) => ({
       checklist_id: checklist.id,
       title: doc.title,
@@ -199,7 +214,7 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
-  const pathway = String(formData.get("pathway") || "CDC");
+  const pathway = String(formData.get("pathway") || "CDC") as Pathway;
 
   // Determination date isn't editable from this form — it's set
   // automatically when the certificate is issued (see issuePathwayCertificate)

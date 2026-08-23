@@ -1,4 +1,4 @@
-import { resolvePathwayCertRef, formatISODate, todayISO } from "@/lib/business";
+import { resolvePathwayCertRef, governingApproval, formatISODate, todayISO } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { fetchStampImage, measureStampText, type StampDetails } from "@/lib/pdf/stamp";
 import { requireProfile } from "@/lib/auth";
@@ -28,12 +28,14 @@ export async function resolveStampCertifier(supabase: SupabaseClient, job: Job, 
 export async function buildStampDetails(supabase: SupabaseClient, job: Job, profile: Profile, firm: Firm | null, certRefOverride?: string | null): Promise<StampDetails> {
   const certifier = await resolveStampCertifier(supabase, job, profile);
   const d = job.details || {};
-  const certRef = resolvePathwayCertRef(certRefOverride, job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version);
+  // On a PC/OC job the plans were approved by another certifier, so the
+  // stamp names their certificate rather than a reference of ours.
+  const approval = governingApproval(job.pathway, d.priorApproval, resolvePathwayCertRef(certRefOverride, job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version));
 
   return {
     firmName: firm?.name || "",
-    certRef,
-    pathway: job.pathway,
+    certRef: approval.ref,
+    pathway: approval.label,
     certifierName: certifier?.name || "",
     registrationNo: certifier?.registration_no || "",
     date: formatISODate(job.pathway_signed_at || todayISO()),
@@ -55,10 +57,11 @@ export async function buildStampPreview(job: Job, certRefOverride?: string | nul
   const typedFirm = (firm || null) as Firm | null;
   const certifier = await resolveStampCertifier(supabase, job, profile);
   const d = job.details || {};
+  const previewApproval = governingApproval(job.pathway, d.priorApproval, resolvePathwayCertRef(certRefOverride, job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version));
   const details: StampDetails = {
     firmName: typedFirm?.name || "",
-    certRef: resolvePathwayCertRef(certRefOverride, job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version),
-    pathway: job.pathway,
+    certRef: previewApproval.ref,
+    pathway: previewApproval.label,
     certifierName: certifier?.name || "",
     registrationNo: certifier?.registration_no || "",
     date: formatISODate(job.pathway_signed_at || todayISO()),

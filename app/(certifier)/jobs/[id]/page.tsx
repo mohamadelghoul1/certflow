@@ -10,11 +10,14 @@ import { OcPanel } from "@/components/certifier/OcPanel";
 import { InspectionsPanel } from "@/components/certifier/InspectionsPanel";
 import { JobTabs } from "@/components/certifier/JobTabs";
 import type { Job } from "@/types/db";
+import { pathwayLabel, type Pathway } from "@/lib/business";
 
-function tabsFor(pathway: "CDC" | "CC") {
+function tabsFor(pathway: Pathway) {
   return [
     { key: "details", label: "Details" },
-    { key: "pathway", label: pathway },
+    // A PC/OC job issues no certificate, so its second tab holds the
+    // approval another certifier issued rather than one of ours.
+    { key: "pathway", label: pathway === "PC_OC" ? "Approval" : pathway },
     { key: "noc", label: "NOC" },
     { key: "inspections", label: "Inspections" },
     { key: "oc", label: "Occupation Certificate" },
@@ -82,7 +85,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               job.status === "complete" ? "bg-success-bg text-accent" : "bg-info-bg text-secondary"
             }`}
           >
-            {job.pathway} · {job.status === "complete" ? "Complete" : "Active"}
+            {pathwayLabel(job.pathway)} · {job.status === "complete" ? "Complete" : "Active"}
           </span>
         </div>
         <div className="text-sm text-muted mt-1">{job.description}</div>

@@ -5,9 +5,10 @@ import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { defaultScopeOfWorks, defaultCriticalStageInspections, COUNCIL_DIRECTORY } from "@/lib/constants";
-import { INSPECTION_LIBRARY } from "@/lib/constants";
+import { INSPECTION_LIBRARY, PRIOR_APPROVAL_DOCUMENTS } from "@/lib/constants";
 import type { ActionState } from "@/lib/actions/auth";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Pathway } from "@/lib/business";
 
 async function firmLibrary(supabase: SupabaseClient, firmId: string, pathway: string) {
   const { data } = await supabase
@@ -20,7 +21,7 @@ async function firmLibrary(supabase: SupabaseClient, firmId: string, pathway: st
 }
 
 function extractQuoteFields(formData: FormData) {
-  const pathway = String(formData.get("pathway") || "CDC") as "CDC" | "CC";
+  const pathway = String(formData.get("pathway") || "CDC") as Pathway;
   const ownerIsApplicant = formData.get("owner_is_applicant") === "on";
   const scopeOfWorks = formData.getAll("scope_item").map(String).filter((s) => s.trim().length > 0);
 
@@ -94,7 +95,7 @@ export async function createQuote(_prev: ActionState, formData: FormData): Promi
   if (feeLines.length > 0) {
     await supabase.from("quote_fee_lines").insert(feeLines.map((l) => ({ ...l, quote_id: quote.id })));
   } else {
-    await supabase.from("quote_fee_lines").insert({ quote_id: quote.id, description: `${pathway}/PC/OC`, quantity: "1", amount: 2500, sort_order: 0 });
+    await supabase.from("quote_fee_lines").insert({ quote_id: quote.id, description: pathway === "PC_OC" ? "PC/OC" : `${pathway}/PC/OC`, quantity: "1", amount: 2500, sort_order: 0 });
   }
 
   redirect(`/quotes/${quote.id}`);
@@ -241,7 +242,10 @@ export async function generateJobFromQuote(formData: FormData) {
   for (const { kind, libraryKey } of kinds) {
     const { data: checklist } = await supabase.from("checklists").insert({ job_id: job.id, kind }).select("id").single();
     if (!checklist) continue;
-    const library = await firmLibrary(supabase, profile.firm_id, libraryKey);
+    // A PC/OC job has no application to assess, so its first checklist
+    // collects the previous certifier's approval instead of this firm's
+    // document library for a pathway it never follows.
+    const library = libraryKey === "PC_OC" ? PRIOR_APPROVAL_DOCUMENTS : await firmLibrary(supabase, profile.firm_id, libraryKey);
     const items = library.map((doc, idx) => ({ checklist_id: checklist.id, title: doc.title, description: doc.description, category: doc.category, sort_order: idx }));
     if (items.length) await supabase.from("checklist_items").insert(items);
   }

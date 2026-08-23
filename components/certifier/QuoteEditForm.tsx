@@ -7,6 +7,7 @@ import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS } from "@/lib/constants"
 import { AddressLookupField } from "@/components/certifier/AddressLookupField";
 import { ApplicantAddressField } from "@/components/certifier/ApplicantAddressField";
 import type { Quote, QuoteFeeLine } from "@/types/db";
+import { pathwayServiceLabel, type Pathway } from "@/lib/business";
 import { X, Plus } from "lucide-react";
 import { DateField, todayISO } from "@/components/DateField";
 
@@ -42,7 +43,7 @@ export function QuoteEditForm({
   const applicant = (quote.applicant || {}) as { name?: string; email?: string; phone?: string; address?: Record<string, string> };
   const owner = (quote.owner || {}) as { name?: string; phone?: string; email?: string };
 
-  const [pathway, setPathway] = useState<"CDC" | "CC">(quote.pathway);
+  const [pathway, setPathway] = useState<Pathway>(quote.pathway);
   const [proposalAddress, setProposalAddress] = useState(quote.proposal_address || "");
   const [lotSectionPlan, setLotSectionPlan] = useState(quote.lot_section_plan || "");
   const [councilLga, setCouncilLga] = useState(quote.council_lga || "");
@@ -106,16 +107,19 @@ export function QuoteEditForm({
           </div>
         </div>
         <div>
-          <label className={labelCls}>Pathway — used if this quote converts into a project</label>
-          <div className="flex gap-2">
-            {(["CDC", "CC"] as const).map((p) => (
+          <label className={labelCls}>Service — used if this quote converts into a project</label>
+          {/* PC_OC is for a client who already holds a CDC or CC issued by
+              someone else and needs this firm only as Principal Certifier
+              through to the Occupation Certificate. */}
+          <div className="grid sm:grid-cols-3 gap-2">
+            {(["CDC", "CC", "PC_OC"] as const).map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setPathway(p)}
-                className={`flex-1 py-2 rounded-md text-sm font-semibold border ${pathway === p ? "bg-primary text-white border-primary" : "border-line text-muted hover:bg-hover"}`}
+                className={`py-2 px-2 rounded-md text-xs font-semibold border ${pathway === p ? "bg-primary text-white border-primary" : "border-line text-muted hover:bg-hover"}`}
               >
-                {p}
+                {pathwayServiceLabel(p)}
               </button>
             ))}
           </div>

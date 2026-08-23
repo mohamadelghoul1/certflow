@@ -1,4 +1,5 @@
 import type { JobDetails } from "@/types/db";
+import type { Pathway } from "@/lib/business";
 
 // What a job has to have before it can be created.
 //
@@ -13,7 +14,7 @@ import type { JobDetails } from "@/types/db";
 // browser validation is a convenience, not a guarantee.
 
 export type JobShape = {
-  pathway: "CDC" | "CC";
+  pathway: Pathway;
   address: string;
   description: string;
   certifierId: string | null;
@@ -43,12 +44,20 @@ export function missingJobFields({ pathway, address, description, certifierId, d
   need(d.applicantAddress?.suburb, "Applicant suburb");
   need(d.applicantAddress?.postcode, "Applicant postcode");
 
-  need(d.bcaVersion, "BCA / NCC version");
   if ((d.proposal?.classifications || []).length === 0) missing.push("BCA classification");
-  need(d.proposal?.estimatedCost, "Estimated cost of construction");
 
-  // Land Use Zone prints on a CDC but not on a CC.
-  if (pathway === "CDC") need(d.zoning, "Land zoning");
+  // A PC/OC job issues no certificate of its own, so the fields that only
+  // ever print on a CDC or CC aren't required — but the approval another
+  // certifier already issued is, since the occupation certificate is
+  // issued against it and names it.
+  if (pathway === "PC_OC") {
+    need(d.priorApproval?.number, "Previously issued approval number");
+  } else {
+    need(d.bcaVersion, "BCA / NCC version");
+    need(d.proposal?.estimatedCost, "Estimated cost of construction");
+    // Land Use Zone prints on a CDC but not on a CC.
+    if (pathway === "CDC") need(d.zoning, "Land zoning");
+  }
 
   // The owner's details print on the certificate, so they're needed
   // whenever they aren't simply the applicant's.
