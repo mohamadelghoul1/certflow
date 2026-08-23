@@ -155,7 +155,22 @@ export function ItemStatusBadge() {
 // before. Uploading sets the item back to "submitted" and bumps its
 // version, so a replacement always gets looked at again rather than
 // silently inheriting the previous approval.
-export function ItemStatusActions({ itemId, jobId, firmId, requiresStamping }: { itemId: string; jobId: string; firmId: string; requiresStamping: boolean }) {
+export function ItemStatusActions({
+  itemId,
+  jobId,
+  firmId,
+  requiresStamping,
+  stampPositioner,
+}: {
+  itemId: string;
+  jobId: string;
+  firmId: string;
+  requiresStamping: boolean;
+  // Rendered on the server (it needs the job's stamp details and a signed
+  // link to the document) and passed in, so it can sit with the other
+  // stamp controls rather than adrift at the end of the row.
+  stampPositioner?: React.ReactNode;
+}) {
   const { status, amendments, approve, reopen, setUploading, uploadOnBehalf } = useItemStatus();
   const [reviewing, setReviewing] = useState(false);
   const unresolved = unresolvedCount({ status, amendments });
@@ -177,6 +192,7 @@ export function ItemStatusActions({ itemId, jobId, firmId, requiresStamping }: {
               Preview stamp
             </a>
           )}
+          {requiresStamping && stampPositioner}
         </>
       );
     }

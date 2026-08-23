@@ -153,21 +153,27 @@ async function ItemRow({ item, jobId, firmId, stamp }: { item: ItemWithAmendment
         </div>
 
         <div className="mt-4 pt-4 border-t border-line flex flex-wrap items-center gap-2">
-          <ItemStatusActions itemId={item.id} jobId={jobId} firmId={firmId} requiresStamping={item.requires_stamping} />
-          {/* Only worth offering once there is a document to put a stamp
-              on and a decision that it needs one. */}
-          {stamp && item.requires_stamping && fileUrl && (
-            <StampPositioner
-              itemId={item.id}
-              jobId={jobId}
-              fileUrl={fileUrl}
-              lines={stampLines(stamp.details)}
-              textWidth={stamp.textWidth}
-              textHeight={stamp.textHeight}
-              stampImageUrl={stamp.imageUrl}
-              initial={item.stamp_x !== null && item.stamp_y !== null ? { x: item.stamp_x, y: item.stamp_y, scale: item.stamp_scale ?? 1 } : null}
-            />
-          )}
+          <ItemStatusActions
+            itemId={item.id}
+            jobId={jobId}
+            firmId={firmId}
+            requiresStamping={item.requires_stamping}
+            // Only worth offering once there is a document to put a stamp on.
+            stampPositioner={
+              stamp && fileUrl ? (
+                <StampPositioner
+                  itemId={item.id}
+                  jobId={jobId}
+                  fileUrl={fileUrl}
+                  lines={stampLines(stamp.details)}
+                  textWidth={stamp.textWidth}
+                  textHeight={stamp.textHeight}
+                  stampImageUrl={stamp.imageUrl}
+                  initial={item.stamp_x !== null && item.stamp_y !== null ? { x: item.stamp_x, y: item.stamp_y, scale: item.stamp_scale ?? 1 } : null}
+                />
+              ) : null
+            }
+          />
         </div>
 
         <details className="mt-3">

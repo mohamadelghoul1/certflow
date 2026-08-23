@@ -71,9 +71,81 @@ body {
    pages as it needs within this — @page only fixes the paper size and
    margins, it doesn't force any single section onto exactly one page. */
 @media print {
+  /* No page margin, and the paper's margin applied as padding inside each
+     printed section instead.
+     Chrome draws its own header and footer — the page title and date at
+     the top, the URL and page number at the bottom — in the @page margin.
+     With no margin there is nowhere for them to go, so they disappear
+     without the certifier having to remember to untick "Headers and
+     footers" in the print dialog every time. The printed document already
+     carries its own letterhead and footer; the browser's belong on a web
+     page, not on a certificate going to a council. */
   @page {
     size: A4;
-    margin: 15mm;
+    margin: 0;
+  }
+
+  /* The printed certificate sets tighter than the screen copy.
+     On screen the document is read a section at a time and can breathe;
+     on paper each section has to land on exactly one sheet, and a
+     certificate that runs three lines onto a second page is worse than
+     one set a point smaller. These override the utility classes the
+     document is built from, in one place, so the printed pagination can
+     be tuned without touching the markup. */
+  .cert-doc {
+    font-size: 11px;
+    line-height: 1.34;
+  }
+  .cert-doc .text-sm {
+    font-size: 11px;
+    line-height: 1.34;
+  }
+  .cert-doc .text-xs {
+    font-size: 9.5px;
+    line-height: 1.35;
+  }
+  .cert-doc .text-base {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+  .cert-doc td,
+  .cert-doc th {
+    padding-top: 1.5px;
+    padding-bottom: 1.5px;
+  }
+  /* The rule above a section heading inside the field tables, and the gap
+     under the certificate's opening warning. */
+  .cert-doc .pt-3 {
+    padding-top: 6px;
+  }
+  .cert-doc .mb-4 {
+    margin-bottom: 8px;
+  }
+  .cert-doc .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 5px;
+  }
+  /* The amber "you must provide" / "failure to request" boxes. */
+  .cert-doc .py-3 {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .cert-doc .pt-4 {
+    padding-top: 8px;
+  }
+  .cert-doc .pt-6 {
+    padding-top: 10px;
+  }
+  .cert-doc .pt-8 {
+    padding-top: 12px;
+  }
+  .cert-doc .mt-6 {
+    margin-top: 12px;
+  }
+  .cert-doc ul {
+    margin-top: 2px;
+  }
+  .cert-doc li + li {
+    margin-top: 1px;
   }
 }
 

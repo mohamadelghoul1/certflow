@@ -73,7 +73,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
       signAction={signInspectionReport}
       signFields={{ job_id: jobId, inspection_id: inspectionId }}
     >
-      <div className="max-w-2xl mx-auto p-8 bg-white text-heading print:max-w-none">
+      <div className="cert-doc max-w-2xl mx-auto p-8 bg-white text-heading print:max-w-none print:p-[14mm]">
         <DocumentHeader firm={firmData} logoUrl={logoUrl} />
 
         <h1 className="text-lg font-bold">
