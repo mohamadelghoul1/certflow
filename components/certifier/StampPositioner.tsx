@@ -45,6 +45,10 @@ const LEADING = 3;
 const BORDER_WIDTH = 1.2;
 const IMAGE_WIDTH = 120;
 const IMAGE_GAP = 6;
+// The preview frame's size, fixed so the dialog's dimensions never depend
+// on the plan inside it. max-w-4xl is 896px; less the dialog's padding.
+const PREVIEW_MAX_WIDTH = 856;
+const PREVIEW_HEIGHT_FRACTION = 0.6;
 
 export function StampPositioner({ itemId, jobId, fileUrl, lines, textWidth, textHeight, stampImageUrl, initial }: Props) {
   const [open, setOpen] = useState(false);
@@ -99,7 +103,20 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
     };
   }, []);
 
-  // Page 1, drawn at whatever width the dialog gives it.
+  // The signed URL is re-issued on every server render of the job page, so
+  // the prop's value changes constantly even though the document behind it
+  // never does. Keyed on the file's path instead, the page is drawn once:
+  // re-running the render measured the frame again and could size the
+  // canvas differently each time, which is what made the whole dialog
+  // jump between two sizes. The latest URL is read through a ref so the
+  // fetch still uses a signature that hasn't expired.
+  const fileKey = fileUrl.split("?")[0];
+  const fileUrlRef = useRef(fileUrl);
+  useEffect(() => {
+    fileUrlRef.current = fileUrl;
+  }, [fileUrl]);
+
+  // Page 1, drawn to fit the fixed-size preview frame.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -114,13 +131,18 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
         // pdf.js parses off the main thread and the dialog stays
         // responsive while a large plan is being read.
         pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/legacy/build/pdf.worker.min.mjs", import.meta.url).toString();
-        const doc = await pdfjs.getDocument({ url: fileUrl }).promise;
+        const doc = await pdfjs.getDocument({ url: fileUrlRef.current }).promise;
         const page = await doc.getPage(1);
         if (cancelled) return;
 
         const raw = page.getViewport({ scale: 1 });
-        const maxWidth = Math.min(frameRef.current?.clientWidth || 720, 900);
-        const maxHeight = Math.round(window.innerHeight * 0.6);
+        // Fit inside the frame, whose size is fixed by CSS below and so
+        // is the same on every render. Falling back to the frame's own
+        // max width rather than a smaller guess matters: a guess that
+        // differs from the real width is what produced a second, smaller
+        // layout to flicker between.
+        const maxWidth = Math.min(frameRef.current?.clientWidth || PREVIEW_MAX_WIDTH, PREVIEW_MAX_WIDTH);
+        const maxHeight = Math.round(window.innerHeight * PREVIEW_HEIGHT_FRACTION);
         const fit = Math.min(maxWidth / raw.width, maxHeight / raw.height);
         const viewport = page.getViewport({ scale: fit });
 
@@ -148,7 +170,7 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
     return () => {
       cancelled = true;
     };
-  }, [fileUrl]);
+  }, [fileKey]);
 
   // PDF points to on-screen pixels, so the stamp is previewed at the size
   // it will actually be printed.
@@ -260,7 +282,7 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
         </div>
 
         <div className="p-5">
-          <div ref={frameRef} className="flex justify-center">
+          <div ref={frameRef} className="flex items-center justify-center" style={{ height: `${PREVIEW_HEIGHT_FRACTION * 100}vh` }}>
             {error ? (
               <p className="text-sm text-error py-10 text-center max-w-md">{error}</p>
             ) : (
