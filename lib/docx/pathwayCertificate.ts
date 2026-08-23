@@ -93,7 +93,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       isCdc
         ? "This CDC approval does not allow any work to commence. Principal Certifier must be appointed, and Home Building Compensation Fund (HBCF) has been issued by a licenced builder or Owner Builder Permit is issued by Building Commission NSW and all council fees/bonds have been paid."
         : "This Construction Certificate does not give authorisation of any construction works to commence until a Principal Certifier has been appointed.",
-      { bold: true, spacingAfter: 200 }
+      { bold: true, spacingAfter: 150 }
     ),
     fieldTable([
       { kind: "heading", text: "APPLICANT DETAILS" },
@@ -138,8 +138,8 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
               kind: "row",
               label: "Conditions:",
               children: [
-                p("Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying Development) Codes 2008 & State Environmental Planning Policy (Housing) 2021", { spacingAfter: 60 }),
-                p("Any monetary contribution fee’s and/or any other Council fee’s/bonds that are required by council MUST be paid prior to commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from Council and a copy of such approval provided to the PC prior to the works commencing.", { spacingAfter: conditions.length ? 60 : 0 }),
+                p("Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying Development) Codes 2008 & State Environmental Planning Policy (Housing) 2021", { spacingAfter: 30 }),
+                p("Any monetary contribution fee’s and/or any other Council fee’s/bonds that are required by council MUST be paid prior to commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from Council and a copy of such approval provided to the PC prior to the works commencing.", { spacingAfter: conditions.length ? 30 : 0 }),
                 ...conditions.map((c) => bullet(c.text)),
               ],
             },
@@ -167,16 +167,16 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       isCdc
         ? `I, ${issuedBy?.name || "—"}, certify that the development is complying development and (if carried out as specified in the certificate) will comply with all development standards applicable to the development and with such other requirements prescribed by this regulation concerning the issue of the certificate.`
         : "I certify that building work completed in accordance with the documents accompanying the application for the certificate, including modifications verified by the certifier shown on the documents, will comply with the requirements referred to in the Act, Part 6.",
-      { justify: true, spacingBefore: 200, keepNext: true }
+      { justify: true, spacingBefore: 150, keepNext: true }
     ),
-    mixed([{ text: "Dated:  " }, { text: issuedDate }], { spacingBefore: 200 }),
+    mixed([{ text: "Dated:  " }, { text: issuedDate }], { spacingBefore: 150 }),
     ...signatureBlock(images.signature),
     ...signatory(issuedBy?.name),
     p(
       isCdc
         ? "N.B. Prior to the commencement of work section 6.6 of the Environment Planning and Assessment Act 1979 must be satisfied."
         : "N.B Prior to the commencement of work Sections 4.19, 6.6, 6.7, 6.12, 6.13, 6.14 of the Environment Planning and Assessment Act 1979 must be satisfied.",
-      { bold: true, spacingBefore: 240 }
+      { bold: true, spacingBefore: 180 }
     )
   );
 
@@ -190,7 +190,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
       allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),
       [21, 27, 13, 12, 15, 12],
-      { zebra: true, centerColumns: [5], rowHeight: 300 }
+      { zebra: true, centerColumns: [5], rowHeight: 230 }
     )
   );
 
@@ -228,7 +228,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     ]),
     p(
       `I, ${issuedBy?.name || "—"} of ${firm?.name || ""} Pty Ltd, located at ${firm?.office_address || "—"}, acting as the principal certifier, hereby give notice in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in Schedule 1 are to be carried out in respect of the building work.`,
-      { spacingBefore: 160 }
+      { spacingBefore: 120 }
     ),
     p(
       "The applicant, being the person having benefit of the development consent, is required under Section 58 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to notify the principal contractor (if not an owner-builder) of the applicable mandatory critical stage inspections specified under this notice."
@@ -260,7 +260,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       ["No.", "Critical Stage Inspection", "Inspector"],
       selectedInspections.map((r, idx) => [`${idx + 1}.`, r.stage, r.inspector]),
       [8, 62, 30],
-      { headerFill: INSPECTION_HEADER_FILL, centerColumns: [0], rowHeight: 460 }
+      { headerFill: INSPECTION_HEADER_FILL, centerColumns: [0], rowHeight: 340 }
     )
   );
 

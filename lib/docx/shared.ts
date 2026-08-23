@@ -14,26 +14,35 @@ import type { IBorderOptions, ITableCellBorders, TableVerticalAlign } from "docx
 export const FONT = "Segoe UI";
 export const FONT_LIGHT = "Segoe UI Light";
 
-export const BODY_SIZE = 22; // 11pt
-export const HEADING_SIZE = 26; // 13pt
-export const TITLE_SIZE = 28; // 14pt
-export const SMALL_SIZE = 18; // 9pt — header, footer and captions
-export const SIGNATURE_NAME_SIZE = 23; // 11.5pt — the signatory's name
+// The whole document sets at the same size the on-screen copy prints at,
+// so the Word export, the PDF approved set and the browser's own
+// "Save as PDF" all produce the same seven pages with the same breaks.
+// A CDC certificate carries around twenty-six fields plus conditions; at
+// 11pt its table runs to one and a half A4 pages however the spacing is
+// tuned, which is what forced the three apart.
+export const BODY_SIZE = 17; // 8.5pt
+export const HEADING_SIZE = 20; // 10pt
+export const TITLE_SIZE = 21; // 10.5pt
+export const SMALL_SIZE = 14; // 7pt — header, footer and captions
+export const SIGNATURE_NAME_SIZE = 18; // 9pt — the signatory's name
 
 export const TEXT_COLOR = "1C1C1E";
 export const HEADING_COLOR = "1F4E79";
 export const MUTED_COLOR = "555555";
 export const LINE_COLOR = "D9D9D9";
 
-export const LINE_SPACING = 276; // 1.15 lines
-export const SPACE_BEFORE = 120; // 6pt
-export const SPACE_AFTER = 120; // 6pt
-export const HEADING_BEFORE = 240; // 12pt
-export const SECTION_GAP = 300; // 15pt between major sections
+// Single, matching the PDF approved set's leading exactly. At 1.15 the
+// same paragraph stood 1.8pt taller per line than the PDF's, which over a
+// certificate is most of a page.
+export const LINE_SPACING = 240; // single
+export const SPACE_BEFORE = 90; // 4.5pt
+export const SPACE_AFTER = 90; // 4.5pt
+export const HEADING_BEFORE = 150; // 7.5pt
+export const SECTION_GAP = 220; // 11pt between major sections
 // Letters set their body paragraphs a little further apart than ordinary
 // prose. One value, so the council letter and the applicant letter always
 // look like the same letter.
-export const LETTER_PARA_AFTER = 80; // 4pt
+export const LETTER_PARA_AFTER = 60; // 3pt
 // Letter bodies are set a touch tighter than the 1.15 used elsewhere, so a
 // long letter still closes with its signature on the same page instead of
 // pushing three lines onto a second sheet.
@@ -61,17 +70,18 @@ const GRID_BODY_BORDERS: ITableCellBorders = { top: GRID_LINE_LIGHT, bottom: GRI
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 
-// Top 2.2cm, bottom 2.0cm, sides 2.0cm.
+// 1.4cm all round, the same margin the on-screen document prints at, so
+// the three surfaces wrap at the same width and break at the same places.
 export const PAGE_PROPERTIES = {
   page: {
     size: { width: convertMillimetersToTwip(A4_WIDTH_MM), height: convertMillimetersToTwip(A4_HEIGHT_MM) },
     margin: {
-      top: convertMillimetersToTwip(22),
-      bottom: convertMillimetersToTwip(20),
-      left: convertMillimetersToTwip(20),
-      right: convertMillimetersToTwip(20),
-      header: convertMillimetersToTwip(5),
-      footer: convertMillimetersToTwip(10),
+      top: convertMillimetersToTwip(12),
+      bottom: convertMillimetersToTwip(12),
+      left: convertMillimetersToTwip(14),
+      right: convertMillimetersToTwip(14),
+      header: convertMillimetersToTwip(2),
+      footer: convertMillimetersToTwip(7),
     },
   },
 };
@@ -84,8 +94,8 @@ const CELL_PADDING = convertMillimetersToTwip(1.5);
 // 22.3pt tall against the same row's 19.8pt in the PDF approved set,
 // which is why the Word certificate ran to three pages where the PDF took
 // two. 0.9mm brings the two to the same row height.
-const FIELD_CELL_PADDING = convertMillimetersToTwip(0.9);
-const ROW_HEIGHT = convertMillimetersToTwip(7); // 0.7cm
+const FIELD_CELL_PADDING = convertMillimetersToTwip(0.1);
+const ROW_HEIGHT = convertMillimetersToTwip(4); // 0.4cm
 
 export function run(text: string, opts: { bold?: boolean; italic?: boolean; size?: number; color?: string; uppercase?: boolean; light?: boolean } = {}) {
   return new TextRun({
@@ -149,7 +159,7 @@ export function bullet(text: string) {
   return new Paragraph({
     children: [run(`•  ${text}`)],
     indent: { left: convertMillimetersToTwip(5), hanging: convertMillimetersToTwip(5) },
-    spacing: { after: 10, line: LINE_SPACING },
+    spacing: { after: 0, line: LINE_SPACING },
   });
 }
 
@@ -345,8 +355,8 @@ export function fieldTable(rows: FieldRow[], opts: { keepTogether?: boolean } = 
         cantSplit: keepNext,
         height: { value: ROW_HEIGHT, rule: HeightRule.ATLEAST },
         children: [
-          cell([p(row.label, { bold: true, spacingAfter: 0, keepNext, align: AlignmentType.RIGHT })], { widthPct: 33 }),
-          cell(valueChildren, { widthPct: 67 }),
+          cell([p(row.label, { bold: true, spacingAfter: 0, keepNext, align: AlignmentType.RIGHT })], { widthPct: 28 }),
+          cell(valueChildren, { widthPct: 72 }),
         ],
       });
     })

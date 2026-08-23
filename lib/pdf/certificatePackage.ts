@@ -1,4 +1,4 @@
-import { Layout, MARGIN, HEADER_TOP, A4, MUTED, LINE, HEADING_COLOR, INK, BODY_SIZE, SMALL_SIZE, TITLE_SIZE, SPACE_AFTER, LETTER_PARA_AFTER, INSPECTION_HEADER_FILL } from "@/lib/pdf/layout";
+import { Layout, MARGIN, MARGIN_BOTTOM, HEADER_TOP, A4, MUTED, LINE, HEADING_COLOR, INK, BODY_SIZE, SMALL_SIZE, TITLE_SIZE, SPACE_AFTER, LETTER_PARA_AFTER, INSPECTION_HEADER_FILL } from "@/lib/pdf/layout";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatISODate, letterheadAddressLines } from "@/lib/business";
 
@@ -77,7 +77,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   l.footer = (layout) => {
     const site = (firm?.website || "").trim();
     const label = site ? `Project No.: ${projRef}  ·  ${site}` : `Project No.: ${projRef}`;
-    const y = MARGIN - 14;
+    const y = MARGIN_BOTTOM - 12;
     layout.page.drawLine({ start: { x: MARGIN, y: y + 12 }, end: { x: A4[0] - MARGIN, y: y + 12 }, thickness: 0.5, color: LINE });
     const w = layout.regular.widthOfTextAtSize(label, SMALL_SIZE);
     layout.page.drawText(label, { x: (A4[0] - w) / 2, y, size: SMALL_SIZE, font: layout.regular, color: MUTED });
@@ -199,7 +199,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
     // Conditions is a row of the same table, not a section of its own —
     // the label sits in the label column and everything it says lines up
     // under the values beside it.
-    const labelWidth = l.contentWidth * 0.33;
+    const labelWidth = l.contentWidth * 0.28;
     const valueX = MARGIN + labelWidth + 8;
     const valueWidth = l.contentWidth - labelWidth - 8;
     l.fieldRow(
@@ -251,7 +251,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
     ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
     allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),
     [21, 27, 13, 12, 15, 12],
-    { zebra: true, centerColumns: [5], rowHeight: 15 }
+    { zebra: true, centerColumns: [5], rowHeight: 12 }
   );
 
   // 5. Mandatory inspections notice
@@ -313,7 +313,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
     ["No.", "Critical Stage Inspection", "Inspector"],
     selectedInspections.map((r, i) => [`${i + 1}.`, r.stage, r.inspector]),
     [8, 62, 30],
-    { headerFill: INSPECTION_HEADER_FILL, centerColumns: [0], rowHeight: 23 }
+    { headerFill: INSPECTION_HEADER_FILL, centerColumns: [0], rowHeight: 17 }
   );
 
   return l.save();

@@ -22,18 +22,21 @@ import { PDFDocument, StandardFonts, rgb, setWordSpacing, type PDFFont, type PDF
 export const A4: [number, number] = [595.28, 841.89];
 
 const MM = 2.834645669; // PostScript points per millimetre
-export const MARGIN = 20 * MM; // 2.0cm sides and bottom
-export const MARGIN_TOP = 22 * MM; // 2.2cm
+// 1.4cm at the sides, 1.2cm top and bottom — the same proportions the
+// Word export uses, so the two wrap and break identically.
+export const MARGIN = 14 * MM;
+export const MARGIN_TOP = 12 * MM;
+export const MARGIN_BOTTOM = 12 * MM;
 // The letterhead is taller than the top margin, so where it starts decides
 // where the body starts. Matches the Word header offset.
 export const HEADER_TOP = 7 * MM;
 
-// Type sizes, matching the Word document's 11/13/14/9pt scale.
-export const BODY_SIZE = 11;
-export const HEADING_SIZE = 13;
-export const TITLE_SIZE = 14;
-export const SMALL_SIZE = 9;
-export const SIGNATURE_NAME_SIZE = 11.5;
+// Type sizes, matching the Word document's scale exactly.
+export const BODY_SIZE = 8.5;
+export const HEADING_SIZE = 10;
+export const TITLE_SIZE = 10.5;
+export const SMALL_SIZE = 7;
+export const SIGNATURE_NAME_SIZE = 9;
 
 // Word's "1.15 lines" works out at roughly 1.32x the point size once its
 // own single-line leading is taken into account.
@@ -42,9 +45,9 @@ const LINE_FACTOR = 1.32;
 // with its signature on the same page. Matches the Word letter leading.
 const LETTER_LINE_FACTOR = 1.15;
 export const LETTER_PARA_AFTER = 5;
-export const SPACE_AFTER = 6; // 6pt after a paragraph
-export const HEADING_BEFORE = 12; // 12pt before a section heading
-export const SECTION_GAP = 15;
+export const SPACE_AFTER = 4.5;
+export const HEADING_BEFORE = 8;
+export const SECTION_GAP = 11;
 
 export const INK = rgb(0x1c / 255, 0x1c / 255, 0x1e / 255);
 export const MUTED = rgb(0x55 / 255, 0x55 / 255, 0x55 / 255);
@@ -63,7 +66,7 @@ const CALLOUT_BORDER = rgb(0xfd / 255, 0xe6 / 255, 0x8a / 255);
 
 const GRID_LINE = rgb(0xbf / 255, 0xbf / 255, 0xbf / 255);
 const CELL_PAD = 1.5 * MM; // 0.15cm
-const ROW_HEIGHT = 7 * MM; // 0.7cm
+const ROW_HEIGHT = 4 * MM; // 0.4cm
 
 export type TextOpts = {
   size?: number;
@@ -131,7 +134,7 @@ export class Layout {
 
   ensure(space: number) {
     if (!this.page) this.newPage();
-    else if (this.y - space < MARGIN + 24) this.newPage();
+    else if (this.y - space < MARGIN_BOTTOM + 4) this.newPage();
   }
 
   // Splits text to fit a width, honouring newlines the caller put in.
@@ -260,7 +263,7 @@ export class Layout {
 
   // A bold, right-aligned label beside its value, both wrapping
   // independently — the shape every certificate field uses.
-  fieldRow(label: string, value: string, labelWidth = this.contentWidth * 0.33) {
+  fieldRow(label: string, value: string, labelWidth = this.contentWidth * 0.28) {
     const size = BODY_SIZE;
     const lead = size * LINE_FACTOR;
     const valueWidth = this.contentWidth - labelWidth - 8;
