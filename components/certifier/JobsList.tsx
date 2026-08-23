@@ -94,16 +94,19 @@ export function JobsList({ jobs, certifiers }: { jobs: JobRow[]; certifiers: { i
           <thead>
             <tr className="bg-heading text-white text-left">
               <th className="px-5 py-3 font-semibold">Address</th>
-              <th className="px-5 py-3 font-semibold w-80">Status</th>
+              {/* On a phone the stage pills sit under the address rather
+                  than in a column of their own, so a "Status" heading
+                  pointing at empty space is dropped below sm. */}
+              <th className="hidden sm:table-cell px-5 py-3 font-semibold sm:w-80">Status</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((j) => (
               <tr key={j.id} className="border-t border-line hover:bg-hover/60 transition-colors">
                 <td className="px-0 py-0 align-top" colSpan={2}>
-                  <Link href={`/jobs/${j.id}?tab=pathway`} className="flex items-center justify-between px-5 py-4">
-                    <div>
-                      <div className="flex items-center gap-2">
+                  <Link href={`/jobs/${j.id}?tab=pathway`} className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-semibold text-primary">{j.address}</span>
                         {j.status === "complete" && <span className="px-2 py-0.5 rounded bg-success text-white text-[11px] font-semibold">Completed</span>}
                         {j.needsAttention && (
@@ -114,7 +117,7 @@ export function JobsList({ jobs, certifiers }: { jobs: JobRow[]; certifiers: { i
                       </div>
                       <div className="text-placeholder mt-0.5">{j.description}</div>
                     </div>
-                    <div className="flex gap-1.5 flex-wrap justify-end w-80">
+                    <div className="flex gap-1.5 flex-wrap w-full sm:w-80 sm:shrink-0 sm:justify-end">
                       <StagePill label={j.pathwayLabel} done={j.pathwayDone} progress={j.pathwayProgress} />
                       <StagePill label="NOC" done={j.nocDone} progress={j.nocProgress} />
                       <StagePill label="INSP" done={j.inspDone} progress={j.inspProgress} />
