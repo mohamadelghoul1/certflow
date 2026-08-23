@@ -160,6 +160,45 @@ body {
   .cert-doc .cert-page .doc-footer {
     margin-top: auto;
   }
+
+  /* The printed fee proposal is one sheet. Same idea as .cert-doc above:
+     the screen copy breathes, the paper copy tightens — smaller gaps
+     between blocks and slightly tighter type, so a quote with a full
+     scope list and several fee lines still closes above the fold. */
+  .quote-doc {
+    padding: 10mm 14mm;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .quote-doc .text-sm {
+    font-size: 12px;
+  }
+  .quote-doc .text-xl {
+    font-size: 17px;
+  }
+  .quote-doc img {
+    max-height: 14mm;
+  }
+  .quote-doc .mb-6 {
+    margin-bottom: 10px;
+  }
+  .quote-doc .mb-4 {
+    margin-bottom: 8px;
+  }
+  .quote-doc .mb-3 {
+    margin-bottom: 6px;
+  }
+  .quote-doc .mt-6 {
+    margin-top: 10px;
+  }
+  .quote-doc td,
+  .quote-doc th {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  .quote-doc .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 6px;
+  }
 }
 
 /* Shared card treatment: the system's card shadow, lifting to the hover

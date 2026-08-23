@@ -52,7 +52,7 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
       mailtoHref={mailtoHref}
       hasApplicantEmail={!!applicant.email}
     >
-      <div className="max-w-2xl mx-auto p-8 bg-white text-heading print:max-w-none">
+      <div className="quote-doc max-w-2xl mx-auto p-8 bg-white text-heading print:max-w-none">
         <div className="flex justify-between items-start pb-3 mb-1">
           <div>
             {logoSrc && (
