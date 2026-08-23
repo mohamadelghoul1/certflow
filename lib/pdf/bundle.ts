@@ -1,10 +1,17 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { stampPdf, type StampDetails } from "@/lib/pdf/stamp";
 
-// One PDF containing the whole approval: a contents page, then the signed
-// approval itself, then every approved document behind it in checklist
-// order — the set a builder or a council would be handed, rather than a
-// folder of separate downloads.
+// One PDF containing the whole approval: the signed approval itself, then
+// every approved document behind it in checklist order — the set a builder
+// or a council would be handed, rather than a folder of separate
+// downloads.
+//
+// It opens on the approval. There used to be a contents page in front of
+// it, which meant every set a council received led with an index nobody
+// asked for. The one thing that page did carry which the documents cannot
+// is a note of anything that could not be combined; that survives as a
+// final page, added only when something is actually missing, so an
+// ordinary set has no extra pages at all.
 
 export type BundleDocument = {
   title: string;
@@ -54,8 +61,8 @@ function imageKind(bytes: Uint8Array | null | undefined): "png" | "jpeg" | null 
 }
 
 // Copies every page of one PDF into the bundle. Anything unreadable is
-// reported back so the contents page can say so rather than the document
-// silently going missing.
+// reported back, so a document that could not be combined is named on the
+// closing page rather than silently going missing.
 async function appendPdf(bundle: PDFDocument, bytes: Uint8Array): Promise<boolean> {
   try {
     const source = await PDFDocument.load(bytes, { ignoreEncryption: true });
@@ -89,8 +96,8 @@ export async function buildApprovalBundle(input: BundleInput): Promise<Uint8Arra
   const regular = await bundle.embedFont(StandardFonts.Helvetica);
   const bold = await bundle.embedFont(StandardFonts.HelveticaBold);
 
-  // Built after everything else so it can report what actually made it in,
-  // then moved to the front.
+  // What did and didn't make it in. Only the failures are ever printed,
+  // on a closing page, and only when there are some.
   const notes: { title: string; detail: string; included: boolean }[] = [];
 
   if (input.approval) {
@@ -129,30 +136,18 @@ export async function buildApprovalBundle(input: BundleInput): Promise<Uint8Arra
     notes.push({ title: doc.title, detail, included });
   }
 
-  // Contents page, inserted at the front.
-  const cover = bundle.insertPage(0, A4);
-  let y = A4[1] - MARGIN;
+  // Nothing to flag: the set is exactly the approval and its documents.
+  const missing = notes.filter((n) => !n.included);
+  if (missing.length === 0) return bundle.save();
 
-  cover.drawText(input.heading, { x: MARGIN, y: y - 16, size: 16, font: bold, color: INK });
-  y -= 34;
-  cover.drawText(input.subheading, { x: MARGIN, y: y - 10, size: 9, font: regular, color: MUTED });
-  y -= 30;
-  cover.drawLine({ start: { x: MARGIN, y }, end: { x: A4[0] - MARGIN, y }, thickness: 1, color: LINE });
-  y -= 22;
-
-  const columns = [MARGIN, MARGIN + 150, MARGIN + 300, MARGIN + 372, MARGIN + 430];
-  const headers = ["Prepared by", "Document", "Reference no.", "Revision", "Date"];
-  headers.forEach((h, i) => cover.drawText(h, { x: columns[i], y, size: 8, font: bold, color: MUTED }));
-  y -= 14;
-
-  // Wraps a value into the width its column has, so a long document title
-  // doesn't run underneath the next column.
-  function fit(text: string, width: number, size: number) {
+  // Wraps a value into the width it has, so a long note doesn't run off
+  // the edge of the sheet.
+  function fit(text: string, width: number, size: number, font = regular) {
     const lines: string[] = [];
     let current = "";
     for (const word of text.split(/\s+/)) {
       const candidate = current ? `${current} ${word}` : word;
-      if (regular.widthOfTextAtSize(candidate, size) > width && current) {
+      if (font.widthOfTextAtSize(candidate, size) > width && current) {
         lines.push(current);
         current = word;
       } else {
@@ -163,39 +158,29 @@ export async function buildApprovalBundle(input: BundleInput): Promise<Uint8Arra
     return lines.length ? lines : [""];
   }
 
-  const widths = [140, 140, 62, 48, 70];
+  const page = bundle.addPage(A4);
+  const width = A4[0] - MARGIN * 2;
+  let y = A4[1] - MARGIN;
 
-  for (let i = 0; i < input.documents.length; i++) {
-    const doc = input.documents[i];
-    const note = notes.find((n) => n.title === doc.title);
-    const cells = [doc.preparedBy || "—", doc.title, doc.reference || "—", doc.revision || "—", doc.date || "—"];
-    const wrapped = cells.map((c, ci) => fit(c, widths[ci], 8));
-    const rowLines = Math.max(...wrapped.map((w) => w.length));
-    const statusLines = note && !note.included ? fit(note.detail, A4[0] - MARGIN * 2, 7) : [];
+  page.drawText("Not included in this set", { x: MARGIN, y: y - 16, size: 16, font: bold, color: INK });
+  y -= 32;
+  fit(`${input.heading} · ${input.subheading}`, width, 9).forEach((line, i) => {
+    page.drawText(line, { x: MARGIN, y: y - 10 - i * 11, size: 9, font: regular, color: MUTED });
+    y -= i > 0 ? 11 : 0;
+  });
+  y -= 30;
+  page.drawLine({ start: { x: MARGIN, y }, end: { x: A4[0] - MARGIN, y }, thickness: 1, color: LINE });
+  y -= 24;
 
-    if (y - (rowLines + statusLines.length) * 10 < MARGIN + 20) break;
-
-    wrapped.forEach((linesForCell, ci) => {
-      linesForCell.forEach((text, li) => {
-        cover.drawText(text, { x: columns[ci], y: y - li * 10, size: 8, font: regular, color: INK });
-      });
+  for (const note of missing) {
+    const detailLines = fit(note.detail, width - 10, 8);
+    if (y - (detailLines.length + 1) * 11 < MARGIN) break;
+    page.drawText(note.title, { x: MARGIN, y, size: 9, font: bold, color: INK });
+    y -= 12;
+    detailLines.forEach((line, i) => {
+      page.drawText(line, { x: MARGIN + 10, y: y - i * 10, size: 8, font: regular, color: MUTED });
     });
-    y -= rowLines * 10;
-
-    statusLines.forEach((text, li) => {
-      cover.drawText(text, { x: MARGIN + 8, y: y - li * 9, size: 7, font: regular, color: MUTED });
-    });
-    y -= statusLines.length * 9 + 8;
-  }
-
-  const approvalNote = notes[0];
-  if (approvalNote && !approvalNote.included && y > MARGIN + 30) {
-    y -= 6;
-    cover.drawLine({ start: { x: MARGIN, y }, end: { x: A4[0] - MARGIN, y }, thickness: 0.5, color: LINE });
-    y -= 14;
-    fit(approvalNote.detail, A4[0] - MARGIN * 2, 8).forEach((text, li) => {
-      cover.drawText(text, { x: MARGIN, y: y - li * 10, size: 8, font: regular, color: MUTED });
-    });
+    y -= detailLines.length * 10 + 10;
   }
 
   return bundle.save();
