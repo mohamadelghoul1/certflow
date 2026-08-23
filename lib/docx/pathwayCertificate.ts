@@ -1,7 +1,7 @@
 import { Document, Paragraph, Header, Footer, AlignmentType, Packer } from "docx";
 import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
-import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, BODY_SIZE, signatureRule, signatory } from "@/lib/docx/shared";
+import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, BODY_SIZE, signatureRule, signatory, addressBlock, LETTER_PARA_AFTER, LETTER_LINE_SPACING, TIGHT_LINE_SPACING } from "@/lib/docx/shared";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatISODate, letterheadAddressLines } from "@/lib/business";
 
@@ -12,8 +12,8 @@ import { formatISODate, letterheadAddressLines } from "@/lib/business";
 
 function letterheadHeader(firm: PathwayCertificateData["firm"], logo: ImageAsset | null) {
   const left = logo
-    ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0 })]
-    : [p(firm?.name || "", { bold: true, size: TITLE_SIZE, color: HEADING_COLOR, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0 })];
+    ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING })]
+    : [p(firm?.name || "", { bold: true, size: TITLE_SIZE, color: HEADING_COLOR, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING })];
   const right = [
     ...letterheadAddressLines(firm?.postal_address).map((line, i) => p(i === 0 ? `Postal: ${line}` : line, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 })),
     ...letterheadAddressLines(firm?.office_address).map((line, i) => p(i === 0 ? `Office: ${line}` : line, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 })),
@@ -38,16 +38,14 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
   // 1. Council letter
   push(
     splitRow(`Our reference: ${projRef}`, issuedDate),
-    p("The General Manager"),
-    p(d.council?.lga || "Council"),
-    ...formatAddressLines(d.council?.address).map((line) => p(line)),
-    p("Dear Sir/Madam,"),
-    mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }]),
-    mixed([{ text: `${pathwayFull} No.  `, bold: true }, { text: ref }]),
+    ...addressBlock(["The General Manager", d.council?.lga || "Council", ...formatAddressLines(d.council?.address)]),
+    p("Dear Sir/Madam,", { spacingAfter: 60 }),
+    mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }], { spacingAfter: 60 }),
+    mixed([{ text: `${pathwayFull} No.  `, bold: true }, { text: ref }], { spacingAfter: 60 }),
     isCdc
-      ? mixed([{ text: "Planning Instrument Decision Made Under:  ", bold: true }, { text: cd.relevantInstrument || "—" }])
-      : mixed([{ text: "Development Application No.:  ", bold: true }, { text: cd.developmentConsentNumber || "—" }]),
-    ...councilBody.map((para) => p(para, { justify: true, spacingAfter: 240 })),
+      ? mixed([{ text: "Planning Instrument Decision Made Under:  ", bold: true }, { text: cd.relevantInstrument || "—" }], { spacingAfter: 60 })
+      : mixed([{ text: "Development Application No.:  ", bold: true }, { text: cd.developmentConsentNumber || "—" }], { spacingAfter: 60 }),
+    ...councilBody.map((para) => p(para, { justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING })),
     p("Please find enclosed the following documentation:"),
     bullet(`${pathwayFull} No. ${ref}`),
     bullet(`Copy of the application for the ${pathwayFull}.`),
@@ -62,13 +60,12 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
   push(
     pageBreak(),
     splitRow(`Our reference: ${projRef}`, issuedDate),
-    p(applicantName),
-    ...formatAddressLines(d.applicantAddress).map((line) => p(line)),
-    p("Dear Sir/Madam,"),
-    mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }]),
-    mixed([{ text: `${pathwayFull} No.:  `, bold: true }, { text: ref }]),
-    p(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true }),
-    ...applicantBody.map((para) => p(para, { justify: true, spacingAfter: 240 })),
+    ...addressBlock([applicantName, ...formatAddressLines(d.applicantAddress)]),
+    p("Dear Sir/Madam,", { spacingAfter: 60 }),
+    mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }], { spacingAfter: 60 }),
+    mixed([{ text: `${pathwayFull} No.:  `, bold: true }, { text: ref }], { spacingAfter: 60 }),
+    p(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true, lineSpacing: LETTER_LINE_SPACING }),
+    ...applicantBody.map((para) => p(para, { justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING })),
     calloutBox([
       p("Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:", { spacingAfter: 60 }),
       ...requiredDocsList.map((item) => bullet(item)),

@@ -30,6 +30,15 @@ export const SPACE_BEFORE = 120; // 6pt
 export const SPACE_AFTER = 120; // 6pt
 export const HEADING_BEFORE = 240; // 12pt
 export const SECTION_GAP = 300; // 15pt between major sections
+// Letters set their body paragraphs a little further apart than ordinary
+// prose. One value, so the council letter and the applicant letter always
+// look like the same letter.
+export const LETTER_PARA_AFTER = 100; // 5pt
+// Letter bodies are set a touch tighter than the 1.15 used elsewhere, so a
+// long letter still closes with its signature on the same page instead of
+// pushing three lines onto a second sheet.
+export const LETTER_LINE_SPACING = 240; // single
+export const TIGHT_LINE_SPACING = 240; // single — the letterhead small print
 
 // Table shading: the plain register grey, and the heavier blue reserved
 // for the mandatory inspections schedule so it stands out.
@@ -61,7 +70,7 @@ export const PAGE_PROPERTIES = {
       bottom: convertMillimetersToTwip(20),
       left: convertMillimetersToTwip(20),
       right: convertMillimetersToTwip(20),
-      header: convertMillimetersToTwip(10),
+      header: convertMillimetersToTwip(7),
       footer: convertMillimetersToTwip(10),
     },
   },
@@ -102,21 +111,30 @@ export function p(
     // say) on the same page.
     keepNext?: boolean;
     light?: boolean;
+    lineSpacing?: number;
   } = {}
 ) {
   return new Paragraph({
     children: text ? [run(text, opts)] : [],
-    spacing: { before: opts.spacingBefore ?? 0, after: opts.spacingAfter ?? SPACE_AFTER, line: LINE_SPACING },
+    spacing: { before: opts.spacingBefore ?? 0, after: opts.spacingAfter ?? SPACE_AFTER, line: opts.lineSpacing ?? LINE_SPACING },
     alignment: opts.justify ? AlignmentType.JUSTIFIED : opts.align,
     keepNext: opts.keepNext,
   });
 }
 
+// The name and address at the top of a letter: one block, set tight, with
+// a paragraph's worth of air only under the last line. Each line carrying
+// its own paragraph spacing made the addressee look like four separate
+// one-line paragraphs.
+export function addressBlock(lines: string[]) {
+  return lines.map((line, i) => p(line, { spacingAfter: i === lines.length - 1 ? SPACE_AFTER : 0, lineSpacing: TIGHT_LINE_SPACING }));
+}
+
 // A paragraph built from mixed runs, e.g. "Re: <bold>123 Main St</bold>".
-export function mixed(parts: { text: string; bold?: boolean; color?: string }[], opts: { spacingBefore?: number; spacingAfter?: number } = {}) {
+export function mixed(parts: { text: string; bold?: boolean; color?: string }[], opts: { spacingBefore?: number; spacingAfter?: number; lineSpacing?: number } = {}) {
   return new Paragraph({
     children: parts.map((part) => run(part.text, { bold: part.bold, color: part.color })),
-    spacing: { before: opts.spacingBefore ?? 0, after: opts.spacingAfter ?? SPACE_AFTER, line: LINE_SPACING },
+    spacing: { before: opts.spacingBefore ?? 0, after: opts.spacingAfter ?? SPACE_AFTER, line: opts.lineSpacing ?? LINE_SPACING },
   });
 }
 
@@ -124,7 +142,7 @@ export function bullet(text: string) {
   return new Paragraph({
     children: [run(`•  ${text}`)],
     indent: { left: convertMillimetersToTwip(5), hanging: convertMillimetersToTwip(5) },
-    spacing: { after: 60, line: LINE_SPACING },
+    spacing: { after: 10, line: LINE_SPACING },
   });
 }
 
@@ -208,7 +226,7 @@ export function signatureRule() {
   return new Paragraph({
     children: [],
     border: { top: { style: BorderStyle.SINGLE, size: 4, color: LINE_COLOR, space: 6 } },
-    spacing: { before: SECTION_GAP, after: 0 },
+    spacing: { before: 60, after: 0 },
   });
 }
 
@@ -216,9 +234,14 @@ export function signatureRule() {
 // half-point up and semibold, the two lines under it at body size rather
 // than the fine print they used to be set in.
 export function signatory(name: string | null | undefined, ...lines: string[]) {
+  // keepNext holds the name and the lines under it together: they are one
+  // block, and a letter that breaks between a signatory's name and their
+  // registration number reads as an error. No trailing space — whatever
+  // follows brings its own, and at the end of a letter there is nothing to
+  // space away from.
   return [
-    p(name || "—", { bold: true, size: SIGNATURE_NAME_SIZE, spacingAfter: 0 }),
-    ...lines.map((line, i) => p(line, { color: MUTED_COLOR, spacingAfter: i === lines.length - 1 ? SPACE_AFTER : 0 })),
+    p(name || "—", { bold: true, size: SIGNATURE_NAME_SIZE, spacingAfter: 0, keepNext: true }),
+    ...lines.map((line, i) => p(line, { color: MUTED_COLOR, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING, keepNext: i < lines.length - 1 })),
   ];
 }
 
@@ -398,7 +421,7 @@ export function calloutBox(children: Paragraph[]) {
             width: { size: 100, type: WidthType.PERCENTAGE },
             shading: { type: ShadingType.CLEAR, fill: "FFFBEB" },
             borders: { top: CALLOUT_BORDER, bottom: CALLOUT_BORDER, left: CALLOUT_BORDER, right: CALLOUT_BORDER },
-            margins: { top: 120, bottom: 120, left: 160, right: 160 },
+            margins: { top: 50, bottom: 50, left: 110, right: 110 },
           }),
         ],
       }),
@@ -416,7 +439,7 @@ export function calloutBox(children: Paragraph[]) {
 // and inspection report.
 export function signatureBlock(signature: ImageAsset | null) {
   if (signature) {
-    return [new Paragraph({ children: [image(signature.buffer, signature.type, signature.width, signature.height)], spacing: { before: 120, after: 120 } })];
+    return [new Paragraph({ children: [image(signature.buffer, signature.type, signature.width, signature.height)], spacing: { before: 40, after: 40 } })];
   }
-  return [new Paragraph({ spacing: { before: 240, after: 120 } })];
+  return [new Paragraph({ spacing: { before: 180, after: 60 } })];
 }

@@ -24,6 +24,9 @@ export const A4: [number, number] = [595.28, 841.89];
 const MM = 2.834645669; // PostScript points per millimetre
 export const MARGIN = 20 * MM; // 2.0cm sides and bottom
 export const MARGIN_TOP = 22 * MM; // 2.2cm
+// The letterhead is taller than the top margin, so where it starts decides
+// where the body starts. Matches the Word header offset.
+export const HEADER_TOP = 7 * MM;
 
 // Type sizes, matching the Word document's 11/13/14/9pt scale.
 export const BODY_SIZE = 11;
@@ -35,6 +38,10 @@ export const SIGNATURE_NAME_SIZE = 11.5;
 // Word's "1.15 lines" works out at roughly 1.32x the point size once its
 // own single-line leading is taken into account.
 const LINE_FACTOR = 1.32;
+// Letters set a little tighter than the rest, so a long one still closes
+// with its signature on the same page. Matches the Word letter leading.
+const LETTER_LINE_FACTOR = 1.15;
+export const LETTER_PARA_AFTER = 5;
 export const SPACE_AFTER = 6; // 6pt after a paragraph
 export const HEADING_BEFORE = 12; // 12pt before a section heading
 export const SECTION_GAP = 15;
@@ -64,6 +71,7 @@ export type TextOpts = {
   color?: RGB;
   align?: "left" | "right" | "center";
   justify?: boolean;
+  letter?: boolean;
   width?: number;
   x?: number;
   gapAfter?: number;
@@ -174,7 +182,7 @@ export class Layout {
     const size = opts.size ?? BODY_SIZE;
     const width = opts.width ?? this.contentWidth;
     const x = opts.x ?? MARGIN;
-    const lineHeight = opts.lineHeight ?? size * LINE_FACTOR;
+    const lineHeight = opts.lineHeight ?? size * (opts.letter ? LETTER_LINE_FACTOR : LINE_FACTOR);
     const font = this.font(opts.bold);
     const color = opts.color ?? INK;
 
@@ -227,16 +235,23 @@ export class Layout {
     this.y -= 8;
   }
 
-  // The hairline above a letter's closing block.
+  // The hairline above a letter's closing block. The rule itself separates
+  // the closing from the body, so it needs no extra air above it.
   signatureRule() {
-    this.y -= SECTION_GAP;
+    this.y -= 3;
     this.rule();
   }
 
   // The signatory's name, then their title and firm.
   signatory(name: string, ...lines: string[]) {
-    this.text(name || "—", { size: SIGNATURE_NAME_SIZE, bold: true, gapAfter: 1 });
-    lines.filter(Boolean).forEach((line, i) => this.text(line, { color: MUTED, gapAfter: i === lines.length - 1 ? SPACE_AFTER : 1 }));
+    this.text(name || "—", { size: SIGNATURE_NAME_SIZE, bold: true, gapAfter: 1, letter: true });
+    lines.filter(Boolean).forEach((line) => this.text(line, { color: MUTED, gapAfter: 1, letter: true }));
+  }
+
+  // The name and address at the top of a letter: one block, set tight, with
+  // a paragraph's worth of air only under the last line.
+  addressBlock(lines: string[]) {
+    lines.filter(Boolean).forEach((line, i) => this.text(line, { gapAfter: i === lines.length - 1 ? SPACE_AFTER : 0, letter: true }));
   }
 
   gap(amount = 8) {
@@ -374,7 +389,7 @@ export class Layout {
   callout(body: string, bullets: string[] = [], opts: { size?: number; bold?: boolean } = {}) {
     const size = opts.size ?? BODY_SIZE;
     const lead = size * LINE_FACTOR;
-    const pad = 10;
+    const pad = 7;
     const inner = this.contentWidth - pad * 2;
 
     const bodyLines = body ? this.wrap(body, inner, size, opts.bold) : [];

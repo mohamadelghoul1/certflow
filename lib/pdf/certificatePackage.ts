@@ -1,4 +1,4 @@
-import { Layout, MARGIN, MARGIN_TOP, A4, MUTED, LINE, HEADING_COLOR, INK, BODY_SIZE, SMALL_SIZE, TITLE_SIZE, SPACE_AFTER, INSPECTION_HEADER_FILL } from "@/lib/pdf/layout";
+import { Layout, MARGIN, HEADER_TOP, A4, MUTED, LINE, HEADING_COLOR, INK, BODY_SIZE, SMALL_SIZE, TITLE_SIZE, SPACE_AFTER, LETTER_PARA_AFTER, INSPECTION_HEADER_FILL } from "@/lib/pdf/layout";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatISODate, letterheadAddressLines } from "@/lib/business";
 
@@ -45,7 +45,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   // Letterhead and footer are redrawn on every page, the way the section
   // header and footer work in the Word version.
   l.header = (layout) => {
-    const top = A4[1] - MARGIN_TOP;
+    const top = A4[1] - HEADER_TOP;
     let leftBottom = top;
 
     if (logo) {
@@ -71,7 +71,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
 
     const ruleY = Math.min(leftBottom - SMALL_SIZE - 10, top - SMALL_SIZE - right.length * lead - 4);
     layout.page.drawLine({ start: { x: MARGIN, y: ruleY }, end: { x: A4[0] - MARGIN, y: ruleY }, thickness: 0.5, color: LINE });
-    layout.y = ruleY - 18;
+    layout.y = ruleY - 14;
   };
 
   l.footer = (layout) => {
@@ -100,44 +100,40 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   // 1. Council letter
   l.newPage();
   splitLine(`Our reference: ${projRef}`, issuedDate);
-  l.text("The General Manager");
-  l.text(d.council?.lga || "Council");
-  formatAddressLines(d.council?.address).forEach((line) => l.text(line, { gapAfter: 2 }));
-  l.gap(4);
-  l.text("Dear Sir/Madam,");
-  l.inline([{ text: "Re: ", bold: true }, { text: job.address || "" }]);
-  l.inline([{ text: `${pathwayFull} No.  `, bold: true }, { text: ref }]);
+  l.addressBlock(["The General Manager", d.council?.lga || "Council", ...formatAddressLines(d.council?.address)]);
+  l.text("Dear Sir/Madam,", { gapAfter: 3, letter: true });
+  l.inline([{ text: "Re: ", bold: true }, { text: job.address || "" }], { gapAfter: 3 });
+  l.inline([{ text: `${pathwayFull} No.  `, bold: true }, { text: ref }], { gapAfter: 3 });
   l.inline(
     isCdc
       ? [{ text: "Planning Instrument Decision Made Under:  ", bold: true }, { text: cd.relevantInstrument || "—" }]
-      : [{ text: "Development Application No.:  ", bold: true }, { text: cd.developmentConsentNumber || "—" }]
+      : [{ text: "Development Application No.:  ", bold: true }, { text: cd.developmentConsentNumber || "—" }],
+    { gapAfter: 3 }
   );
-  councilBody.forEach((line) => l.text(line, { justify: true, gapAfter: 12 }));
+  councilBody.forEach((line) => l.text(line, { justify: true, letter: true, gapAfter: LETTER_PARA_AFTER }));
   l.text("Please find enclosed the following documentation:");
   l.bullet(`${pathwayFull} No. ${ref}`);
   l.bullet(`Copy of the application for the ${pathwayFull}.`);
   l.bullet(`Documentation used to determine the application for the ${pathwayFull} as detailed in Schedule 1 of the Certificate.`);
   l.signatureRule();
-  l.text("Yours sincerely,");
+  l.text("Yours sincerely,", { gapAfter: 3, letter: true });
   await signature();
   l.signatory(issuedBy?.name || "—", `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`);
 
   // 2. Applicant letter
   l.pageBreak();
   splitLine(`Our reference: ${projRef}`, issuedDate);
-  l.text(applicantName || "");
-  formatAddressLines(d.applicantAddress).forEach((line) => l.text(line, { gapAfter: 2 }));
-  l.gap(4);
-  l.text("Dear Sir/Madam,");
-  l.inline([{ text: "Re: ", bold: true }, { text: job.address || "" }]);
-  l.inline([{ text: `${pathwayFull} No.:  `, bold: true }, { text: ref }]);
-  l.text(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true });
-  applicantBody.forEach((line) => l.text(line, { justify: true, gapAfter: 12 }));
+  l.addressBlock([applicantName || "", ...formatAddressLines(d.applicantAddress)]);
+  l.text("Dear Sir/Madam,", { gapAfter: 3, letter: true });
+  l.inline([{ text: "Re: ", bold: true }, { text: job.address || "" }], { gapAfter: 3 });
+  l.inline([{ text: `${pathwayFull} No.:  `, bold: true }, { text: ref }], { gapAfter: 3 });
+  l.text(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true, letter: true, gapAfter: 3 });
+  applicantBody.forEach((line) => l.text(line, { justify: true, letter: true, gapAfter: LETTER_PARA_AFTER }));
   if (requiredDocsList.length) {
     l.callout("Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:", requiredDocsList);
   }
   l.signatureRule();
-  l.text("Yours sincerely,");
+  l.text("Yours sincerely,", { gapAfter: 3, letter: true });
   await signature();
   l.signatory(issuedBy?.name || "—", `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`);
 
