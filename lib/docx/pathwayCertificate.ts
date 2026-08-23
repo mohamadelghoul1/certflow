@@ -1,7 +1,7 @@
 import { Document, Paragraph, Header, Footer, AlignmentType, Packer } from "docx";
 import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
-import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, BODY_SIZE, signatureRule, signatory, addressBlock, LETTER_PARA_AFTER, LETTER_LINE_SPACING, TIGHT_LINE_SPACING } from "@/lib/docx/shared";
+import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, BODY_SIZE, signatureRule, signatory, addressBlock, LETTER_PARA_AFTER, LETTER_LINE_SPACING, TIGHT_LINE_SPACING, LETTER_BODY_SIZE, LETTER_SIGNATURE_NAME_SIZE } from "@/lib/docx/shared";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatISODate, letterheadAddressLines } from "@/lib/business";
 
@@ -37,43 +37,43 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
 
   // 1. Council letter
   push(
-    splitRow(`Our reference: ${projRef}`, issuedDate),
-    ...addressBlock(["The General Manager", d.council?.lga || "Council", ...formatAddressLines(d.council?.address)]),
-    p("Dear Sir/Madam,", { spacingAfter: 60 }),
-    mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }], { spacingAfter: 60 }),
-    mixed([{ text: `${pathwayFull} No.  `, bold: true }, { text: ref }], { spacingAfter: 60 }),
+    splitRow(`Our reference: ${projRef}`, issuedDate, { size: LETTER_BODY_SIZE }),
+    ...addressBlock(["The General Manager", d.council?.lga || "Council", ...formatAddressLines(d.council?.address)], { size: LETTER_BODY_SIZE }),
+    p("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
+    mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }], { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
+    mixed([{ text: `${pathwayFull} No.  `, bold: true }, { text: ref }], { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
     isCdc
-      ? mixed([{ text: "Planning Instrument Decision Made Under:  ", bold: true }, { text: cd.relevantInstrument || "—" }], { spacingAfter: 60 })
-      : mixed([{ text: "Development Application No.:  ", bold: true }, { text: cd.developmentConsentNumber || "—" }], { spacingAfter: 60 }),
-    ...councilBody.map((para) => p(para, { justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING })),
-    p("Please find enclosed the following documentation:"),
-    bullet(`${pathwayFull} No. ${ref}`),
-    bullet(`Copy of the application for the ${pathwayFull}.`),
-    bullet(`Documentation used to determine the application for the ${pathwayFull} as detailed in Schedule 1 of the Certificate.`),
+      ? mixed([{ text: "Planning Instrument Decision Made Under:  ", bold: true }, { text: cd.relevantInstrument || "—" }], { size: LETTER_BODY_SIZE, spacingAfter: 60 })
+      : mixed([{ text: "Development Application No.:  ", bold: true }, { text: cd.developmentConsentNumber || "—" }], { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
+    ...councilBody.map((para) => p(para, { size: LETTER_BODY_SIZE, justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING })),
+    p("Please find enclosed the following documentation:", { size: LETTER_BODY_SIZE }),
+    bullet(`${pathwayFull} No. ${ref}`, { size: LETTER_BODY_SIZE }),
+    bullet(`Copy of the application for the ${pathwayFull}.`, { size: LETTER_BODY_SIZE }),
+    bullet(`Documentation used to determine the application for the ${pathwayFull} as detailed in Schedule 1 of the Certificate.`, { size: LETTER_BODY_SIZE }),
     signatureRule(),
-    p("Yours sincerely,", { spacingBefore: 120 }),
+    p("Yours sincerely,", { size: LETTER_BODY_SIZE, spacingBefore: 120 }),
     ...signatureBlock(images.signature),
-    ...signatory(issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
+    ...signatory({ size: LETTER_BODY_SIZE, nameSize: LETTER_SIGNATURE_NAME_SIZE }, issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
   );
 
   // 2. Applicant letter
   push(
     pageBreak(),
-    splitRow(`Our reference: ${projRef}`, issuedDate),
-    ...addressBlock([applicantName, ...formatAddressLines(d.applicantAddress)]),
-    p("Dear Sir/Madam,", { spacingAfter: 60 }),
-    mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }], { spacingAfter: 60 }),
-    mixed([{ text: `${pathwayFull} No.:  `, bold: true }, { text: ref }], { spacingAfter: 60 }),
-    p(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true, lineSpacing: LETTER_LINE_SPACING }),
-    ...applicantBody.map((para) => p(para, { justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING })),
+    splitRow(`Our reference: ${projRef}`, issuedDate, { size: LETTER_BODY_SIZE }),
+    ...addressBlock([applicantName, ...formatAddressLines(d.applicantAddress)], { size: LETTER_BODY_SIZE }),
+    p("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
+    mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }], { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
+    mixed([{ text: `${pathwayFull} No.:  `, bold: true }, { text: ref }], { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
+    p(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true, size: LETTER_BODY_SIZE, lineSpacing: LETTER_LINE_SPACING }),
+    ...applicantBody.map((para) => p(para, { size: LETTER_BODY_SIZE, justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING })),
     calloutBox([
-      p("Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:", { spacingAfter: 60 }),
-      ...requiredDocsList.map((item) => bullet(item)),
+      p("Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:", { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
+      ...requiredDocsList.map((item) => bullet(item, { size: LETTER_BODY_SIZE })),
     ]),
     signatureRule(),
-    p("Yours sincerely,", { spacingBefore: 120 }),
+    p("Yours sincerely,", { size: LETTER_BODY_SIZE, spacingBefore: 120 }),
     ...signatureBlock(images.signature),
-    ...signatory(issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
+    ...signatory({ size: LETTER_BODY_SIZE, nameSize: LETTER_SIGNATURE_NAME_SIZE }, issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
   );
 
   // 3. Certificate

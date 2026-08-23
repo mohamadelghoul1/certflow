@@ -25,6 +25,12 @@ export const HEADING_SIZE = 20; // 10pt
 export const TITLE_SIZE = 21; // 10.5pt
 export const SMALL_SIZE = 14; // 7pt — header, footer and captions
 export const SIGNATURE_NAME_SIZE = 18; // 9pt — the signatory's name
+// The two covering letters set larger than the rest of the pack. They are
+// prose on a mostly empty page, not a dense form, so the size that makes
+// the certificate fit its table reads as too small in a letter — and both
+// letters have a third of a page spare at the smaller size anyway.
+export const LETTER_BODY_SIZE = 22; // 11pt
+export const LETTER_SIGNATURE_NAME_SIZE = 23; // 11.5pt
 
 export const TEXT_COLOR = "1C1C1E";
 export const HEADING_COLOR = "1F4E79";
@@ -143,21 +149,21 @@ export function p(
 // a paragraph's worth of air only under the last line. Each line carrying
 // its own paragraph spacing made the addressee look like four separate
 // one-line paragraphs.
-export function addressBlock(lines: string[]) {
-  return lines.map((line, i) => p(line, { spacingAfter: i === lines.length - 1 ? SPACE_AFTER : 0, lineSpacing: TIGHT_LINE_SPACING }));
+export function addressBlock(lines: string[], opts: { size?: number } = {}) {
+  return lines.map((line, i) => p(line, { size: opts.size, spacingAfter: i === lines.length - 1 ? SPACE_AFTER : 0, lineSpacing: TIGHT_LINE_SPACING }));
 }
 
 // A paragraph built from mixed runs, e.g. "Re: <bold>123 Main St</bold>".
-export function mixed(parts: { text: string; bold?: boolean; color?: string }[], opts: { spacingBefore?: number; spacingAfter?: number; lineSpacing?: number } = {}) {
+export function mixed(parts: { text: string; bold?: boolean; color?: string }[], opts: { spacingBefore?: number; spacingAfter?: number; lineSpacing?: number; size?: number } = {}) {
   return new Paragraph({
-    children: parts.map((part) => run(part.text, { bold: part.bold, color: part.color })),
+    children: parts.map((part) => run(part.text, { bold: part.bold, color: part.color, size: opts.size })),
     spacing: { before: opts.spacingBefore ?? 0, after: opts.spacingAfter ?? SPACE_AFTER, line: opts.lineSpacing ?? LINE_SPACING },
   });
 }
 
-export function bullet(text: string) {
+export function bullet(text: string, opts: { size?: number } = {}) {
   return new Paragraph({
-    children: [run(`•  ${text}`)],
+    children: [run(`•  ${text}`, { size: opts.size })],
     indent: { left: convertMillimetersToTwip(5), hanging: convertMillimetersToTwip(5) },
     spacing: { after: 0, line: LINE_SPACING },
   });
@@ -250,15 +256,23 @@ export function signatureRule() {
 // The signatory's name, title and firm under a signature — the name a
 // half-point up and semibold, the two lines under it at body size rather
 // than the fine print they used to be set in.
-export function signatory(name: string | null | undefined, ...lines: string[]) {
+export function signatory(name: string | null | undefined, ...lines: string[]): Paragraph[];
+export function signatory(opts: { size?: number; nameSize?: number }, name: string | null | undefined, ...lines: string[]): Paragraph[];
+export function signatory(a: unknown, ...rest: unknown[]): Paragraph[] {
+  const opts = typeof a === "object" && a !== null ? (a as { size?: number; nameSize?: number }) : {};
+  const [name, ...lines] = (typeof a === "object" && a !== null ? rest : [a, ...rest]) as (string | null | undefined)[];
+  return signatoryBlock(opts, name, lines.filter((l): l is string => typeof l === "string"));
+}
+
+function signatoryBlock(opts: { size?: number; nameSize?: number }, name: string | null | undefined, lines: string[]) {
   // keepNext holds the name and the lines under it together: they are one
   // block, and a letter that breaks between a signatory's name and their
   // registration number reads as an error. No trailing space — whatever
   // follows brings its own, and at the end of a letter there is nothing to
   // space away from.
   return [
-    p(name || "—", { bold: true, size: SIGNATURE_NAME_SIZE, spacingAfter: 0, keepNext: true }),
-    ...lines.map((line, i) => p(line, { color: MUTED_COLOR, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING, keepNext: i < lines.length - 1 })),
+    p(name || "—", { bold: true, size: opts.nameSize ?? SIGNATURE_NAME_SIZE, spacingAfter: 0, keepNext: true }),
+    ...lines.map((line, i) => p(line, { size: opts.size, color: MUTED_COLOR, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING, keepNext: i < lines.length - 1 })),
   ];
 }
 

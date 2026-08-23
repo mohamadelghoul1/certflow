@@ -37,6 +37,10 @@ export const HEADING_SIZE = 10;
 export const TITLE_SIZE = 10.5;
 export const SMALL_SIZE = 7;
 export const SIGNATURE_NAME_SIZE = 9;
+// The two covering letters set larger than the rest of the pack — prose on
+// a mostly empty page rather than a dense form. Matches the Word export.
+export const LETTER_BODY_SIZE = 11;
+export const LETTER_SIGNATURE_NAME_SIZE = 11.5;
 
 // Word's "1.15 lines" works out at roughly 1.32x the point size once its
 // own single-line leading is taken into account.
@@ -246,15 +250,15 @@ export class Layout {
   }
 
   // The signatory's name, then their title and firm.
-  signatory(name: string, ...lines: string[]) {
-    this.text(name || "—", { size: SIGNATURE_NAME_SIZE, bold: true, gapAfter: 1, letter: true });
-    lines.filter(Boolean).forEach((line) => this.text(line, { color: MUTED, gapAfter: 1, letter: true }));
+  signatory(name: string, lines: string[] = [], opts: { size?: number; nameSize?: number } = {}) {
+    this.text(name || "—", { size: opts.nameSize ?? SIGNATURE_NAME_SIZE, bold: true, gapAfter: 1, letter: true });
+    lines.filter(Boolean).forEach((line) => this.text(line, { size: opts.size, color: MUTED, gapAfter: 1, letter: true }));
   }
 
   // The name and address at the top of a letter: one block, set tight, with
   // a paragraph's worth of air only under the last line.
-  addressBlock(lines: string[]) {
-    lines.filter(Boolean).forEach((line, i) => this.text(line, { gapAfter: i === lines.length - 1 ? SPACE_AFTER : 0, letter: true }));
+  addressBlock(lines: string[], opts: { size?: number } = {}) {
+    lines.filter(Boolean).forEach((line, i) => this.text(line, { size: opts.size, gapAfter: i === lines.length - 1 ? SPACE_AFTER : 0, letter: true }));
   }
 
   gap(amount = 8) {
@@ -415,8 +419,8 @@ export class Layout {
     this.y = top - height - SPACE_AFTER;
   }
 
-  bullet(text: string) {
-    this.text(`•  ${text}`, { x: MARGIN + 8, width: this.contentWidth - 8, gapAfter: 3 });
+  bullet(text: string, opts: { size?: number } = {}) {
+    this.text(`•  ${text}`, { x: MARGIN + 8, width: this.contentWidth - 8, gapAfter: 3, size: opts.size });
   }
 
   async image(bytes: Uint8Array, type: "png" | "jpeg", targetHeight: number) {
