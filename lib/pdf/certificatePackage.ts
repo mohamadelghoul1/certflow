@@ -160,13 +160,15 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
     ? "Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979"
     : "Issued under Part 6 the Environmental Planning and Assessment Act 1979";
   l.documentTitle(isCdc ? `${pathwayFull} ${ref}`.toUpperCase() : `${pathwayFull} – ${projRef}`.toUpperCase(), {
-    subtitle: isCdc ? [`PROJECT REFERENCE ${projRef}`, issuedUnder] : issuedUnder,
+    subtitle: issuedUnder,
   });
   l.text(
     isCdc
       ? "This CDC approval does not allow any work to commence. Principal Certifier must be appointed, and Home Building Compensation Fund (HBCF) has been issued by a licenced builder or Owner Builder Permit is issued by Building Commission NSW and all council fees/bonds have been paid."
       : "This Construction Certificate does not give authorisation of any construction works to commence until a Principal Certifier has been appointed.",
-    { bold: true, gapAfter: 10 }
+    // 4 rather than 10: the six points went to the foot of the page, which
+    // is what lets the REGISTERED CERTIFIER block close the same page.
+    { bold: true, gapAfter: 4 }
   );
 
   // Field for field the same certificate the Word export and the
@@ -174,18 +176,18 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   // different headings, a different title block, conditions set as a
   // full-width section rather than a row — which is why the same job came
   // out as a different document depending on which button was pressed.
-  l.heading("APPLICANT DETAILS", { rule: true });
+  l.heading("APPLICANT DETAILS", { rule: true, gapBefore: 6 });
   l.fieldRow("Applicant:", applicantName || "");
   l.fieldRow("Address:", formatAddress(d.applicantAddress) || "");
   l.fieldRow("Phone:", applicantPhone || "");
 
-  l.heading("OWNER DETAILS", { rule: true });
+  l.heading("OWNER DETAILS", { rule: true, gapBefore: 6 });
   l.fieldRow(isCdc ? "Owner" : "Owner:", ownerName || "");
   l.fieldRow("Address:", ownerAddress || "");
   l.fieldRow("Phone:", ownerPhone || "");
 
   if (isCdc) {
-    l.heading(`${pathwayFull.toUpperCase()} DETAILS`, { rule: true });
+    l.heading(`${pathwayFull.toUpperCase()} DETAILS`, { rule: true, gapBefore: 6 });
     l.fieldRow("NSW Planning Portal Ref Number:", cd.planningPortalRef || "");
     l.fieldRow("Local Government Area:", d.council?.lga || "");
     l.fieldRow("Relevant Environmental Planning Instrument", cd.relevantInstrument || "");
@@ -193,7 +195,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
     l.fieldRow("Date of Determination:", formatISODate(cd.determinationDate));
     l.fieldRow("Date of Lapse:", /^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate);
   } else {
-    l.heading("RELEVANT DEVELOPMENT CONSENTS", { rule: true });
+    l.heading("RELEVANT DEVELOPMENT CONSENTS", { rule: true, gapBefore: 6 });
     l.fieldRow("Consent Authority / Local Government Area:", d.council?.lga || "");
     l.fieldRow("Development Consent Number:", cd.developmentConsentNumber || "");
     l.fieldRow("Development Consent Date:", formatISODate(cd.developmentConsentDate));
@@ -202,7 +204,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
     l.fieldRow("Date of Issue of Construction Certificate:", issuedDate);
   }
 
-  l.heading("PROPOSAL", { rule: true });
+  l.heading("PROPOSAL", { rule: true, gapBefore: 6 });
   l.fieldRow("Address of Development:", job.address || "");
   l.fieldRow(isCdc ? "Lot/Section/DP:" : "Lot/ DP:", cd.lotSectionDp || "");
   if (isCdc) l.fieldRow("Land Use Zone:", d.zoning || "");
@@ -231,16 +233,21 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   }
   l.fieldRow(isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", "See attached Notice");
 
-  // The certifying block starts its own page, the way the on-screen
-  // document does: who issued the certificate and on what authority reads
-  // as one statement, and a certificate whose declaration and signature
-  // are split across a page break reads as an error.
-  l.pageBreak();
+  // Who the certificate is issued by, on the same page as what it covers —
+  // dropping the project-reference subtitle freed the room. The
+  // declaration and signature keep their own page.
+  // Reserved as one block: if a long conditions list ever leaves too
+  // little room, the whole block moves to the next page rather than the
+  // heading staying behind while the rows spill — which is exactly what
+  // the first render of this change did. 71 is the measured cost of the
+  // block; the page's section headings run a 6pt lead-in (not the default
+  // 8) to make the room.
+  l.ensure(71);
   l.heading("REGISTERED CERTIFIER", { rule: true, gapBefore: 0 });
   l.fieldRow("Registered Certifier:", issuedBy?.name || "");
   l.fieldRow("Registration Body:", issuedBy?.registration_body || "");
   l.fieldRow("Registration No:", issuedBy?.registration_no || "");
-  l.gap(6);
+  l.pageBreak();
   l.text(
     isCdc
       ? `I, ${issuedBy?.name || "—"}, certify that the development is complying development and (if carried out as specified in the certificate) will comply with all development standards applicable to the development and with such other requirements prescribed by this regulation concerning the issue of the certificate.`
@@ -263,7 +270,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   //    Sits directly under the certificate it belongs to, rather than at
   //    the back of the pack behind the inspections notice.
   l.pageBreak();
-  l.documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON", { subtitle: "Every document requested from the applicant during assessment, for reference." });
+  l.documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON");
   l.table(
     ["Prepared by", "Document", "Reference no.", "Revision", "Date"],
     allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatDocumentDate(i.document_date)]),

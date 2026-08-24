@@ -271,7 +271,7 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
           <>
             <DocTitle
               title={`${pathwayFull} ${ref}`}
-              subtitles={[`PROJECT REFERENCE ${projRef}`, "Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979"]}
+              subtitles={["Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979"]}
             />
             <p className="text-sm font-bold mb-4">
               This CDC approval does not allow any work to commence. Principal Certifier must be appointed, and Home Building Compensation Fund (HBCF)
@@ -359,30 +359,28 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
               </tr>
             )}
             <CertRow label={isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:"} value="See attached Notice" />
-          </tbody>
-        </table>
-        <DocFooter projRef={projRef} website={firm?.website} />
-      </Section>
 
-      {/* 3b. Certificate — certifying authority, declaration & signature */}
-      <Section>
-        <DocumentHeader firm={firm} logoUrl={logoUrl} />
-        <div className="text-xs text-placeholder mb-3">
-          {pathwayFull} {ref} — continued
-        </div>
-        {/* Registration body then number, in that order and never split
-            across a page — read together they're one statement of the
-            authority the certificate is issued under. */}
-        <table className="w-full break-inside-avoid">
-          <tbody>
+            {/* Who the certificate is issued by, on the same page as what
+                it covers — dropping the project-reference subtitle freed
+                the room this block needs. Registration body then number,
+                in that order: read together they're one statement of the
+                authority the certificate is issued under. */}
             <TableSectionHeading>REGISTERED CERTIFIER</TableSectionHeading>
             <CertRow label="Registered Certifier:" value={issuedBy?.name} />
             <CertRow label="Registration Body:" value={issuedBy?.registration_body} />
             <CertRow label="Registration No:" value={issuedBy?.registration_no} />
           </tbody>
         </table>
+        <DocFooter projRef={projRef} website={firm?.website} />
+      </Section>
 
-        <p className="text-sm mt-4 text-justify">
+      {/* 3b. Certificate — declaration & signature */}
+      <Section>
+        <DocumentHeader firm={firm} logoUrl={logoUrl} />
+        <div className="text-xs text-placeholder mb-3">
+          {pathwayFull} {ref} — continued
+        </div>
+        <p className="text-sm text-justify">
           {isCdc ? (
             <>
               I, {issuedBy?.name || "—"}, certify that the development is complying development and (if carried out as specified in the certificate)
@@ -422,10 +420,7 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
       <Section>
         <DocumentHeader firm={firm} logoUrl={logoUrl} />
         <div className="text-sm">
-          <DocTitle
-            title="SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON"
-            subtitles={["Every document requested from the applicant during assessment, for reference."]}
-          />
+          <DocTitle title="SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON" />
           <table className="w-full border border-line text-sm">
             <thead>
               <tr className="bg-surface">

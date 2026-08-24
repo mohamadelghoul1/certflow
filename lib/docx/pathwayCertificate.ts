@@ -115,7 +115,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     ? "Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979"
     : "Issued under Part 6 the Environmental Planning and Assessment Act 1979";
   const certTitle = isCdc
-    ? documentTitle(`${pathwayFull} ${ref}`, { uppercase: true, subtitle: [`PROJECT REFERENCE ${projRef}`, issuedUnder] })
+    ? documentTitle(`${pathwayFull} ${ref}`, { uppercase: true, subtitle: issuedUnder })
     : documentTitle(`${pathwayFull} – ${projRef}`, { uppercase: true, subtitle: issuedUnder });
   push(
     pageBreak(),
@@ -178,13 +178,12 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
         : []),
       { kind: "row", label: isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", value: "See attached Notice" },
     ]),
-    // The certifying block starts its own page, the way the on-screen
-    // document and the PDF approved set do: who issued the certificate and
-    // on what authority reads as one statement, and a certificate whose
-    // declaration and signature are split across a page break reads as an
-    // error. Its own table as well, so Word cannot paginate between the
-    // certifier's name, registration body and registration number.
-    pageBreak(),
+    // Who the certificate is issued by, on the same page as what it
+    // covers — dropping the project-reference subtitle freed the room. Its
+    // own keep-together table, so if a long conditions list ever pushes it
+    // off, Word moves the whole block rather than splitting the
+    // certifier's name from their registration. The declaration and
+    // signature keep their own page.
     fieldTable(
       [
         { kind: "heading", text: "REGISTERED CERTIFIER" },
@@ -194,6 +193,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       ],
       { keepTogether: true }
     ),
+    pageBreak(),
     p(
       isCdc
         ? `I, ${issuedBy?.name || "—"}, certify that the development is complying development and (if carried out as specified in the certificate) will comply with all development standards applicable to the development and with such other requirements prescribed by this regulation concerning the issue of the certificate.`
@@ -216,7 +216,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
   //    the back of the pack behind the inspections notice.
   push(
     pageBreak(),
-    ...documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON", { subtitle: "Every document requested from the applicant during assessment, for reference." }),
+    ...documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON"),
     gridTable(
       ["Prepared by", "Document", "Reference no.", "Revision", "Date"],
       allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatDocumentDate(i.document_date)]),
