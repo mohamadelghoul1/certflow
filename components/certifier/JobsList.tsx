@@ -14,24 +14,36 @@ type JobRow = {
   certifierId: string | null;
   pathwayLabel: string;
   pathwayDone: boolean;
+  // Every document approved, but the certificate not issued yet.
+  pathwayToIssue: boolean;
   pathwayProgress: string | null;
   nocDone: boolean;
   nocProgress: string | null;
   inspDone: boolean;
   inspProgress: string | null;
   ocDone: boolean;
+  ocToIssue: boolean;
   ocProgress: string | null;
 };
 
-function StagePill({ label, done, progress }: { label: string; done: boolean; progress: string | null }) {
+// Green is reserved for a stage that is actually finished — the
+// certificate issued, not merely every document approved. A checklist
+// that is full but has issued nothing is the one state worth chasing, so
+// it gets its own colour and says what it is waiting for rather than
+// looking identical to a completed stage.
+function StagePill({ label, done, toIssue, progress }: { label: string; done: boolean; toIssue?: boolean; progress: string | null }) {
+  const tone = done
+    ? "bg-success text-white"
+    : toIssue
+      ? "bg-warning-bg text-warning-text border border-warning/50"
+      : progress
+        ? "bg-hover text-secondary border border-line"
+        : "bg-line text-placeholder";
   return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide ${
-        done ? "bg-success text-white" : progress ? "bg-hover text-secondary border border-line" : "bg-line text-placeholder"
-      }`}
-    >
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide ${tone}`} title={toIssue ? `${label} checklist complete — not issued yet` : undefined}>
       {label}
       {progress ? ` ${progress}` : ""}
+      {toIssue ? " · to issue" : ""}
     </span>
   );
 }
@@ -118,10 +130,10 @@ export function JobsList({ jobs, certifiers }: { jobs: JobRow[]; certifiers: { i
                       <div className="text-placeholder mt-0.5">{j.description}</div>
                     </div>
                     <div className="flex gap-1.5 flex-wrap w-full sm:w-80 sm:shrink-0 sm:justify-end">
-                      <StagePill label={j.pathwayLabel} done={j.pathwayDone} progress={j.pathwayProgress} />
+                      <StagePill label={j.pathwayLabel} done={j.pathwayDone} toIssue={j.pathwayToIssue} progress={j.pathwayProgress} />
                       <StagePill label="NOC" done={j.nocDone} progress={j.nocProgress} />
                       <StagePill label="INSP" done={j.inspDone} progress={j.inspProgress} />
-                      <StagePill label="OC" done={j.ocDone} progress={j.ocProgress} />
+                      <StagePill label="OC" done={j.ocDone} toIssue={j.ocToIssue} progress={j.ocProgress} />
                     </div>
                   </Link>
                 </td>
