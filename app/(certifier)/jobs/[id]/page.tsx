@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { checklistProgress } from "@/lib/business";
 import { DetailsTab } from "@/components/certifier/DetailsTab";
+import { NeighbourNotificationPanel } from "@/components/certifier/NeighbourNotificationPanel";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { CertificatesPanel } from "@/components/certifier/CertificatesPanel";
 import { OcPanel } from "@/components/certifier/OcPanel";
@@ -117,16 +118,23 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
         content={{
           details: <DetailsTab job={typedJob} clients={clients || []} sharedClients={sharedClients} />,
           pathway: pathwayChecklist ? (
-            <CertificatesPanel
-              job={typedJob}
-              firmId={profile.firm_id}
-              pathwayChecklistId={pathwayChecklist.id}
-              pathwayItems={(pathwayChecklist.checklist_items as never[]) || []}
-              certifiers={certifiers || []}
-              modifications={modificationsWithChecklist as never[]}
-              library={libraries[job.pathway]}
-              versions={(pathwayVersions as never[]) || []}
-            />
+            <div className="space-y-6">
+              <CertificatesPanel
+                job={typedJob}
+                firmId={profile.firm_id}
+                pathwayChecklistId={pathwayChecklist.id}
+                pathwayItems={(pathwayChecklist.checklist_items as never[]) || []}
+                certifiers={certifiers || []}
+                modifications={modificationsWithChecklist as never[]}
+                library={libraries[job.pathway]}
+                versions={(pathwayVersions as never[]) || []}
+              />
+              {/* The s134 notice is about a CDC application being received,
+                  so it has no place on a CC or PC/OC job. */}
+              {job.pathway === "CDC" && (
+                <NeighbourNotificationPanel jobId={id} />
+              )}
+            </div>
           ) : null,
           noc: nocChecklist ? (
             <ChecklistSection jobId={id} firmId={profile.firm_id} checklistId={nocChecklist.id} label="Notice of Commencement" library={libraries.NOC} items={(nocChecklist.checklist_items as never[]) || []} />

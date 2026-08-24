@@ -21,7 +21,7 @@ const LETTER_LABEL_PCT = 42;
 // document rather than a caption under it.
 const HEADER_DETAIL_SIZE = BODY_SIZE;
 
-function letterheadHeader(firm: PathwayCertificateData["firm"], logo: ImageAsset | null) {
+export function letterheadHeader(firm: PathwayCertificateData["firm"], logo: ImageAsset | null) {
   const left = logo
     ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: HEADER_DETAIL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING })]
     : [p(firm?.name || "", { bold: true, size: TITLE_SIZE, color: HEADING_COLOR, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: HEADER_DETAIL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING })];
@@ -34,7 +34,7 @@ function letterheadHeader(firm: PathwayCertificateData["firm"], logo: ImageAsset
   return new Header({ children: [splitRow(left, right), ruleLine()] });
 }
 
-function projectFooter(projRef: string, website: string | null | undefined) {
+export function projectFooter(projRef: string, website: string | null | undefined) {
   return new Footer({ children: [footerLine(`Project No.: ${projRef}`, website)] });
 }
 
