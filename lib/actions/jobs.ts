@@ -9,7 +9,7 @@ import { todayISO, normalizePortalRef, portalRefKindFor, type PortalRefKind, typ
 import { notifyJobClient } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
 import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
-import { insertChecklistItems } from "@/lib/checklists";
+import { insertChecklistItems, reorderedIds } from "@/lib/checklists";
 import type { JobDetails, CriticalStageInspection } from "@/types/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -301,6 +301,59 @@ export async function addChecklistItems(formData: FormData) {
     template_library_item_id: libraryItemIds[i] || null,
   }));
   await insertChecklistItems(supabase, items);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+// Moves one document up or down its checklist. The checklist's order is
+// the order the approved set is assembled in and Schedule 1 lists them,
+// so this is about the finished document, not just tidiness on screen.
+//
+// Every position is rewritten rather than just the two being swapped:
+// items added through "+ Request documents" all arrived with sort_order
+// 0, so a checklist that has never been through migration 0020 sorts
+// itself out the first time anything is moved.
+export async function moveChecklistItem(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const itemId = String(formData.get("item_id"));
+  const jobId = String(formData.get("job_id"));
+  const direction = String(formData.get("direction"));
+
+  const { data: item } = await supabase.from("checklist_items").select("id, checklist_id").eq("id", itemId).single();
+  if (!item) return;
+
+  const { data: siblings } = await supabase
+    .from("checklist_items")
+    .select("id")
+    .eq("checklist_id", item.checklist_id)
+    .order("sort_order")
+    .order("created_at");
+  if (!siblings) return;
+
+  const reordered = reorderedIds(
+    siblings.map((s) => s.id),
+    itemId,
+    direction === "up" ? "up" : "down"
+  );
+  if (!reordered) return;
+
+  await Promise.all(reordered.map((id, i) => supabase.from("checklist_items").update({ sort_order: i }).eq("id", id)));
+
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+// Keeps a document on the checklist but out of the generated approval —
+// off the approved set PDF and out of Schedule 1. The document is still
+// requested, uploaded, approved and stored exactly as before.
+export async function toggleApprovalInclusion(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const itemId = String(formData.get("item_id"));
+  const jobId = String(formData.get("job_id"));
+  const value = formData.get("value") === "true";
+
+  const { error } = await supabase.from("checklist_items").update({ include_in_approval: value }).eq("id", itemId);
+  if (error) console.error("could not change whether the document is in the approval:", error.message);
   revalidatePath(`/jobs/${jobId}`);
 }
 

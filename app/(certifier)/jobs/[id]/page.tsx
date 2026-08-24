@@ -43,7 +43,13 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     { data: sharedAccessRows },
   ] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).eq("firm_id", profile.firm_id).single(),
-    supabase.from("checklists").select("id, kind, modification_id, checklist_items(*, amendments(*))").eq("job_id", id),
+    supabase
+      .from("checklists")
+      .select("id, kind, modification_id, checklist_items(*, amendments(*))")
+      .eq("job_id", id)
+      // The certifier's chosen order, which is also the order the approved
+      // set is assembled in.
+      .order("sort_order", { referencedTable: "checklist_items" }),
     supabase.from("modifications").select("*").eq("job_id", id).order("created_at"),
     supabase.from("oc_records").select("*").eq("job_id", id).order("created_at"),
     supabase.from("inspections").select("*, defects(*), inspection_photos(*)").eq("job_id", id).order("sort_order", { referencedTable: "inspection_photos" }),

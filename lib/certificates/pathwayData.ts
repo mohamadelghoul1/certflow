@@ -88,7 +88,7 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
     supabase.from("firms").select("*").eq("id", firmId).single(),
     supabase.from("conditions_of_consent").select("*").eq("job_id", jobId).order("created_at"),
     job.pathway_issued_by ? supabase.from("certifiers").select("*").eq("id", job.pathway_issued_by).single() : Promise.resolve({ data: null }),
-    supabase.from("checklists").select("id, kind, checklist_items(*)").eq("job_id", jobId),
+    supabase.from("checklists").select("id, kind, checklist_items(*)").eq("job_id", jobId).order("sort_order", { referencedTable: "checklist_items" }),
     supabase.from("inspections").select("outcome").eq("job_id", jobId),
     supabase.from("pathway_certificate_versions").select("id, cert_ref").eq("job_id", jobId).eq("version", job.pathway_version).single(),
   ]);
@@ -98,17 +98,22 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
 
   const pathwayChecklist = (checklists || []).find((c) => c.kind === "pathway");
   const nocChecklist = (checklists || []).find((c) => c.kind === "noc");
-  const allItems = ((pathwayChecklist?.checklist_items as never[]) || []) as {
+  // Schedule 1 lists what the certificate relies on, so a document the
+  // certifier has left out of the approval is left out here too. The
+  // column is undefined until migration 0020 has been run, which counts
+  // as included.
+  const allItems = (((pathwayChecklist?.checklist_items as never[]) || []) as {
     id: string;
     title: string;
     status: string;
+    include_in_approval?: boolean;
     document_date: string | null;
     prepared_by: string | null;
     // Stored as drawing_number, but it holds any document reference —
     // a BASIX certificate number as readily as a drawing number.
     drawing_number: string | null;
     revision: string | null;
-  }[];
+  }[]).filter((i) => i.include_in_approval !== false);
 
   const lapseDate = calcCdcLapseDate(
     job.pathway,

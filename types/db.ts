@@ -215,6 +215,12 @@ export type ChecklistItem = {
   stamp_x: number | null;
   stamp_y: number | null;
   stamp_scale: number | null;
+  // Whether this document belongs in the generated approval — the full
+  // approved set PDF and the certificate's Schedule 1. The signed
+  // certification contract is the usual thing to leave out: it has to be
+  // collected and kept, but it isn't part of what goes to a builder or a
+  // council. See migration 0020.
+  include_in_approval: boolean;
   // The library item this was requested from, when it came from the firm's
   // document library. Only used to find the blank form to hand the client:
   // the file lives on the library row, so replacing it under Settings

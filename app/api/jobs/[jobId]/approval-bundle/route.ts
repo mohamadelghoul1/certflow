@@ -55,7 +55,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   const pathwayChecklist = (checklists || []).find((c) => c.kind === "pathway");
   const items = (((pathwayChecklist?.checklist_items as never[]) || []) as ChecklistItem[])
-    .filter((i) => i.status === "approved")
+    // Approved, and not one the certifier has deliberately kept out of
+    // the set — the signed contract being the usual case. Undefined until
+    // migration 0020 has been run, which counts as included.
+    .filter((i) => i.status === "approved" && i.include_in_approval !== false)
     .sort((a, b) => a.sort_order - b.sort_order);
 
   // Fetched in parallel — a full set can be a dozen files, and doing them

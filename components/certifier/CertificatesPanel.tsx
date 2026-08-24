@@ -83,7 +83,7 @@ export async function CertificatesPanel({
         <div>
           <div className="text-sm font-semibold text-heading mb-2">Approval documents</div>
           <p className="text-xs text-muted mb-2">The approved plans and documents issued with that certificate — file them here so the inspections and the Occupation Certificate can refer to them.</p>
-          <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} label="Approval" library={library} items={pathwayItems} stamp={stamp} />
+          <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} label="Approval" library={library} items={pathwayItems} stamp={stamp} partOfApproval />
         </div>
       </div>
     );
@@ -93,7 +93,7 @@ export async function CertificatesPanel({
     <div className="space-y-6">
       <div>
         <div className="text-sm font-semibold text-heading mb-2">{job.pathway} checklist</div>
-        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} label={job.pathway} library={library} items={pathwayItems} stamp={stamp} />
+        <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} label={job.pathway} library={library} items={pathwayItems} stamp={stamp} partOfApproval />
       </div>
 
       <div className="border border-line rounded-xl p-6 shadow-sm bg-white">

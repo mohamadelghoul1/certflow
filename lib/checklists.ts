@@ -44,3 +44,18 @@ export async function insertChecklistItems(supabase: SupabaseClient, items: NewC
 
   console.error("checklist items could not be created:", error.message);
 }
+
+// The checklist's order after moving one document one step. Returns null
+// when the move isn't possible — the top item asked to go up, the bottom
+// asked to go down, an id that isn't in the list — so the caller writes
+// nothing at all rather than writing the order back unchanged.
+export function reorderedIds(ids: string[], itemId: string, direction: "up" | "down"): string[] | null {
+  const index = ids.indexOf(itemId);
+  if (index === -1) return null;
+  const target = direction === "up" ? index - 1 : index + 1;
+  if (target < 0 || target >= ids.length) return null;
+
+  const next = [...ids];
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
+}

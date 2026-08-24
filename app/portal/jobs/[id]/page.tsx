@@ -29,7 +29,11 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
   if (!job) notFound();
 
   const [{ data: checklists }, { data: modifications }, { data: ocRecords }, { data: inspections }, { data: certifiers }] = await Promise.all([
-    supabase.from("checklists").select("id, kind, modification_id, checklist_items(*, amendments(*))").eq("job_id", id),
+    supabase
+      .from("checklists")
+      .select("id, kind, modification_id, checklist_items(*, amendments(*))")
+      .eq("job_id", id)
+      .order("sort_order", { referencedTable: "checklist_items" }),
     supabase.from("modifications").select("*").eq("job_id", id).order("created_at"),
     supabase.from("oc_records").select("*").eq("job_id", id).order("created_at"),
     supabase.from("inspections").select("*, defects(*)").eq("job_id", id),
