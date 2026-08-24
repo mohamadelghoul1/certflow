@@ -1,16 +1,17 @@
 import { displayStatus, formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { notifyClientOfChecklist, moveChecklistItem, toggleApprovalInclusion } from "@/lib/actions/jobs";
+import { notifyClientOfChecklist } from "@/lib/actions/jobs";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
-import { ItemStatusProvider, ItemCard, ItemStatusBadge, ItemStatusActions } from "@/components/certifier/ItemStatus";
+import { ItemStatusProvider, ItemCard, ItemStatusBadge, ItemStatusActions, ApprovalInclusionToggle, NotInApprovalBadge } from "@/components/certifier/ItemStatus";
+import { ChecklistOrderProvider, MoveButtons } from "@/components/certifier/ChecklistOrder";
 import { EditableChecklistItemHeader } from "@/components/certifier/EditableChecklistItemHeader";
 import { AmendmentsList } from "@/components/certifier/AmendmentsList";
 import { DocumentDetailsForm } from "@/components/certifier/DocumentDetailsForm";
 import { StampPositioner } from "@/components/certifier/StampPositioner";
 import { stampLines } from "@/lib/pdf/stamp";
 import type { StampPreview } from "@/lib/pdf/stampDetails";
-import { CheckCircle2, ChevronDown, ChevronUp, Download, EyeOff, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
+import { CheckCircle2, Download, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
 import type { ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -101,19 +102,13 @@ export async function ChecklistSection({
 
       {items.length > 0 && (
         <div className="space-y-4">
-          {items.map((item, index) => (
-            <ItemRow
-              key={item.id}
-              item={item}
-              jobId={jobId}
-              firmId={firmId}
-              stamp={stamp}
-              templatePaths={templatePaths}
-              partOfApproval={partOfApproval}
-              isFirst={index === 0}
-              isLast={index === items.length - 1}
-            />
-          ))}
+          <ChecklistOrderProvider
+            jobId={jobId}
+            rows={items.map((item) => ({
+              id: item.id,
+              node: <ItemRow item={item} jobId={jobId} firmId={firmId} stamp={stamp} templatePaths={templatePaths} partOfApproval={partOfApproval} />,
+            }))}
+          />
         </div>
       )}
 
@@ -138,26 +133,6 @@ function DocumentMeta({ item }: { item: ChecklistItem }) {
   return <div className="text-xs text-muted mt-0.5">{parts.join(" · ")}</div>;
 }
 
-// One step up or down the checklist. A plain form so it works as a server
-// action with no client-side state — the page re-renders in the new order.
-function MoveButton({ itemId, jobId, direction, disabled }: { itemId: string; jobId: string; direction: "up" | "down"; disabled: boolean }) {
-  return (
-    <form action={moveChecklistItem}>
-      <input type="hidden" name="item_id" value={itemId} />
-      <input type="hidden" name="job_id" value={jobId} />
-      <input type="hidden" name="direction" value={direction} />
-      <button
-        type="submit"
-        disabled={disabled}
-        title={direction === "up" ? "Move up" : "Move down"}
-        className="flex items-center justify-center w-6 h-5 rounded text-placeholder hover:text-primary hover:bg-hover disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-default"
-      >
-        {direction === "up" ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-      </button>
-    </form>
-  );
-}
-
 async function ItemRow({
   item,
   jobId,
@@ -165,8 +140,6 @@ async function ItemRow({
   stamp,
   templatePaths,
   partOfApproval,
-  isFirst,
-  isLast,
 }: {
   item: ItemWithAmendments;
   jobId: string;
@@ -174,20 +147,14 @@ async function ItemRow({
   stamp: StampPreview | null;
   templatePaths: Record<string, string>;
   partOfApproval: boolean;
-  isFirst: boolean;
-  isLast: boolean;
 }) {
   const status = displayStatus(item);
   const fileUrl = await signedUrl(item.file_path);
-  // Undefined until migration 0020 has been run, which is the same as
-  // included — nothing is silently dropped from an approval because a
-  // migration is still pending.
-  const excluded = item.include_in_approval === false;
   // The blank form for this document, where the firm has attached one.
   const templateUrl = await signedUrl(item.template_library_item_id ? templatePaths[item.template_library_item_id] : null);
 
   return (
-    <ItemStatusProvider itemId={item.id} jobId={jobId} status={item.status} amendments={item.amendments}>
+    <ItemStatusProvider itemId={item.id} jobId={jobId} status={item.status} amendments={item.amendments} includeInApproval={item.include_in_approval !== false}>
       <ItemCard>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -199,11 +166,7 @@ async function ItemRow({
               <DocumentMeta item={item} />
               <div className="flex flex-wrap items-center gap-2">
                 <ItemStatusBadge />
-                {excluded && (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-warning-text bg-warning-bg border border-warning/50 rounded-full px-2 py-0.5">
-                    <EyeOff size={11} /> Not in the approval
-                  </span>
-                )}
+                {partOfApproval && <NotInApprovalBadge />}
               </div>
             </div>
           </div>
@@ -211,10 +174,7 @@ async function ItemRow({
             {/* The checklist's order is the order the approved set is
                 assembled in and Schedule 1 lists the documents, so moving
                 one changes the finished approval, not just this screen. */}
-            <div className="flex flex-col">
-              <MoveButton itemId={item.id} jobId={jobId} direction="up" disabled={isFirst} />
-              <MoveButton itemId={item.id} jobId={jobId} direction="down" disabled={isLast} />
-            </div>
+            <MoveButtons itemId={item.id} />
             {templateUrl && (
               <a
                 href={templateUrl}
@@ -264,26 +224,7 @@ async function ItemRow({
           />
           {/* Only on the checklist the approval is built from — leaving a
               document out of an approval means nothing anywhere else. */}
-          {partOfApproval && (
-            <form action={toggleApprovalInclusion}>
-              <input type="hidden" name="item_id" value={item.id} />
-              <input type="hidden" name="job_id" value={jobId} />
-              <input type="hidden" name="value" value={excluded ? "true" : "false"} />
-              <button
-                type="submit"
-                title={
-                  excluded
-                    ? "Put this document back into the approved set and Schedule 1"
-                    : "Keep this document on the checklist but leave it out of the approved set and Schedule 1"
-                }
-                className={`flex items-center gap-1.5 text-sm font-medium rounded-full px-4 py-1.5 border ${
-                  excluded ? "bg-warning-bg border-warning/50 text-warning-text" : "border-line text-muted hover:bg-hover"
-                }`}
-              >
-                <EyeOff size={13} /> {excluded ? "Not in the approval" : "In the approval"}
-              </button>
-            </form>
-          )}
+          {partOfApproval && <ApprovalInclusionToggle />}
         </div>
 
         <details className="mt-3">

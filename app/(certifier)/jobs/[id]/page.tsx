@@ -49,7 +49,11 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
       .eq("job_id", id)
       // The certifier's chosen order, which is also the order the approved
       // set is assembled in.
-      .order("sort_order", { referencedTable: "checklist_items" }),
+      .order("sort_order", { referencedTable: "checklist_items" })
+      // Same tie-break the move action uses, so what is on screen and what
+      // it reorders are the same list even before migration 0020 has
+      // numbered everything.
+      .order("created_at", { referencedTable: "checklist_items" }),
     supabase.from("modifications").select("*").eq("job_id", id).order("created_at"),
     supabase.from("oc_records").select("*").eq("job_id", id).order("created_at"),
     supabase.from("inspections").select("*, defects(*), inspection_photos(*)").eq("job_id", id).order("sort_order", { referencedTable: "inspection_photos" }),

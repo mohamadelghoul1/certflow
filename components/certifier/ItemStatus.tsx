@@ -1,9 +1,9 @@
 "use client";
 
 import { createContext, useContext, useOptimistic, useState, useTransition } from "react";
-import { CheckCircle2, Clock, AlertTriangle, Circle, RotateCcw, UploadCloud } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Circle, EyeOff, RotateCcw, UploadCloud } from "lucide-react";
 import { displayStatus, unresolvedCount } from "@/lib/business";
-import { approveItem, reopenItem, certifierUploadItem, toggleStamping } from "@/lib/actions/jobs";
+import { approveItem, reopenItem, certifierUploadItem, toggleStamping, toggleApprovalInclusion } from "@/lib/actions/jobs";
 import { FileUpload } from "@/components/certifier/FileUpload";
 import { StampToggle } from "@/components/certifier/StampToggle";
 import type { Amendment, ChecklistItem } from "@/types/db";
@@ -28,6 +28,12 @@ type Ctx = {
   uploading: boolean;
   setUploading: (value: boolean) => void;
   uploadOnBehalf: (path: string) => void;
+  // Whether this document belongs in the generated approval. Shared the
+  // same way as the status above: the chip beside the title and the
+  // button down in the action row are in different parts of the card and
+  // have to flip together the moment the button is pressed.
+  includedInApproval: boolean;
+  toggleInclusion: () => void;
 };
 
 const ItemStatusContext = createContext<Ctx | null>(null);
@@ -43,15 +49,18 @@ export function ItemStatusProvider({
   jobId,
   status,
   amendments,
+  includeInApproval,
   children,
 }: {
   itemId: string;
   jobId: string;
   status: ItemStatus;
   amendments: Amendment[];
+  includeInApproval: boolean;
   children: React.ReactNode;
 }) {
   const [optimisticStatus, setOptimisticStatus] = useOptimistic(status);
+  const [optimisticInclusion, setOptimisticInclusion] = useOptimistic(includeInApproval);
   const [, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
 
@@ -81,6 +90,17 @@ export function ItemStatusProvider({
         // finishes going up, rather than a few seconds later once the
         // server has recorded it and streamed the whole job page back.
         uploadOnBehalf: (path: string) => run("submitted", certifierUploadItem, path),
+        includedInApproval: optimisticInclusion,
+        toggleInclusion: () =>
+          startTransition(async () => {
+            const next = !optimisticInclusion;
+            setOptimisticInclusion(next);
+            const fd = new FormData();
+            fd.set("item_id", itemId);
+            fd.set("job_id", jobId);
+            fd.set("value", next.toString());
+            await toggleApprovalInclusion(fd);
+          }),
       }}
     >
       {children}
@@ -298,5 +318,39 @@ export function ItemStatusActions({
         }}
       />
     </>
+  );
+}
+
+// The chip beside the document's title when it has been kept out of the
+// approval, and the button in the action row that puts it back. Two
+// separate places on the card, one optimistic value, so pressing the
+// button changes both on the spot rather than after a round trip.
+export function NotInApprovalBadge() {
+  const { includedInApproval } = useItemStatus();
+  if (includedInApproval) return null;
+  return (
+    <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-warning-bg text-warning-text">
+      <EyeOff size={12} /> Not in the approval
+    </span>
+  );
+}
+
+export function ApprovalInclusionToggle() {
+  const { includedInApproval, toggleInclusion } = useItemStatus();
+  return (
+    <button
+      type="button"
+      onClick={toggleInclusion}
+      title={
+        includedInApproval
+          ? "Keep this document on the checklist but leave it out of the approved set and Schedule 1"
+          : "Put this document back into the approved set and Schedule 1"
+      }
+      className={`flex items-center gap-1.5 text-sm font-medium rounded-full px-4 py-1.5 border ${
+        includedInApproval ? "border-line text-muted hover:bg-hover" : "bg-warning-bg border-warning/50 text-warning-text"
+      }`}
+    >
+      <EyeOff size={13} /> {includedInApproval ? "In the approval" : "Not in the approval"}
+    </button>
   );
 }

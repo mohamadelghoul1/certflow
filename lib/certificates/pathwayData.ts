@@ -88,7 +88,7 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
     supabase.from("firms").select("*").eq("id", firmId).single(),
     supabase.from("conditions_of_consent").select("*").eq("job_id", jobId).order("created_at"),
     job.pathway_issued_by ? supabase.from("certifiers").select("*").eq("id", job.pathway_issued_by).single() : Promise.resolve({ data: null }),
-    supabase.from("checklists").select("id, kind, checklist_items(*)").eq("job_id", jobId).order("sort_order", { referencedTable: "checklist_items" }),
+    supabase.from("checklists").select("id, kind, checklist_items(*)").eq("job_id", jobId).order("sort_order", { referencedTable: "checklist_items" }).order("created_at", { referencedTable: "checklist_items" }),
     supabase.from("inspections").select("outcome").eq("job_id", jobId),
     supabase.from("pathway_certificate_versions").select("id, cert_ref").eq("job_id", jobId).eq("version", job.pathway_version).single(),
   ]);
