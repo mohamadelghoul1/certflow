@@ -169,3 +169,17 @@ service.
 - `supabase/migrations/` — run these in order on a fresh project.
 - `lib/business.ts` / `lib/constants.ts` — business rules and reference data ported directly from the original prototype.
 - Local development: copy `.env.example` to `.env.local`, fill in the same Supabase values, then `npm install && npm run dev`.
+
+## Running the tests
+
+```bash
+npm test     # the test suite
+npm run check  # types, lint and tests together — run this before pushing
+```
+
+The suite covers the parts where mistakes reach a council rather than a
+screen: the generated documents (it builds a real approval PDF and Word
+file from a fixture and reads them back), the certificate reference and
+download filenames, the dashboard's counting rules, and the checklist
+ordering. Tests live in `tests/` and are excluded from the production
+build.

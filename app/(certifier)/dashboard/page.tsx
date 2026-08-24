@@ -1,5 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { countJob } from "@/lib/dashboardCounts";
 import { unresolvedCount, daysUntil, calcCdcLapseDate, formatISODate, todayISO } from "@/lib/business";
 import { getAuditEvents, getIssuanceEvents } from "@/lib/reporting";
 import Link from "next/link";
@@ -205,53 +206,16 @@ export default async function DashboardPage() {
   const stageCounts = { assessment: 0, readyToIssue: 0, awaitingCommencement: 0, underConstruction: 0, complete: 0 };
 
   for (const p of allJobs) {
-    if (p.status === "complete") {
-      stageCounts.complete += 1;
-    } else {
-      const pathwayItems = (p.checklists || []).find((c) => c.kind === "pathway")?.checklist_items || [];
-      const pathwayDone = pathwayItems.length > 0 && pathwayItems.every((i) => i.status === "approved");
+    // One place decides what a job counts as — see lib/dashboardCounts.ts.
+    const counts = countJob(p as never);
+    stageCounts[counts.stage] += 1;
+    if (counts.pathwayAssessment) assessmentsInProgress += 1;
+    if (counts.approvalToIssue) approvalsToIssue += 1;
+    if (counts.ocAssessment) ocAssessments += 1;
+    documentsForReview += counts.documentsForReview;
 
-      // Issuing the certificate does not put a job on site. The applicant
-      // still has to appoint a principal certifier and lodge the notice of
-      // commencement, which can take weeks — so a job sits in "awaiting
-      // commencement" until its NOC checklist is settled, and only then
-      // counts as under construction.
-      //
-      // A NOC checklist with no items at all means the firm's document
-      // library has no NOC documents in it. There is nothing to determine
-      // in that case, so it must not hold a job back for ever.
-      const nocItems = (p.checklists || []).find((c) => c.kind === "noc")?.checklist_items || [];
-      const nocSettled = nocItems.length === 0 || nocItems.every((i) => i.status === "approved");
-
-      if (p.pathway_generated) {
-        if (nocSettled) stageCounts.underConstruction += 1;
-        else stageCounts.awaitingCommencement += 1;
-      } else if (pathwayDone) stageCounts.readyToIssue += 1;
-      else stageCounts.assessment += 1;
-
-      if (!p.pathway_generated) {
-        if (pathwayDone) approvalsToIssue += 1;
-        else assessmentsInProgress += 1;
-      }
-
-      // An OC assessment is in progress once someone has actually engaged
-      // with the OC checklist — a document submitted or approved — and it
-      // isn't finished. Merely having open OC items doesn't count: every
-      // job's OC checklist starts full of them, which had every freshly
-      // issued CDC showing up as an assessment in progress the moment it
-      // was issued.
-      const ocItems = (p.checklists || []).find((c) => c.kind === "oc")?.checklist_items || [];
-      const ocStarted = ocItems.some((i) => i.status !== "requested");
-      const ocFinished = ocItems.length > 0 && ocItems.every((i) => i.status === "approved");
-      if (p.pathway_generated && ocStarted && !ocFinished) ocAssessments += 1;
-
-      for (const cl of p.checklists || []) {
-        documentsForReview += (cl.checklist_items || []).filter((i) => i.status === "submitted" && unresolvedCount(i as never) === 0).length;
-      }
-
-      for (const i of p.inspections || []) {
-        if (i.date === today) inspectionsToday.push({ jobId: p.id, address: p.address, title: i.title, inspector: null });
-      }
+    for (const i of p.inspections || []) {
+      if (i.date === today) inspectionsToday.push({ jobId: p.id, address: p.address, title: i.title, inspector: null });
     }
   }
 
