@@ -59,10 +59,15 @@ type PdfDocument = {
   numPages: number;
   getPage(n: number): Promise<{
     getViewport(opts: { scale: number }): { width: number; height: number };
-    render(opts: { canvas: HTMLCanvasElement; canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }): { promise: Promise<void> };
+    render(opts: { canvas: HTMLCanvasElement; canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }): PdfRenderTask;
   }>;
-  destroy(): void;
+  // Not present on every build of pdf.js — calling it unconditionally
+  // threw a TypeError out of React's unmount cleanup, which is what put
+  // the whole page on its error screen when the dialog closed on save.
+  destroy?: () => Promise<void> | void;
 };
+
+type PdfRenderTask = { promise: Promise<void>; cancel(): void };
 
 export function StampPositioner({ itemId, jobId, fileUrl, lines, textWidth, textHeight, stampImageUrl, initial }: Props) {
   const [open, setOpen] = useState(false);
@@ -140,9 +145,18 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
   // Renders can overlap when pages are flipped quickly; only the newest
   // one is allowed to finish writing to the canvas.
   const renderToken = useRef(0);
+  // The in-flight render, kept so it can be cancelled. pdf.js will not
+  // draw two renders onto one canvas, and tearing the document down while
+  // a render is still going crashes the tab outright — both are avoided
+  // by cancelling first and waiting for it to settle.
+  const renderTaskRef = useRef<PdfRenderTask | null>(null);
 
   const renderPage = useCallback(async (doc: PdfDocument, n: number) => {
     const token = ++renderToken.current;
+    // Stop whatever is already drawing before touching the canvas again.
+    renderTaskRef.current?.cancel();
+    renderTaskRef.current = null;
+
     const page = await doc.getPage(n);
     if (token !== renderToken.current) return;
 
@@ -167,7 +181,18 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.scale(dpr, dpr);
-    await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+
+    const task = page.render({ canvas, canvasContext: ctx, viewport });
+    renderTaskRef.current = task;
+    try {
+      await task.promise;
+    } catch {
+      // A cancelled render rejects; that's the expected way a superseded
+      // page bows out, not a failure worth reporting.
+      return;
+    } finally {
+      if (renderTaskRef.current === task) renderTaskRef.current = null;
+    }
     if (token !== renderToken.current) return;
     setPageSize({ width: viewport.width, height: viewport.height, pdfWidth: raw.width });
     setLoading(false);
@@ -191,7 +216,11 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
         pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/legacy/build/pdf.worker.min.mjs", import.meta.url).toString();
         const doc = (await pdfjs.getDocument({ url: fileUrlRef.current }).promise) as unknown as PdfDocument;
         if (cancelled) {
-          doc.destroy();
+          try {
+            doc.destroy?.();
+          } catch {
+            // Nothing to release on this build.
+          }
           return;
         }
         loaded = doc;
@@ -208,8 +237,28 @@ function StampDialog({ itemId, jobId, fileUrl, lines, textWidth, textHeight, sta
     })();
     return () => {
       cancelled = true;
+      renderToken.current++;
       docRef.current = null;
-      loaded?.destroy();
+      // Cancel first and destroy only once the render has actually
+      // stopped. Destroying underneath a live render took the whole tab
+      // down with it — which is what happened on Save, since saving
+      // closes the dialog and unmounts this.
+      const task = renderTaskRef.current;
+      renderTaskRef.current = null;
+      const doc = loaded;
+      const teardown = () => {
+        try {
+          doc?.destroy?.();
+        } catch {
+          // Already released, or this build has nothing to release.
+        }
+      };
+      if (task) {
+        task.cancel();
+        Promise.resolve(task.promise).catch(() => {}).finally(teardown);
+      } else {
+        teardown();
+      }
     };
   }, [fileKey, renderPage]);
 
