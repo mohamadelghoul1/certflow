@@ -9,6 +9,7 @@ import { todayISO, normalizePortalRef, portalRefKindFor, type PortalRefKind, typ
 import { notifyJobClient } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
 import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
+import { insertChecklistItems } from "@/lib/checklists";
 import type { JobDetails, CriticalStageInspection } from "@/types/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -200,7 +201,7 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
       // rather than library rows, so those items have no form to offer.
       template_library_item_id: "id" in doc ? doc.id : null,
     }));
-    if (items.length) await supabase.from("checklist_items").insert(items);
+    await insertChecklistItems(supabase, items);
   }
 
   const inspections = INSPECTION_LIBRARY.map((i) => ({
@@ -299,7 +300,7 @@ export async function addChecklistItems(formData: FormData) {
     category: categories[i] || "Other",
     template_library_item_id: libraryItemIds[i] || null,
   }));
-  if (items.length) await supabase.from("checklist_items").insert(items);
+  await insertChecklistItems(supabase, items);
   revalidatePath(`/jobs/${jobId}`);
 }
 

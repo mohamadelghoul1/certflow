@@ -9,6 +9,7 @@ import { INSPECTION_LIBRARY, PRIOR_APPROVAL_DOCUMENTS } from "@/lib/constants";
 import type { ActionState } from "@/lib/actions/auth";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Pathway } from "@/lib/business";
+import { insertChecklistItems } from "@/lib/checklists";
 
 async function firmLibrary(supabase: SupabaseClient, firmId: string, pathway: string) {
   const { data } = await supabase
@@ -256,7 +257,7 @@ export async function generateJobFromQuote(formData: FormData) {
       // blank form for this document.
       template_library_item_id: "id" in doc ? doc.id : null,
     }));
-    if (items.length) await supabase.from("checklist_items").insert(items);
+    await insertChecklistItems(supabase, items);
   }
   const inspections = INSPECTION_LIBRARY.map((i) => ({ job_id: job.id, title: i.title, description: i.desc, inspector_certifier_id: quote.certifier_id }));
   await supabase.from("inspections").insert(inspections);
