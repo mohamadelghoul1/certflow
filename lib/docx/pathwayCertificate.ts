@@ -187,10 +187,10 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     pageBreak(),
     ...documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON", { subtitle: "Every document requested from the applicant during assessment, for reference." }),
     gridTable(
-      ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
-      allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),
-      [21, 27, 13, 12, 15, 12],
-      { zebra: true, centerColumns: [5], rowHeight: 230 }
+      ["Prepared by", "Document", "Reference no.", "Revision", "Date"],
+      allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date)]),
+      [24, 33, 15, 12, 16],
+      { zebra: true, rowHeight: 230 }
     )
   );
 

@@ -409,7 +409,6 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
                 <th className="border border-line px-3 py-1.5 w-28 text-left">Reference no.</th>
                 <th className="border border-line px-3 py-1.5 w-20 text-left">Revision</th>
                 <th className="border border-line px-3 py-1.5 w-24 text-left">Date</th>
-                <th className="border border-line px-3 py-1.5 w-24 text-left">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -420,7 +419,6 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
                   <td className="border border-line px-3 py-1.5">{i.drawing_number || "—"}</td>
                   <td className="border border-line px-3 py-1.5">{i.revision || "—"}</td>
                   <td className="border border-line px-3 py-1.5">{formatISODate(i.document_date)}</td>
-                  <td className="border border-line px-3 py-1.5 capitalize">{i.status}</td>
                 </tr>
               ))}
             </tbody>

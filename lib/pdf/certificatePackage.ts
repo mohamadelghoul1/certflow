@@ -248,10 +248,10 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   l.pageBreak();
   l.documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON", { subtitle: "Every document requested from the applicant during assessment, for reference." });
   l.table(
-    ["Prepared by", "Document", "Reference no.", "Revision", "Date", "Status"],
-    allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date), i.status]),
-    [21, 27, 13, 12, 15, 12],
-    { zebra: true, centerColumns: [5], rowHeight: 12 }
+    ["Prepared by", "Document", "Reference no.", "Revision", "Date"],
+    allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date)]),
+    [24, 33, 15, 12, 16],
+    { zebra: true, rowHeight: 12 }
   );
 
   // 5. Mandatory inspections notice
