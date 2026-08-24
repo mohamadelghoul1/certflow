@@ -48,6 +48,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       applicantPhone: d.contact?.phone || d.contact?.mobile || "",
       applicantEmail: d.contact?.email || "",
       applicantAddress: formatAddress(d.applicantAddress),
+      // The same instrument the certificate itself names — computed from
+      // the ticked code parts, so both documents cite the same law.
+      relevantInstrument: d.certificateDetails?.relevantInstrument || "",
+      relevantPartOfCode: d.certificateDetails?.relevantPartOfCode || "",
       projRef,
       issuedDate: formatISODate(todayISO()),
     },

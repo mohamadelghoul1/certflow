@@ -3,6 +3,7 @@ import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
 import { p, mixed, bullet, splitRow, documentTitle, signatureBlock, signatory, PAGE_PROPERTIES, FONT, TEXT_COLOR, BODY_SIZE, LETTER_BODY_SIZE, LETTER_PARA_AFTER, LETTER_LINE_SPACING, LETTER_SIGNATURE_NAME_SIZE } from "@/lib/docx/shared";
 import { letterheadHeader, projectFooter } from "@/lib/docx/pathwayCertificate";
+import { SEPP_CODES_2008_NAME } from "@/lib/constants";
 import type { Firm, Certifier } from "@/types/db";
 
 // The neighbour notification letter — the notice under s134 of the
@@ -28,14 +29,30 @@ export type NeighbourLetterData = {
   applicantPhone: string;
   applicantEmail: string;
   applicantAddress: string;
+  // The planning instrument this application is actually being assessed
+  // under, and the part of it relied on. Both come from the code parts
+  // ticked on the job, so a Housing SEPP 2021 job doesn't get a letter
+  // citing the 2008 Codes SEPP.
+  relevantInstrument: string;
+  relevantPartOfCode: string;
   projRef: string; // the project number, for the page footer
   issuedDate: string; // today, formatted — the date on the letter
 };
 
+// The middle bullet of the "what is a CDC" list: the instrument this job
+// is assessed under, with the part of it relied on where one is recorded.
+// Falls back to the Codes SEPP — the instrument behind most complying
+// development — when the job hasn't recorded one yet, so the letter is
+// never left with a gap in the middle of a legislative list.
+function instrumentBullet(instrument: string, part: string) {
+  const name = instrument.trim() || SEPP_CODES_2008_NAME;
+  return part.trim() ? `${name}, ${part.trim()}, and` : `${name}, and`;
+}
+
 const letterOpts = { size: LETTER_BODY_SIZE, justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING } as const;
 
 export async function buildNeighbourLetterDocx(data: NeighbourLetterData, images: { logo: ImageAsset | null; signature: ImageAsset | null }): Promise<Buffer> {
-  const { firm, certifier, jobAddress, description, applicantName, applicantPhone, applicantEmail, applicantAddress, projRef, issuedDate } = data;
+  const { firm, certifier, jobAddress, description, applicantName, applicantPhone, applicantEmail, applicantAddress, relevantInstrument, relevantPartOfCode, projRef, issuedDate } = data;
 
   const header = letterheadHeader(firm, images.logo);
   const footer = projectFooter(projRef, firm?.website);
@@ -62,7 +79,7 @@ export async function buildNeighbourLetterDocx(data: NeighbourLetterData, images
       letterOpts
     ),
     bullet("The local Council LEP, and", { size: LETTER_BODY_SIZE }),
-    bullet("State Environmental Planning Policy (Exempt and Complying Development Codes) 2008, Part 3 Housing Code, and", { size: LETTER_BODY_SIZE }),
+    bullet(instrumentBullet(relevantInstrument, relevantPartOfCode), { size: LETTER_BODY_SIZE }),
     bullet("The Environmental Planning and Assessment Regulation 2021, and", { size: LETTER_BODY_SIZE }),
     bullet("The Building Code of Australia.", { size: LETTER_BODY_SIZE }),
     p("What happens next?", { bold: true, size: LETTER_BODY_SIZE, spacingBefore: 120, spacingAfter: 40 }),
