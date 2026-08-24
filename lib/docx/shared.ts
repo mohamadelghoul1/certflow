@@ -367,8 +367,13 @@ export type FieldRow = { kind: "heading"; text: string } | { kind: "row"; label:
 // it — on one page. Word paginates a table row by row, so without it a
 // short block like the certifier's registration details can be split down
 // the middle, leaving the registration number stranded on the next page.
-export function fieldTable(rows: FieldRow[], opts: { keepTogether?: boolean } = {}) {
+// labelPct widens the label column for the covering letters, whose labels
+// ("Planning Instrument Decision Made Under:") are sentences rather than
+// the certificate's one-word "Applicant:" — at the certificate's 28% they
+// wrapped onto a second line beside a one-line value.
+export function fieldTable(rows: FieldRow[], opts: { keepTogether?: boolean; labelPct?: number } = {}) {
   const keepNext = opts.keepTogether || undefined;
+  const labelPct = opts.labelPct ?? 28;
   return borderlessTable(
     rows.map((row) => {
       if (row.kind === "heading") {
@@ -388,12 +393,12 @@ export function fieldTable(rows: FieldRow[], opts: { keepTogether?: boolean } = 
         cantSplit: keepNext,
         height: { value: ROW_HEIGHT, rule: HeightRule.ATLEAST },
         children: [
-          cell([p(row.label, { bold: true, spacingAfter: 0, keepNext, align: AlignmentType.RIGHT })], { widthPct: 28 }),
-          cell(valueChildren, { widthPct: 72 }),
+          cell([p(row.label, { bold: true, spacingAfter: 0, keepNext, align: AlignmentType.RIGHT })], { widthPct: labelPct }),
+          cell(valueChildren, { widthPct: 100 - labelPct }),
         ],
       });
     }),
-    [28, 72]
+    [labelPct, 100 - labelPct]
   );
 }
 

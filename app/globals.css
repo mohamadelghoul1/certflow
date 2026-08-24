@@ -159,6 +159,14 @@ body {
        left for the footer at the bottom. */
     line-height: 1.2;
   }
+  /* Field rows inside a letter (its subject block) belong to the letter,
+     not to the compact tables elsewhere in the pack — without this the
+     more specific .cert-doc .text-sm above would set them at 8.25pt
+     beside 11pt prose. */
+  .cert-doc .letter-body .text-sm {
+    font-size: 14.67px;
+    line-height: 1.2;
+  }
   /* The signatory's registration and firm lines. Scoped to the letter's
      body so the letterhead's contact block above it keeps the 7pt small
      print it has on every other page of the pack. */

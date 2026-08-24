@@ -5,6 +5,10 @@ import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBo
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatClassifications, formatISODate, letterheadAddressLines } from "@/lib/business";
 
+// A letter's field labels are sentences, not the certificate's one-word
+// "Applicant:", so they get a wider column to sit in.
+const LETTER_LABEL_PCT = 42;
+
 // Mirrors app/certificate/pathway/[jobId]/page.tsx section-for-section, so
 // any change to the real document content only needs to happen once in
 // lib/certificates/pathwayData.ts — this file only handles how that same
@@ -40,13 +44,23 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     splitRow(`Our reference: ${projRef}`, issuedDate, { size: LETTER_BODY_SIZE }),
     ...addressBlock(["The General Manager", d.council?.lga || "Council", ...formatAddressLines(d.council?.address)], { size: LETTER_BODY_SIZE }),
     p("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
-    mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }], { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
-    mixed([{ text: `${pathwayFull} No.  `, bold: true }, { text: ref }], { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
-    isCdc
-      ? mixed([{ text: "Planning Instrument Decision Made Under:  ", bold: true }, { text: cd.relevantInstrument || "—" }], { size: LETTER_BODY_SIZE, spacingAfter: 60 })
-      : mixed([{ text: "Development Application No.:  ", bold: true }, { text: cd.developmentConsentNumber || "—" }], { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
+    // The subject and its references, set the way the certificate sets its
+    // own title and fields: a ruled heading, then right-aligned labels
+    // against their values. Run on as bold-lead paragraphs they were three
+    // ragged lines of small print at the top of a letter.
+    ...documentTitle(`RE: ${job.address || ""}`, { uppercase: true }),
+    fieldTable(
+      [
+        { kind: "row", label: `${pathwayFull} No.:`, value: ref },
+        isCdc
+          ? { kind: "row" as const, label: "Planning Instrument Decision Made Under:", value: cd.relevantInstrument || "—" }
+          : { kind: "row" as const, label: "Development Application No.:", value: cd.developmentConsentNumber || "—" },
+      ],
+      { labelPct: LETTER_LABEL_PCT }
+    ),
+    p("", { size: 10, spacingAfter: 0 }),
     ...councilBody.map((para) => p(para, { size: LETTER_BODY_SIZE, justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING })),
-    p("Please find enclosed the following documentation:", { size: LETTER_BODY_SIZE }),
+    ...documentTitle("ENCLOSED WITH THIS LETTER"),
     bullet(`${pathwayFull} No. ${ref}`, { size: LETTER_BODY_SIZE }),
     bullet(`Copy of the application for the ${pathwayFull}.`, { size: LETTER_BODY_SIZE }),
     bullet(`Documentation used to determine the application for the ${pathwayFull} as detailed in Schedule 1 of the Certificate.`, { size: LETTER_BODY_SIZE }),
@@ -62,8 +76,9 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     splitRow(`Our reference: ${projRef}`, issuedDate, { size: LETTER_BODY_SIZE }),
     ...addressBlock([applicantName, ...formatAddressLines(d.applicantAddress)], { size: LETTER_BODY_SIZE }),
     p("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
-    mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }], { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
-    mixed([{ text: `${pathwayFull} No.:  `, bold: true }, { text: ref }], { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
+    ...documentTitle(`RE: ${job.address || ""}`, { uppercase: true }),
+    fieldTable([{ kind: "row", label: `${pathwayFull} No.:`, value: ref }], { labelPct: LETTER_LABEL_PCT }),
+    p("", { size: 10, spacingAfter: 0 }),
     p(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true, size: LETTER_BODY_SIZE, lineSpacing: LETTER_LINE_SPACING }),
     ...applicantBody.map((para) => p(para, { size: LETTER_BODY_SIZE, justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING })),
     calloutBox([

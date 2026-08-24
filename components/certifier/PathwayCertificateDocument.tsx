@@ -15,10 +15,12 @@ import { formatAddress, formatBcaVersion, formatCurrency, type PathwayCertificat
 // Every field row on the certificate/notice is a real table row (not a
 // flex row) so the two-column layout also comes out right in the Word
 // export, which has no flexbox support at all.
-function CertRow({ label, value }: { label: string; value?: string | null }) {
+function CertRow({ label, value, wideLabel }: { label: string; value?: string | null; wideLabel?: boolean }) {
   return (
     <tr className="align-top">
-      <td className="py-1.5 pr-4 text-sm font-semibold text-heading whitespace-nowrap w-1/3">{label}</td>
+      {/* wideLabel is for the covering letters, whose labels are sentences
+          rather than the certificate's one-word "Applicant:". */}
+      <td className={`py-1.5 pr-4 text-sm font-semibold text-heading whitespace-nowrap ${wideLabel ? "w-[42%]" : "w-1/3"}`}>{label}</td>
       <td className="py-1.5 text-sm text-muted">{value || "—"}</td>
     </tr>
   );
@@ -64,6 +66,22 @@ function DocFooter({ projRef, website }: { projRef: string; website?: string | n
           <td className="text-right">{website}</td>
         </tr>
       </tbody>
+    </table>
+  );
+}
+
+// The letters borrow the certificate's two devices: a ruled heading, and
+// right-of-label fields. Run on as bold-lead paragraphs, a letter's
+// subject and references read as three ragged lines of small print; set
+// like this they read as the same document as the certificate behind them.
+function LetterHeading({ children }: { children: React.ReactNode }) {
+  return <div className="text-sm font-bold uppercase border-b border-line pb-1.5">{children}</div>;
+}
+
+function LetterFields({ children }: { children: React.ReactNode }) {
+  return (
+    <table className="w-full">
+      <tbody>{children}</tbody>
     </table>
   );
 }
@@ -160,28 +178,20 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
           </div>
           <div>Dear Sir/Madam,</div>
           <div>
-            <div>
-              <strong>Re:</strong> {job.address}
-            </div>
-            <div className="mt-2">
-              <strong>{pathwayFull} No.</strong>&nbsp;&nbsp;{ref}
-            </div>
-            <div className="mt-1">
+            <LetterHeading>Re: {job.address}</LetterHeading>
+            <LetterFields>
+              <CertRow label={`${pathwayFull} No.:`} value={ref} wideLabel />
               {isCdc ? (
-                <>
-                  <strong>Planning Instrument Decision Made Under:</strong>&nbsp;&nbsp;{cd.relevantInstrument || "—"}
-                </>
+                <CertRow label="Planning Instrument Decision Made Under:" value={cd.relevantInstrument} wideLabel />
               ) : (
-                <>
-                  <strong>Development Application No.:</strong>&nbsp;&nbsp;{cd.developmentConsentNumber || "—"}
-                </>
+                <CertRow label="Development Application No.:" value={cd.developmentConsentNumber} wideLabel />
               )}
-            </div>
+            </LetterFields>
           </div>
           <LetterBodyEditor jobId={job.id} letter="council" paragraphs={councilBody} hasOverride={!!job.council_letter_override} />
           <div>
-            Please find enclosed the following documentation:
-            <ul className="list-disc pl-5 mt-1 space-y-0.5">
+            <LetterHeading>Enclosed with this letter</LetterHeading>
+            <ul className="list-disc pl-5 mt-2 space-y-0.5">
               <li>{pathwayFull} No. {ref}</li>
               <li>Copy of the application for the {pathwayFull}.</li>
               <li>Documentation used to determine the application for the {pathwayFull} as detailed in Schedule 1 of the Certificate.</li>
@@ -208,12 +218,10 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
           </div>
           <div>Dear Sir/Madam,</div>
           <div>
-            <div>
-              <strong>Re:</strong> {job.address}
-            </div>
-            <div className="mt-2">
-              <strong>{pathwayFull} No.:</strong>&nbsp;&nbsp;{ref}
-            </div>
+            <LetterHeading>Re: {job.address}</LetterHeading>
+            <LetterFields>
+              <CertRow label={`${pathwayFull} No.:`} value={ref} wideLabel />
+            </LetterFields>
           </div>
           <div className="font-bold">
             Enclosed is a copy of the approved {pathwayFull} for the subject development, and a copy of the stamped plans.

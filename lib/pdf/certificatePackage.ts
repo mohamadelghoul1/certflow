@@ -4,6 +4,10 @@ import { formatClassifications, formatISODate, letterheadAddressLines } from "@/
 
 // The CDC/CC certificate package as a PDF, mirroring
 // lib/docx/pathwayCertificate.ts section for section: council letter,
+// A letter's field labels are sentences, not the certificate's one-word
+// "Applicant:", so they get a wider column to sit in.
+const LETTER_LABEL_FRACTION = 0.42;
+
 // applicant letter, certificate, mandatory inspections notice, Schedule 1
 // and the documents-requested table.
 //
@@ -102,16 +106,19 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   splitLine(`Our reference: ${projRef}`, issuedDate);
   l.addressBlock(["The General Manager", d.council?.lga || "Council", ...formatAddressLines(d.council?.address)], { size: LETTER_BODY_SIZE });
   l.text("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
-  l.inline([{ text: "Re: ", bold: true }, { text: job.address || "" }], { size: LETTER_BODY_SIZE, gapAfter: 3 });
-  l.inline([{ text: `${pathwayFull} No.  `, bold: true }, { text: ref }], { size: LETTER_BODY_SIZE, gapAfter: 3 });
-  l.inline(
-    isCdc
-      ? [{ text: "Planning Instrument Decision Made Under:  ", bold: true }, { text: cd.relevantInstrument || "—" }]
-      : [{ text: "Development Application No.:  ", bold: true }, { text: cd.developmentConsentNumber || "—" }],
-    { size: LETTER_BODY_SIZE, gapAfter: 3 }
+  // The subject and its references, set the way the certificate sets its
+  // own title and fields — a ruled heading, then right-aligned labels
+  // against their values.
+  l.documentTitle(`RE: ${(job.address || "").toUpperCase()}`);
+  l.fieldRow(`${pathwayFull} No.:`, ref, l.contentWidth * LETTER_LABEL_FRACTION);
+  l.fieldRow(
+    isCdc ? "Planning Instrument Decision Made Under:" : "Development Application No.:",
+    (isCdc ? cd.relevantInstrument : cd.developmentConsentNumber) || "—",
+    l.contentWidth * LETTER_LABEL_FRACTION
   );
+  l.gap(4);
   councilBody.forEach((line) => l.text(line, { size: LETTER_BODY_SIZE, justify: true, letter: true, gapAfter: LETTER_PARA_AFTER }));
-  l.text("Please find enclosed the following documentation:", { size: LETTER_BODY_SIZE });
+  l.documentTitle("ENCLOSED WITH THIS LETTER");
   l.bullet(`${pathwayFull} No. ${ref}`, { size: LETTER_BODY_SIZE });
   l.bullet(`Copy of the application for the ${pathwayFull}.`, { size: LETTER_BODY_SIZE });
   l.bullet(`Documentation used to determine the application for the ${pathwayFull} as detailed in Schedule 1 of the Certificate.`, { size: LETTER_BODY_SIZE });
@@ -125,8 +132,9 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   splitLine(`Our reference: ${projRef}`, issuedDate);
   l.addressBlock([applicantName || "", ...formatAddressLines(d.applicantAddress)], { size: LETTER_BODY_SIZE });
   l.text("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
-  l.inline([{ text: "Re: ", bold: true }, { text: job.address || "" }], { size: LETTER_BODY_SIZE, gapAfter: 3 });
-  l.inline([{ text: `${pathwayFull} No.:  `, bold: true }, { text: ref }], { size: LETTER_BODY_SIZE, gapAfter: 3 });
+  l.documentTitle(`RE: ${(job.address || "").toUpperCase()}`);
+  l.fieldRow(`${pathwayFull} No.:`, ref, l.contentWidth * LETTER_LABEL_FRACTION);
+  l.gap(4);
   l.text(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true, size: LETTER_BODY_SIZE, letter: true, gapAfter: 3 });
   applicantBody.forEach((line) => l.text(line, { size: LETTER_BODY_SIZE, justify: true, letter: true, gapAfter: LETTER_PARA_AFTER }));
   if (requiredDocsList.length) {
