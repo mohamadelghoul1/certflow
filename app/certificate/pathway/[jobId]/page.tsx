@@ -21,6 +21,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
     <CertificatePackage
       backHref={`/jobs/${jobId}?tab=pathway`}
       wordExportHref={`/api/certificate/pathway/${jobId}/word`}
+      allowPrint={false}
       signed={!!job.pathway_signed_at}
       signedLabel={`Signed ${formatISODate(job.pathway_signed_at)}`}
       signAction={signPathwayCertificate}

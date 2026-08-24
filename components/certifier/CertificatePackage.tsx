@@ -38,7 +38,8 @@ function SignButton({
 }
 
 // Wraps the whole letter/certificate package: a print:hidden toolbar (back
-// link, Print, Export as Word) plus the printable content itself.
+// link, Print where the document offers it, Export as Word) plus the
+// document itself.
 //
 // "Export as Word" links straight to a route under app/api/ that builds a
 // genuine .docx server-side (lib/docx/) — native page breaks, table
@@ -69,6 +70,7 @@ export function CertificatePackage({
   backHref,
   wordExportHref,
   children,
+  allowPrint = true,
   signed,
   signedLabel,
   signAction,
@@ -81,6 +83,11 @@ export function CertificatePackage({
   backHref: string;
   wordExportHref: string;
   children: React.ReactNode;
+  /* Whether this document offers "Print / Save as PDF". The approval turns
+     it off: it goes out as the Word export or as the full approved set
+     PDF, both laid out by CertFlow, rather than as whatever the browser's
+     own print engine makes of the page. */
+  allowPrint?: boolean;
   signed?: boolean;
   signedLabel?: string;
   signAction?: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
@@ -94,17 +101,21 @@ export function CertificatePackage({
 
   return (
     <div className="min-h-screen bg-surface print:bg-white">
-      <Suspense fallback={null}>
-        <AutoPrint />
-      </Suspense>
+      {allowPrint && (
+        <Suspense fallback={null}>
+          <AutoPrint />
+        </Suspense>
+      )}
       <div className="max-w-3xl mx-auto py-6 px-4 print:hidden flex items-center justify-between flex-wrap gap-2">
         <Link href={backHref} className="text-sm text-placeholder hover:text-primary">
           ← Back to project
         </Link>
         <div className="flex items-center gap-2">
-          <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
-            Print / Save as PDF
-          </button>
+          {allowPrint && (
+            <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
+              Print / Save as PDF
+            </button>
+          )}
           {canExportWord && (
             <a href={wordExportHref} className="px-4 py-2 rounded-md border border-primary text-primary text-sm font-semibold hover:bg-hover">
               Export as Word

@@ -12,7 +12,7 @@ import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import { EditableCertRef } from "@/components/certifier/EditableCertRef";
 import { SignCertificateButton } from "@/components/certifier/SignCertificateButton";
 import Link from "next/link";
-import { ChevronDown, Download, FileText, Layers, Printer, CheckCircle2 } from "lucide-react";
+import { ChevronDown, Download, FileText, Layers, CheckCircle2 } from "lucide-react";
 import type { Job, Certifier, Modification, ChecklistItem, Amendment, PathwayCertificateVersion } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -220,11 +220,15 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
       </div>
       <div className="mt-3 pt-3 border-t border-line flex flex-wrap items-center gap-3">
         {/* Everything that renders a document is limited to the active
-            version: all three routes build from whichever version the job
+            version: every route below builds from whichever version the job
             currently points at, so offering them on an older card would
             quietly produce the wrong document. Export stays available after
             signing — the document page hides its own Export at that point,
-            which otherwise left no way to download the final approval. */}
+            which otherwise left no way to download the final approval.
+            There is deliberately no browser-print option here: the approval
+            leaves CertFlow as the Word export or as the full approved set
+            PDF, both of which are laid out by CertFlow itself rather than
+            by whatever the certifier's browser and printer driver decide. */}
         {version.visible_to_client && (
           <>
             <Link href={`/certificate/pathway/${job.id}`} target="_blank" className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
@@ -233,9 +237,6 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
             <a href={`/api/certificate/pathway/${job.id}/word`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
               <Download size={12} /> Export to Word
             </a>
-            <Link href={`/certificate/pathway/${job.id}?print=1`} target="_blank" className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
-              <Printer size={12} /> Print / Save as PDF
-            </Link>
             {/* One PDF holding the signed approval and every approved
                 document behind it, stamped where the checklist says so —
                 the set that actually gets handed on. Only offered once
