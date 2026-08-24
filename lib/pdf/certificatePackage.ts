@@ -1,6 +1,6 @@
 import { Layout, MARGIN, MARGIN_BOTTOM, HEADER_TOP, A4, LETTER_BODY_SIZE, LETTER_SIGNATURE_NAME_SIZE, MUTED, LINE, HEADING_COLOR, INK, BODY_SIZE, SMALL_SIZE, TITLE_SIZE, SPACE_AFTER, LETTER_PARA_AFTER, INSPECTION_HEADER_FILL } from "@/lib/pdf/layout";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
-import { formatClassifications, formatISODate, letterheadAddressLines } from "@/lib/business";
+import { formatClassifications, formatDocumentDate, formatISODate, letterheadAddressLines } from "@/lib/business";
 
 // The CDC/CC certificate package as a PDF, mirroring
 // lib/docx/pathwayCertificate.ts section for section: council letter,
@@ -265,7 +265,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   l.documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON", { subtitle: "Every document requested from the applicant during assessment, for reference." });
   l.table(
     ["Prepared by", "Document", "Reference no.", "Revision", "Date"],
-    allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date)]),
+    allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatDocumentDate(i.document_date)]),
     [24, 33, 15, 12, 16],
     { zebra: true, rowHeight: 12 }
   );

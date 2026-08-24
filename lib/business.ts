@@ -7,6 +7,15 @@ export function today() {
 export function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
+// A document's own date — the date on a plan, a certificate, a report.
+// Absent means the certifier hasn't recorded one, which on a printed
+// schedule reads as an em dash beside the other blank columns.
+// formatISODate's "Not yet scheduled" belongs to an inspection that has no
+// date yet; on a list of approved documents it was nonsense.
+export function formatDocumentDate(iso?: string | null) {
+  return iso ? formatISODate(iso) : "—";
+}
+
 export function formatISODate(iso?: string | null) {
   if (!iso) return "Not yet scheduled";
   // Some columns are plain dates ("2026-08-22") and others are full

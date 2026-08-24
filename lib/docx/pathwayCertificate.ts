@@ -3,7 +3,7 @@ import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
 import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, BODY_SIZE, signatureRule, signatory, addressBlock, LETTER_PARA_AFTER, LETTER_LINE_SPACING, TIGHT_LINE_SPACING, LETTER_BODY_SIZE, LETTER_SIGNATURE_NAME_SIZE } from "@/lib/docx/shared";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
-import { formatClassifications, formatISODate, letterheadAddressLines } from "@/lib/business";
+import { formatClassifications, formatDocumentDate, formatISODate, letterheadAddressLines } from "@/lib/business";
 
 // A letter's field labels are sentences, not the certificate's one-word
 // "Applicant:", so they get a wider column to sit in.
@@ -210,7 +210,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     ...documentTitle("SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON", { subtitle: "Every document requested from the applicant during assessment, for reference." }),
     gridTable(
       ["Prepared by", "Document", "Reference no.", "Revision", "Date"],
-      allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatISODate(i.document_date)]),
+      allItems.map((i) => [i.prepared_by || "—", i.title, i.drawing_number || "—", i.revision || "—", formatDocumentDate(i.document_date)]),
       [24, 33, 15, 12, 16],
       { zebra: true, rowHeight: 230 }
     )

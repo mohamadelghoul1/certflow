@@ -7,6 +7,7 @@ import { formatAddress } from "@/lib/certificates/pathwayData";
 import { resolveStampCertifier } from "@/lib/pdf/stampDetails";
 import { fetchImageAsset } from "@/lib/docx/fetchImageAsset";
 import { buildNeighbourLetterDocx } from "@/lib/docx/neighbourLetters";
+import { attachmentHeader, jobDocumentName } from "@/lib/downloadName";
 import type { Job, Firm } from "@/types/db";
 
 // The s134 neighbour notification letter as a Word file, built entirely
@@ -61,7 +62,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "Content-Disposition": `attachment; filename="${projRef}-Neighbour-Notification.docx"`,
+      "Content-Disposition": attachmentHeader(jobDocumentName(projRef, job.address || "", "Neighbour Notification", "docx")),
+      "Cache-Control": "no-store",
     },
   });
 }

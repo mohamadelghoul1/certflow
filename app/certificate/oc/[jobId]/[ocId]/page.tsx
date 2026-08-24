@@ -1,6 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import { formatClassifications, formatISODate } from "@/lib/business";
+import { formatClassifications, formatDocumentDate, formatISODate } from "@/lib/business";
 import { signOc, uploadOcApproval } from "@/lib/actions/jobs";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
@@ -239,7 +239,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
                       <td className="px-2 py-1.5 border-b border-line">{item.title}</td>
                       <td className="px-2 py-1.5 border-b border-line">{item.drawing_number || "—"}</td>
                       <td className="px-2 py-1.5 border-b border-line">{item.revision || "—"}</td>
-                      <td className="px-2 py-1.5 border-b border-line">{formatISODate(item.document_date)}</td>
+                      <td className="px-2 py-1.5 border-b border-line">{formatDocumentDate(item.document_date)}</td>
                     </tr>
                   ))}
                   {approvedItems.length === 0 && (

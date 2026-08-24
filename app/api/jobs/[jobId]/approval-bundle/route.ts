@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signedUrl } from "@/lib/storage";
 import { resolvePathwayCertRef, formatISODate, todayISO } from "@/lib/business";
 import { buildApprovalBundle, type BundleDocument } from "@/lib/pdf/bundle";
+import { attachmentHeader, jobDocumentName } from "@/lib/downloadName";
 import { buildCertificatePackagePdf } from "@/lib/pdf/certificatePackage";
 import { getPathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { fetchStampImage } from "@/lib/pdf/stamp";
@@ -118,7 +119,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   return new NextResponse(new Uint8Array(bytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${certRef}-Approved-Set.pdf"`,
+      "Content-Disposition": attachmentHeader(jobDocumentName(certRef, job.address || "", "Approved Set", "pdf")),
+      // Renaming the reference changes this file's name, so a download
+      // must never come back from a cache that predates the rename.
+      "Cache-Control": "no-store",
     },
   });
 }

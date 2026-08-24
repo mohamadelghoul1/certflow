@@ -4,7 +4,7 @@ import type { ImageAsset } from "@/lib/docx/shared";
 import { p, mixed, pageBreak, splitRow, fieldTable, gridTable, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, headingRule, BODY_SIZE, signatureRule, signatory } from "@/lib/docx/shared";
 import type { OcCertificateData } from "@/lib/certificates/ocData";
 import { formatAddress } from "@/lib/certificates/pathwayData";
-import { formatClassifications, formatISODate, letterheadAddressLines } from "@/lib/business";
+import { formatClassifications, formatDocumentDate, formatISODate, letterheadAddressLines } from "@/lib/business";
 
 // Mirrors app/certificate/oc/[jobId]/[ocId]/page.tsx section-for-section.
 // The council/applicant letters (sections 1-2) share the same logo
@@ -115,7 +115,7 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
     approvedItems.length > 0
       ? gridTable(
           ["Prepared by", "Document", "Reference no.", "Revision", "Date"],
-          approvedItems.map((item) => [item.prepared_by || "—", item.title, item.drawing_number || "—", item.revision || "—", formatISODate(item.document_date)]),
+          approvedItems.map((item) => [item.prepared_by || "—", item.title, item.drawing_number || "—", item.revision || "—", formatDocumentDate(item.document_date)]),
           [20, 32, 18, 13, 17],
           { zebra: true, rowHeight: 300 }
         )

@@ -1,4 +1,4 @@
-import { formatClassifications, formatISODate } from "@/lib/business";
+import { formatClassifications, formatDocumentDate, formatISODate } from "@/lib/business";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
 import { LetterBodyEditor } from "@/components/certifier/LetterBodyEditor";
 import { formatAddress, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
@@ -443,7 +443,7 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
                   <td className="border border-line px-3 py-1.5">{i.title}</td>
                   <td className="border border-line px-3 py-1.5">{i.drawing_number || "—"}</td>
                   <td className="border border-line px-3 py-1.5">{i.revision || "—"}</td>
-                  <td className="border border-line px-3 py-1.5">{formatISODate(i.document_date)}</td>
+                  <td className="border border-line px-3 py-1.5">{formatDocumentDate(i.document_date)}</td>
                 </tr>
               ))}
             </tbody>

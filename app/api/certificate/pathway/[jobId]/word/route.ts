@@ -3,6 +3,7 @@ import { requireProfile } from "@/lib/auth";
 import { getPathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { fetchImageAsset } from "@/lib/docx/fetchImageAsset";
 import { buildPathwayCertificateDocx } from "@/lib/docx/pathwayCertificate";
+import { attachmentHeader, jobDocumentName } from "@/lib/downloadName";
 
 // Generates a real .docx for the CDC/CC certificate package, server-side —
 // see CertificatePackage.tsx's wordExportHref doc comment for why this
@@ -21,7 +22,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "Content-Disposition": `attachment; filename="${data.projRef}-Certificate-Package.docx"`,
+      "Content-Disposition": attachmentHeader(jobDocumentName(data.ref, data.job.address || "", "Certificate Package", "docx")),
+      "Cache-Control": "no-store",
     },
   });
 }
