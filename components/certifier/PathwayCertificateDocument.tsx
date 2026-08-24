@@ -34,10 +34,15 @@ function TableSectionHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Section({ children, last }: { children: React.ReactNode; last?: boolean }) {
+// `letter` marks the two covering letters. They are prose on a mostly
+// empty page rather than a dense form, so they print at the same 11pt the
+// Word export and the PDF approved set set them in — the compact size the
+// rest of the pack needs to hold its pagination reads far too small in a
+// letter. See the .letter-page block in globals.css.
+function Section({ children, last, letter }: { children: React.ReactNode; last?: boolean; letter?: boolean }) {
   return (
     <div
-      className={`cert-page bg-white p-8 mb-6 shadow-sm print:shadow-none print:mb-0 print:p-[14mm] ${!last ? "print:break-after-page" : ""}`}
+      className={`cert-page bg-white p-8 mb-6 shadow-sm print:shadow-none print:mb-0 print:py-[12mm] print:px-[14mm] ${letter ? "letter-page" : ""} ${!last ? "print:break-after-page" : ""}`}
       data-page-break={!last ? "after" : undefined}
     >
       {children}
@@ -142,9 +147,9 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
       )}
 
       {/* 1. Council letter */}
-      <Section>
+      <Section letter>
         <DocumentHeader firm={firm} logoUrl={logoUrl} />
-        <div className="text-sm space-y-3">
+        <div className="letter-body text-sm space-y-3">
           <RefDateRow projRef={projRef} date={issuedDate} />
           <div>
             The General Manager
@@ -192,9 +197,9 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
       </Section>
 
       {/* 2. Applicant letter */}
-      <Section>
+      <Section letter>
         <DocumentHeader firm={firm} logoUrl={logoUrl} />
-        <div className="text-sm space-y-3">
+        <div className="letter-body text-sm space-y-3">
           <RefDateRow projRef={projRef} date={issuedDate} />
           <div>
             {applicantName}

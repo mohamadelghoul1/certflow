@@ -147,15 +147,45 @@ body {
   .cert-doc li + li {
     margin-top: 1px;
   }
+  /* The two covering letters print at the same 11pt the Word export and
+     the PDF approved set use. The compact sizes above exist to hold the
+     certificate and the notice to their pages; a letter is prose on a
+     mostly empty sheet, and at 11px it came out visibly smaller than the
+     same letter in the other two formats. 11pt = 14.67px. */
+  .cert-doc .letter-body {
+    font-size: 14.67px;
+    /* Single spacing, as the Word and PDF letters set it. Looser than
+       this and the longer applicant letter fills the sheet with no room
+       left for the footer at the bottom. */
+    line-height: 1.2;
+  }
+  /* The signatory's registration and firm lines. Scoped to the letter's
+     body so the letterhead's contact block above it keeps the 7pt small
+     print it has on every other page of the pack. */
+  .cert-doc .letter-body .text-xs {
+    font-size: 13.3px;
+    line-height: 1.2;
+  }
+  /* 4px ≈ 3pt, the same gap between paragraphs the Word letters use
+     (LETTER_PARA_AFTER). At the browser's default spacing the longer
+     applicant letter tipped onto a second sheet once the type went up to
+     11pt; this is what keeps all three formats to one page each. */
+  .cert-doc .letter-body.space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 4px;
+  }
+
   /* Each printed sheet becomes a column the full height of the paper, so
      the project footer sits at the foot of every page — the way the Word
      export and the generated PDF set it — rather than directly under
      wherever the content happens to end. A hair under 297mm so rounding
-     never spills a section onto a blank sheet. */
+     never spills a section onto a blank sheet. 290mm rather than a figure
+     closer to the paper: the footer is pinned to the bottom of this box,
+     and when the box came within a few millimetres of the sheet Chrome's
+     printer put that footer over onto the next page by itself. */
   .cert-doc .cert-page {
     display: flex;
     flex-direction: column;
-    min-height: 296mm;
+    min-height: 290mm;
   }
   .cert-doc .cert-page .doc-footer {
     margin-top: auto;
