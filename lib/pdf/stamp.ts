@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, pushGraphicsState, popGraphicsState, concatTransformationMatrix, type PDFPage, type PDFFont } from "pdf-lib";
 
 // The certifier's approval stamp, drawn onto every page of an approved
 // document the way a wet stamp would be applied to a printed set.
@@ -119,6 +119,30 @@ export function stampOrigin(pageWidth: number, pageHeight: number, width: number
   };
 }
 
+// A page can carry a /Rotate flag, and plans very often do — a landscape
+// sheet is frequently stored upright with a quarter turn applied for
+// display. Viewers honour it, so the certifier positions the stamp on the
+// page as they see it, but pdf-lib draws into the page's own unrotated
+// coordinates: without this the stamp came out lying on its side.
+//
+// The matrix maps the page as displayed onto the page as stored, so
+// everything below can be laid out in the coordinates the certifier
+// actually dragged the stamp in.
+type Matrix = [number, number, number, number, number, number];
+
+function displayTransform(rotation: number, rawWidth: number, rawHeight: number) {
+  switch (((rotation % 360) + 360) % 360) {
+    case 90:
+      return { matrix: [0, 1, -1, 0, rawWidth, 0] as Matrix, width: rawHeight, height: rawWidth };
+    case 180:
+      return { matrix: [-1, 0, 0, -1, rawWidth, rawHeight] as Matrix, width: rawWidth, height: rawHeight };
+    case 270:
+      return { matrix: [0, -1, 1, 0, 0, rawHeight] as Matrix, width: rawHeight, height: rawWidth };
+    default:
+      return { matrix: null as Matrix | null, width: rawWidth, height: rawHeight };
+  }
+}
+
 async function drawStamp(pdf: PDFDocument, page: PDFPage, regular: PDFFont, bold: PDFFont, details: StampDetails, placement: StampPlacement | null) {
   const scale = Math.max(0.25, placement?.scale ?? DEFAULT_STAMP_SCALE);
   const lines = stampLines(details);
@@ -129,8 +153,16 @@ async function drawStamp(pdf: PDFDocument, page: PDFPage, regular: PDFFont, bold
   const width = base.width * scale;
   const height = base.height * scale;
   const textHeight = base.textHeight * scale;
-  const { width: pageWidth, height: pageHeight } = page.getSize();
+  const raw = page.getSize();
+  const display = displayTransform(page.getRotation().angle, raw.width, raw.height);
+  // Measured against the page as displayed — the same page the placement
+  // fractions were dragged on.
+  const { width: pageWidth, height: pageHeight } = display;
   const { x, y } = stampOrigin(pageWidth, pageHeight, width, height, placement);
+
+  if (display.matrix) {
+    page.pushOperators(pushGraphicsState(), concatTransformationMatrix(...display.matrix));
+  }
 
   // The text box sits at the bottom of the block, the artwork above it —
   // the same order the positioner previews.
@@ -159,6 +191,10 @@ async function drawStamp(pdf: PDFDocument, page: PDFPage, regular: PDFFont, bold
       height: base.imageHeight * scale,
       opacity: 0.95,
     });
+  }
+
+  if (display.matrix) {
+    page.pushOperators(popGraphicsState());
   }
 }
 
