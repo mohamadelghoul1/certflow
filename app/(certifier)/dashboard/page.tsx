@@ -234,8 +234,16 @@ export default async function DashboardPage() {
         else assessmentsInProgress += 1;
       }
 
+      // An OC assessment is in progress once someone has actually engaged
+      // with the OC checklist — a document submitted or approved — and it
+      // isn't finished. Merely having open OC items doesn't count: every
+      // job's OC checklist starts full of them, which had every freshly
+      // issued CDC showing up as an assessment in progress the moment it
+      // was issued.
       const ocItems = (p.checklists || []).find((c) => c.kind === "oc")?.checklist_items || [];
-      if (p.pathway_generated && ocItems.some((i) => i.status !== "approved")) ocAssessments += 1;
+      const ocStarted = ocItems.some((i) => i.status !== "requested");
+      const ocFinished = ocItems.length > 0 && ocItems.every((i) => i.status === "approved");
+      if (p.pathway_generated && ocStarted && !ocFinished) ocAssessments += 1;
 
       for (const cl of p.checklists || []) {
         documentsForReview += (cl.checklist_items || []).filter((i) => i.status === "submitted" && unresolvedCount(i as never) === 0).length;
