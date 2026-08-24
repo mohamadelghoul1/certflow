@@ -53,6 +53,13 @@
   --color-hover: #f0f4f7;
   --color-active: #e6eef5;
 
+  /* The navy the generated documents set their titles and section
+     headings in — HEADING_COLOR in lib/docx/shared.ts and lib/pdf/layout.ts.
+     Shared here so the certificate on screen is the same document as the
+     one that comes out of the Word export and the approved-set PDF,
+     rather than a differently-styled preview of it. */
+  --color-doc-heading: #1f4e79;
+
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
   --radius-sm: 4px;

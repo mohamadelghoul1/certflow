@@ -18,10 +18,12 @@ import { formatAddress, formatBcaVersion, formatCurrency, type PathwayCertificat
 function CertRow({ label, value, wideLabel }: { label: string; value?: string | null; wideLabel?: boolean }) {
   return (
     <tr className="align-top">
-      {/* wideLabel is for the covering letters, whose labels are sentences
+      {/* Right-aligned against its value, the shape every field takes in
+          the Word export and the approved-set PDF (fieldRow / fieldTable).
+          wideLabel is for the covering letters, whose labels are sentences
           rather than the certificate's one-word "Applicant:". */}
-      <td className={`py-1.5 pr-4 text-sm font-semibold text-heading whitespace-nowrap ${wideLabel ? "w-[42%]" : "w-1/3"}`}>{label}</td>
-      <td className="py-1.5 text-sm text-muted">{value || "—"}</td>
+      <td className={`py-1 pr-3 text-sm font-semibold text-heading text-right align-top ${wideLabel ? "w-[42%] whitespace-nowrap" : "w-[32%]"}`}>{label}</td>
+      <td className="py-1 text-sm text-heading">{value || "—"}</td>
     </tr>
   );
 }
@@ -29,7 +31,7 @@ function CertRow({ label, value, wideLabel }: { label: string; value?: string | 
 function TableSectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <tr>
-      <td colSpan={2} className="pb-1.5 pt-3 text-sm font-bold border-b border-line">
+      <td colSpan={2} className="pb-1 pt-4 text-sm font-bold uppercase text-doc-heading border-b border-line">
         {children}
       </td>
     </tr>
@@ -75,7 +77,7 @@ function DocFooter({ projRef, website }: { projRef: string; website?: string | n
 // subject and references read as three ragged lines of small print; set
 // like this they read as the same document as the certificate behind them.
 function LetterHeading({ children }: { children: React.ReactNode }) {
-  return <div className="text-sm font-bold uppercase border-b border-line pb-1.5">{children}</div>;
+  return <div className="text-sm font-bold uppercase text-doc-heading border-b border-line pb-1.5">{children}</div>;
 }
 
 function LetterFields({ children }: { children: React.ReactNode }) {
@@ -83,6 +85,24 @@ function LetterFields({ children }: { children: React.ReactNode }) {
     <table className="w-full">
       <tbody>{children}</tbody>
     </table>
+  );
+}
+
+// The title at the head of a document section — the certificate, the
+// notice, a schedule. Matches documentTitle() in lib/docx/shared.ts and
+// lib/pdf/layout.ts: the title in navy, its small print under it, and a
+// rule closing the block.
+function DocTitle({ title, subtitles = [] }: { title: string; subtitles?: (string | null | undefined)[] }) {
+  const lines = subtitles.filter(Boolean) as string[];
+  return (
+    <div className="border-b border-line pb-1.5 mb-3">
+      <div className="text-base font-bold uppercase text-doc-heading">{title}</div>
+      {lines.map((line) => (
+        <div key={line} className="text-xs text-muted mt-0.5">
+          {line}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -249,12 +269,10 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
         <DocumentHeader firm={firm} logoUrl={logoUrl} />
         {isCdc ? (
           <>
-            <div className="text-sm font-bold uppercase">
-              {pathwayFull} {ref}
-              <br />
-              PROJECT REFERENCE {projRef}
-            </div>
-            <p className="text-xs text-placeholder mt-1 mb-4">Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979</p>
+            <DocTitle
+              title={`${pathwayFull} ${ref}`}
+              subtitles={[`PROJECT REFERENCE ${projRef}`, "Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979"]}
+            />
             <p className="text-sm font-bold mb-4">
               This CDC approval does not allow any work to commence. Principal Certifier must be appointed, and Home Building Compensation Fund (HBCF)
               has been issued by a licenced builder or Owner Builder Permit is issued by Building Commission NSW and all council fees/bonds have been
@@ -263,10 +281,7 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
           </>
         ) : (
           <>
-            <div className="text-sm font-bold uppercase">
-              {pathwayFull} &ndash; {projRef}
-            </div>
-            <p className="text-xs text-placeholder mt-1 mb-4">Issued under Part 6 the Environmental Planning and Assessment Act 1979</p>
+            <DocTitle title={`${pathwayFull} – ${projRef}`} subtitles={["Issued under Part 6 the Environmental Planning and Assessment Act 1979"]} />
             <p className="text-sm font-bold mb-4">
               This Construction Certificate does not give authorisation of any construction works to commence until a Principal Certifier has been
               appointed.
@@ -407,8 +422,10 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
       <Section>
         <DocumentHeader firm={firm} logoUrl={logoUrl} />
         <div className="text-sm">
-          <div className="text-base font-bold mb-1">SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON</div>
-          <div className="text-xs text-placeholder mb-3">Every document requested from the applicant during assessment, for reference.</div>
+          <DocTitle
+            title="SCHEDULE 1: APPROVED PLANS AND SPECIFICATIONS/ SUPPORTING DOCUMENTATION RELIED UPON"
+            subtitles={["Every document requested from the applicant during assessment, for reference."]}
+          />
           <table className="w-full border border-line text-sm">
             <thead>
               <tr className="bg-surface">
@@ -439,10 +456,10 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
       <Section>
         <DocumentHeader firm={firm} logoUrl={logoUrl} />
         <div className="text-sm space-y-3">
-          <div className="text-base font-bold">NOTICE TO APPLICANT OF MANDATORY CRITICAL STAGE INSPECTIONS</div>
-          <div className="text-xs text-placeholder">
-            Made under Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 — Section 58
-          </div>
+          <DocTitle
+            title="NOTICE TO APPLICANT OF MANDATORY CRITICAL STAGE INSPECTIONS"
+            subtitles={["Made under Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 — Section 58"]}
+          />
 
           <table className="w-full">
             <tbody>
@@ -521,10 +538,7 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
       <Section last>
         <DocumentHeader firm={firm} logoUrl={logoUrl} />
         <div className="text-sm space-y-3">
-          <div className="font-bold text-base mb-1">SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS</div>
-          <div className="text-xs text-placeholder">
-            {pathwayFull} {ref} — {job.address}
-          </div>
+          <DocTitle title="SCHEDULE 1: MANDATORY CRITICAL STAGE INSPECTIONS" subtitles={[`${pathwayFull} ${ref} — ${job.address || ""}`]} />
           <table className="w-full border border-line text-sm">
             <thead>
               <tr className="bg-surface">
