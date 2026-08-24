@@ -267,8 +267,10 @@ export class Layout {
 
   // A bold, right-aligned label beside its value, both wrapping
   // independently — the shape every certificate field uses.
-  fieldRow(label: string, value: string, labelWidth = this.contentWidth * 0.28) {
-    const size = BODY_SIZE;
+  // `size` lets the covering letters set their field rows at the same
+  // 11pt as the prose around them; unset keeps the certificate's compact
+  // default.
+  fieldRow(label: string, value: string, labelWidth = this.contentWidth * 0.28, size = BODY_SIZE) {
     const lead = size * LINE_FACTOR;
     const valueWidth = this.contentWidth - labelWidth - 8;
     const labelLines = this.wrap(label, labelWidth, size, true);

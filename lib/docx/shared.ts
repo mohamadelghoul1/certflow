@@ -371,7 +371,10 @@ export type FieldRow = { kind: "heading"; text: string } | { kind: "row"; label:
 // ("Planning Instrument Decision Made Under:") are sentences rather than
 // the certificate's one-word "Applicant:" — at the certificate's 28% they
 // wrapped onto a second line beside a one-line value.
-export function fieldTable(rows: FieldRow[], opts: { keepTogether?: boolean; labelPct?: number } = {}) {
+// `size` lets the covering letters set their field rows at the same 11pt
+// as the prose around them — left unset, rows keep the certificate's
+// compact default, which next to letter text read as small print.
+export function fieldTable(rows: FieldRow[], opts: { keepTogether?: boolean; labelPct?: number; size?: number } = {}) {
   const keepNext = opts.keepTogether || undefined;
   const labelPct = opts.labelPct ?? 28;
   return borderlessTable(
@@ -388,12 +391,12 @@ export function fieldTable(rows: FieldRow[], opts: { keepTogether?: boolean; lab
           ],
         });
       }
-      const valueChildren = row.children ?? [p(row.value || "—", { spacingAfter: 0, keepNext })];
+      const valueChildren = row.children ?? [p(row.value || "—", { size: opts.size, spacingAfter: 0, keepNext })];
       return new TableRow({
         cantSplit: keepNext,
         height: { value: ROW_HEIGHT, rule: HeightRule.ATLEAST },
         children: [
-          cell([p(row.label, { bold: true, spacingAfter: 0, keepNext, align: AlignmentType.RIGHT })], { widthPct: labelPct }),
+          cell([p(row.label, { bold: true, size: opts.size, spacingAfter: 0, keepNext, align: AlignmentType.RIGHT })], { widthPct: labelPct }),
           cell(valueChildren, { widthPct: 100 - labelPct }),
         ],
       });

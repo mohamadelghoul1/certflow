@@ -6,8 +6,17 @@ import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, ty
 import { formatClassifications, formatDocumentDate, formatISODate, letterheadAddressLines } from "@/lib/business";
 
 // A letter's field labels are sentences, not the certificate's one-word
-// "Applicant:", so they get a wider column to sit in.
-const LETTER_LABEL_PCT = 42;
+// "Applicant:", so they get a wider column to sit in. At the letter's
+// 11pt the longest label plus the longest value no longer fit one line
+// between them, so something has to wrap — and it should be the label,
+// the way the certificate's own long labels wrap, never the value: a
+// year stranded alone under "State Environmental Planning Policy
+// (Housing)" reads as a mistake. 40% gives values the room — measured
+// from the render: the longest value needs ~290pt of the ~516pt line —
+// and lets the labels fold right-aligned the way the certificate's own
+// long labels do. The PDF keeps its own 42% — its Helvetica runs
+// narrower and everything fits on one line there.
+const LETTER_LABEL_PCT = 40;
 
 // Mirrors app/certificate/pathway/[jobId]/page.tsx section-for-section, so
 // any change to the real document content only needs to happen once in
@@ -63,7 +72,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
           ? { kind: "row" as const, label: "Planning Instrument Decision Made Under:", value: cd.relevantInstrument || "—" }
           : { kind: "row" as const, label: "Development Application No.:", value: cd.developmentConsentNumber || "—" },
       ],
-      { labelPct: LETTER_LABEL_PCT }
+      { labelPct: LETTER_LABEL_PCT, size: LETTER_BODY_SIZE }
     ),
     p("", { size: 10, spacingAfter: 0 }),
     ...councilBody.map((para) => p(para, { size: LETTER_BODY_SIZE, justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING })),
@@ -84,7 +93,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     ...addressBlock([applicantName, ...formatAddressLines(d.applicantAddress)], { size: LETTER_BODY_SIZE }),
     p("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
     ...documentTitle(`RE: ${job.address || ""}`, { uppercase: true }),
-    fieldTable([{ kind: "row", label: `${pathwayFull} No.:`, value: ref }], { labelPct: LETTER_LABEL_PCT }),
+    fieldTable([{ kind: "row", label: `${pathwayFull} No.:`, value: ref }], { labelPct: LETTER_LABEL_PCT, size: LETTER_BODY_SIZE }),
     p("", { size: 10, spacingAfter: 0 }),
     p(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true, size: LETTER_BODY_SIZE, lineSpacing: LETTER_LINE_SPACING }),
     ...applicantBody.map((para) => p(para, { size: LETTER_BODY_SIZE, justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING })),
