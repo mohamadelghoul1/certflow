@@ -708,14 +708,6 @@ export async function sendPathwayCertificateToClient(_prev: ActionState, formDat
   return undefined;
 }
 
-export async function reportPathwayToPortal(formData: FormData) {
-  await requireProfile("certifier");
-  const supabase = await createClient();
-  const jobId = String(formData.get("job_id"));
-  await supabase.from("jobs").update({ pathway_portal_reported: true, pathway_portal_reported_date: todayISO() }).eq("id", jobId);
-  revalidatePath(`/jobs/${jobId}`);
-}
-
 export async function uploadPathwayApproval(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
@@ -923,15 +915,6 @@ export async function sendOcToClient(_prev: ActionState, formData: FormData): Pr
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/oc/${jobId}/${ocId}`);
   return undefined;
-}
-
-export async function reportOcToPortal(formData: FormData) {
-  await requireProfile("certifier");
-  const supabase = await createClient();
-  const jobId = String(formData.get("job_id"));
-  const ocId = String(formData.get("oc_id"));
-  await supabase.from("oc_records").update({ portal_reported: true, portal_reported_date: todayISO() }).eq("id", ocId);
-  revalidatePath(`/jobs/${jobId}`);
 }
 
 export async function uploadOcApproval(formData: FormData) {
