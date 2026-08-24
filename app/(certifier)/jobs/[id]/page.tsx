@@ -46,7 +46,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     supabase.from("jobs").select("*").eq("id", id).eq("firm_id", profile.firm_id).single(),
     supabase
       .from("checklists")
-      .select("id, kind, modification_id, checklist_items(*, amendments(*))")
+      .select("id, kind, modification_id, checklist_items(*, amendments(*), checklist_item_files(*))")
       .eq("job_id", id)
       // The certifier's chosen order, which is also the order the approved
       // set is assembled in.

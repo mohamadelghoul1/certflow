@@ -8,10 +8,11 @@ import { Download } from "lucide-react";
 import { displayStatus, unresolvedCount, checklistProgress, formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { UploadClientDocument } from "@/components/portal/UploadClientDocument";
+import { DocumentVersions } from "@/components/certifier/DocumentVersions";
 import { BookInspectionForm } from "@/components/portal/BookInspectionForm";
-import type { ChecklistItem, Amendment, Certifier, Inspection, Defect, OcRecord } from "@/types/db";
+import type { ChecklistItem, Amendment, ChecklistItemFile, Certifier, Inspection, Defect, OcRecord } from "@/types/db";
 
-type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
+type ItemWithAmendments = ChecklistItem & { amendments: Amendment[]; checklist_item_files?: ChecklistItemFile[] | null };
 
 const OUTCOME_META: Record<string, { label: string; style: string }> = {
   pending: { label: "Pending", style: "bg-surface text-muted" },
@@ -31,7 +32,7 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
   const [{ data: checklists }, { data: modifications }, { data: ocRecords }, { data: inspections }, { data: certifiers }] = await Promise.all([
     supabase
       .from("checklists")
-      .select("id, kind, modification_id, checklist_items(*, amendments(*))")
+      .select("id, kind, modification_id, checklist_items(*, amendments(*), checklist_item_files(*))")
       .eq("job_id", id)
       .order("sort_order", { referencedTable: "checklist_items" })
       .order("created_at", { referencedTable: "checklist_items" }),
@@ -203,6 +204,11 @@ async function StageSection({
                   <UploadClientDocument itemId={item.id} pathPrefix={`${firmId}/${jobId}/checklist/${item.id}`} hasFile={!!item.file_path} />
                 )}
               </div>
+
+              {/* What has already been sent for this document — so a
+                  client can check which version the certifier is holding
+                  before uploading another. */}
+              <DocumentVersions files={item.checklist_item_files || []} currentPath={item.file_path} />
             </div>
           );
         })}

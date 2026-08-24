@@ -7,14 +7,15 @@ import { ItemStatusProvider, ItemCard, ItemStatusBadge, ItemStatusActions, Appro
 import { ChecklistOrderProvider, MoveButtons } from "@/components/certifier/ChecklistOrder";
 import { EditableChecklistItemHeader } from "@/components/certifier/EditableChecklistItemHeader";
 import { AmendmentsList } from "@/components/certifier/AmendmentsList";
+import { DocumentVersions } from "@/components/certifier/DocumentVersions";
 import { DocumentDetailsForm } from "@/components/certifier/DocumentDetailsForm";
 import { StampPositioner } from "@/components/certifier/StampPositioner";
 import { stampLines } from "@/lib/pdf/stamp";
 import type { StampPreview } from "@/lib/pdf/stampDetails";
 import { CheckCircle2, Download, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
-import type { ChecklistItem, Amendment } from "@/types/db";
+import type { ChecklistItem, Amendment, ChecklistItemFile } from "@/types/db";
 
-type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
+type ItemWithAmendments = ChecklistItem & { amendments: Amendment[]; checklist_item_files?: ChecklistItemFile[] | null };
 type LibItem = { id: string; title: string; description: string | null; category: string | null; template_file_path: string | null };
 
 // Thin-line document icon chosen by keyword match on the item's title —
@@ -231,6 +232,8 @@ async function ItemRow({
           <summary className="text-xs text-muted cursor-pointer hover:text-heading">Document details (prepared by, reference no., revision, date)</summary>
           <DocumentDetailsForm item={item} jobId={jobId} />
         </details>
+
+        <DocumentVersions files={item.checklist_item_files || []} currentPath={item.file_path} />
 
         <AmendmentsList itemId={item.id} jobId={jobId} amendments={item.amendments} />
       </ItemCard>

@@ -242,6 +242,20 @@ export type DocumentLibraryItem = {
   template_file_name: string | null;
 };
 
+// One row per upload against a checklist document — the file the client
+// (or the certifier on their behalf) sent, kept even after a newer one
+// replaces it. checklist_items.file_path still points at the current
+// version; this is the trail behind it. See migration 0021.
+export type ChecklistItemFile = {
+  id: string;
+  checklist_item_id: string;
+  file_path: string;
+  version: number;
+  uploaded_by_role: "client" | "certifier";
+  uploaded_by: string | null;
+  created_at: string;
+};
+
 export type Amendment = {
   id: string;
   checklist_item_id: string;

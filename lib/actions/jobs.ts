@@ -370,18 +370,31 @@ export async function approveItem(formData: FormData) {
 }
 
 export async function certifierUploadItem(formData: FormData) {
-  await requireProfile("certifier");
+  const { userId } = await requireProfile("certifier");
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
   const filePath = String(formData.get("file_path"));
-  await supabase
-    .from("checklist_items")
-    .update({ file_path: filePath, status: "submitted", version: undefined as never })
-    .eq("id", itemId);
-  // version bump done via RPC-free direct read+write to avoid a race in this admin path:
   const { data: item } = await supabase.from("checklist_items").select("version").eq("id", itemId).single();
-  if (item) await supabase.from("checklist_items").update({ version: (item.version || 0) + 1 }).eq("id", itemId);
+  const version = (item?.version || 0) + 1;
+
+  await supabase.from("checklist_items").update({ file_path: filePath, status: "submitted", version }).eq("id", itemId);
+
+  // The version history behind the current file, so a document replaced
+  // later can still be produced. Mirrors what client_submit_document
+  // records when the client uploads it themselves — recorded as a
+  // certifier upload, since that is what happened.
+  const { error: historyError } = await supabase.from("checklist_item_files").insert({
+    checklist_item_id: itemId,
+    file_path: filePath,
+    version,
+    uploaded_by_role: "certifier",
+    uploaded_by: userId,
+  });
+  // The upload itself has already succeeded; a missing history table
+  // (migration 0021 not yet run) must not make it look like it failed.
+  if (historyError) console.error("could not record the document's version history:", historyError.message);
+
   revalidatePath(`/jobs/${jobId}`);
 }
 
