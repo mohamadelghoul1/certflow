@@ -10,7 +10,7 @@ import { EditableCertRef } from "@/components/certifier/EditableCertRef";
 import type { Job, Certifier, OcRecord, ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
-type LibItem = { title: string; description: string | null; category: string | null };
+type LibItem = { id: string; title: string; description: string | null; category: string | null; template_file_path: string | null };
 
 export async function OcPanel({
   job,

@@ -13,7 +13,7 @@ import type { Pathway } from "@/lib/business";
 async function firmLibrary(supabase: SupabaseClient, firmId: string, pathway: string) {
   const { data } = await supabase
     .from("document_library_items")
-    .select("title, description, category")
+    .select("id, title, description, category")
     .eq("firm_id", firmId)
     .eq("pathway", pathway)
     .order("sort_order");
@@ -246,7 +246,16 @@ export async function generateJobFromQuote(formData: FormData) {
     // collects the previous certifier's approval instead of this firm's
     // document library for a pathway it never follows.
     const library = libraryKey === "PC_OC" ? PRIOR_APPROVAL_DOCUMENTS : await firmLibrary(supabase, profile.firm_id, libraryKey);
-    const items = library.map((doc, idx) => ({ checklist_id: checklist.id, title: doc.title, description: doc.description, category: doc.category, sort_order: idx }));
+    const items = library.map((doc, idx) => ({
+      checklist_id: checklist.id,
+      title: doc.title,
+      description: doc.description,
+      category: doc.category,
+      sort_order: idx,
+      // See createJob: the link back to the library item is what finds the
+      // blank form for this document.
+      template_library_item_id: "id" in doc ? doc.id : null,
+    }));
     if (items.length) await supabase.from("checklist_items").insert(items);
   }
   const inspections = INSPECTION_LIBRARY.map((i) => ({ job_id: job.id, title: i.title, description: i.desc, inspector_certifier_id: quote.certifier_id }));

@@ -1,8 +1,10 @@
 import { pathwayLabel } from "@/lib/business";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { displayStatus, unresolvedCount, checklistProgress, formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { UploadClientDocument } from "@/components/portal/UploadClientDocument";
@@ -41,6 +43,29 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
 
   const pathwayApprovalUrl = await signedUrl(job.pathway_approval_file_path);
 
+  // Which of this project's documents the firm has a blank form for.
+  // Checklist items link to a library item whether or not a form has been
+  // attached to it, and the document library isn't readable by a client at
+  // all, so the check is made here with the admin client rather than by
+  // offering a link that turns out to lead nowhere.
+  const linkedLibraryIds = [
+    ...new Set(
+      (checklists || [])
+        .flatMap((c) => (c.checklist_items as ItemWithAmendments[]) || [])
+        .map((i) => i.template_library_item_id)
+        .filter((id): id is string => !!id)
+    ),
+  ];
+  const formIds = new Set<string>();
+  if (linkedLibraryIds.length > 0) {
+    const { data: withForms } = await createAdminClient()
+      .from("document_library_items")
+      .select("id")
+      .in("id", linkedLibraryIds)
+      .not("template_file_path", "is", null);
+    for (const row of withForms || []) formIds.add(row.id);
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -58,6 +83,7 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
         items={(pathwayChecklist?.checklist_items as ItemWithAmendments[]) || []}
         jobId={id}
         firmId={job.firm_id}
+        formIds={formIds}
       />
 
       {job.pathway_sent_to_client && (
@@ -89,15 +115,16 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
           items={(modChecklists.get(m.id)?.checklist_items as ItemWithAmendments[]) || []}
           jobId={id}
           firmId={job.firm_id}
+          formIds={formIds}
           footer={m.generated ? `Issued ${formatISODate(m.generated_date)}` : undefined}
         />
       ))}
 
-      <StageSection title="Notice of Commencement (NOC)" items={(nocChecklist?.checklist_items as ItemWithAmendments[]) || []} jobId={id} firmId={job.firm_id} />
+      <StageSection title="Notice of Commencement (NOC)" items={(nocChecklist?.checklist_items as ItemWithAmendments[]) || []} jobId={id} firmId={job.firm_id} formIds={formIds} />
 
       <InspectionsSection jobId={id} firmId={job.firm_id} pathwayGenerated={job.pathway_generated} inspections={(inspections as (Inspection & { defects: Defect[] })[]) || []} certifiers={certifiers || []} />
 
-      <StageSection title="Occupation Certificate — checklist" items={(ocChecklist?.checklist_items as ItemWithAmendments[]) || []} jobId={id} firmId={job.firm_id} />
+      <StageSection title="Occupation Certificate — checklist" items={(ocChecklist?.checklist_items as ItemWithAmendments[]) || []} jobId={id} firmId={job.firm_id} formIds={formIds} />
 
       <OcSection ocRecords={(ocRecords || []).filter((r) => r.sent_to_client)} />
 
@@ -106,7 +133,22 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
   );
 }
 
-async function StageSection({ title, items, jobId, firmId, footer }: { title: string; items: ItemWithAmendments[]; jobId: string; firmId: string; footer?: string }) {
+async function StageSection({
+  title,
+  items,
+  jobId,
+  firmId,
+  formIds,
+  footer,
+}: {
+  title: string;
+  items: ItemWithAmendments[];
+  jobId: string;
+  firmId: string;
+  // Library item ids that actually have a blank form attached.
+  formIds: Set<string>;
+  footer?: string;
+}) {
   if (items.length === 0) return null;
   const progress = checklistProgress(items);
 
@@ -139,11 +181,23 @@ async function StageSection({ title, items, jobId, firmId, footer }: { title: st
                 </div>
               )}
 
-              {item.status !== "approved" && (
-                <div className="mt-2">
+              <div className="mt-2 flex flex-wrap items-center gap-4">
+                {/* The certifier's own blank form for this document, where
+                    they've attached one: the contract, the application
+                    form, the notice of commencement. Download it, fill it
+                    in, and upload it back with the button beside it. */}
+                {item.template_library_item_id && formIds.has(item.template_library_item_id) && (
+                  <a
+                    href={`/api/forms/${item.id}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary hover:underline"
+                  >
+                    <Download size={14} /> Download blank form
+                  </a>
+                )}
+                {item.status !== "approved" && (
                   <UploadClientDocument itemId={item.id} pathPrefix={`${firmId}/${jobId}/checklist/${item.id}`} hasFile={!!item.file_path} />
-                </div>
-              )}
+                )}
+              </div>
             </div>
           );
         })}

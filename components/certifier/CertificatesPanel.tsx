@@ -17,7 +17,7 @@ import type { Job, Certifier, Modification, ChecklistItem, Amendment, PathwayCer
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
 type ModificationWithChecklist = Modification & { checklistId: string | null; items: ItemWithAmendments[] };
-type LibItem = { title: string; description: string | null; category: string | null };
+type LibItem = { id: string; title: string; description: string | null; category: string | null; template_file_path: string | null };
 
 export async function CertificatesPanel({
   job,

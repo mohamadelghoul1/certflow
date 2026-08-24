@@ -10,11 +10,11 @@ import { DocumentDetailsForm } from "@/components/certifier/DocumentDetailsForm"
 import { StampPositioner } from "@/components/certifier/StampPositioner";
 import { stampLines } from "@/lib/pdf/stamp";
 import type { StampPreview } from "@/lib/pdf/stampDetails";
-import { CheckCircle2, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
+import { CheckCircle2, Download, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
 import type { ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
-type LibItem = { title: string; description: string | null; category: string | null };
+type LibItem = { id: string; title: string; description: string | null; category: string | null; template_file_path: string | null };
 
 // Thin-line document icon chosen by keyword match on the item's title —
 // purely decorative, falls back to a generic file icon.
@@ -50,7 +50,12 @@ export async function ChecklistSection({
   // checklists are rendered without it and show no positioner.
   stamp?: StampPreview | null;
 }) {
-  const pickerLibrary = library.map((l) => ({ title: l.title, desc: l.description || "", category: l.category || "Other" }));
+  const pickerLibrary = library.map((l) => ({ id: l.id, title: l.title, desc: l.description || "", category: l.category || "Other" }));
+  // The firm's blank forms, by library item id, so a row can offer the
+  // form the client is being asked to fill in. Taken from the library this
+  // checklist was built from — every item here links to a row in it.
+  const templatePaths: Record<string, string> = {};
+  for (const l of library) if (l.template_file_path) templatePaths[l.id] = l.template_file_path;
   const existingTitles = items.map((i) => i.title);
   const doneCount = items.filter((i) => i.status === "approved").length;
   const percent = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
@@ -93,7 +98,7 @@ export async function ChecklistSection({
       {items.length > 0 && (
         <div className="space-y-4">
           {items.map((item) => (
-            <ItemRow key={item.id} item={item} jobId={jobId} firmId={firmId} stamp={stamp} />
+            <ItemRow key={item.id} item={item} jobId={jobId} firmId={firmId} stamp={stamp} templatePaths={templatePaths} />
           ))}
         </div>
       )}
@@ -119,9 +124,23 @@ function DocumentMeta({ item }: { item: ChecklistItem }) {
   return <div className="text-xs text-muted mt-0.5">{parts.join(" · ")}</div>;
 }
 
-async function ItemRow({ item, jobId, firmId, stamp }: { item: ItemWithAmendments; jobId: string; firmId: string; stamp: StampPreview | null }) {
+async function ItemRow({
+  item,
+  jobId,
+  firmId,
+  stamp,
+  templatePaths,
+}: {
+  item: ItemWithAmendments;
+  jobId: string;
+  firmId: string;
+  stamp: StampPreview | null;
+  templatePaths: Record<string, string>;
+}) {
   const status = displayStatus(item);
   const fileUrl = await signedUrl(item.file_path);
+  // The blank form for this document, where the firm has attached one.
+  const templateUrl = await signedUrl(item.template_library_item_id ? templatePaths[item.template_library_item_id] : null);
 
   return (
     <ItemStatusProvider itemId={item.id} jobId={jobId} status={item.status} amendments={item.amendments}>
@@ -138,6 +157,17 @@ async function ItemRow({ item, jobId, firmId, stamp }: { item: ItemWithAmendment
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            {templateUrl && (
+              <a
+                href={templateUrl}
+                target="_blank"
+                rel="noreferrer"
+                title="The blank form the client fills in for this document"
+                className="flex items-center gap-1.5 text-sm font-medium text-muted border border-line hover:bg-hover rounded-full px-4 py-2 whitespace-nowrap"
+              >
+                <Download size={14} /> Blank form
+              </a>
+            )}
             {fileUrl && (
               <a
                 href={fileUrl}

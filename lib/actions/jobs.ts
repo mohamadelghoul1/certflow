@@ -18,7 +18,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 async function firmLibrary(supabase: SupabaseClient, firmId: string, pathway: string) {
   const { data } = await supabase
     .from("document_library_items")
-    .select("title, description, category")
+    .select("id, title, description, category")
     .eq("firm_id", firmId)
     .eq("pathway", pathway)
     .order("sort_order");
@@ -195,6 +195,10 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
       description: doc.description,
       category: doc.category,
       sort_order: idx,
+      // Keeps the link back to the library item, which is where the blank
+      // form for this document lives. The PC/OC starter list is a constant
+      // rather than library rows, so those items have no form to offer.
+      template_library_item_id: "id" in doc ? doc.id : null,
     }));
     if (items.length) await supabase.from("checklist_items").insert(items);
   }
@@ -281,6 +285,9 @@ export async function addChecklistItems(formData: FormData) {
   const titles = formData.getAll("title").map(String);
   const descs = formData.getAll("desc").map(String);
   const categories = formData.getAll("category").map(String);
+  // Empty for the one-off documents typed into the picker, which have no
+  // library item behind them and so no blank form to hand over.
+  const libraryItemIds = formData.getAll("library_item_id").map(String);
 
   const { data: checklist } = await supabase.from("checklists").select("id, jobs!inner(firm_id)").eq("id", checklistId).single();
   if (!checklist) return;
@@ -290,6 +297,7 @@ export async function addChecklistItems(formData: FormData) {
     title,
     description: descs[i] || "",
     category: categories[i] || "Other",
+    template_library_item_id: libraryItemIds[i] || null,
   }));
   if (items.length) await supabase.from("checklist_items").insert(items);
   revalidatePath(`/jobs/${jobId}`);

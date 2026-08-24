@@ -5,7 +5,8 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { addChecklistItems } from "@/lib/actions/jobs";
 
-type LibItem = { title: string; desc: string; category: string };
+// id is absent on the one-off documents typed straight into the picker.
+type LibItem = { id?: string; title: string; desc: string; category: string };
 
 export function DocumentPicker({ jobId, checklistId, library, existingTitles }: { jobId: string; checklistId: string; library: LibItem[]; existingTitles: string[] }) {
   const [open, setOpen] = useState(false);
@@ -27,7 +28,7 @@ export function DocumentPicker({ jobId, checklistId, library, existingTitles }: 
     setCustomText("");
   };
 
-  const selected = [...library.filter((l) => checked.has(l.title)), ...customItems.map((c) => ({ ...c, category: "Other" }))];
+  const selected: LibItem[] = [...library.filter((l) => checked.has(l.title)), ...customItems.map((c) => ({ ...c, category: "Other" }))];
 
   async function confirm() {
     if (selected.length === 0) return;
@@ -38,6 +39,9 @@ export function DocumentPicker({ jobId, checklistId, library, existingTitles }: 
       fd.append("title", s.title);
       fd.append("desc", s.desc);
       fd.append("category", s.category);
+      // Sent for every row so the three lists stay index-aligned on the
+      // server; empty means "no library item, so no blank form".
+      fd.append("library_item_id", s.id || "");
     });
     await addChecklistItems(fd);
     setOpen(false);

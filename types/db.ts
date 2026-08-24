@@ -215,6 +215,25 @@ export type ChecklistItem = {
   stamp_x: number | null;
   stamp_y: number | null;
   stamp_scale: number | null;
+  // The library item this was requested from, when it came from the firm's
+  // document library. Only used to find the blank form to hand the client:
+  // the file lives on the library row, so replacing it under Settings
+  // updates every project at once. See migration 0019.
+  template_library_item_id: string | null;
+};
+
+export type DocumentLibraryItem = {
+  id: string;
+  firm_id: string;
+  pathway: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  sort_order: number;
+  // The firm's own blank form for this item — the contract, an application
+  // form — for the client to download, complete and upload back.
+  template_file_path: string | null;
+  template_file_name: string | null;
 };
 
 export type Amendment = {

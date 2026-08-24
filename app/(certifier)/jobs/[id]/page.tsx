@@ -57,7 +57,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
   const typedJob = job as Job;
   const sharedClients = (sharedAccessRows || []).map((r) => r.clients).filter(Boolean) as unknown as { id: string; name: string; type: string }[];
 
-  const libraries: Record<string, { title: string; description: string | null; category: string | null }[]> = { CDC: [], CC: [], NOC: [], OC: [] };
+  const libraries: Record<string, { id: string; title: string; description: string | null; category: string | null; template_file_path: string | null }[]> = { CDC: [], CC: [], NOC: [], OC: [] };
   for (const item of libraryItems || []) {
     (libraries[item.pathway] ||= []).push(item);
   }
