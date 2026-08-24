@@ -292,3 +292,25 @@ export function normalizePortalRef(value: string, kind: PortalRefKind) {
   if (!trimmed) return "";
   return /^\d+$/.test(trimmed) ? `${portalRefPrefix(kind)}-${trimmed}` : trimmed;
 }
+
+// The building classifications are stored with their plain-English gloss
+// — "Class 1a — Single dwelling" — because that is what makes the tick
+// boxes readable when a job is being set up. A certificate names the
+// classification and nothing else: a certifier writes "Class 1a, 10a",
+// and the description of what a Class 1a building is belongs to the NCC,
+// not to a certificate. Documents print this; the forms keep the full
+// labels, so a job recorded before this still shows the right ticks.
+export function formatClassifications(classifications: string[] | undefined | null) {
+  const codes = (classifications || [])
+    .map((c) => String(c).split("—")[0].trim())
+    .filter((c) => c.length > 0);
+  if (codes.length === 0) return "";
+  // "Class 1a, 10a" rather than "Class 1a, Class 10a", but only when
+  // every entry is one of the standard classes. Anything else — a
+  // classification typed by hand in a shape this doesn't know — is left
+  // exactly as it was written rather than half-rewritten.
+  if (codes.every((c) => c.startsWith("Class "))) {
+    return `Class ${codes.map((c) => c.slice("Class ".length)).join(", ")}`;
+  }
+  return codes.join(", ");
+}

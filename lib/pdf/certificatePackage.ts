@@ -1,6 +1,6 @@
 import { Layout, MARGIN, MARGIN_BOTTOM, HEADER_TOP, A4, LETTER_BODY_SIZE, LETTER_SIGNATURE_NAME_SIZE, MUTED, LINE, HEADING_COLOR, INK, BODY_SIZE, SMALL_SIZE, TITLE_SIZE, SPACE_AFTER, LETTER_PARA_AFTER, INSPECTION_HEADER_FILL } from "@/lib/pdf/layout";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
-import { formatISODate, letterheadAddressLines } from "@/lib/business";
+import { formatClassifications, formatISODate, letterheadAddressLines } from "@/lib/business";
 
 // The CDC/CC certificate package as a PDF, mirroring
 // lib/docx/pathwayCertificate.ts section for section: council letter,
@@ -189,7 +189,7 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   l.fieldRow("Address of Development:", job.address || "");
   l.fieldRow(isCdc ? "Lot/Section/DP:" : "Lot/ DP:", cd.lotSectionDp || "");
   if (isCdc) l.fieldRow("Land Use Zone:", d.zoning || "");
-  l.fieldRow(isCdc ? "BCA Classification/s:" : "BCA Classification:", (d.proposal?.classifications || []).join(", "));
+  l.fieldRow(isCdc ? "BCA Classification/s:" : "BCA Classification:", formatClassifications(d.proposal?.classifications));
   l.fieldRow("BCA/NCC Version:", formatBcaVersion(d.bcaVersion, d.bcaVolumes));
   l.fieldRow("Description of Building Works:", job.description || "");
   l.fieldRow(isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)", formatCurrency(d.proposal?.estimatedCost) || "");

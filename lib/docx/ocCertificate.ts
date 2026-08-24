@@ -4,7 +4,7 @@ import type { ImageAsset } from "@/lib/docx/shared";
 import { p, mixed, pageBreak, splitRow, fieldTable, gridTable, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, headingRule, BODY_SIZE, signatureRule, signatory } from "@/lib/docx/shared";
 import type { OcCertificateData } from "@/lib/certificates/ocData";
 import { formatAddress } from "@/lib/certificates/pathwayData";
-import { formatISODate, letterheadAddressLines } from "@/lib/business";
+import { formatClassifications, formatISODate, letterheadAddressLines } from "@/lib/business";
 
 // Mirrors app/certificate/oc/[jobId]/[ocId]/page.tsx section-for-section.
 // The council/applicant letters (sections 1-2) share the same logo
@@ -103,7 +103,7 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
       { kind: "row", label: "Property address", value: job.address },
       { kind: "row", label: "Lot/Section/DP", value: d.certificateDetails?.lotSectionDp },
       { kind: "row", label: "Development description", value: record.description || job.description },
-      { kind: "row", label: "Building classification(s)", value: (d.proposal?.classifications || []).join(", ") },
+      { kind: "row", label: "Building classification(s)", value: formatClassifications(d.proposal?.classifications) },
       { kind: "row", label: `${consentLabel} relied upon`, value: consentRef },
       // A CDC job has no development consent behind it, so these two rows
       // only appear on an OC that follows a construction certificate.

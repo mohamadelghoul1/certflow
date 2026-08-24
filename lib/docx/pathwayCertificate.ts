@@ -3,7 +3,7 @@ import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
 import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, BODY_SIZE, signatureRule, signatory, addressBlock, LETTER_PARA_AFTER, LETTER_LINE_SPACING, TIGHT_LINE_SPACING, LETTER_BODY_SIZE, LETTER_SIGNATURE_NAME_SIZE } from "@/lib/docx/shared";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
-import { formatISODate, letterheadAddressLines } from "@/lib/business";
+import { formatClassifications, formatISODate, letterheadAddressLines } from "@/lib/business";
 
 // Mirrors app/certificate/pathway/[jobId]/page.tsx section-for-section, so
 // any change to the real document content only needs to happen once in
@@ -127,7 +127,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       { kind: "row", label: "Address of Development:", value: job.address },
       { kind: "row", label: isCdc ? "Lot/Section/DP:" : "Lot/ DP:", value: cd.lotSectionDp },
       ...(isCdc ? ([{ kind: "row", label: "Land Use Zone:", value: d.zoning }] as const) : []),
-      { kind: "row", label: isCdc ? "BCA Classification/s:" : "BCA Classification:", value: (d.proposal?.classifications || []).join(", ") },
+      { kind: "row", label: isCdc ? "BCA Classification/s:" : "BCA Classification:", value: formatClassifications(d.proposal?.classifications) },
       { kind: "row", label: "BCA/NCC Version:", value: formatBcaVersion(d.bcaVersion, d.bcaVolumes) },
       { kind: "row", label: "Description of Building Works:", value: job.description },
       { kind: "row", label: isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)", value: formatCurrency(d.proposal?.estimatedCost) },

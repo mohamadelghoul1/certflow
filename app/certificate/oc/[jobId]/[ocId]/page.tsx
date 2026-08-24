@@ -1,6 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import { formatISODate } from "@/lib/business";
+import { formatClassifications, formatISODate } from "@/lib/business";
 import { signOc, uploadOcApproval } from "@/lib/actions/jobs";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
@@ -212,7 +212,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
                 <CertRow label="Property address" value={job.address} />
                 <CertRow label="Lot/Section/DP" value={d.certificateDetails?.lotSectionDp} />
                 <CertRow label="Development description" value={record.description || job.description} />
-                <CertRow label="Building classification(s)" value={(d.proposal?.classifications || []).join(", ")} />
+                <CertRow label="Building classification(s)" value={formatClassifications(d.proposal?.classifications)} />
                 <CertRow label={`${consentLabel} relied upon`} value={consentRef} />
                 {daNumber && <CertRow label="Development Consent (DA) No." value={daNumber} />}
                 {daDate && <CertRow label="Development Consent (DA) date" value={daDate} />}

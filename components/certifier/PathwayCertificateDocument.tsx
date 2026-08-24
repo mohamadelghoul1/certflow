@@ -1,4 +1,4 @@
-import { formatISODate } from "@/lib/business";
+import { formatClassifications, formatISODate } from "@/lib/business";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
 import { LetterBodyEditor } from "@/components/certifier/LetterBodyEditor";
 import { formatAddress, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
@@ -304,7 +304,7 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
             <CertRow label="Address of Development:" value={job.address} />
             <CertRow label={isCdc ? "Lot/Section/DP:" : "Lot/ DP:"} value={cd.lotSectionDp} />
             {isCdc && <CertRow label="Land Use Zone:" value={d.zoning} />}
-            <CertRow label={isCdc ? "BCA Classification/s:" : "BCA Classification:"} value={(d.proposal?.classifications || []).join(", ")} />
+            <CertRow label={isCdc ? "BCA Classification/s:" : "BCA Classification:"} value={formatClassifications(d.proposal?.classifications)} />
             <CertRow label="BCA/NCC Version:" value={formatBcaVersion(d.bcaVersion, d.bcaVolumes)} />
             <CertRow label="Description of Building Works:" value={job.description} />
             <CertRow
