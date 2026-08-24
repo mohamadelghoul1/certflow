@@ -14,15 +14,22 @@ const LETTER_LABEL_PCT = 42;
 // lib/certificates/pathwayData.ts — this file only handles how that same
 // data is laid out as native Word paragraphs/tables instead of JSX.
 
+// The ABN and contact block used to be set at SMALL_SIZE (7pt) — the same
+// caption size as the page footer, and noticeably smaller than the
+// certificate's own field values just below it. Set at BODY_SIZE instead,
+// matching those fields, so the letterhead reads as part of the same
+// document rather than a caption under it.
+const HEADER_DETAIL_SIZE = BODY_SIZE;
+
 function letterheadHeader(firm: PathwayCertificateData["firm"], logo: ImageAsset | null) {
   const left = logo
-    ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING })]
-    : [p(firm?.name || "", { bold: true, size: TITLE_SIZE, color: HEADING_COLOR, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING })];
+    ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: HEADER_DETAIL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING })]
+    : [p(firm?.name || "", { bold: true, size: TITLE_SIZE, color: HEADING_COLOR, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: HEADER_DETAIL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING })];
   const right = [
-    ...letterheadAddressLines(firm?.postal_address).map((line, i) => p(i === 0 ? `Postal: ${line}` : line, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 })),
-    ...letterheadAddressLines(firm?.office_address).map((line, i) => p(i === 0 ? `Office: ${line}` : line, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 })),
-    p(`(p): ${firm?.phone || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 }),
-    p(`(e): ${firm?.email || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 }),
+    ...letterheadAddressLines(firm?.postal_address).map((line, i) => p(i === 0 ? `Postal: ${line}` : line, { size: HEADER_DETAIL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 })),
+    ...letterheadAddressLines(firm?.office_address).map((line, i) => p(i === 0 ? `Office: ${line}` : line, { size: HEADER_DETAIL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 })),
+    p(`(p): ${firm?.phone || "—"}`, { size: HEADER_DETAIL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 }),
+    p(`(e): ${firm?.email || "—"}`, { size: HEADER_DETAIL_SIZE, color: MUTED_COLOR, light: true, align: AlignmentType.RIGHT, spacingAfter: 0 }),
   ];
   return new Header({ children: [splitRow(left, right), ruleLine()] });
 }

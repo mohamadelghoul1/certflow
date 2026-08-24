@@ -23,12 +23,17 @@ export function DocumentHeader({ firm, logoUrl }: { firm: Firm | null; logoUrl?:
             ) : (
               <div>
                 <div className="text-lg font-black tracking-tight">{firm?.name}</div>
-                <div className="text-[11px] text-placeholder">PTY LTD</div>
+                <div className="text-xs text-placeholder">PTY LTD</div>
               </div>
             )}
-            <div className="text-xs text-placeholder mt-1">ABN: {firm?.abn}</div>
+            {/* Matches the Word export and the approved-set PDF: the ABN
+                and contact block are set the same size as the
+                certificate's own field values (text-sm here — see
+                CertRow in PathwayCertificateDocument.tsx), not as
+                small print underneath them. */}
+            <div className="text-sm text-placeholder mt-1">ABN: {firm?.abn}</div>
           </td>
-          <td className="align-top pb-4 text-right text-xs text-muted leading-relaxed w-1/2">
+          <td className="align-top pb-4 text-right text-sm text-muted leading-relaxed w-1/2">
             {letterheadAddressLines(firm?.postal_address).map((line, i) => (
               <div key={`postal-${i}`}>{i === 0 ? `Postal: ${line}` : line}</div>
             ))}

@@ -61,19 +61,27 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
       layout.page.drawText(firm?.name || "", { x: MARGIN, y: top - TITLE_SIZE, size: TITLE_SIZE, font: layout.bold, color: HEADING_COLOR });
       leftBottom = top - TITLE_SIZE - 3;
     }
-    layout.page.drawText(`ABN: ${firm?.abn || "—"}`, { x: MARGIN, y: leftBottom - SMALL_SIZE - 2, size: SMALL_SIZE, font: layout.regular, color: MUTED });
+    // The ABN and contact block read as the certificate's own small print
+    // (SMALL_SIZE, 7pt) — noticeably smaller than everything else on the
+    // page, including the field values just below it. Set at BODY_SIZE
+    // instead, the same size the certificate's own fields use, so the
+    // letterhead reads as part of the same document rather than a caption
+    // under it. The footer below keeps SMALL_SIZE — that one is genuinely
+    // meant to sit quietly under every page.
+    const HEADER_DETAIL_SIZE = BODY_SIZE;
+    layout.page.drawText(`ABN: ${firm?.abn || "—"}`, { x: MARGIN, y: leftBottom - HEADER_DETAIL_SIZE - 2, size: HEADER_DETAIL_SIZE, font: layout.regular, color: MUTED });
 
     const right: string[] = [];
     letterheadAddressLines(firm?.postal_address).forEach((line, i) => right.push(i === 0 ? `Postal: ${line}` : line));
     letterheadAddressLines(firm?.office_address).forEach((line, i) => right.push(i === 0 ? `Office: ${line}` : line));
     right.push(`(p): ${firm?.phone || "—"}`, `(e): ${firm?.email || "—"}`);
-    const lead = SMALL_SIZE * 1.32;
+    const lead = HEADER_DETAIL_SIZE * 1.32;
     right.forEach((line, i) => {
-      const w = layout.regular.widthOfTextAtSize(line, SMALL_SIZE);
-      layout.page.drawText(line, { x: A4[0] - MARGIN - w, y: top - SMALL_SIZE - i * lead, size: SMALL_SIZE, font: layout.regular, color: MUTED });
+      const w = layout.regular.widthOfTextAtSize(line, HEADER_DETAIL_SIZE);
+      layout.page.drawText(line, { x: A4[0] - MARGIN - w, y: top - HEADER_DETAIL_SIZE - i * lead, size: HEADER_DETAIL_SIZE, font: layout.regular, color: MUTED });
     });
 
-    const ruleY = Math.min(leftBottom - SMALL_SIZE - 10, top - SMALL_SIZE - right.length * lead - 4);
+    const ruleY = Math.min(leftBottom - HEADER_DETAIL_SIZE - 10, top - HEADER_DETAIL_SIZE - right.length * lead - 4);
     layout.page.drawLine({ start: { x: MARGIN, y: ruleY }, end: { x: A4[0] - MARGIN, y: ruleY }, thickness: 0.5, color: LINE });
     layout.y = ruleY - 14;
   };
