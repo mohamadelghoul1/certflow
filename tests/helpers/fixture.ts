@@ -1,7 +1,8 @@
 import type { PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { preInspectionRows, type PreInspectionData } from "@/lib/certificates/preInspectionData";
 import { epiForCodeParts } from "@/lib/constants";
-import type { Firm } from "@/types/db";
+import type { NeighbourLetterData } from "@/lib/certificates/neighbourLetterData";
+import type { Firm, Certifier } from "@/types/db";
 
 // One job, complete enough to generate every document from. Overrides let
 // a test vary only what it cares about.
@@ -107,5 +108,27 @@ export function preInspectionFixture(isCdc: boolean): PreInspectionData {
     inspectorName: "Mohamad El Ghoul",
     registrationNo: "BDC2961",
     rows: preInspectionRows(isCdc),
+  };
+}
+
+const neighbourFirm = { name: "Quality Private Certifiers", abn: "41 630 945 416", postal_address: "PO BOX 195", office_address: "Yagoona NSW 2199", phone: "02 8772 4022", email: "info@example.com", website: "www.example.com" } as unknown as Firm;
+const neighbourCertifier = { name: "Mohamad El Ghoul", registration_no: "BDC2961" } as unknown as Certifier;
+
+// The neighbour notification for one job, varying only the planning
+// instrument the letter has to cite.
+export function neighbourLetterFixture(relevantInstrument: string, relevantPartOfCode: string): NeighbourLetterData {
+  return {
+    firm: neighbourFirm,
+    certifier: neighbourCertifier,
+    jobAddress: "16 Wilkins Street, Yagoona",
+    description: "Demolition of existing dwelling and construction of a two storey dwelling",
+    applicantName: "Anh Cao",
+    applicantPhone: "0400000000",
+    applicantEmail: "applicant@example.com",
+    applicantAddress: "16 Wilkins Street, Yagoona",
+    relevantInstrument,
+    relevantPartOfCode,
+    projRef: "CDC-26001",
+    issuedDate: "13 Jan 2026",
   };
 }

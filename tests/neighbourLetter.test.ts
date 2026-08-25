@@ -1,31 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildNeighbourLetterDocx } from "@/lib/docx/neighbourLetters";
-import { readDocx } from "./helpers/readDocuments";
+import { buildNeighbourLetterPdf } from "@/lib/pdf/neighbourLetter";
+import { readDocx, readPdf } from "./helpers/readDocuments";
 import { epiForCodeParts, SEPP_CODES_2008_NAME, SEPP_HOUSING_2021_NAME } from "@/lib/constants";
-import type { Firm, Certifier } from "@/types/db";
-
-const firm = { name: "Quality Private Certifiers", abn: "41 630 945 416", postal_address: "PO BOX 195", office_address: "Yagoona NSW 2199", phone: "02 8772 4022", email: "info@example.com", website: "www.example.com" } as unknown as Firm;
-const certifier = { name: "Mohamad El Ghoul", registration_no: "BDC2961" } as unknown as Certifier;
+import { neighbourLetterFixture } from "./helpers/fixture";
 
 async function letter(relevantInstrument: string, relevantPartOfCode: string) {
-  const buffer = await buildNeighbourLetterDocx(
-    {
-      firm,
-      certifier,
-      jobAddress: "16 Wilkins Street, Yagoona",
-      description: "Demolition of existing dwelling and construction of a two storey dwelling",
-      applicantName: "Anh Cao",
-      applicantPhone: "0400000000",
-      applicantEmail: "applicant@example.com",
-      applicantAddress: "16 Wilkins Street, Yagoona",
-      relevantInstrument,
-      relevantPartOfCode,
-      projRef: "CDC-26001",
-      issuedDate: "13 Jan 2026",
-    },
-    { logo: null, signature: null }
-  );
+  const buffer = await buildNeighbourLetterDocx(neighbourLetterFixture(relevantInstrument, relevantPartOfCode), { logo: null, signature: null });
   return (await readDocx(buffer)).text;
 }
 
@@ -60,4 +42,40 @@ test("the notice carries the applicant's details for neighbours to use", async (
   assert.ok(text.includes("applicant@example.com"));
   assert.ok(text.includes("16 Wilkins Street, Yagoona"));
   assert.ok(text.includes("no sooner than 14 days"));
+});
+
+// The PDF is the same letter as the Word file, for printing rather than
+// editing — so the two have to say the same thing about the same job.
+async function letterPdf(relevantInstrument: string, relevantPartOfCode: string) {
+  const bytes = await buildNeighbourLetterPdf(neighbourLetterFixture(relevantInstrument, relevantPartOfCode), { logo: null, signature: null });
+  const { pages, text } = await readPdf(bytes);
+  return { pages, text: text.replace(/\s+/g, " ") };
+}
+
+test("the PDF cites the same instrument the Word letter does", async () => {
+  const housing = ["Schedule One Complying Development Secondary Dwelling"];
+  const { text } = await letterPdf(epiForCodeParts(housing), housing.join(", "));
+  assert.ok(text.includes(SEPP_HOUSING_2021_NAME));
+  assert.ok(text.includes("Schedule One Complying Development Secondary Dwelling"));
+  assert.ok(!text.includes(SEPP_CODES_2008_NAME), "the 2008 Codes SEPP has nothing to do with this job");
+});
+
+test("the PDF falls back to the Codes SEPP when the job records no instrument", async () => {
+  const { text } = await letterPdf("", "");
+  assert.ok(text.includes(SEPP_CODES_2008_NAME), "a bullet in a legislative list is never left blank");
+});
+
+test("the PDF is one page, addressed to the occupant and signed", async () => {
+  const { pages, text } = await letterPdf(SEPP_CODES_2008_NAME, "Part 3 Housing Code");
+  assert.equal(pages.length, 1, "one letter per letterbox — it has to print as a single sheet");
+  assert.ok(text.includes("Dear Occupant,"));
+  assert.ok(!text.includes("Anh Cao,\n"), "there is no recipient block, only the applicant's details further down");
+  assert.ok(text.includes("Full name: Anh Cao"));
+  assert.ok(text.includes("Phone: 0400000000"));
+  assert.ok(text.includes("applicant@example.com"));
+  assert.ok(text.includes("Mohamad El Ghoul"));
+  assert.ok(text.includes("Registered Certifier"));
+  // Letterhead and footer, the same ones every other document carries.
+  assert.ok(text.includes("ABN: 41 630 945 416"));
+  assert.ok(text.includes("Project No.: CDC-26001"));
 });

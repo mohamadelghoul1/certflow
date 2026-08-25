@@ -4,7 +4,7 @@ import type { ImageAsset } from "@/lib/docx/shared";
 import { p, mixed, bullet, splitRow, documentTitle, signatureBlock, signatory, PAGE_PROPERTIES, FONT, TEXT_COLOR, BODY_SIZE, LETTER_BODY_SIZE, LETTER_PARA_AFTER, LETTER_LINE_SPACING, LETTER_SIGNATURE_NAME_SIZE } from "@/lib/docx/shared";
 import { letterheadHeader, projectFooter } from "@/lib/docx/pathwayCertificate";
 import { SEPP_CODES_2008_NAME } from "@/lib/constants";
-import type { Firm, Certifier } from "@/types/db";
+import type { NeighbourLetterData } from "@/lib/certificates/neighbourLetterData";
 
 // The neighbour notification letter — the notice under s134 of the
 // Environmental Planning and Assessment Regulation 2021 that a CDC
@@ -18,26 +18,8 @@ import type { Firm, Certifier } from "@/types/db";
 // contact details, and the certifier signing it. Addressed "Dear Occupant"
 // with no recipient block, exactly as the template is — one letter,
 // printed as many times as there are letterboxes. A Word file so it stays
-// editable before sending, like every letter CertFlow generates.
-
-export type NeighbourLetterData = {
-  firm: Firm | null;
-  certifier: Certifier | null;
-  jobAddress: string;
-  description: string;
-  applicantName: string;
-  applicantPhone: string;
-  applicantEmail: string;
-  applicantAddress: string;
-  // The planning instrument this application is actually being assessed
-  // under, and the part of it relied on. Both come from the code parts
-  // ticked on the job, so a Housing SEPP 2021 job doesn't get a letter
-  // citing the 2008 Codes SEPP.
-  relevantInstrument: string;
-  relevantPartOfCode: string;
-  projRef: string; // the project number, for the page footer
-  issuedDate: string; // today, formatted — the date on the letter
-};
+// editable before sending; the same letter is also available as a PDF
+// for printing straight away.
 
 // The middle bullet of the "what is a CDC" list: the instrument this job
 // is assessed under, with the part of it relied on where one is recorded.
