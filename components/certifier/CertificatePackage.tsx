@@ -4,6 +4,7 @@ import { Suspense, useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { AutoPrint } from "@/components/certifier/AutoPrint";
+import { DownloadButton } from "@/components/certifier/DownloadButton";
 import type { ActionState } from "@/lib/actions/auth";
 
 // Its own component (rather than inline in the toolbar) because the
@@ -104,6 +105,7 @@ function SignButton({
 export function CertificatePackage({
   backHref,
   wordExportHref,
+  pdfHref,
   children,
   allowPrint = true,
   signed,
@@ -118,6 +120,11 @@ export function CertificatePackage({
 }: {
   backHref: string;
   wordExportHref: string;
+  /* A route that builds this document as a PDF, downloaded straight to
+     the certifier's machine. Where it exists it replaces the browser's
+     print dialog entirely: the file is laid out by CertFlow rather than
+     by whatever print engine the browser happens to have. */
+  pdfHref?: string;
   children: React.ReactNode;
   /* Whether this document offers "Save as PDF". The approval turns
      it off: it goes out as the Word export or as the full approved set
@@ -148,10 +155,16 @@ export function CertificatePackage({
           ← Back to project
         </Link>
         <div className="flex items-center gap-2">
-          {allowPrint && (
-            <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
-              Save as PDF
-            </button>
+          {pdfHref ? (
+            <DownloadButton href={pdfHref} fallbackName="Report.pdf" className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 inline-flex items-center gap-1.5">
+              Download PDF
+            </DownloadButton>
+          ) : (
+            allowPrint && (
+              <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
+                Save as PDF
+              </button>
+            )
           )}
           {canExportWord && (
             <a href={wordExportHref} className="px-4 py-2 rounded-md border border-primary text-primary text-sm font-semibold hover:bg-hover">

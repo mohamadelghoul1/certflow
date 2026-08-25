@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, Download, Printer } from "lucide-react";
+import { FileText, Download, FileDown } from "lucide-react";
 import { InspectionSigning, SignInspectionReportButton } from "@/components/certifier/SignInspectionReportButton";
 import { formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
@@ -18,6 +18,7 @@ import {
 } from "@/lib/actions/inspections";
 import { notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { DownloadButton } from "@/components/certifier/DownloadButton";
 import { InspectionIssues } from "@/components/certifier/InspectionIssues";
 import { InspectionOrderProvider, InspectionMoveButtons } from "@/components/certifier/InspectionOrder";
 import { AddInspectionForm } from "@/components/certifier/AddInspectionForm";
@@ -227,9 +228,13 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
           <a href={`/api/jobs/${jobId}/inspections/${insp.id}/report/word`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
             <Download size={12} /> Export to Word
           </a>
-          <Link href={`/jobs/${jobId}/inspections/${insp.id}/report?print=1`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
-            <Printer size={12} /> Save as PDF
-          </Link>
+          <DownloadButton
+            href={`/api/jobs/${jobId}/inspections/${insp.id}/report/pdf`}
+            fallbackName="Inspection Report.pdf"
+            className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline"
+          >
+            <FileDown size={12} /> Download inspection report
+          </DownloadButton>
           <SignInspectionReportButton />
           {reportUrl && (
             <a href={reportUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">

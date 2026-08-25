@@ -84,6 +84,8 @@ export default async function InspectionReportPage({ params }: { params: Promise
     <CertificatePackage
       backHref={`/jobs/${jobId}?tab=inspections`}
       wordExportHref={`/api/jobs/${jobId}/inspections/${inspectionId}/report/word`}
+      pdfHref={`/api/jobs/${jobId}/inspections/${inspectionId}/report/pdf`}
+      allowPrint={false}
       signed={!!inspection.report_signed_at}
       signedLabel={`Signed ${formatISODate(inspection.report_signed_at)}`}
       signAction={signInspectionReport}

@@ -2,6 +2,7 @@ import type { PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { preInspectionRows, type PreInspectionData } from "@/lib/certificates/preInspectionData";
 import { epiForCodeParts } from "@/lib/constants";
 import type { NeighbourLetterData } from "@/lib/certificates/neighbourLetterData";
+import type { InspectionReportData } from "@/lib/certificates/inspectionReportData";
 import type { Firm, Certifier } from "@/types/db";
 
 // One job, complete enough to generate every document from. Overrides let
@@ -131,4 +132,40 @@ export function neighbourLetterFixture(relevantInstrument: string, relevantPartO
     projRef: "CDC-26001",
     issuedDate: "13 Jan 2026",
   };
+}
+
+// One inspection, complete enough to generate its report from. Overrides
+// let a test vary only what it cares about — an outcome, a missing date.
+export function inspectionReportFixture(overrides: Record<string, unknown> = {}): InspectionReportData {
+  return {
+    job: { address: "21 Coquet Way, Green Valley", description: "Construction of a detached secondary dwelling", pathway: "CDC" },
+    firm: neighbourFirm,
+    inspection: {
+      id: "i1",
+      title: "Slab Steel",
+      date: "2026-08-20",
+      outcome: "passed_subject_to",
+      inspector_certifier_id: "c1",
+      report_signed_at: "2026-08-25T00:00:00Z",
+      report_intro_override: null,
+      report_notes: null,
+      defects: [
+        { id: "d1", text: "Provide certification for the slab reinforcement from the structural engineer.", resolved: false },
+        { id: "d2", text: "Termite barrier installation certificate required prior to the frame inspection.", resolved: true },
+      ],
+      inspection_photos: [],
+    },
+    inspector: { name: "Mohamad El Ghoul", registration_no: "BDC2961" },
+    signatureUrl: null,
+    logoUrl: null,
+    photoUrls: [],
+    d: { council: { lga: "Liverpool City Council" }, certificateDetails: { lotSectionDp: "9 / DP253031" }, zoning: "R2", contact: { phone: "0400000000", email: "applicant@example.com" } },
+    applicantName: "Anh Cao",
+    certRef: "CDC-26001/01",
+    certNumbers: "CDC-26001/01",
+    consentRefLines: [],
+    introText: "We have attended the above property and completed an inspection.",
+    notes: "",
+    ...overrides,
+  } as unknown as InspectionReportData;
 }
