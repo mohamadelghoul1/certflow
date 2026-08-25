@@ -57,7 +57,15 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
       .order("created_at", { referencedTable: "checklist_items" }),
     supabase.from("modifications").select("*").eq("job_id", id).order("created_at"),
     supabase.from("oc_records").select("*").eq("job_id", id).order("created_at"),
-    supabase.from("inspections").select("*, defects(*), inspection_photos(*)").eq("job_id", id).order("sort_order", { referencedTable: "inspection_photos" }),
+    supabase
+      .from("inspections")
+      .select("*, defects(*), inspection_photos(*)")
+      .eq("job_id", id)
+      // The order they were created in: the standard stages as the job was
+      // set up, then anything added later at the bottom. Without this the
+      // list had no order of its own, so adding one could reshuffle it.
+      .order("created_at")
+      .order("sort_order", { referencedTable: "inspection_photos" }),
     supabase.from("certifiers").select("*").eq("firm_id", profile.firm_id).order("name"),
     supabase.from("clients").select("*").eq("firm_id", profile.firm_id).order("name"),
     supabase.from("document_library_items").select("*").eq("firm_id", profile.firm_id).order("sort_order"),

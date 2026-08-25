@@ -20,6 +20,7 @@ import {
 } from "@/lib/actions/inspections";
 import { notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { AddInspectionForm } from "@/components/certifier/AddInspectionForm";
 import { AutoSubmitSelect } from "@/components/certifier/AutoSubmitSelect";
 import { CheckCircle2, XCircle, AlertTriangle, Clock } from "lucide-react";
 import type { Inspection, Defect, InspectionPhoto, Certifier } from "@/types/db";
@@ -57,6 +58,7 @@ export async function InspectionsPanel({
       {inspections.map((insp) => (
         <InspectionRow key={insp.id} insp={insp} jobId={jobId} firmId={firmId} certifiers={certifiers} />
       ))}
+      <AddInspectionForm jobId={jobId} />
     </div>
   );
 }

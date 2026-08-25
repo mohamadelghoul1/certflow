@@ -5,6 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { todayISO } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
+import { inspectionDescriptionFor } from "@/lib/constants";
 
 export async function assignInspector(formData: FormData) {
   await requireProfile("certifier");
@@ -114,6 +115,38 @@ export async function confirmBooking(formData: FormData) {
   const jobId = String(formData.get("job_id"));
   await supabase.from("inspections").update({ confirmed: true }).eq("id", inspectionId);
   revalidatePath(`/jobs/${jobId}`);
+}
+
+// An inspection the job needs beyond the standard set: an occasional one
+// (pool steel, a suspended slab, an OSD system, a fire rated wall), or a
+// stage that has to be carried out a second time. Free text rather than a
+// fixed list — the suggestions offered in the form are a shortcut, not a
+// limit — because no list of stages covers every job.
+export async function addInspection(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const title = String(formData.get("title") || "").trim();
+  if (!title) return { error: "Give the inspection a name." };
+
+  // Scoped to the firm, the same way every other action that writes
+  // against a job is.
+  const { data: job } = await supabase.from("jobs").select("id, assigned_certifier_id").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return { error: "Project not found." };
+
+  const description = inspectionDescriptionFor(title);
+  const { error } = await supabase.from("inspections").insert({
+    job_id: jobId,
+    title,
+    description: description || null,
+    // Whoever the job is assigned to, as the starter inspections are —
+    // it can be changed on the card like any other.
+    inspector_certifier_id: job.assigned_certifier_id,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath(`/jobs/${jobId}`);
+  return undefined;
 }
 
 export async function removeInspection(formData: FormData) {

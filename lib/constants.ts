@@ -95,8 +95,12 @@ export const PRIOR_APPROVAL_DOCUMENTS = [
   { title: "Appointment of Principal Certifier", description: "Formal appointment of this firm as Principal Certifier, lodged on the NSW Planning Portal.", category: "Other" },
 ];
 
+// The inspections every new job starts with. The site inspection carried
+// out before the certificate is issued is not among them: that one is
+// recorded on the job's pre-inspection report (s139 for a CDC, s16 for a
+// CC) and travels inside the approval, so listing it here too left every
+// job with an inspection that was already done.
 export const INSPECTION_LIBRARY = [
-  { title: "Prior to CC/CDC", desc: "Site inspection prior to issue of CC or CDC." },
   { title: "Piers & Footings", desc: "Inspection of piers and footings prior to pour." },
   { title: "Slab Steel", desc: "Inspection of slab reinforcement prior to pour." },
   { title: "Frame", desc: "Inspection of structural frame prior to lock-up." },
@@ -104,6 +108,32 @@ export const INSPECTION_LIBRARY = [
   { title: "Stormwater", desc: "Inspection of stormwater drainage installation." },
   { title: "Final", desc: "Final inspection prior to occupation." },
 ];
+
+// Inspections a job needs only sometimes — a pool, a suspended slab, an
+// on-site detention system — offered as suggestions when adding one
+// rather than started on every job. The list is only a shortcut: any
+// inspection can be added by typing its name.
+export const ADDITIONAL_INSPECTION_LIBRARY = [
+  { title: "Pool Steel", desc: "Inspection of pool shell reinforcement prior to pour." },
+  { title: "Pool Barrier", desc: "Inspection of the pool barrier, gates and latching." },
+  { title: "Suspended Slab", desc: "Inspection of suspended slab reinforcement and formwork prior to pour." },
+  { title: "OSD", desc: "Inspection of the on-site detention system." },
+  { title: "Fire Rated Wall", desc: "Inspection of fire rated wall construction." },
+  { title: "Retaining Wall", desc: "Inspection of retaining wall construction prior to backfill." },
+];
+
+// Everything offered when adding an inspection: the standard stages, so a
+// stage that has to be carried out twice can simply be added again, then
+// the occasional ones.
+export const INSPECTION_SUGGESTIONS = [...INSPECTION_LIBRARY, ...ADDITIONAL_INSPECTION_LIBRARY];
+
+// The stock wording for a suggested inspection, so picking one off the
+// list describes itself. Anything typed by hand has no description unless
+// the certifier writes one.
+export function inspectionDescriptionFor(title: string) {
+  const match = INSPECTION_SUGGESTIONS.find((i) => i.title.toLowerCase() === title.trim().toLowerCase());
+  return match?.desc || "";
+}
 
 export const JOB_TYPES = ["Secondary Dwelling", "Dual Occupancy", "Alterations & Additions", "New Dwelling", "Pool"];
 
