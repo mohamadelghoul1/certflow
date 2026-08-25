@@ -33,13 +33,24 @@ export async function setInspectionDate(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// Recording an outcome is the moment an inspection becomes a thing that
+// happened, and a report of a visit with no date on it is not much of a
+// report. So an outcome with no date recorded against it stamps today —
+// the certifier can still correct it in the date box afterwards.
 export async function recordOutcome(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
   const outcome = String(formData.get("outcome"));
-  await supabase.from("inspections").update({ outcome, updated_at: new Date().toISOString() }).eq("id", inspectionId);
+
+  const { data: existing } = await supabase.from("inspections").select("date").eq("id", inspectionId).single();
+  const stampDate = outcome !== "pending" && !existing?.date;
+
+  await supabase
+    .from("inspections")
+    .update({ outcome, updated_at: new Date().toISOString(), ...(stampDate ? { date: todayInNsw(), confirmed: true } : {}) })
+    .eq("id", inspectionId);
   revalidatePath(`/jobs/${jobId}`);
 }
 
@@ -240,13 +251,23 @@ export async function moveInspection(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
-export async function removeInspection(formData: FormData) {
+// Reporting an inspection to the NSW Planning Portal is a statement to
+// the regulator that it was carried out. Deleting it here afterwards
+// would leave the app disagreeing with the Portal about what happened on
+// the job, with nothing to show why — so once reported, it stays.
+export async function removeInspection(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireProfile("certifier");
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
-  await supabase.from("inspections").delete().eq("id", inspectionId);
+
+  const { data: inspection } = await supabase.from("inspections").select("portal_reported").eq("id", inspectionId).single();
+  if (inspection?.portal_reported) return { error: "This inspection has been reported to the NSW Planning Portal and can no longer be removed." };
+
+  const { error } = await supabase.from("inspections").delete().eq("id", inspectionId);
+  if (error) return { error: error.message };
   revalidatePath(`/jobs/${jobId}`);
+  return undefined;
 }
 
 export async function addPhoto(formData: FormData) {

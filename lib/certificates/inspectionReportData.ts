@@ -44,18 +44,29 @@ export async function getInspectionReportData(jobId: string, inspectionId: strin
   if (!rawJob) return null;
   const job = rawJob as Job;
 
-  const [{ data: rawInspection }, { data: firm }, { data: versions }] = await Promise.all([
+  const [{ data: rawInspection }, { data: firm }, { data: versions }, { data: certifiers }] = await Promise.all([
     supabase.from("inspections").select("*, defects(*), inspection_photos(*)").eq("id", inspectionId).eq("job_id", jobId).single(),
     supabase.from("firms").select("*").eq("id", firmId).single(),
     supabase.from("pathway_certificate_versions").select("version, cert_ref").eq("job_id", jobId).order("version"),
+    // The firm's certifiers, fetched alongside rather than looking up the
+    // one inspector afterwards: a firm has a handful of them, and that
+    // lookup was a round trip of its own that everything else waited on.
+    supabase.from("certifiers").select("*").eq("firm_id", firmId),
   ]);
   if (!rawInspection) return null;
   const inspection = rawInspection as InspectionRecord;
 
-  const inspector = inspection.inspector_certifier_id ? ((await supabase.from("certifiers").select("*").eq("id", inspection.inspector_certifier_id).single()).data as Certifier | null) : null;
-  const signatureUrl = inspection.report_signed_at && inspector?.signature_url ? await signedUrl(inspector.signature_url) : null;
-  const logoUrl = firm?.logo_url ? await signedUrl(firm.logo_url) : null;
-  const photoUrls = await Promise.all(inspection.inspection_photos.map((p) => signedUrl(p.file_path)));
+  const inspector = ((certifiers || []) as Certifier[]).find((c) => c.id === inspection.inspector_certifier_id) || null;
+
+  // Every signed link at once. Run one after another — the signature,
+  // then the logo, then each photo in turn — a report with a dozen photos
+  // spent most of its time waiting on round trips that have nothing to do
+  // with each other.
+  const [signatureUrl, logoUrl, photoUrls] = await Promise.all([
+    inspection.report_signed_at && inspector?.signature_url ? signedUrl(inspector.signature_url) : null,
+    firm?.logo_url ? signedUrl(firm.logo_url) : null,
+    Promise.all(inspection.inspection_photos.map((p) => signedUrl(p.file_path))),
+  ]);
 
   const d = job.details || {};
   const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "—";
