@@ -1,13 +1,27 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { mergeJobDetails } from "@/lib/jobDetails";
+import { detailsPatchFromForm, deepMergeDetails } from "@/lib/jobDetails";
 import type { JobDetails } from "@/types/db";
 
 // What the Details form produces: the fields it actually has boxes for.
+// The form always fills certificateDetails in full, including the two
+// entries inside it that it has no business setting.
 const fromForm = {
   zoning: "R3",
-  certificateDetails: { lotSectionDp: "9 / DP253031", planningPortalRef: "PAN-12345", relevantInstrument: "Housing SEPP 2021" },
+  certificateDetails: {
+    lotSectionDp: "9 / DP253031",
+    planningPortalRef: "PAN-12345",
+    relevantInstrument: "Housing SEPP 2021",
+    determinationDate: "",
+    consentReferences: "",
+  },
 } as JobDetails;
+
+// Saving the form is a patch applied to what is already recorded, so
+// what the merge does with that patch is what the certifier sees.
+function save(existing: JobDetails | null, form: JobDetails): JobDetails {
+  return deepMergeDetails(existing || {}, detailsPatchFromForm(form)) as JobDetails;
+}
 
 describe("saving the Details tab", () => {
   // Both of these are set from other screens entirely — the pre-inspection
@@ -20,31 +34,92 @@ describe("saving the Details tab", () => {
       siteSensitivities: ["Bushfire prone land", "Flood planning area"],
     } as JobDetails;
 
-    const merged = mergeJobDetails(existing, fromForm);
-    assert.deepEqual(merged.preInspection, { applicationDate: "2025-12-09", inspectionDate: "2026-01-20" });
-    assert.deepEqual(merged.siteSensitivities, ["Bushfire prone land", "Flood planning area"]);
+    const saved = save(existing, fromForm);
+    assert.deepEqual(saved.preInspection, { applicationDate: "2025-12-09", inspectionDate: "2026-01-20" });
+    assert.deepEqual(saved.siteSensitivities, ["Bushfire prone land", "Flood planning area"]);
   });
 
   test("still takes what the form does manage", () => {
-    const merged = mergeJobDetails({ zoning: "R2" } as JobDetails, fromForm);
-    assert.equal(merged.zoning, "R3");
-    assert.equal(merged.certificateDetails?.lotSectionDp, "9 / DP253031");
-    assert.equal(merged.certificateDetails?.planningPortalRef, "PAN-12345");
+    const saved = save({ zoning: "R2" } as JobDetails, fromForm);
+    assert.equal(saved.zoning, "R3");
+    assert.equal(saved.certificateDetails?.lotSectionDp, "9 / DP253031");
+    assert.equal(saved.certificateDetails?.planningPortalRef, "PAN-12345");
   });
 
   // certificateDetails is rebuilt by the form, so the two fields inside it
   // that are set elsewhere have to survive that rebuild.
   test("keeps the determination date, which is stamped when the certificate is issued", () => {
     const existing = { certificateDetails: { determinationDate: "2026-08-25", consentReferences: "DA-25-01431" } } as JobDetails;
-    const merged = mergeJobDetails(existing, fromForm);
-    assert.equal(merged.certificateDetails?.determinationDate, "2026-08-25");
-    assert.equal(merged.certificateDetails?.consentReferences, "DA-25-01431");
-    assert.equal(merged.certificateDetails?.lotSectionDp, "9 / DP253031", "and still takes the form's own fields");
+    const saved = save(existing, fromForm);
+    assert.equal(saved.certificateDetails?.determinationDate, "2026-08-25");
+    assert.equal(saved.certificateDetails?.consentReferences, "DA-25-01431");
+    assert.equal(saved.certificateDetails?.lotSectionDp, "9 / DP253031", "and still takes the form's own fields");
   });
 
   test("a job with nothing recorded yet simply takes the form", () => {
-    const merged = mergeJobDetails(null, fromForm);
-    assert.equal(merged.zoning, "R3");
-    assert.equal(merged.certificateDetails?.determinationDate, "");
+    const saved = save(null, fromForm);
+    assert.equal(saved.zoning, "R3");
+    assert.equal(saved.certificateDetails?.lotSectionDp, "9 / DP253031");
+  });
+
+  // A job switched away from PC/OC must lose the prior approval, or
+  // another certifier's approval keeps printing on its documents.
+  test("drops the prior approval when the job is no longer PC/OC", () => {
+    const existing = { priorApproval: { type: "CDC", number: "CDC-1", date: "2026-01-01", issuedBy: "Someone Else" } } as JobDetails;
+    const saved = save(existing, fromForm);
+    assert.equal(saved.priorApproval, undefined);
+  });
+
+  test("keeps the prior approval on a job that still has one", () => {
+    const pcOcForm = { ...fromForm, priorApproval: { type: "CC" as const, number: "CC-9", date: "2026-02-02", issuedBy: "Another Firm" } } as JobDetails;
+    const saved = save({} as JobDetails, pcOcForm);
+    assert.equal(saved.priorApproval?.number, "CC-9");
+  });
+});
+
+// The same rules the database applies in migration 0029. These two
+// implementations have to agree, because which one runs depends only on
+// whether that migration has been applied yet.
+describe("merging a patch into a job's details", () => {
+  test("a patch inside an object leaves the rest of that object alone", () => {
+    const merged = deepMergeDetails({ certificateDetails: { lot: "7", ref: "PAN-1" } }, { certificateDetails: { ref: "PAN-2" } });
+    assert.deepEqual(merged, { certificateDetails: { lot: "7", ref: "PAN-2" } });
+  });
+
+  // Unticking a sensitivity has to be possible, so a list is replaced
+  // rather than added to.
+  test("a list is replaced whole, never appended to", () => {
+    const merged = deepMergeDetails({ siteSensitivities: ["bushfire", "flood"] }, { siteSensitivities: ["flood"] });
+    assert.deepEqual(merged, { siteSensitivities: ["flood"] });
+  });
+
+  test("null removes the key", () => {
+    const merged = deepMergeDetails({ priorApproval: { type: "CDC" }, keep: "yes" }, { priorApproval: null });
+    assert.deepEqual(merged, { keep: "yes" });
+  });
+
+  test("an empty patch changes nothing", () => {
+    const merged = deepMergeDetails({ a: { b: 1 } }, {});
+    assert.deepEqual(merged, { a: { b: 1 } });
+  });
+
+  test("starting from nothing recorded at all", () => {
+    assert.deepEqual(deepMergeDetails(null, { a: 1 }), { a: 1 });
+    assert.deepEqual(deepMergeDetails(undefined, { a: 1 }), { a: 1 });
+  });
+
+  // The point of the whole exercise: three screens each writing their own
+  // field, and all three surviving.
+  test("separate writers do not overwrite each other", () => {
+    let details: unknown = { projectNumber: "J-1" };
+    details = deepMergeDetails(details, { siteSensitivities: ["bushfire"] });
+    details = deepMergeDetails(details, { certificateDetails: { planningPortalRef: "PAN-9" } });
+    details = deepMergeDetails(details, { certificateDetails: { determinationDate: "2026-08-25" } });
+
+    assert.deepEqual(details, {
+      projectNumber: "J-1",
+      siteSensitivities: ["bushfire"],
+      certificateDetails: { planningPortalRef: "PAN-9", determinationDate: "2026-08-25" },
+    });
   });
 });

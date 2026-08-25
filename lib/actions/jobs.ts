@@ -10,7 +10,8 @@ import { notifyJobClient } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
 import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
 import { insertChecklistItems, reorderedIds } from "@/lib/checklists";
-import { mergeJobDetails } from "@/lib/jobDetails";
+import { detailsPatchFromForm } from "@/lib/jobDetails";
+import { mergeJobDetailsInDb } from "@/lib/actions/mergeDetails";
 import { recordAuditEvent } from "@/lib/audit";
 import { isUnknownColumn } from "@/lib/softDelete";
 import type { JobDetails, CriticalStageInspection } from "@/types/db";
@@ -224,10 +225,9 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   const jobId = String(formData.get("job_id"));
   const pathway = String(formData.get("pathway") || "CDC") as Pathway;
 
-  // Merged over what is already recorded, not written over it — see
-  // mergeJobDetails for what this form does and doesn't manage.
-  const { data: existingJob } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
-  const details = mergeJobDetails(existingJob?.details as JobDetails | null, extractJobDetails(formData, pathway));
+  // Sent as a patch rather than as the whole record — see
+  // detailsPatchFromForm for what this form does and doesn't manage.
+  const patch = detailsPatchFromForm(extractJobDetails(formData, pathway));
 
   // The critical stage inspections and the portal client travel with this
   // form rather than saving as they're changed, so nothing on the Details
@@ -251,10 +251,10 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   const address = String(formData.get("address") || "");
   const description = String(formData.get("description") || "");
 
+  await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, patch);
   await supabase
     .from("jobs")
     .update({
-      details,
       address,
       description,
       ...(criticalStageInspections ? { critical_stage_inspections: criticalStageInspections } : {}),
@@ -743,13 +743,7 @@ export async function setSiteSensitivities(formData: FormData) {
   // double-tick doesn't put the same constraint on the job twice.
   const sensitivities = [...new Set(formData.getAll("sensitivity").map((v) => String(v).trim()).filter(Boolean))];
 
-  const { data: job } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
-  if (!job) return;
-
-  // Merged into the details rather than written over them, so this can't
-  // wipe anything else recorded against the job.
-  const details = (job.details || {}) as JobDetails;
-  await supabase.from("jobs").update({ details: { ...details, siteSensitivities: sensitivities } }).eq("id", jobId);
+  await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { siteSensitivities: sensitivities });
   revalidatePath(`/jobs/${jobId}`);
 }
 
@@ -761,16 +755,7 @@ export async function setPlanningPortalRef(_prev: ActionState, formData: FormDat
   const ref = normalizePortalRef(String(formData.get("planningPortalRef") || ""), kind);
   if (!ref) return { error: "Enter the Planning Portal reference number." };
 
-  const { data: job } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
-  if (!job) return { error: "Project not found." };
-
-  // Merged into the details rather than written over them, so this can't
-  // wipe anything else recorded against the certificate.
-  const details = (job.details || {}) as JobDetails;
-  await supabase
-    .from("jobs")
-    .update({ details: { ...details, certificateDetails: { ...details.certificateDetails, planningPortalRef: ref } } })
-    .eq("id", jobId);
+  await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { certificateDetails: { planningPortalRef: ref } });
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
 }
@@ -787,16 +772,7 @@ export async function setPreInspectionDates(_prev: ActionState, formData: FormDa
   const applicationDate = String(formData.get("applicationDate") || "");
   const inspectionDate = String(formData.get("inspectionDate") || "");
 
-  const { data: job } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
-  if (!job) return { error: "Project not found." };
-
-  // Merged into the details rather than written over them, so this can't
-  // wipe anything else recorded against the job.
-  const details = (job.details || {}) as JobDetails;
-  await supabase
-    .from("jobs")
-    .update({ details: { ...details, preInspection: { applicationDate, inspectionDate } } })
-    .eq("id", jobId);
+  await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { preInspection: { applicationDate, inspectionDate } });
 
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pre-inspection/${jobId}`);
@@ -837,11 +813,7 @@ export async function issuePathwayCertificate(_prev: ActionState, formData: Form
 
   // Date of determination = the date this (or the latest re-issued)
   // certificate is generated — no separate manual entry needed.
-  const details = (job.details || {}) as JobDetails;
-  await supabase
-    .from("jobs")
-    .update({ details: { ...details, certificateDetails: { ...details.certificateDetails, determinationDate: generatedDate } } })
-    .eq("id", jobId);
+  await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { certificateDetails: { determinationDate: generatedDate } });
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
 }

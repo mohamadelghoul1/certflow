@@ -98,6 +98,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Stops the public portal and the big downloads being hammered.",
       probe: hasFunction(supabase, "record_rate_limit_hit", { p_bucket: "system-check", p_window_seconds: 60, p_limit: 1000000 }),
     },
+    {
+      migration: "0029",
+      label: "Saving one field without overwriting the rest",
+      detail: "Two screens writing to the same project at once no longer lose each other's work.",
+      probe: hasFunction(supabase, "merge_job_details", { p_job_id: "00000000-0000-0000-0000-000000000000", p_patch: {} }),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));
