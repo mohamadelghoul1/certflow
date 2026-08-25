@@ -5,6 +5,8 @@ import Link from "next/link";
 import { checklistProgress, stageComplete, pathwayStageComplete, inspectionsCarriedOut } from "@/lib/business";
 import { DetailsTab } from "@/components/certifier/DetailsTab";
 import { SiteSensitivities } from "@/components/certifier/SiteSensitivities";
+import { DownloadButton } from "@/components/certifier/DownloadButton";
+import { FolderArchive } from "lucide-react";
 import { NeighbourNotificationPanel } from "@/components/certifier/NeighbourNotificationPanel";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { CertificatesPanel } from "@/components/certifier/CertificatesPanel";
@@ -111,6 +113,16 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               planning area changes how every part of the job is assessed
               and needs to be seen before any of it is started. */}
           <SiteSensitivities jobId={id} sensitivities={typedJob.details?.siteSensitivities || []} />
+          {/* The firm's own copy of the job, to keep somewhere that
+              isn't this software. A certifier holds these records for
+              years — longer than any subscription. */}
+          <DownloadButton
+            href={`/api/jobs/${id}/archive`}
+            fallbackName="Job Archive.zip"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary hover:underline"
+          >
+            <FolderArchive size={13} /> Download job archive
+          </DownloadButton>
         </div>
         <div className="text-sm text-muted mt-1">{job.description}</div>
       </div>
