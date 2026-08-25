@@ -1,6 +1,7 @@
 import { getInspectionReportData } from "@/lib/certificates/inspectionReportData";
 import { buildInspectionReportPdf } from "@/lib/pdf/inspectionReport";
 import { fetchStampImage } from "@/lib/pdf/stamp";
+import { fetchPhotoImage } from "@/lib/images/photo";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Builds the inspection report and keeps it as a file.
@@ -22,7 +23,7 @@ export async function storeSignedInspectionReport(supabase: SupabaseClient, jobI
   const [logo, signature, photoImages] = await Promise.all([
     fetchStampImage(data.logoUrl),
     fetchStampImage(data.signatureUrl),
-    Promise.all(data.photoUrls.map((url) => fetchStampImage(url))),
+    Promise.all(data.photoUrls.map((url) => fetchPhotoImage(url))),
   ]);
 
   const photos = data.inspection.inspection_photos.map((photo, i) => ({ image: photoImages[i], caption: photo.caption || "" }));
