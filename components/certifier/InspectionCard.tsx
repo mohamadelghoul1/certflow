@@ -4,6 +4,7 @@ import { createContext, useContext, useOptimistic, useState, useTransition } fro
 import { CheckCircle2, XCircle, AlertTriangle, Circle } from "lucide-react";
 import { setInspectionDate, recordOutcome, removeInspection } from "@/lib/actions/inspections";
 import { InspectionIssues } from "@/components/certifier/InspectionIssues";
+import { useInspectionList } from "@/components/certifier/InspectionOrder";
 import { DateField, todayISO } from "@/components/DateField";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Defect } from "@/types/db";
@@ -187,6 +188,7 @@ export function IssuesWhenNeeded({ inspectionId, jobId, defects }: { inspectionI
 export function RemoveInspectionButton({ inspectionId, jobId, portalReported }: { inspectionId: string; jobId: string; portalReported: boolean }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const list = useInspectionList();
 
   if (portalReported) {
     return <span className="ml-auto text-[11px] text-muted">Reported to the Portal — cannot be removed</span>;
@@ -195,6 +197,11 @@ export function RemoveInspectionButton({ inspectionId, jobId, portalReported }: 
   const remove = () =>
     startTransition(async () => {
       setError(null);
+      // Off the list straight away rather than after the job page has been
+      // rebuilt and streamed back. If the removal is refused, the
+      // optimistic value is dropped when this transition ends and the card
+      // comes back with the reason beside it.
+      list?.remove(inspectionId);
       const fd = new FormData();
       fd.set("inspection_id", inspectionId);
       fd.set("job_id", jobId);
@@ -206,7 +213,7 @@ export function RemoveInspectionButton({ inspectionId, jobId, portalReported }: 
     <span className="ml-auto inline-flex items-center gap-2">
       {error && <span className="text-[11px] text-error">{error}</span>}
       <button type="button" onClick={remove} disabled={pending} className="text-xs text-error hover:underline disabled:opacity-60">
-        {pending ? "Removing…" : "Remove"}
+        Remove
       </button>
     </span>
   );

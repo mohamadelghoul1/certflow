@@ -5,14 +5,28 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { moveInspection } from "@/lib/actions/inspections";
 import { reorderedIds } from "@/lib/checklists";
 
-// Moving an inspection up or down, the same way the checklist documents
-// move. Held as optimistic state so the card moves on the press rather
-// than after the job page has been rebuilt and streamed back; if the save
-// fails, React drops the optimistic order and the list snaps back to what
-// the server actually has.
+// The list of inspections on a job: which order they sit in, and which
+// of them are still there. Both are held as optimistic state so a card
+// moves — or goes — on the press, rather than after the job page has been
+// rebuilt and streamed back. If the save fails, React drops the
+// optimistic value and the list snaps back to what the server has.
 
-type Ctx = { order: string[]; move: (id: string, direction: "up" | "down") => void };
+type ListAction = { type: "move"; id: string; direction: "up" | "down" } | { type: "remove"; id: string };
+
+function reducer(order: string[], action: ListAction): string[] {
+  if (action.type === "remove") return order.filter((id) => id !== action.id);
+  return reorderedIds(order, action.id, action.direction) ?? order;
+}
+
+type Ctx = { order: string[]; move: (id: string, direction: "up" | "down") => void; remove: (id: string) => void };
 const InspectionOrderContext = createContext<Ctx | null>(null);
+
+// Used by the Remove button, which lives on the card rather than here —
+// the card it removes is one of the nodes this component is rendering, so
+// the list is what has to forget it.
+export function useInspectionList() {
+  return useContext(InspectionOrderContext);
+}
 
 export function InspectionOrderProvider({
   jobId,
@@ -27,14 +41,12 @@ export function InspectionOrderProvider({
 
   // The reducer form, so two quick presses stack instead of the second
   // being computed from the pre-move order and undoing the first.
-  const [order, applyMove] = useOptimistic(serverOrder, (current: string[], move: { id: string; direction: "up" | "down" }) =>
-    reorderedIds(current, move.id, move.direction) ?? current
-  );
+  const [order, apply] = useOptimistic(serverOrder, reducer);
   const [, startTransition] = useTransition();
 
   function move(id: string, direction: "up" | "down") {
     startTransition(async () => {
-      applyMove({ id, direction });
+      apply({ type: "move", id, direction });
       const fd = new FormData();
       fd.set("inspection_id", id);
       fd.set("job_id", jobId);
@@ -45,8 +57,14 @@ export function InspectionOrderProvider({
 
   const nodeById = new Map(rows.map((r) => [r.id, r.node]));
 
+  // The Remove button owns the call itself — it has to read the error
+  // back when the Portal has been told about this inspection and it can no
+  // longer be removed — so this only takes the card off the list, and puts
+  // it back if the removal is refused.
+  const remove = (id: string) => apply({ type: "remove", id });
+
   return (
-    <InspectionOrderContext.Provider value={{ order, move }}>
+    <InspectionOrderContext.Provider value={{ order, move, remove }}>
       {order.map((id) => (
         <div key={id}>{nodeById.get(id)}</div>
       ))}

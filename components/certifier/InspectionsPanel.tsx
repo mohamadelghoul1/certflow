@@ -8,13 +8,13 @@ import {
   confirmBooking,
   uploadInspectionReport,
   updateInspectionReportText,
-  addPhoto,
   setPhotoCaption,
   removePhoto,
   reportToPortal,
 } from "@/lib/actions/inspections";
 import { notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { InspectionPhotoUpload } from "@/components/certifier/InspectionPhotoUpload";
 import { DownloadButton } from "@/components/certifier/DownloadButton";
 import { InspectionOrderProvider, InspectionMoveButtons } from "@/components/certifier/InspectionOrder";
 import { InspectionCardState, InspectionCardShell, OutcomeBadge, OutcomeSelect, InspectionDateBox, IssuesWhenNeeded, RemoveInspectionButton } from "@/components/certifier/InspectionCard";
@@ -139,7 +139,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
                 ))}
               </div>
             )}
-            <ActionUpload action={addPhoto} fields={{ inspection_id: insp.id, job_id: jobId }} pathPrefix={`${firmId}/${jobId}/inspections/${insp.id}/photos`} label="Add photo" />
+            <InspectionPhotoUpload inspectionId={insp.id} jobId={jobId} pathPrefix={`${firmId}/${jobId}/inspections/${insp.id}/photos`} existing={photos.length} />
           </div>
 
           {/* The report's two prose sections, editable here rather than only via

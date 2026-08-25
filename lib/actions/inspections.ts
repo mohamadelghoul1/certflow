@@ -6,7 +6,7 @@ import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { todayISO, todayInNsw } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
-import { inspectionDescriptionFor } from "@/lib/constants";
+import { inspectionDescriptionFor, MAX_INSPECTION_PHOTOS } from "@/lib/constants";
 import { reorderedIds } from "@/lib/checklists";
 
 export async function assignInspector(formData: FormData) {
@@ -270,12 +270,19 @@ export async function removeInspection(_prev: ActionState, formData: FormData): 
   return undefined;
 }
 
+// Capped here as well as in the picker: several photos chosen at once
+// arrive as separate calls, and without a check each one only sees the
+// count from before any of them landed.
 export async function addPhoto(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
   const filePath = String(formData.get("file_path"));
+
+  const { count } = await supabase.from("inspection_photos").select("id", { count: "exact", head: true }).eq("inspection_id", inspectionId);
+  if ((count ?? 0) >= MAX_INSPECTION_PHOTOS) return;
+
   await supabase.from("inspection_photos").insert({ inspection_id: inspectionId, file_path: filePath });
   revalidatePath(`/jobs/${jobId}`);
 }

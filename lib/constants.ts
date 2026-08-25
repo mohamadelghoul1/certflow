@@ -325,3 +325,16 @@ export const INSPECTION_REINSPECTION_TEXT: Record<string, string> = {
   failed: "Re-inspection required",
   pending: "No re-inspection required",
 };
+
+// How many photos an inspection report carries. Four fills the report's
+// two-by-two photo page exactly, and a report is evidence of what was
+// found rather than the whole album from the visit.
+export const MAX_INSPECTION_PHOTOS = 4;
+
+// How many more photos an inspection can take. Never negative: an
+// inspection that somehow holds more than the limit offers no slots
+// rather than a negative number, which as a slice length would hand back
+// the whole selection and quietly ignore the cap.
+export function photoSlotsRemaining(existing: number) {
+  return Math.max(0, MAX_INSPECTION_PHOTOS - existing);
+}

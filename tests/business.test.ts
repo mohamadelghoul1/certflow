@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { photoSlotsRemaining, MAX_INSPECTION_PHOTOS } from "@/lib/constants";
 import {
   formatClassifications,
   formatDocumentDate,
@@ -92,4 +93,20 @@ test("a stage is complete only when it has items and all are approved", () => {
 test("the letterhead puts the suburb on its own line", () => {
   assert.deepEqual(letterheadAddressLines("Suite 2/F1 101 Rookwood Road, Yagoona NSW 2199"), ["Suite 2/F1 101 Rookwood Road,", "Yagoona NSW 2199"]);
   assert.deepEqual(letterheadAddressLines(""), ["—"]);
+});
+
+// Four photos fill the report's photo page exactly. The arithmetic is
+// worth pinning down: a negative slot count used as a slice length hands
+// back the whole selection and ignores the cap entirely.
+test("an inspection offers photo slots up to the limit and never below zero", () => {
+  assert.equal(photoSlotsRemaining(0), MAX_INSPECTION_PHOTOS);
+  assert.equal(photoSlotsRemaining(3), 1);
+  assert.equal(photoSlotsRemaining(MAX_INSPECTION_PHOTOS), 0);
+  assert.equal(photoSlotsRemaining(MAX_INSPECTION_PHOTOS + 2), 0);
+});
+
+test("the slot count is what limits a multi-photo selection", () => {
+  const chosen = ["a.jpg", "b.jpg", "c.jpg", "d.jpg", "e.jpg", "f.jpg"];
+  assert.deepEqual(chosen.slice(0, photoSlotsRemaining(2)), ["a.jpg", "b.jpg"]);
+  assert.deepEqual(chosen.slice(0, photoSlotsRemaining(MAX_INSPECTION_PHOTOS)), []);
 });
