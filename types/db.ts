@@ -113,6 +113,10 @@ export type QuoteFeeLine = {
 export type JobDetails = {
   projectNumber?: string;
   zoning?: string;
+  // Constraints on the land — bushfire prone, flood planning area,
+  // heritage. Free text rather than a fixed set, so a constraint nobody
+  // anticipated can still be recorded.
+  siteSensitivities?: string[];
   bcaVersion?: string;
   bcaVolumes?: string[];
   contact?: { nameOrCompany?: string; title?: string; givenNames?: string; surname?: string; phone?: string; mobile?: string; email?: string };

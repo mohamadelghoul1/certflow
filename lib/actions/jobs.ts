@@ -730,6 +730,29 @@ async function mirrorVisiblePathwayVersion(
 // last thing to come back from the Portal — long after the rest of the
 // job was filled in — so it can be typed in at the moment it is needed
 // without leaving the tab.
+// The constraints on the land — bushfire prone, flood planning area,
+// heritage. Recorded against the job rather than typed into a document,
+// because they change how every part of the assessment is approached and
+// belong in front of the certifier from the moment the job is opened.
+export async function setSiteSensitivities(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+
+  // Trimmed, de-duplicated and emptied of blanks, so a stray comma or a
+  // double-tick doesn't put the same constraint on the job twice.
+  const sensitivities = [...new Set(formData.getAll("sensitivity").map((v) => String(v).trim()).filter(Boolean))];
+
+  const { data: job } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return;
+
+  // Merged into the details rather than written over them, so this can't
+  // wipe anything else recorded against the job.
+  const details = (job.details || {}) as JobDetails;
+  await supabase.from("jobs").update({ details: { ...details, siteSensitivities: sensitivities } }).eq("id", jobId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
 export async function setPlanningPortalRef(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();

@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { photoSlotsRemaining, MAX_INSPECTION_PHOTOS } from "@/lib/constants";
 import {
@@ -12,6 +12,8 @@ import {
   normalizePortalRef,
   governingApproval,
   stageComplete,
+  pathwayStageComplete,
+  inspectionsCarriedOut,
   checklistProgress,
   letterheadAddressLines,
   pathwayLabel,
@@ -109,4 +111,23 @@ test("the slot count is what limits a multi-photo selection", () => {
   const chosen = ["a.jpg", "b.jpg", "c.jpg", "d.jpg", "e.jpg", "f.jpg"];
   assert.deepEqual(chosen.slice(0, photoSlotsRemaining(2)), ["a.jpg", "b.jpg"]);
   assert.deepEqual(chosen.slice(0, photoSlotsRemaining(MAX_INSPECTION_PHOTOS)), []);
+});
+
+describe("when a stage counts as finished", () => {
+  test("a certificate is issued only once it is signed, not merely generated", () => {
+    assert.equal(pathwayStageComplete({ pathway_generated: false }), false);
+    assert.equal(pathwayStageComplete({ pathway_generated: true }), false, "generated but unsigned is 'to issue', not issued");
+    assert.equal(pathwayStageComplete({ pathway_generated: true, pathway_signed_at: "2026-08-25T00:00:00Z" }), true);
+  });
+
+  test("a signed copy uploaded by the certifier counts as issued", () => {
+    assert.equal(pathwayStageComplete({ pathway_generated: true, pathway_approval_uploaded: true }), true);
+  });
+
+  test("inspections are carried out once none are still pending, whatever was found", () => {
+    assert.equal(inspectionsCarriedOut([]), false, "a job with no inspections has nothing to be finished");
+    assert.equal(inspectionsCarriedOut(["passed", "pending"]), false);
+    assert.equal(inspectionsCarriedOut(["passed", "failed"]), true, "a failed inspection was still carried out");
+    assert.equal(inspectionsCarriedOut(["passed", "passed_subject_to"]), true);
+  });
 });

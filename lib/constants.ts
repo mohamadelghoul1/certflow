@@ -350,3 +350,24 @@ export function photoSlotsRemaining(existing: number) {
 // Enforced in client_submit_document (migration 0024) as well as here;
 // this only decides what the portal offers.
 export const MAX_CLIENT_ITEM_DOCUMENTS = 2;
+
+// Constraints on the land that change how a development is assessed, and
+// that a certifier needs in front of them the moment they open a job —
+// bushfire prone land pulls in AS 3959, a flood planning area changes
+// floor levels, heritage can rule complying development out entirely.
+//
+// Suggestions rather than a fixed list: the field takes anything typed,
+// because no list of constraints covers every site.
+export const SITE_SENSITIVITIES = [
+  "Bushfire prone land",
+  "Flood planning area",
+  "Heritage item / conservation area",
+  "Acid sulfate soils",
+  "Coastal management area",
+  "Landslip risk",
+  "Contaminated land",
+  "Mine subsidence district",
+  "Airport noise (ANEF)",
+  "Easement affected",
+  "Biodiversity / vegetation",
+];

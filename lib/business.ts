@@ -83,6 +83,28 @@ export function checklistProgress(items: ChecklistItemLike[]) {
   return `${done}/${items.length}`;
 }
 
+// Whether a stage is finished, for the green tab on the job page.
+//
+// Green means "there is nothing left to do here", which is a different
+// question for each stage — a certificate is issued, a checklist is fully
+// approved, every inspection has been carried out, an occupation
+// certificate exists.
+export function pathwayStageComplete(job: { pathway_generated?: boolean | null; pathway_signed_at?: string | null; pathway_approval_uploaded?: boolean | null }) {
+  // Generated and signed — or replaced by a signed copy the certifier
+  // uploaded, which is the same thing arriving a different way. A
+  // generated but unsigned certificate is not issued: that distinction is
+  // the whole reason the jobs list separates "to issue" from "issued".
+  return !!job.pathway_generated && (!!job.pathway_signed_at || !!job.pathway_approval_uploaded);
+}
+
+// Every inspection carried out, whatever was found. A failed one is done
+// — it happened — and the re-inspection it calls for is added to the
+// list as a new inspection, which is pending and takes the stage back off
+// green until it too is carried out.
+export function inspectionsCarriedOut(outcomes: string[]) {
+  return outcomes.length > 0 && outcomes.every((o) => o !== "pending");
+}
+
 export function inspectionsComplete(outcomes: string[]) {
   return outcomes.length > 0 && outcomes.every((o) => o === "passed" || o === "passed_subject_to");
 }

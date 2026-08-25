@@ -2,8 +2,9 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { checklistProgress } from "@/lib/business";
+import { checklistProgress, stageComplete, pathwayStageComplete, inspectionsCarriedOut } from "@/lib/business";
 import { DetailsTab } from "@/components/certifier/DetailsTab";
+import { SiteSensitivities } from "@/components/certifier/SiteSensitivities";
 import { NeighbourNotificationPanel } from "@/components/certifier/NeighbourNotificationPanel";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { CertificatesPanel } from "@/components/certifier/CertificatesPanel";
@@ -106,6 +107,10 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           >
             {pathwayLabel(job.pathway)} · {job.status === "complete" ? "Complete" : "Active"}
           </span>
+          {/* Beside the address, because bushfire prone land or a flood
+              planning area changes how every part of the job is assessed
+              and needs to be seen before any of it is started. */}
+          <SiteSensitivities jobId={id} sensitivities={typedJob.details?.siteSensitivities || []} />
         </div>
         <div className="text-sm text-muted mt-1">{job.description}</div>
       </div>
@@ -122,6 +127,20 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               : t.key === "oc"
               ? checklistProgress((ocChecklist?.checklist_items as never[]) || [])
               : null,
+          // Green once there is nothing left to do at that stage. Each
+          // stage answers that differently: a certificate is issued, a
+          // checklist is fully approved, every inspection has been
+          // carried out, an occupation certificate has been generated.
+          complete:
+            t.key === "pathway"
+              ? pathwayStageComplete(typedJob)
+              : t.key === "noc"
+              ? stageComplete((nocChecklist?.checklist_items as never[]) || [])
+              : t.key === "inspections"
+              ? inspectionsCarriedOut((inspections || []).map((i) => i.outcome as string))
+              : t.key === "oc"
+              ? (ocRecords || []).length > 0
+              : false,
         }))}
         content={{
           details: <DetailsTab job={typedJob} clients={clients || []} sharedClients={sharedClients} />,

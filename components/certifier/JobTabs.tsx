@@ -1,8 +1,18 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 
-type TabMeta = { key: string; label: string; progress?: string | null };
+type TabMeta = {
+  key: string;
+  label: string;
+  progress?: string | null;
+  // Nothing left to do at this stage: the certificate is issued, the
+  // checklist is fully approved, every inspection has been carried out,
+  // the occupation certificate exists. Green, the same cue an approved
+  // checklist item gets.
+  complete?: boolean;
+};
 
 // Lets a panel move the user to a different tab — e.g. saving the job
 // details jumps straight to the CDC/CC tab, which is where the work
@@ -38,12 +48,19 @@ export function JobTabs({ tabs, initialTab, content }: { tabs: TabMeta[]; initia
             <button
               key={t.key}
               onClick={() => select(t.key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                active === t.key ? "bg-white text-heading shadow-sm" : "text-muted hover:text-heading"
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all inline-flex items-center gap-1.5 ${
+                active === t.key
+                  ? t.complete
+                    ? "bg-white text-accent shadow-sm ring-1 ring-accent/40"
+                    : "bg-white text-heading shadow-sm"
+                  : t.complete
+                  ? "text-accent hover:text-accent"
+                  : "text-muted hover:text-heading"
               }`}
             >
+              {t.complete && <CheckCircle2 size={13} />}
               {t.label}
-              {t.progress && <span className="ml-1.5 text-xs font-normal opacity-70">{t.progress}</span>}
+              {t.progress && <span className="text-xs font-normal opacity-70">{t.progress}</span>}
             </button>
           ))}
         </div>
