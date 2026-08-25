@@ -38,6 +38,13 @@ export type BundleInput = {
   // the official document.
   approval?: { bytes: Uint8Array; contentType?: string | null } | null;
   approvalLabel?: string;
+  // A generated document that belongs with the approval rather than
+  // behind it. The pre-inspection report is drawn into the certificate
+  // package itself, so this is only used when the approval is a signed
+  // PDF the certifier uploaded and there is no generated package for it
+  // to sit inside. It is counted as part of the approval, so it keeps
+  // its own footer rather than having a second one drawn over it.
+  supplement?: { bytes: Uint8Array; label: string } | null;
   documents: BundleDocument[];
   stampDetails: StampDetails;
   // The "Project No.: … · website" line the generated documents carry at
@@ -117,6 +124,11 @@ export async function buildApprovalBundle(input: BundleInput): Promise<Uint8Arra
     });
   } else {
     notes.push({ title: input.approvalLabel || "Approval", detail: "Not included — the approval could not be generated for this job.", included: false });
+  }
+
+  if (input.supplement) {
+    const ok = await appendPdf(bundle, input.supplement.bytes);
+    notes.push({ title: input.supplement.label, detail: ok ? "Included" : "Not included — the report could not be generated.", included: ok });
   }
 
   // Everything after this point — the attached documents and any closing

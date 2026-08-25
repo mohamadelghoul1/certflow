@@ -1,5 +1,7 @@
 import { formatClassifications, formatDocumentDate, formatISODate } from "@/lib/business";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
+import { PreInspectionReportBody } from "@/components/certifier/PreInspectionReportBody";
+import type { PreInspectionData } from "@/lib/certificates/preInspectionData";
 import { LetterBodyEditor } from "@/components/certifier/LetterBodyEditor";
 import { formatAddress, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 
@@ -137,7 +139,7 @@ function SignatureLine({ signatureUrl, topPadding }: { signatureUrl: string | nu
   return <div className={`${topPadding} h-20 print:h-11`} />;
 }
 
-export function PathwayCertificateDocument({ data }: { data: PathwayCertificateData }) {
+export function PathwayCertificateDocument({ data, preInspection }: { data: PathwayCertificateData; preInspection?: PreInspectionData | null }) {
   const {
     job,
     firm,
@@ -446,6 +448,18 @@ export function PathwayCertificateDocument({ data }: { data: PathwayCertificateD
         </div>
         <DocFooter projRef={projRef} website={firm?.website} />
       </Section>
+
+      {/* 4b. Pre-inspection report — s139 for a CDC, s16 for a CC. It
+          sits under the certificate and its Schedule 1, before the
+          inspections notice, because it is what was found on site before
+          the certificate was issued rather than part of the notice of
+          what is still to be inspected. Absent until the certifier has
+          recorded the dates it needs. */}
+      {preInspection && (
+        <Section>
+          <PreInspectionReportBody data={preInspection} />
+        </Section>
+      )}
 
       {/* 5. Mandatory inspections notice */}
       <Section>

@@ -1,5 +1,7 @@
 import type { PathwayCertificateData } from "@/lib/certificates/pathwayData";
+import { preInspectionRows, type PreInspectionData } from "@/lib/certificates/preInspectionData";
 import { epiForCodeParts } from "@/lib/constants";
+import type { Firm } from "@/types/db";
 
 // One job, complete enough to generate every document from. Overrides let
 // a test vary only what it cares about.
@@ -70,4 +72,40 @@ export function certificateFixture(overrides: Record<string, unknown> = {}): Pat
     requiredDocsList: ["Receipt of the Council Contribution Fee.", "Receipt of the Council Bond."],
     ...overrides,
   } as unknown as PathwayCertificateData;
+}
+
+const preInspectionFirm = { name: "Quality Private Certifiers", abn: "41 630 945 416", postal_address: "PO BOX 195", office_address: "Yagoona NSW 2199", phone: "0404 940 898", email: "info@example.com", website: "www.example.com" } as unknown as Firm;
+
+// The same job as certificateFixture's, filled in the way the firm's own
+// s139 and s16 reports are.
+export function preInspectionFixture(isCdc: boolean): PreInspectionData {
+  const ref = isCdc ? "CDC-26053/01" : "CC-25477/01";
+  const regulationTitle = isCdc ? "139 EP and A Regulation 2021" : "S16 EP&A (Development Certification and Fire Safety) Regulation 2021";
+  return {
+    job: {} as never,
+    firm: preInspectionFirm,
+    inspector: null,
+    logoUrl: null,
+    signatureUrl: null,
+    isCdc,
+    regulationTitle,
+    title: `INSPECTION REPORT – ${ref} – 1. ${regulationTitle}`,
+    ref,
+    projRef: isCdc ? "CDC-26053" : "CC-25477",
+    address: "48 Alice Street, Rooty Hill NSW 2766",
+    applicantName: "MD Shahidul Karim",
+    applicantAddress: "48 Alice Street, Rooty Hill NSW 2766",
+    applicantPhone: "0433650299",
+    lga: "Blacktown City Council",
+    developmentConsentNumber: isCdc ? "" : "DA-25-01431",
+    certificateLabel: isCdc ? "CDC Number" : "Construction Certificate Number",
+    applicationDate: "09 Dec 2025",
+    inspectionDate: "20 Jan 2026",
+    lotSectionDp: "9 / DP253031",
+    zoning: "R2",
+    scopeOfWorks: "Alterations and additions to a dwelling",
+    inspectorName: "Mohamad El Ghoul",
+    registrationNo: "BDC2961",
+    rows: preInspectionRows(isCdc),
+  };
 }

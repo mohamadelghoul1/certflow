@@ -7,6 +7,8 @@ import { buildApprovalBundle, type BundleDocument } from "@/lib/pdf/bundle";
 import { attachmentHeader, jobDocumentName } from "@/lib/downloadName";
 import { buildCertificatePackagePdf } from "@/lib/pdf/certificatePackage";
 import { getPathwayCertificateData } from "@/lib/certificates/pathwayData";
+import { getPreInspectionData } from "@/lib/certificates/preInspectionData";
+import { buildPreInspectionReportPdf } from "@/lib/pdf/preInspectionReport";
 import { fetchStampImage } from "@/lib/pdf/stamp";
 import { buildStampDetails } from "@/lib/pdf/stampDetails";
 import type { Job, Firm, Certifier, ChecklistItem } from "@/types/db";
@@ -91,13 +93,32 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   let approval = uploaded;
   let approvalLabel = "Signed approval (uploaded)";
 
+  // The pre-inspection report, once the certifier has recorded the
+  // application and inspection dates against the job. Null before then,
+  // and for a job that issues no certificate of its own.
+  const preInspection = await getPreInspectionData(jobId, profile);
+  const hasPreInspection = Boolean(preInspection?.applicationDate && preInspection?.inspectionDate);
+  let supplement: { bytes: Uint8Array; label: string } | null = null;
+
   if (!approval) {
     const packageData = await getPathwayCertificateData(jobId, profile.firm_id);
     if (packageData) {
       const [logo, signature] = await Promise.all([fetchPdfImage(packageData.logoUrl), fetchPdfImage(packageData.signatureUrl)]);
-      approval = { bytes: await buildCertificatePackagePdf(packageData, { logo, signature }), contentType: "application/pdf" };
+      // Drawn into the package itself so it follows the certificate on the
+      // same letterhead, rather than arriving as a separate document
+      // behind the whole approval.
+      approval = {
+        bytes: await buildCertificatePackagePdf(packageData, { logo, signature }, hasPreInspection ? preInspection : null),
+        contentType: "application/pdf",
+      };
       approvalLabel = "Approval — letters, certificate, inspections notice and Schedule 1";
     }
+  } else if (hasPreInspection && preInspection) {
+    // A signed upload replaces the generated package, so there is nothing
+    // to draw the report inside. It follows that upload instead, still
+    // ahead of the approved documents.
+    const [logo, signature] = await Promise.all([fetchPdfImage(preInspection.logoUrl), fetchPdfImage(preInspection.signatureUrl)]);
+    supplement = { bytes: await buildPreInspectionReportPdf(preInspection, { logo, signature }), label: `Inspection report — ${preInspection.regulationTitle}` };
   }
 
   const firmData = (firm || null) as Firm | null;
@@ -108,6 +129,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     subheading: `${job.address || ""} · ${firmData?.name || ""} · Compiled ${formatISODate(todayISO())}`,
     approval: approval ? { bytes: approval.bytes, contentType: approval.contentType } : null,
     approvalLabel,
+    supplement,
     documents,
     stampDetails,
     // The same footer line the generated approval carries — certRef minus

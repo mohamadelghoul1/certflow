@@ -4,6 +4,7 @@ import { formatISODate } from "@/lib/business";
 import { signPathwayCertificate, uploadPathwayApproval } from "@/lib/actions/jobs";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import { getPathwayCertificateData } from "@/lib/certificates/pathwayData";
+import { getPreInspectionData } from "@/lib/certificates/preInspectionData";
 import { PathwayCertificateDocument } from "@/components/certifier/PathwayCertificateDocument";
 
 export default async function PathwayCertificatePage({ params }: { params: Promise<{ jobId: string }> }) {
@@ -12,6 +13,12 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
 
   const data = await getPathwayCertificateData(jobId, profile.firm_id);
   if (!data) notFound();
+
+  // Shown as a page of the approval only once both dates are recorded,
+  // which is the same test the downloaded set applies — so what is
+  // reviewed here is what is handed over.
+  const preInspection = await getPreInspectionData(jobId, profile);
+  const withReport = preInspection?.applicationDate && preInspection?.inspectionDate ? preInspection : null;
 
   // Only what framing the document needs — the document itself takes the
   // whole data object.
@@ -31,7 +38,7 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
       uploadPathPrefix={`${profile.firm_id}/${jobId}/certificates/pathway/${activeVersionId || "current"}`}
       uploadedUrl={uploadedApprovalUrl}
     >
-      <PathwayCertificateDocument data={data} />
+      <PathwayCertificateDocument data={data} preInspection={withReport} />
     </CertificatePackage>
   );
 }

@@ -2,45 +2,13 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { buildPreInspectionReportDocx } from "@/lib/docx/preInspectionReport";
 import { preInspectionRows, type PreInspectionData } from "@/lib/certificates/preInspectionData";
-import { readDocx } from "./helpers/readDocuments";
-import type { Firm } from "@/types/db";
-
-const firm = { name: "Quality Private Certifiers", abn: "41 630 945 416", postal_address: "PO BOX 195", office_address: "Yagoona NSW 2199", phone: "0404 940 898", email: "info@example.com", website: "www.example.com" } as unknown as Firm;
-
-function data(isCdc: boolean): PreInspectionData {
-  const ref = isCdc ? "CDC-26053/01" : "CC-25477/01";
-  const regulationTitle = isCdc ? "139 EP and A Regulation 2021" : "S16 EP&A (Development Certification and Fire Safety) Regulation 2021";
-  return {
-    job: {} as never,
-    firm,
-    inspector: null,
-    logoUrl: null,
-    signatureUrl: null,
-    isCdc,
-    regulationTitle,
-    title: `INSPECTION REPORT – ${ref} – 1. ${regulationTitle}`,
-    ref,
-    projRef: isCdc ? "CDC-26053" : "CC-25477",
-    address: "48 Alice Street, Rooty Hill NSW 2766",
-    applicantName: "MD Shahidul Karim",
-    applicantAddress: "48 Alice Street, Rooty Hill NSW 2766",
-    applicantPhone: "0433650299",
-    lga: "Blacktown City Council",
-    developmentConsentNumber: isCdc ? "" : "DA-25-01431",
-    certificateLabel: isCdc ? "CDC Number" : "Construction Certificate Number",
-    applicationDate: "09 Dec 2025",
-    inspectionDate: "20 Jan 2026",
-    lotSectionDp: "9 / DP253031",
-    zoning: "R2",
-    scopeOfWorks: "Alterations and additions to a dwelling",
-    inspectorName: "Mohamad El Ghoul",
-    registrationNo: "BDC2961",
-    rows: preInspectionRows(isCdc),
-  };
-}
+import { buildCertificatePackagePdf } from "@/lib/pdf/certificatePackage";
+import { buildPreInspectionReportPdf } from "@/lib/pdf/preInspectionReport";
+import { readDocx, readPdf } from "./helpers/readDocuments";
+import { certificateFixture, preInspectionFixture } from "./helpers/fixture";
 
 async function textOf(isCdc: boolean) {
-  return (await readDocx(await buildPreInspectionReportDocx(data(isCdc), { logo: null, signature: null }))).text;
+  return (await readDocx(await buildPreInspectionReportDocx(preInspectionFixture(isCdc), { logo: null, signature: null }))).text;
 }
 
 describe("the CDC pre-inspection report", () => {
@@ -105,5 +73,61 @@ describe("both reports", () => {
     assert.ok(text.includes("Details of the current fire safety measures"));
     assert.ok(text.includes("Has any building work commenced?"));
     assert.equal((text.match(/Satisfactory/g) || []).length, 4, "one outcome per area");
+  });
+});
+
+describe("the pre-inspection report inside the approved set", () => {
+  // Which page each named section starts on, so the order can be asserted
+  // rather than eyeballed.
+  async function sections(preInspection: PreInspectionData | null) {
+    const bytes = await buildCertificatePackagePdf(certificateFixture(), { logo: null, signature: null }, preInspection);
+    const { pages } = await readPdf(bytes);
+    const at = (needle: string) => pages.findIndex((p) => p.replace(/\s+/g, " ").includes(needle));
+    return {
+      certificate: at("COMPLYING DEVELOPMENT CERTIFICATE"),
+      scheduleOne: at("SCHEDULE 1: APPROVED"),
+      report: at("INSPECTION REPORT"),
+      notice: at("NOTICE TO APPLICANT"),
+      pageCount: pages.length,
+    };
+  }
+
+  test("follows the certificate and its Schedule 1, ahead of the inspections notice", async () => {
+    const s = await sections(preInspectionFixture(true));
+    assert.ok(s.report > -1, "the report is in the set");
+    assert.ok(s.certificate < s.scheduleOne, "the certificate still leads its own Schedule 1");
+    assert.ok(s.scheduleOne < s.report, "the report sits under the certificate, not inside it");
+    assert.ok(s.report < s.notice, "what was found on site comes before the notice of what is still to be inspected");
+  });
+
+  test("costs the set one page and leaves the rest of it alone", async () => {
+    const [without, withReport] = await Promise.all([sections(null), sections(preInspectionFixture(true))]);
+    assert.equal(without.report, -1, "a job with no dates recorded gets no report");
+    assert.equal(withReport.pageCount, without.pageCount + 1);
+    assert.equal(withReport.certificate, without.certificate, "nothing ahead of the report moves");
+  });
+
+  test("carries the same letterhead and project footer as the certificate", async () => {
+    const bytes = await buildCertificatePackagePdf(certificateFixture(), { logo: null, signature: null }, preInspectionFixture(true));
+    const { pages } = await readPdf(bytes);
+    const page = pages.find((p) => p.includes("INSPECTION REPORT"))!.replace(/\s+/g, " ");
+    assert.ok(page.includes("Quality Private Certifiers"));
+    assert.ok(page.includes("ABN: 41 630 945 416"));
+    assert.ok(page.includes("Project No.: CDC-26001"));
+  });
+});
+
+describe("the standalone pre-inspection report PDF", () => {
+  // Built only when the approval is a signed PDF the certifier uploaded,
+  // so there is no generated package to draw the report inside.
+  test("is a single page carrying the whole report", async () => {
+    const { pages, text } = await readPdf(await buildPreInspectionReportPdf(preInspectionFixture(false), { logo: null, signature: null }));
+    assert.equal(pages.length, 1);
+    const flat = text.replace(/\s+/g, " ");
+    assert.ok(flat.includes("RELEVANT CONSENTS"));
+    assert.ok(flat.includes("DA-25-01431"), "a CC names the development application it relies on");
+    assert.ok(flat.includes("Construction Certificate Number"));
+    assert.ok(flat.includes("cannot be a CC"));
+    assert.ok(flat.includes("Mohamad El Ghoul – Inspector"));
   });
 });

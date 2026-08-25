@@ -1,6 +1,9 @@
 import { Layout, MARGIN, MARGIN_BOTTOM, HEADER_TOP, A4, LETTER_BODY_SIZE, LETTER_SIGNATURE_NAME_SIZE, MUTED, LINE, HEADING_COLOR, INK, BODY_SIZE, SMALL_SIZE, TITLE_SIZE, SPACE_AFTER, LETTER_PARA_AFTER, INSPECTION_HEADER_FILL } from "@/lib/pdf/layout";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
-import { formatClassifications, formatDocumentDate, formatISODate, letterheadAddressLines } from "@/lib/business";
+import { formatClassifications, formatDocumentDate, formatISODate } from "@/lib/business";
+import { letterheadHeader, projectFooter, type PackageImages } from "@/lib/pdf/letterhead";
+import { drawPreInspectionReport, signPreInspectionReport } from "@/lib/pdf/preInspectionReport";
+import type { PreInspectionData } from "@/lib/certificates/preInspectionData";
 
 // The CDC/CC certificate package as a PDF, mirroring
 // lib/docx/pathwayCertificate.ts section for section: council letter,
@@ -14,9 +17,16 @@ const LETTER_LABEL_FRACTION = 0.42;
 // It exists so the approved set can be one PDF. The Word export stays
 // exactly as it is — that's for editing; this is for handing over.
 
-export type PackageImages = { logo?: { bytes: Uint8Array; type: "png" | "jpeg" } | null; signature?: { bytes: Uint8Array; type: "png" | "jpeg" } | null };
+export type { PackageImages };
 
-export async function buildCertificatePackagePdf(data: PathwayCertificateData, images: PackageImages): Promise<Uint8Array> {
+export async function buildCertificatePackagePdf(
+  data: PathwayCertificateData,
+  images: PackageImages,
+  // The pre-inspection report, when the certifier has recorded the two
+  // dates it needs. Null leaves the package exactly as it was, so a job
+  // issued without one is unchanged.
+  preInspection?: PreInspectionData | null
+): Promise<Uint8Array> {
   const {
     job,
     firm,
@@ -47,53 +57,10 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
   const logo = images.logo ? await (images.logo.type === "png" ? l.doc.embedPng(images.logo.bytes) : l.doc.embedJpg(images.logo.bytes)) : null;
 
   // Letterhead and footer are redrawn on every page, the way the section
-  // header and footer work in the Word version.
-  l.header = (layout) => {
-    const top = A4[1] - HEADER_TOP;
-    let leftBottom = top;
-
-    if (logo) {
-      const height = 34;
-      const width = logo.width * (height / logo.height);
-      layout.page.drawImage(logo, { x: MARGIN, y: top - height, width, height });
-      leftBottom = top - height;
-    } else {
-      layout.page.drawText(firm?.name || "", { x: MARGIN, y: top - TITLE_SIZE, size: TITLE_SIZE, font: layout.bold, color: HEADING_COLOR });
-      leftBottom = top - TITLE_SIZE - 3;
-    }
-    // The ABN and contact block read as the certificate's own small print
-    // (SMALL_SIZE, 7pt) — noticeably smaller than everything else on the
-    // page, including the field values just below it. Set at BODY_SIZE
-    // instead, the same size the certificate's own fields use, so the
-    // letterhead reads as part of the same document rather than a caption
-    // under it. The footer below keeps SMALL_SIZE — that one is genuinely
-    // meant to sit quietly under every page.
-    const HEADER_DETAIL_SIZE = BODY_SIZE;
-    layout.page.drawText(`ABN: ${firm?.abn || "—"}`, { x: MARGIN, y: leftBottom - HEADER_DETAIL_SIZE - 2, size: HEADER_DETAIL_SIZE, font: layout.regular, color: MUTED });
-
-    const right: string[] = [];
-    letterheadAddressLines(firm?.postal_address).forEach((line, i) => right.push(i === 0 ? `Postal: ${line}` : line));
-    letterheadAddressLines(firm?.office_address).forEach((line, i) => right.push(i === 0 ? `Office: ${line}` : line));
-    right.push(`(p): ${firm?.phone || "—"}`, `(e): ${firm?.email || "—"}`);
-    const lead = HEADER_DETAIL_SIZE * 1.32;
-    right.forEach((line, i) => {
-      const w = layout.regular.widthOfTextAtSize(line, HEADER_DETAIL_SIZE);
-      layout.page.drawText(line, { x: A4[0] - MARGIN - w, y: top - HEADER_DETAIL_SIZE - i * lead, size: HEADER_DETAIL_SIZE, font: layout.regular, color: MUTED });
-    });
-
-    const ruleY = Math.min(leftBottom - HEADER_DETAIL_SIZE - 10, top - HEADER_DETAIL_SIZE - right.length * lead - 4);
-    layout.page.drawLine({ start: { x: MARGIN, y: ruleY }, end: { x: A4[0] - MARGIN, y: ruleY }, thickness: 0.5, color: LINE });
-    layout.y = ruleY - 14;
-  };
-
-  l.footer = (layout) => {
-    const site = (firm?.website || "").trim();
-    const label = site ? `Project No.: ${projRef}  ·  ${site}` : `Project No.: ${projRef}`;
-    const y = MARGIN_BOTTOM - 12;
-    layout.page.drawLine({ start: { x: MARGIN, y: y + 12 }, end: { x: A4[0] - MARGIN, y: y + 12 }, thickness: 0.5, color: LINE });
-    const w = layout.regular.widthOfTextAtSize(label, SMALL_SIZE);
-    layout.page.drawText(label, { x: (A4[0] - w) / 2, y, size: SMALL_SIZE, font: layout.regular, color: MUTED });
-  };
+  // header and footer work in the Word version. Shared with the
+  // pre-inspection report that travels with this package.
+  l.header = letterheadHeader(firm, logo);
+  l.footer = projectFooter(projRef, firm?.website);
 
   const splitLine = (left: string, right: string) => {
     l.ensure(14);
@@ -277,6 +244,16 @@ export async function buildCertificatePackagePdf(data: PathwayCertificateData, i
     [24, 33, 15, 12, 16],
     { zebra: true, rowHeight: 12 }
   );
+
+  // 4b. Pre-inspection report — s139 for a CDC, s16 for a CC. It sits
+  //     under the certificate and its Schedule 1, before the inspections
+  //     notice, because it is what was found on site before the
+  //     certificate was issued rather than part of the notice of what is
+  //     still to be inspected.
+  if (preInspection) {
+    drawPreInspectionReport(l, preInspection);
+    await signPreInspectionReport(l, preInspection, images.signature);
+  }
 
   // 5. Mandatory inspections notice
   l.pageBreak();
