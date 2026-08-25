@@ -183,3 +183,36 @@ file from a fixture and reads them back), the certificate reference and
 download filenames, the dashboard's counting rules, and the checklist
 ordering. Tests live in `tests/` and are excluded from the production
 build.
+
+## Cloud backup (Dropbox / OneDrive) — optional
+
+Lets a firm keep its own copy of every document in its own cloud storage,
+in the same folders as the job archive download. Off unless configured:
+the Settings page only offers a provider whose keys are present.
+
+You register the app with the provider; CertFlow never sees your firm's
+password, and the keys below are the deployment's, not any one firm's.
+
+**Dropbox** — create an app at https://www.dropbox.com/developers/apps
+(scoped access, "Full Dropbox" or "App folder"), give it the
+`files.content.write` and `account_info.read` permissions, and add the
+redirect URI `https://YOUR-DOMAIN/api/backup/dropbox/callback`.
+
+**OneDrive** — register an application in the Microsoft Entra admin
+centre, add a Web redirect URI of
+`https://YOUR-DOMAIN/api/backup/onedrive/callback`, and grant the
+delegated permissions `Files.ReadWrite`, `User.Read` and `offline_access`.
+
+Then add to Vercel → Settings → Environment Variables:
+
+```
+DROPBOX_CLIENT_ID=
+DROPBOX_CLIENT_SECRET=
+ONEDRIVE_CLIENT_ID=
+ONEDRIVE_CLIENT_SECRET=
+```
+
+Either pair can be left out — a provider with no keys simply isn't
+offered. Each firm then connects its own account under Settings → Cloud
+backup, and the tokens are stored per firm in a table with row level
+security and no policies, so only the server can read them.

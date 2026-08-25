@@ -1,6 +1,8 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FirmForm, CertifierList, ClientList } from "@/components/certifier/SettingsForms";
+import { CloudBackupSection } from "@/components/certifier/CloudBackupSection";
+import { getBackupStatus } from "@/lib/actions/backup";
 import { DocumentLibrarySection } from "@/components/certifier/DocumentLibrarySection";
 import { signedUrl } from "@/lib/storage";
 
@@ -14,6 +16,8 @@ export default async function SettingsPage() {
     supabase.from("clients").select("*").eq("firm_id", profile.firm_id).order("name"),
     supabase.from("document_library_items").select("*").eq("firm_id", profile.firm_id).order("sort_order"),
   ]);
+
+  const backup = await getBackupStatus(profile.firm_id);
 
   const signatureUrls: Record<string, string> = {};
   // A contract certifier's own company logo, for the letterhead their
@@ -49,6 +53,13 @@ export default async function SettingsPage() {
         <div className="px-5 py-3 border-b border-line font-bold text-primary">Firm details</div>
         <div className="p-5">
           <FirmForm firm={firm} logoUrl={logoUrl} stampUrl={stampUrl} />
+        </div>
+      </section>
+
+      <section className="bg-white rounded-lg border border-line">
+        <div className="px-5 py-3 border-b border-line font-bold text-primary">Cloud backup</div>
+        <div className="p-5">
+          <CloudBackupSection configured={backup.configured} connections={backup.connections} />
         </div>
       </section>
 

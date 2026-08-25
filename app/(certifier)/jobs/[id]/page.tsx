@@ -6,6 +6,7 @@ import { checklistProgress, stageComplete, pathwayStageComplete, inspectionsCarr
 import { DetailsTab } from "@/components/certifier/DetailsTab";
 import { SiteSensitivities } from "@/components/certifier/SiteSensitivities";
 import { DownloadButton } from "@/components/certifier/DownloadButton";
+import { BackUpJobButton } from "@/components/certifier/BackUpJobButton";
 import { FolderArchive } from "lucide-react";
 import { NeighbourNotificationPanel } from "@/components/certifier/NeighbourNotificationPanel";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
@@ -123,6 +124,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           >
             <FolderArchive size={13} /> Download job archive
           </DownloadButton>
+          <BackUpJobButton jobId={id} />
         </div>
         <div className="text-sm text-muted mt-1">{job.description}</div>
       </div>
