@@ -10,6 +10,7 @@ import { notifyJobClient } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
 import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
 import { insertChecklistItems, reorderedIds } from "@/lib/checklists";
+import { mergeJobDetails } from "@/lib/jobDetails";
 import type { JobDetails, CriticalStageInspection } from "@/types/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -221,13 +222,10 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   const jobId = String(formData.get("job_id"));
   const pathway = String(formData.get("pathway") || "CDC") as Pathway;
 
-  // Determination date isn't editable from this form — it's set
-  // automatically when the certificate is issued (see issuePathwayCertificate)
-  // — so carry the existing value forward instead of the form wiping it.
+  // Merged over what is already recorded, not written over it — see
+  // mergeJobDetails for what this form does and doesn't manage.
   const { data: existingJob } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
-  const details = extractJobDetails(formData, pathway);
-  details.certificateDetails!.determinationDate = existingJob?.details?.certificateDetails?.determinationDate || "";
-  details.certificateDetails!.consentReferences = existingJob?.details?.certificateDetails?.consentReferences || "";
+  const details = mergeJobDetails(existingJob?.details as JobDetails | null, extractJobDetails(formData, pathway));
 
   // The critical stage inspections and the portal client travel with this
   // form rather than saving as they're changed, so nothing on the Details
