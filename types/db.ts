@@ -361,6 +361,9 @@ export type Inspection = {
   report_sent_date: string | null;
   report_file_path: string | null;
   report_signed_at: string | null;
+  // The signed report, built once when it is signed rather than on every
+  // download. Added by migration 0027; cleared when the report is reopened.
+  report_pdf_path?: string | null;
   report_intro_override: string | null;
   report_notes: string | null;
   booked_by_client: boolean;

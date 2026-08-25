@@ -95,6 +95,7 @@ export function VersionSignActions({ jobId, isActive, signedAt }: { jobId: strin
       <DownloadButton
         href={`/api/jobs/${jobId}/approval-bundle`}
         fallbackName="Approved Set.pdf"
+        preparingLabel="Preparing the set…"
         className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline"
       >
         <Layers size={12} /> Download full approved set (PDF)

@@ -8,6 +8,7 @@ import { todayISO, todayInNsw } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
 import { inspectionDescriptionFor, MAX_INSPECTION_PHOTOS } from "@/lib/constants";
 import { reorderedIds } from "@/lib/checklists";
+import { storeSignedInspectionReport } from "@/lib/certificates/storeInspectionReport";
 
 export async function assignInspector(formData: FormData) {
   await requireProfile("certifier");
@@ -129,13 +130,26 @@ export async function uploadInspectionReport(formData: FormData) {
 }
 
 export async function signInspectionReport(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireProfile("certifier");
+  const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
   const { error, data } = await supabase.from("inspections").update({ report_signed_at: new Date().toISOString() }).eq("id", inspectionId).select("id");
   if (error) return { error: error.message };
   if (!data || data.length === 0) return { error: "Could not find this inspection to sign." };
+
+  // Built here rather than on every download. A signed report cannot
+  // change until it is reopened, and this is a moment the certifier is
+  // not watching — signing flips on the press and this happens behind
+  // it. A failure leaves the download to build it on the fly, exactly as
+  // it did before, so signing never fails for want of a PDF.
+  try {
+    const path = await storeSignedInspectionReport(supabase, jobId, inspectionId, profile.firm_id);
+    if (path) await supabase.from("inspections").update({ report_pdf_path: path }).eq("id", inspectionId);
+  } catch (buildError) {
+    console.error("could not store the signed inspection report:", buildError instanceof Error ? buildError.message : buildError);
+  }
+
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/jobs/${jobId}/inspections/${inspectionId}/report`);
   return undefined;
@@ -151,7 +165,7 @@ export async function unsignInspectionReport(_prev: ActionState, formData: FormD
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
-  const { error, data } = await supabase.from("inspections").update({ report_signed_at: null }).eq("id", inspectionId).select("id");
+  const { error, data } = await supabase.from("inspections").update({ report_signed_at: null, report_pdf_path: null }).eq("id", inspectionId).select("id");
   if (error) return { error: error.message };
   if (!data || data.length === 0) return { error: "Could not find this inspection to reopen." };
   revalidatePath(`/jobs/${jobId}`);

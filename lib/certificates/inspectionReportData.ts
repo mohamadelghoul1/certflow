@@ -11,6 +11,9 @@ export type InspectionRecord = {
   outcome: string;
   inspector_certifier_id: string | null;
   report_signed_at: string | null;
+  // The signed report as a stored file, so a download does not rebuild
+  // something that cannot have changed. Added by migration 0027.
+  report_pdf_path?: string | null;
   report_intro_override: string | null;
   report_notes: string | null;
   defects: Defect[];

@@ -23,7 +23,7 @@ function mb(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function DownloadButton({ href, fallbackName, children, className }: { href: string; fallbackName: string; children: React.ReactNode; className?: string }) {
+export function DownloadButton({ href, fallbackName, children, className, preparingLabel = "Preparing…" }: { href: string; fallbackName: string; children: React.ReactNode; className?: string; preparingLabel?: string }) {
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const busy = phase.kind === "preparing" || phase.kind === "downloading";
   // Survives the component re-rendering mid-download, which a state value
@@ -89,7 +89,7 @@ export function DownloadButton({ href, fallbackName, children, className }: { hr
       <button type="button" onClick={start} disabled={busy} className={`${className || ""} disabled:opacity-60 disabled:cursor-wait`}>
         {phase.kind === "preparing" || phase.kind === "downloading" ? <Loader2 size={12} className="animate-spin" /> : null}
         {phase.kind === "preparing"
-          ? "Preparing the set…"
+          ? preparingLabel
           : phase.kind === "downloading"
           ? phase.total > 0
             ? `Downloading… ${Math.round((phase.received / phase.total) * 100)}%`
