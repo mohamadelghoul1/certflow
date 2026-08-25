@@ -341,6 +341,8 @@ export type Inspection = {
   confirmed: boolean;
   portal_reported: boolean;
   portal_reported_date: string | null;
+  // Added by migration 0022; absent until it has been run.
+  sort_order?: number;
 };
 
 export type Defect = {

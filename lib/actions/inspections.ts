@@ -1,11 +1,13 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { todayISO, todayInNsw } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
 import { inspectionDescriptionFor } from "@/lib/constants";
+import { reorderedIds } from "@/lib/checklists";
 
 export async function assignInspector(formData: FormData) {
   await requireProfile("certifier");
@@ -68,12 +70,28 @@ export async function addDefect(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
-export async function resolveDefect(formData: FormData) {
+// The issues recorded against an inspection are a record of what was
+// found on the day, not a to-do list to be worked through here — the
+// report goes out naming them, and whether they are later rectified shows
+// up as the next inspection. So they are simply editable text: correct
+// the wording, or empty the box to drop the issue entirely.
+export async function updateDefect(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
   const defectId = String(formData.get("defect_id"));
   const jobId = String(formData.get("job_id"));
-  await supabase.from("defects").update({ resolved: true, resolved_at: new Date().toISOString() }).eq("id", defectId);
+  const text = String(formData.get("text") || "").trim();
+  if (text) await supabase.from("defects").update({ text }).eq("id", defectId);
+  else await supabase.from("defects").delete().eq("id", defectId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+export async function removeDefect(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const defectId = String(formData.get("defect_id"));
+  const jobId = String(formData.get("job_id"));
+  await supabase.from("defects").delete().eq("id", defectId);
   revalidatePath(`/jobs/${jobId}`);
 }
 
@@ -112,6 +130,24 @@ export async function signInspectionReport(_prev: ActionState, formData: FormDat
   return undefined;
 }
 
+// Signing a report is not the end of it: a date typed wrong, an issue
+// worded badly, a photo that should have gone in. Reopening clears the
+// signature — deliberately, because a signed report and an edited one
+// must not be the same document — and the Sign button comes back so it
+// can be signed again once the correction is made.
+export async function unsignInspectionReport(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const inspectionId = String(formData.get("inspection_id"));
+  const jobId = String(formData.get("job_id"));
+  const { error, data } = await supabase.from("inspections").update({ report_signed_at: null }).eq("id", inspectionId).select("id");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "Could not find this inspection to reopen." };
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/jobs/${jobId}/inspections/${inspectionId}/report`);
+  return undefined;
+}
+
 export async function confirmBooking(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
@@ -139,18 +175,69 @@ export async function addInspection(_prev: ActionState, formData: FormData): Pro
   if (!job) return { error: "Project not found." };
 
   const description = inspectionDescriptionFor(title);
-  const { error } = await supabase.from("inspections").insert({
+  const row = {
     job_id: jobId,
     title,
     description: description || null,
     // Whoever the job is assigned to, as the starter inspections are —
     // it can be changed on the card like any other.
     inspector_certifier_id: job.assigned_certifier_id,
-  });
-  if (error) return { error: error.message };
+  };
+
+  // At the bottom of the list. Retried without the column for a database
+  // where migration 0022 has not been run yet — PostgREST rejects the
+  // whole insert if any column is unknown, and an inspection that
+  // silently fails to save is far worse than one that lands unordered.
+  const { error } = await supabase.from("inspections").insert({ ...row, sort_order: await nextInspectionOrder(supabase, jobId) });
+  if (error && isUnknownColumn(error)) {
+    const retry = await supabase.from("inspections").insert(row);
+    if (retry.error) return { error: retry.error.message };
+  } else if (error) {
+    return { error: error.message };
+  }
 
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
+}
+
+// Postgres reports an unknown column as 42703; PostgREST rejects the
+// whole request first, with PGRST204.
+function isUnknownColumn(error: { code?: string | null }) {
+  return error.code === "42703" || error.code === "PGRST204";
+}
+
+async function nextInspectionOrder(supabase: SupabaseClient, jobId: string) {
+  const { data } = await supabase.from("inspections").select("sort_order").eq("job_id", jobId).order("sort_order", { ascending: false }).limit(1);
+  const highest = data?.[0]?.sort_order;
+  return typeof highest === "number" ? highest + 1 : 0;
+}
+
+// The order the inspections sit in on the job, the same way the checklist
+// documents can be reordered. Does nothing on a database where migration
+// 0022 has not been run — the arrows are simply inert rather than the
+// page breaking.
+export async function moveInspection(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const inspectionId = String(formData.get("inspection_id"));
+  const jobId = String(formData.get("job_id"));
+  const direction = String(formData.get("direction")) === "up" ? "up" : "down";
+
+  const { data: job } = await supabase.from("jobs").select("id").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return;
+
+  const { data: siblings } = await supabase.from("inspections").select("id").eq("job_id", jobId).order("sort_order").order("created_at");
+  if (!siblings) return;
+
+  const reordered = reorderedIds(
+    siblings.map((s) => s.id),
+    inspectionId,
+    direction
+  );
+  if (!reordered) return;
+
+  await Promise.all(reordered.map((id, i) => supabase.from("inspections").update({ sort_order: i }).eq("id", id)));
+  revalidatePath(`/jobs/${jobId}`);
 }
 
 export async function removeInspection(formData: FormData) {

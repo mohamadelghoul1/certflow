@@ -17,11 +17,16 @@ import type { ActionState } from "@/lib/actions/auth";
 // value, the button comes back, and the error is shown beside it.
 function SignButton({
   signAction,
+  unsignAction,
   signFields,
   signed,
   signedLabel,
 }: {
   signAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
+  // Offered only where a signed document can be corrected and signed
+  // again — an inspection report. A certificate is reissued as a new
+  // version instead, so it has none.
+  unsignAction?: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
   signFields?: Record<string, string>;
   signed?: boolean;
   signedLabel?: string;
@@ -30,26 +35,36 @@ function SignButton({
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  if (optimisticSigned) {
-    // The label carries the date the server recorded, which doesn't exist
-    // yet in the moment between the press and the save — so until it does,
-    // the button says simply "Signed".
-    return <span className="px-3 py-2 rounded-md bg-success-bg text-success text-sm font-semibold">{(signed && signedLabel) || "Signed"}</span>;
-  }
-
-  const sign = () =>
+  const run = (next: boolean, action: (prev: undefined, fd: FormData) => Promise<ActionState>) =>
     startTransition(async () => {
       setError(null);
-      setOptimisticSigned(true);
+      setOptimisticSigned(next);
       const fd = new FormData();
       Object.entries(signFields || {}).forEach(([k, v]) => fd.set(k, v));
-      const result = await signAction(undefined, fd);
+      const result = await action(undefined, fd);
       if (result?.error) setError(result.error);
     });
 
+  if (optimisticSigned) {
+    return (
+      <div className="flex items-center gap-2">
+        {/* The label carries the date the server recorded, which doesn't
+            exist yet in the moment between the press and the save — so
+            until it does, this says simply "Signed". */}
+        <span className="px-3 py-2 rounded-md bg-success-bg text-success text-sm font-semibold">{(signed && signedLabel) || "Signed"}</span>
+        {unsignAction && (
+          <button type="button" onClick={() => run(false, unsignAction)} className="text-xs font-semibold text-secondary hover:underline">
+            Reopen to edit
+          </button>
+        )}
+        {error && <span className="text-xs text-error">{error}</span>}
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2">
-      <button type="button" onClick={sign} className="px-4 py-2 rounded-md bg-success text-white text-sm font-semibold hover:bg-success">
+      <button type="button" onClick={() => run(true, signAction)} className="px-4 py-2 rounded-md bg-success text-white text-sm font-semibold hover:bg-success">
         Sign
       </button>
       {error && <span className="text-xs text-error">{error}</span>}
@@ -94,6 +109,7 @@ export function CertificatePackage({
   signed,
   signedLabel,
   signAction,
+  unsignAction,
   signFields,
   uploadAction,
   uploadFields,
@@ -103,7 +119,7 @@ export function CertificatePackage({
   backHref: string;
   wordExportHref: string;
   children: React.ReactNode;
-  /* Whether this document offers "Print / Save as PDF". The approval turns
+  /* Whether this document offers "Save as PDF". The approval turns
      it off: it goes out as the Word export or as the full approved set
      PDF, both laid out by CertFlow, rather than as whatever the browser's
      own print engine makes of the page. */
@@ -111,6 +127,7 @@ export function CertificatePackage({
   signed?: boolean;
   signedLabel?: string;
   signAction?: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
+  unsignAction?: (prevState: ActionState, formData: FormData) => Promise<ActionState>;
   signFields?: Record<string, string>;
   uploadAction?: (formData: FormData) => Promise<void>;
   uploadFields?: Record<string, string>;
@@ -133,7 +150,7 @@ export function CertificatePackage({
         <div className="flex items-center gap-2">
           {allowPrint && (
             <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
-              Print / Save as PDF
+              Save as PDF
             </button>
           )}
           {canExportWord && (
@@ -141,7 +158,7 @@ export function CertificatePackage({
               Export as Word
             </a>
           )}
-          {signAction && <SignButton signAction={signAction} signFields={signFields} signed={signed} signedLabel={signedLabel} />}
+          {signAction && <SignButton signAction={signAction} unsignAction={unsignAction} signFields={signFields} signed={signed} signedLabel={signedLabel} />}
         </div>
       </div>
       {uploadAction && uploadPathPrefix && (

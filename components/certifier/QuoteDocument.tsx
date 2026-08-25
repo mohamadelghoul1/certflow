@@ -29,7 +29,7 @@ export function QuoteDocument({
         </Link>
         <div className="flex gap-2 flex-wrap">
           <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
-            Print / Save as PDF
+            Save as PDF
           </button>
           <a href={wordHref} className="px-4 py-2 rounded-md border border-primary text-primary text-sm font-semibold hover:bg-hover">
             Export as Word

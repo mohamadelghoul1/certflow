@@ -1,7 +1,7 @@
 import { requireProfile } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { formatISODate } from "@/lib/business";
-import { signInspectionReport } from "@/lib/actions/inspections";
+import { signInspectionReport, unsignInspectionReport } from "@/lib/actions/inspections";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
 import { getInspectionReportData } from "@/lib/certificates/inspectionReportData";
@@ -87,6 +87,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
       signed={!!inspection.report_signed_at}
       signedLabel={`Signed ${formatISODate(inspection.report_signed_at)}`}
       signAction={signInspectionReport}
+      unsignAction={unsignInspectionReport}
       signFields={{ job_id: jobId, inspection_id: inspectionId }}
     >
       <div className="cert-doc max-w-3xl mx-auto px-4 pb-10 print:px-0 print:pb-0 print:max-w-none">
@@ -167,9 +168,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
           ) : (
             <ol className="list-decimal pl-5 text-sm space-y-0.5">
               {inspection.defects.map((d2) => (
-                <li key={d2.id}>
-                  {d2.text} — {d2.resolved ? <span className="text-success font-medium">Resolved</span> : <span className="text-warning-text font-medium">Required</span>}
-                </li>
+                  <li key={d2.id}>{d2.text}</li>
               ))}
             </ol>
           )}
