@@ -338,3 +338,15 @@ export const MAX_INSPECTION_PHOTOS = 4;
 export function photoSlotsRemaining(existing: number) {
   return Math.max(0, MAX_INSPECTION_PHOTOS - existing);
 }
+
+// How many documents a client can put against one checklist item.
+//
+// The certifier is not capped — they assemble the approval and know what
+// belongs in it. Left open to the client it is an invitation to send the
+// same certificate three times as three documents rather than as new
+// versions of one, and the approval then carries all three. Two covers
+// the real case: a certificate and its companion.
+//
+// Enforced in client_submit_document (migration 0024) as well as here;
+// this only decides what the portal offers.
+export const MAX_CLIENT_ITEM_DOCUMENTS = 2;

@@ -2,6 +2,7 @@ import { signedUrl } from "@/lib/storage";
 import { FileText, History } from "lucide-react";
 import { formatISODate } from "@/lib/business";
 import { currentDocuments, versionsOf } from "@/lib/checklistDocuments";
+import { MAX_CLIENT_ITEM_DOCUMENTS } from "@/lib/constants";
 import { UploadClientDocument } from "@/components/portal/UploadClientDocument";
 import type { ChecklistItem, ChecklistItemFile } from "@/types/db";
 
@@ -13,6 +14,13 @@ type ItemWithFiles = ChecklistItem & { checklist_item_files?: ChecklistItemFile[
 // certificates for a single certification, a report and its addendum —
 // and both belong in the approval. Each can be replaced on its own, so
 // sending a corrected version of the second doesn't disturb the first.
+//
+// Two is as far as a client can go. A third document is nearly always a
+// new version of one already sent, and every extra one lands in the
+// approval; where a job genuinely needs more, the certifier adds it. The
+// database refuses a third either way — this only decides what is
+// offered, so the limit reads as a limit rather than as an error after
+// the file has already gone up.
 export async function ClientItemDocuments({ item, jobId, firmId, canUpload }: { item: ItemWithFiles; jobId: string; firmId: string; canUpload: boolean }) {
   const docs = currentDocuments(item);
   const pathPrefix = `${firmId}/${jobId}/checklist/${item.id}`;
@@ -44,7 +52,15 @@ export async function ClientItemDocuments({ item, jobId, firmId, canUpload }: { 
       ))}
       {/* No document number, so this adds one alongside rather than
           replacing anything. */}
-      {canUpload && <UploadClientDocument itemId={item.id} pathPrefix={pathPrefix} hasFile={false} label="Add another document" />}
+      {canUpload && docs.length < MAX_CLIENT_ITEM_DOCUMENTS && (
+        <UploadClientDocument itemId={item.id} pathPrefix={pathPrefix} hasFile={false} label="Add another document" />
+      )}
+      {canUpload && docs.length >= MAX_CLIENT_ITEM_DOCUMENTS && (
+        <div className="text-[11px] text-muted">
+          You can send up to {MAX_CLIENT_ITEM_DOCUMENTS} documents for this item. To correct one, upload a new version of it above; if another document is
+          needed, your certifier can add it.
+        </div>
+      )}
     </div>
   );
 }
