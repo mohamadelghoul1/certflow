@@ -3,6 +3,7 @@
 import { createContext, useContext, useOptimistic, useState, useTransition } from "react";
 import { CheckCircle2, Layers, PenLine } from "lucide-react";
 import { formatISODate, todayISO } from "@/lib/business";
+import { DownloadButton } from "@/components/certifier/DownloadButton";
 import { signPathwayCertificate, sendPathwayCertificateToClient } from "@/lib/actions/jobs";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 
@@ -91,9 +92,13 @@ export function VersionSignActions({ jobId, isActive, signedAt }: { jobId: strin
 
   if (signed) {
     return (
-      <a href={`/api/jobs/${jobId}/approval-bundle`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+      <DownloadButton
+        href={`/api/jobs/${jobId}/approval-bundle`}
+        fallbackName="Approved Set.pdf"
+        className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline"
+      >
         <Layers size={12} /> Download full approved set (PDF)
-      </a>
+      </DownloadButton>
     );
   }
 
