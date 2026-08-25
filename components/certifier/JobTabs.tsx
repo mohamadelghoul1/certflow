@@ -48,13 +48,17 @@ export function JobTabs({ tabs, initialTab, content }: { tabs: TabMeta[]; initia
             <button
               key={t.key}
               onClick={() => select(t.key)}
+              // A finished stage reads as done at a glance: the tab you
+              // are on fills solid, the rest sit in the same soft green an
+              // approved checklist item gets, so the strip shows what is
+              // left without becoming a wall of colour.
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all inline-flex items-center gap-1.5 ${
                 active === t.key
                   ? t.complete
-                    ? "bg-white text-accent shadow-sm ring-1 ring-accent/40"
+                    ? "bg-accent text-white shadow-sm"
                     : "bg-white text-heading shadow-sm"
                   : t.complete
-                  ? "text-accent hover:text-accent"
+                  ? "bg-success-bg text-accent border border-accent/30"
                   : "text-muted hover:text-heading"
               }`}
             >

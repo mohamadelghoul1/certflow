@@ -178,6 +178,14 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
           <div className="text-xs text-placeholder">
             {certifier.registration_no} · {certifier.registration_body}
           </div>
+          {/* Visible without opening Edit: which of your certifiers are
+              contractors is the sort of thing you want to see at a glance
+              rather than by checking each one in turn. */}
+          {certifier.practice_name && (
+            <div className="text-[11px] text-secondary font-medium mt-0.5">
+              Contract certifier — inspections go out as {certifier.practice_name}
+            </div>
+          )}
           <div className="flex items-center gap-2 mt-2">
             {signatureUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -269,9 +277,9 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
           instead of the firm's; leave it blank and nothing changes.
           Certificates and letters are the firm's own documents and stay
           on the firm's letterhead either way. */}
-      <details className="border-t border-line pt-3">
-        <summary className="text-xs text-muted cursor-pointer hover:text-heading">
-          Contract certifier — their own company letterhead for inspection reports
+      <details open={!!certifier.practice_name} className="border-t border-line pt-3">
+        <summary className="text-sm font-semibold text-secondary cursor-pointer hover:underline">
+          Contract certifier — use their own company letterhead for inspection reports
         </summary>
         <p className="text-[11px] text-muted mt-2 mb-3">
           For a certifier working under their own registration rather than as an employee. Their inspection reports carry these details instead of the

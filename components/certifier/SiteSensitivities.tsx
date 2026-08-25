@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
+import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { AlertTriangle, Plus, X } from "lucide-react";
 import { setSiteSensitivities } from "@/lib/actions/jobs";
 import { SITE_SENSITIVITIES } from "@/lib/constants";
@@ -18,6 +18,26 @@ export function SiteSensitivities({ jobId, sensitivities }: { jobId: string; sen
   const [, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
+  const panel = useRef<HTMLDivElement>(null);
+
+  // Clicking anywhere else closes it, the way a menu does — there is
+  // nothing to confirm, since each tick has already saved. Escape closes
+  // it too, for anyone working from the keyboard.
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!panel.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
 
   function save(next: string[]) {
     startTransition(async () => {
@@ -42,7 +62,7 @@ export function SiteSensitivities({ jobId, sensitivities }: { jobId: string; sen
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={panel}>
       <div className="flex items-center gap-1.5 flex-wrap">
         {optimistic.map((s) => (
           <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-warning-bg text-warning-text text-xs font-medium">
@@ -64,6 +84,7 @@ export function SiteSensitivities({ jobId, sensitivities }: { jobId: string; sen
       {open && (
         <div className="absolute z-20 mt-2 w-72 rounded-xl border border-line bg-white shadow-lg p-3">
           <div className="text-xs font-semibold text-heading mb-2">Site sensitivities</div>
+          <p className="text-[11px] text-muted mb-2">Each one saves as you tick it. Click anywhere else to close.</p>
           <div className="flex flex-wrap gap-1.5 mb-3">
             {SITE_SENSITIVITIES.map((s) => {
               const on = optimistic.includes(s);
@@ -101,9 +122,6 @@ export function SiteSensitivities({ jobId, sensitivities }: { jobId: string; sen
               Add
             </button>
           </form>
-          <button type="button" onClick={() => setOpen(false)} className="mt-2 text-[11px] text-muted hover:text-heading">
-            Done
-          </button>
         </div>
       )}
     </div>
