@@ -83,6 +83,13 @@ create table if not exists rate_limit_hits (
 );
 create index if not exists rate_limit_hits_window_idx on rate_limit_hits(window_start);
 
+-- Row level security on with no policies at all, which denies everyone.
+-- Nobody reads or writes this table directly: a counter someone can
+-- reach is a counter they can reset, which would leave the limit below
+-- doing nothing. Only the function below touches it, and it runs as its
+-- owner rather than as the caller.
+alter table rate_limit_hits enable row level security;
+
 -- Records one hit and says whether the caller is still within its
 -- allowance. Counting and deciding in one statement, because two calls
 -- racing each other is exactly the case a rate limit exists for.

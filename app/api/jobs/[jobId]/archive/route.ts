@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { signedUrl } from "@/lib/storage";
+import { withinLimit, downloadBucket, HEAVY_DOWNLOAD_LIMIT } from "@/lib/rateLimit";
 import { resolvePathwayCertRef } from "@/lib/business";
 import { attachmentHeader, jobDocumentName } from "@/lib/downloadName";
 import { buildJobArchive, type ArchiveInspection, type ArchiveItem } from "@/lib/archive/jobArchive";
@@ -18,8 +19,14 @@ import type { Job, Firm } from "@/types/db";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params;
-  const { profile } = await requireProfile("certifier");
+  const { profile, userId } = await requireProfile("certifier");
   const supabase = await createClient();
+
+  // The archive pulls down every file in the job and zips them. Same
+  // ceiling as the approved set, and shared with it.
+  if (!(await withinLimit(supabase, downloadBucket(userId), HEAVY_DOWNLOAD_LIMIT))) {
+    return NextResponse.json({ error: "That is a lot of downloads in a short time. Give it a few minutes and try again." }, { status: 429 });
+  }
 
   const { data: rawJob } = await supabase.from("jobs").select("*").eq("id", jobId).eq("firm_id", profile.firm_id).single();
   if (!rawJob) return NextResponse.json({ error: "not found" }, { status: 404 });

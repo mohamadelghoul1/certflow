@@ -2,6 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { withinLimit, loginBucket, LOGIN_LIMIT } from "@/lib/rateLimit";
+
+const TOO_MANY = "Too many sign-in attempts for this email address. Wait a minute and try again.";
 
 export type ActionState = { error?: string } | undefined;
 
@@ -9,6 +12,9 @@ export async function signInCertifier(_prev: ActionState, formData: FormData): P
   const email = String(formData.get("email") || "");
   const password = String(formData.get("password") || "");
   const supabase = await createClient();
+
+  if (!(await withinLimit(supabase, loginBucket(email), LOGIN_LIMIT))) return { error: TOO_MANY };
+
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message };
 
@@ -27,6 +33,9 @@ export async function signInClient(_prev: ActionState, formData: FormData): Prom
   const email = String(formData.get("email") || "");
   const password = String(formData.get("password") || "");
   const supabase = await createClient();
+
+  if (!(await withinLimit(supabase, loginBucket(email), LOGIN_LIMIT))) return { error: TOO_MANY };
+
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message };
 

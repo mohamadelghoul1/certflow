@@ -37,7 +37,17 @@ export function DownloadButton({ href, fallbackName, children, className, prepar
 
     try {
       const res = await fetch(href);
-      if (!res.ok) throw new Error(`The server returned ${res.status}.`);
+      if (!res.ok) {
+        // The routes answer a refusal with a sentence worth reading —
+        // "too many downloads", "not found" — so show that rather than a
+        // status code the certifier has to look up.
+        const said = await res
+          .clone()
+          .json()
+          .then((body) => (typeof body?.error === "string" ? body.error : ""))
+          .catch(() => "");
+        throw new Error(said || `The server returned ${res.status}.`);
+      }
 
       // Flattened to ASCII: an <a download> filename with any character
       // outside it is rejected outright by Chromium, which then saves the
