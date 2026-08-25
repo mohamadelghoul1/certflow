@@ -46,6 +46,9 @@ export async function updateCertifier(_prev: ActionState, formData: FormData): P
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const id = String(formData.get("id"));
+  // Blank stays null rather than an empty string, so "has this certifier
+  // a practice of their own?" is a single test on the name.
+  const text = (name: string) => String(formData.get(name) || "").trim() || null;
   const { error } = await supabase
     .from("certifiers")
     .update({
@@ -54,12 +57,39 @@ export async function updateCertifier(_prev: ActionState, formData: FormData): P
       registration_body: String(formData.get("registration_body") || ""),
       pi_insurance_expiry: formData.get("pi_insurance_expiry") || null,
       registration_expiry: formData.get("registration_expiry") || null,
+      // A contract certifier's own practice. Blank means an employee,
+      // whose inspection reports carry the firm's letterhead.
+      practice_name: text("practice_name"),
+      practice_abn: text("practice_abn"),
+      practice_postal_address: text("practice_postal_address"),
+      practice_office_address: text("practice_office_address"),
+      practice_phone: text("practice_phone"),
+      practice_email: text("practice_email"),
+      practice_website: text("practice_website"),
     })
     .eq("id", id)
     .eq("firm_id", profile.firm_id);
   if (error) return { error: error.message };
   revalidatePath("/settings");
   return undefined;
+}
+
+export async function updateCertifierPracticeLogo(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  await supabase
+    .from("certifiers")
+    .update({ practice_logo_url: String(formData.get("file_path")) })
+    .eq("id", String(formData.get("id")))
+    .eq("firm_id", profile.firm_id);
+  revalidatePath("/settings");
+}
+
+export async function removeCertifierPracticeLogo(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  await supabase.from("certifiers").update({ practice_logo_url: null }).eq("id", String(formData.get("id"))).eq("firm_id", profile.firm_id);
+  revalidatePath("/settings");
 }
 
 export async function removeCertifier(formData: FormData) {

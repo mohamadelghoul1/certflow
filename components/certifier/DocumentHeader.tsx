@@ -1,5 +1,5 @@
 import { letterheadAddressLines } from "@/lib/business";
-import type { Firm } from "@/types/db";
+import type { Letterhead } from "@/lib/letterhead";
 
 // Shared masthead for every generated document (certificates, inspection
 // reports, and future document types) — logo + ABN on the left, contact
@@ -11,7 +11,9 @@ import type { Firm } from "@/types/db";
 // full wordmark ("Quality Private Certifiers Pty Ltd") baked into the
 // image, so the firm name is only rendered as text when no logo has been
 // uploaded yet — otherwise it would show twice.
-export function DocumentHeader({ firm, logoUrl }: { firm: Firm | null; logoUrl?: string | null }) {
+// Takes a letterhead rather than a firm: an inspection carried out by a
+// contract certifier goes out on their practice's, not the firm's.
+export function DocumentHeader({ firm, logoUrl }: { firm: Letterhead | null; logoUrl?: string | null }) {
   return (
     <table className="w-full border-b-2 border-heading mb-6">
       <tbody>

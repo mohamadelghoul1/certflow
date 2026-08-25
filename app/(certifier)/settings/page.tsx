@@ -16,12 +16,14 @@ export default async function SettingsPage() {
   ]);
 
   const signatureUrls: Record<string, string> = {};
+  // A contract certifier's own company logo, for the letterhead their
+  // inspection reports go out on.
+  const practiceLogoUrls: Record<string, string> = {};
   await Promise.all(
     (certifiers || []).map(async (c) => {
-      if (c.signature_url) {
-        const url = await signedUrl(c.signature_url);
-        if (url) signatureUrls[c.id] = url;
-      }
+      const [signature, logo] = await Promise.all([signedUrl(c.signature_url), signedUrl(c.practice_logo_url)]);
+      if (signature) signatureUrls[c.id] = signature;
+      if (logo) practiceLogoUrls[c.id] = logo;
     })
   );
   // The blank forms attached to library items, signed for download so the
@@ -53,7 +55,7 @@ export default async function SettingsPage() {
       <section className="bg-white rounded-lg border border-line">
         <div className="px-5 py-3 border-b border-line font-bold text-primary">Certifiers</div>
         <div className="p-5">
-          <CertifierList certifiers={certifiers || []} firmId={profile.firm_id} signatureUrls={signatureUrls} />
+          <CertifierList certifiers={certifiers || []} firmId={profile.firm_id} signatureUrls={signatureUrls} practiceLogoUrls={practiceLogoUrls} />
         </div>
       </section>
 

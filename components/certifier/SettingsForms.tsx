@@ -8,6 +8,8 @@ import {
   removeCertifier,
   updateCertifierSignature,
   removeCertifierSignature,
+  updateCertifierPracticeLogo,
+  removeCertifierPracticeLogo,
   updateFirmLogo,
   removeFirmLogo,
   updateFirmStamp,
@@ -109,14 +111,14 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
   );
 }
 
-export function CertifierList({ certifiers, firmId, signatureUrls }: { certifiers: Certifier[]; firmId: string; signatureUrls: Record<string, string> }) {
+export function CertifierList({ certifiers, firmId, signatureUrls, practiceLogoUrls }: { certifiers: Certifier[]; firmId: string; signatureUrls: Record<string, string>; practiceLogoUrls?: Record<string, string> }) {
   const [adding, setAdding] = useState(false);
   const [addState, addAction, addPending] = useActionState<ActionState, FormData>(addCertifier, undefined);
 
   return (
     <div className="space-y-3">
       {certifiers.map((c) => (
-        <CertifierRow key={c.id} certifier={c} firmId={firmId} signatureUrl={signatureUrls[c.id]} />
+        <CertifierRow key={c.id} certifier={c} firmId={firmId} signatureUrl={signatureUrls[c.id]} practiceLogoUrl={practiceLogoUrls?.[c.id]} />
       ))}
       {certifiers.length === 0 && <div className="text-sm text-placeholder">No certifiers yet.</div>}
 
@@ -164,7 +166,7 @@ export function CertifierList({ certifiers, firmId, signatureUrls }: { certifier
   );
 }
 
-function CertifierRow({ certifier, firmId, signatureUrl }: { certifier: Certifier; firmId: string; signatureUrl?: string }) {
+function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { certifier: Certifier; firmId: string; signatureUrl?: string; practiceLogoUrl?: string }) {
   const [editing, setEditing] = useState(false);
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateCertifier, undefined);
 
@@ -196,6 +198,30 @@ function CertifierRow({ certifier, firmId, signatureUrl }: { certifier: Certifie
               </form>
             )}
           </div>
+          {/* Only for a contract certifier: their own company's logo, for
+              the letterhead their inspection reports go out on. */}
+          {certifier.practice_name && (
+            <div className="flex items-center gap-2 mt-2">
+              {practiceLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={practiceLogoUrl} alt={`${certifier.practice_name} logo`} className="h-10 border border-line rounded bg-white px-2" />
+              ) : (
+                <span className="text-[11px] text-placeholder">{certifier.practice_name} — no logo uploaded</span>
+              )}
+              <ActionUpload
+                action={updateCertifierPracticeLogo}
+                fields={{ id: certifier.id }}
+                pathPrefix={`${firmId}/practice-logos/${certifier.id}`}
+                label={practiceLogoUrl ? "Replace company logo" : "Upload company logo"}
+              />
+              {practiceLogoUrl && (
+                <form action={removeCertifierPracticeLogo}>
+                  <input type="hidden" name="id" value={certifier.id} />
+                  <button className="text-xs text-error hover:underline">Remove</button>
+                </form>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <button onClick={() => setEditing(true)} className="text-xs text-primary hover:underline">
@@ -236,6 +262,53 @@ function CertifierRow({ certifier, firmId, signatureUrl }: { certifier: Certifie
           <DateField name="registration_expiry" defaultValue={certifier.registration_expiry || ""} className={inputCls} />
         </div>
       </div>
+
+      {/* A certifier who works as a contractor rather than an employee —
+          their own company, their own ABN, their own registration. Fill
+          this in and their inspection reports go out on their letterhead
+          instead of the firm's; leave it blank and nothing changes.
+          Certificates and letters are the firm's own documents and stay
+          on the firm's letterhead either way. */}
+      <details className="border-t border-line pt-3">
+        <summary className="text-xs text-muted cursor-pointer hover:text-heading">
+          Contract certifier — their own company letterhead for inspection reports
+        </summary>
+        <p className="text-[11px] text-muted mt-2 mb-3">
+          For a certifier working under their own registration rather than as an employee. Their inspection reports carry these details instead of the
+          firm&rsquo;s. Leave the company name blank for an employee.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>Company name</label>
+            <input name="practice_name" defaultValue={certifier.practice_name || ""} placeholder="Leave blank for an employee" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>ABN</label>
+            <input name="practice_abn" defaultValue={certifier.practice_abn || ""} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Postal address</label>
+            <input name="practice_postal_address" defaultValue={certifier.practice_postal_address || ""} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Office address</label>
+            <input name="practice_office_address" defaultValue={certifier.practice_office_address || ""} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Phone</label>
+            <input name="practice_phone" defaultValue={certifier.practice_phone || ""} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Email</label>
+            <input name="practice_email" defaultValue={certifier.practice_email || ""} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Website</label>
+            <input name="practice_website" defaultValue={certifier.practice_website || ""} className={inputCls} />
+          </div>
+        </div>
+      </details>
+
       {state?.error && <div className="text-sm text-error">{state.error}</div>}
       <div className="flex gap-2">
         <button disabled={pending} className="px-3 py-1.5 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">

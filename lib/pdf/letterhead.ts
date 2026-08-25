@@ -1,7 +1,7 @@
 import type { PDFImage } from "pdf-lib";
 import { Layout, MARGIN, MARGIN_BOTTOM, HEADER_TOP, A4, TITLE_SIZE, BODY_SIZE, SMALL_SIZE, MUTED, LINE, HEADING_COLOR } from "@/lib/pdf/layout";
 import { letterheadAddressLines } from "@/lib/business";
-import type { Firm } from "@/types/db";
+import type { Letterhead } from "@/lib/letterhead";
 
 // The firm's letterhead and the project footer, drawn on every page of a
 // generated PDF. Shared so the certificate package and the documents that
@@ -13,7 +13,7 @@ import type { Firm } from "@/types/db";
 // bytes ready for pdf-lib to embed.
 export type PackageImages = { logo?: { bytes: Uint8Array; type: "png" | "jpeg" } | null; signature?: { bytes: Uint8Array; type: "png" | "jpeg" } | null };
 
-export function letterheadHeader(firm: Firm | null, logo: PDFImage | null) {
+export function letterheadHeader(firm: Letterhead | null, logo: PDFImage | null) {
   return (layout: Layout) => {
     const top = A4[1] - HEADER_TOP;
     let leftBottom = top;

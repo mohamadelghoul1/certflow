@@ -1,6 +1,7 @@
 import { Document, Paragraph, Header, Footer, AlignmentType, Packer } from "docx";
 import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
+import type { Letterhead } from "@/lib/letterhead";
 import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, BODY_SIZE, signatureRule, signatory, addressBlock, LETTER_PARA_AFTER, LETTER_LINE_SPACING, TIGHT_LINE_SPACING, LETTER_BODY_SIZE, LETTER_SIGNATURE_NAME_SIZE } from "@/lib/docx/shared";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatClassifications, formatDocumentDate, formatISODate, letterheadAddressLines } from "@/lib/business";
@@ -30,7 +31,9 @@ const LETTER_LABEL_PCT = 40;
 // document rather than a caption under it.
 const HEADER_DETAIL_SIZE = BODY_SIZE;
 
-export function letterheadHeader(firm: PathwayCertificateData["firm"], logo: ImageAsset | null) {
+// Takes a letterhead rather than a firm: an inspection carried out by a
+// contract certifier goes out on their practice's, not the firm's.
+export function letterheadHeader(firm: Letterhead | null, logo: ImageAsset | null) {
   const left = logo
     ? [new Paragraph({ children: [image(logo.buffer, logo.type, logo.width, logo.height)] }), p(`ABN: ${firm?.abn || "—"}`, { size: HEADER_DETAIL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING })]
     : [p(firm?.name || "", { bold: true, size: TITLE_SIZE, color: HEADING_COLOR, spacingAfter: 0 }), p(`ABN: ${firm?.abn || "—"}`, { size: HEADER_DETAIL_SIZE, color: MUTED_COLOR, light: true, spacingAfter: 0, lineSpacing: TIGHT_LINE_SPACING })];

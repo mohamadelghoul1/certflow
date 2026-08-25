@@ -34,6 +34,18 @@ export type Certifier = {
   pi_insurance_expiry: string | null;
   registration_expiry: string | null;
   user_id: string | null;
+  // A contract certifier's own practice, for inspections carried out by
+  // someone working under their own registration rather than as an
+  // employee. All optional and all added by migration 0025: blank means
+  // an employee, whose reports carry the firm's letterhead.
+  practice_name?: string | null;
+  practice_abn?: string | null;
+  practice_postal_address?: string | null;
+  practice_office_address?: string | null;
+  practice_phone?: string | null;
+  practice_email?: string | null;
+  practice_website?: string | null;
+  practice_logo_url?: string | null;
 };
 
 export type ClientContact = {

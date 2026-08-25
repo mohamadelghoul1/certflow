@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { signedUrl } from "@/lib/storage";
 import { resolvePathwayCertRef } from "@/lib/business";
+import { letterheadFor, type Letterhead } from "@/lib/letterhead";
 import type { Job, Firm, Defect, InspectionPhoto, Certifier, JobDetails } from "@/types/db";
 
 export type InspectionRecord = {
@@ -18,7 +19,11 @@ export type InspectionRecord = {
 
 export type InspectionReportData = {
   job: Job;
-  firm: Firm | null;
+  // Whose letterhead the report goes out on: the firm's, or the
+  // inspector's own practice where they are a contractor certifier
+  // working under their own registration. Named `firm` because that is
+  // what every letterhead component takes.
+  firm: Letterhead | null;
   inspection: InspectionRecord;
   inspector: Certifier | null;
   signatureUrl: string | null;
@@ -62,9 +67,13 @@ export async function getInspectionReportData(jobId: string, inspectionId: strin
   // then the logo, then each photo in turn — a report with a dozen photos
   // spent most of its time waiting on round trips that have nothing to do
   // with each other.
+  // A contract certifier's inspection goes out on their own letterhead,
+  // an employee's on the firm's.
+  const { letterhead, logoUrl: letterheadLogo } = letterheadFor(inspector, (firm || null) as Firm | null);
+
   const [signatureUrl, logoUrl, photoUrls] = await Promise.all([
     inspection.report_signed_at && inspector?.signature_url ? signedUrl(inspector.signature_url) : null,
-    firm?.logo_url ? signedUrl(firm.logo_url) : null,
+    letterheadLogo ? signedUrl(letterheadLogo) : null,
     Promise.all(inspection.inspection_photos.map((p) => signedUrl(p.file_path))),
   ]);
 
@@ -86,5 +95,5 @@ export async function getInspectionReportData(jobId: string, inspectionId: strin
     "We have attended the above property and completed an inspection. The areas inspected and the overall outcome of the inspection are listed below, together with any specific defects noted or documents required.";
   const notes = inspection.report_notes?.trim() || "";
 
-  return { job, firm: firm || null, inspection, inspector: inspector || null, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, consentRefLines, introText, notes };
+  return { job, firm: letterhead, inspection, inspector: inspector || null, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, consentRefLines, introText, notes };
 }
