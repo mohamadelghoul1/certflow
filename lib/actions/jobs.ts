@@ -675,6 +675,34 @@ export async function setPlanningPortalRef(_prev: ActionState, formData: FormDat
   return undefined;
 }
 
+// The two dates the pre-inspection report needs that the job doesn't
+// already know: when the application was made, and when the inspection
+// was carried out. Entered where the certificate is issued, for the same
+// reason the Planning Portal reference is — going back to the Details tab
+// for two fields at the moment of issuing is how a report goes out blank.
+export async function setPreInspectionDates(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const applicationDate = String(formData.get("applicationDate") || "");
+  const inspectionDate = String(formData.get("inspectionDate") || "");
+
+  const { data: job } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return { error: "Project not found." };
+
+  // Merged into the details rather than written over them, so this can't
+  // wipe anything else recorded against the job.
+  const details = (job.details || {}) as JobDetails;
+  await supabase
+    .from("jobs")
+    .update({ details: { ...details, preInspection: { applicationDate, inspectionDate } } })
+    .eq("id", jobId);
+
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/certificate/pre-inspection/${jobId}`);
+  return undefined;
+}
+
 export async function issuePathwayCertificate(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();

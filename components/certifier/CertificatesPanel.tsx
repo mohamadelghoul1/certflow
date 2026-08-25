@@ -5,6 +5,7 @@ import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { buildStampPreview } from "@/lib/pdf/stampDetails";
 import { PlanningPortalRefField } from "@/components/certifier/PlanningPortalRefField";
+import { PreInspectionField } from "@/components/certifier/PreInspectionField";
 import { IssueCertificateForm, IssueModificationForm } from "@/components/certifier/IssueCertificateForm";
 import { DeletePathwayVersionButton } from "@/components/certifier/DeletePathwayVersionButton";
 import { DeleteModificationButton } from "@/components/certifier/DeleteModificationButton";
@@ -109,6 +110,14 @@ export async function CertificatesPanel({
         {complete && (
           <>
             <PlanningPortalRefField jobId={job.id} value={portalRef} kind={portalRefKindFor(job.pathway)} />
+            {/* The pre-inspection that precedes the certificate — the two
+                dates it needs, and a link to the report itself. */}
+            <PreInspectionField
+              jobId={job.id}
+              isCdc={job.pathway === "CDC"}
+              applicationDate={job.details?.preInspection?.applicationDate || ""}
+              inspectionDate={job.details?.preInspection?.inspectionDate || ""}
+            />
             <IssueCertificateForm
               jobId={job.id}
               assignedCertifierId={job.assigned_certifier_id}

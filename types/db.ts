@@ -123,6 +123,12 @@ export type JobDetails = {
     floorAreaNew?: string;
   };
   siteArea?: string;
+  // The pre-inspection carried out before a CDC or CC is issued —
+  // s139 of the EP&A Regulation 2021 for a CDC, s16 of the EP&A
+  // (Development Certification and Fire Safety) Regulation 2021 for a CC.
+  // Only the two dates are recorded; everything else on the report comes
+  // from the job it belongs to.
+  preInspection?: { applicationDate?: string; inspectionDate?: string };
   certificateDetails?: {
     lotSectionDp?: string;
     planningPortalRef?: string;
