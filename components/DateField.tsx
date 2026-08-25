@@ -1,6 +1,6 @@
 "use client";
 
-import type { InputHTMLAttributes } from "react";
+import type { InputHTMLAttributes, Ref } from "react";
 
 // A date box that opens the calendar the moment you touch it.
 //
@@ -24,10 +24,24 @@ function openPicker(el: HTMLInputElement) {
   }
 }
 
-export function DateField({ onClick, onKeyDown, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+// `noFuture` caps the box at today — for a date recording something that
+// has already happened, like the day an inspection was carried out.
+//
+// Set on the element itself once it exists, rather than rendered as an
+// attribute, because a client component is server-rendered first and the
+// server's idea of today is UTC — a day ahead for most of a Sydney
+// afternoon. Rendering that and correcting it in the browser would be a
+// hydration mismatch; setting it only in the browser is not. The action
+// that saves the date checks it again regardless.
+export function DateField({ onClick, onKeyDown, noFuture, ref, ...props }: InputHTMLAttributes<HTMLInputElement> & { noFuture?: boolean; ref?: Ref<HTMLInputElement> }) {
   return (
     <input
       {...props}
+      ref={(el) => {
+        if (el && noFuture) el.max = todayISO();
+        if (typeof ref === "function") ref(el);
+        else if (ref) ref.current = el;
+      }}
       type="date"
       onClick={(e) => {
         openPicker(e.currentTarget);

@@ -7,6 +7,16 @@ export function today() {
 export function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
+
+// Today where the work is, as yyyy-mm-dd.
+//
+// A server in UTC is already "tomorrow" for most of a Sydney afternoon,
+// so checking a date against toISOString() would reject an inspection
+// recorded this afternoon as being in the future. NSW is the only place
+// this app is used, so the check is made against the date there.
+export function todayInNsw() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+}
 // A document's own date — the date on a plan, a certificate, a report.
 // Absent means the certifier hasn't recorded one, which on a printed
 // schedule reads as an em dash beside the other blank columns.

@@ -97,7 +97,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
           <input type="hidden" name="job_id" value={jobId} />
           <div className="flex-1">
             <label className="block text-[11px] text-muted mb-1">Date</label>
-            <DateField name="date" defaultValue={insp.date || ""} className="w-full px-2 py-1.5 rounded border border-line text-xs" />
+            <DateField name="date" noFuture defaultValue={insp.date || ""} className="w-full px-2 py-1.5 rounded border border-line text-xs" />
             {dateOnWeekend && <div className="text-[11px] text-warning-text mt-1">⚠ falls on a weekend</div>}
           </div>
           <button className="text-xs text-secondary hover:underline pb-1.5">Save</button>

@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { todayISO } from "@/lib/business";
+import { todayISO, todayInNsw } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
 import { inspectionDescriptionFor } from "@/lib/constants";
 
@@ -17,12 +17,16 @@ export async function assignInspector(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// An inspection is a record of a visit that has happened, so it cannot be
+// dated in the future. The date box stops one being picked; this stops one
+// arriving any other way.
 export async function setInspectionDate(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
-  const date = String(formData.get("date") || "") || null;
+  const entered = String(formData.get("date") || "");
+  const date = entered && entered <= todayInNsw() ? entered : entered ? todayInNsw() : null;
   await supabase.from("inspections").update({ date, confirmed: true }).eq("id", inspectionId);
   revalidatePath(`/jobs/${jobId}`);
 }

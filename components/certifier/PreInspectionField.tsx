@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { FileSearch, Pencil } from "lucide-react";
 import Link from "next/link";
 import { setPreInspectionDates } from "@/lib/actions/jobs";
+import { DateField } from "@/components/DateField";
 import { formatISODate } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
 
@@ -54,11 +55,11 @@ export function PreInspectionField({
       <input type="hidden" name="job_id" value={jobId} />
       <label className="flex flex-col gap-1">
         <span className="text-xs font-medium text-heading">Application date</span>
-        <input type="date" name="applicationDate" defaultValue={applicationDate} className="px-2 py-1.5 rounded border border-line text-xs" />
+        <DateField name="applicationDate" noFuture defaultValue={applicationDate} className="px-2 py-1.5 rounded border border-line text-xs" />
       </label>
       <label className="flex flex-col gap-1">
         <span className="text-xs font-medium text-heading">Inspection date</span>
-        <input type="date" name="inspectionDate" defaultValue={inspectionDate} autoFocus={editing} className="px-2 py-1.5 rounded border border-line text-xs" />
+        <DateField name="inspectionDate" noFuture defaultValue={inspectionDate} autoFocus={editing} className="px-2 py-1.5 rounded border border-line text-xs" />
       </label>
       <button disabled={pending} className="text-xs font-semibold text-white bg-secondary hover:opacity-90 px-3 py-1.5 rounded-md disabled:opacity-60">
         {pending ? "Saving…" : "Save"}
