@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { stageComplete } from "@/lib/business";
+import { excludingDeleted } from "@/lib/softDelete";
+import { getRecordedEvents } from "@/lib/audit";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -10,18 +12,24 @@ export type IssuanceEvent = { type: "CDC" | "CC" | "NOC" | "OC"; date: Date };
 export async function getIssuanceEvents(supabase: SupabaseServerClient, firmId: string): Promise<IssuanceEvent[]> {
   const events: IssuanceEvent[] = [];
 
-  const { data: jobs } = await supabase.from("jobs").select("id, pathway, pathway_generated, pathway_generated_date").eq("firm_id", firmId);
+  const { data: jobs } = await excludingDeleted((live) => {
+    const query = supabase.from("jobs").select("id, pathway, pathway_generated, pathway_generated_date").eq("firm_id", firmId);
+    return live ? query.is("deleted_at", null) : query;
+  });
   for (const j of jobs || []) {
     if (j.pathway_generated && j.pathway_generated_date) {
       events.push({ type: j.pathway as "CDC" | "CC", date: new Date(j.pathway_generated_date) });
     }
   }
 
-  const { data: nocChecklists } = await supabase
-    .from("checklists")
-    .select("checklist_items(status, updated_at), jobs!inner(firm_id)")
-    .eq("kind", "noc")
-    .eq("jobs.firm_id", firmId);
+  const { data: nocChecklists } = await excludingDeleted((live) => {
+    const query = supabase
+      .from("checklists")
+      .select("checklist_items(status, updated_at), jobs!inner(firm_id)")
+      .eq("kind", "noc")
+      .eq("jobs.firm_id", firmId);
+    return live ? query.is("jobs.deleted_at", null) : query;
+  });
   for (const c of nocChecklists || []) {
     const items = (c.checklist_items || []) as { status: "requested" | "submitted" | "approved"; updated_at: string }[];
     if (stageComplete(items)) {
@@ -30,7 +38,10 @@ export async function getIssuanceEvents(supabase: SupabaseServerClient, firmId: 
     }
   }
 
-  const { data: ocRecords } = await supabase.from("oc_records").select("generated_date, jobs!inner(firm_id)").eq("jobs.firm_id", firmId);
+  const { data: ocRecords } = await excludingDeleted((live) => {
+    const query = supabase.from("oc_records").select("generated_date, jobs!inner(firm_id)").eq("jobs.firm_id", firmId);
+    return live ? query.is("jobs.deleted_at", null) : query;
+  });
   for (const r of ocRecords || []) {
     if (r.generated_date) events.push({ type: "OC", date: new Date(r.generated_date) });
   }
@@ -45,21 +56,27 @@ export type AuditEvent = { certifierId: string; type: "cdc_cc" | "modification" 
 export async function getAuditEvents(supabase: SupabaseServerClient, firmId: string): Promise<AuditEvent[]> {
   const events: AuditEvent[] = [];
 
-  const { data: jobs } = await supabase
-    .from("jobs")
-    .select("id, address, pathway, pathway_generated, pathway_generated_date, pathway_issued_by")
-    .eq("firm_id", firmId);
+  const { data: jobs } = await excludingDeleted((live) => {
+    const query = supabase
+      .from("jobs")
+      .select("id, address, pathway, pathway_generated, pathway_generated_date, pathway_issued_by")
+      .eq("firm_id", firmId);
+    return live ? query.is("deleted_at", null) : query;
+  });
   for (const j of jobs || []) {
     if (j.pathway_generated && j.pathway_issued_by && j.pathway_generated_date) {
       events.push({ certifierId: j.pathway_issued_by, type: "cdc_cc", action: `Issued ${j.pathway} certificate`, address: j.address, date: j.pathway_generated_date });
     }
   }
 
-  const { data: modifications } = await supabase
-    .from("modifications")
-    .select("generated, generated_date, issued_by, jobs!inner(firm_id, address, pathway)")
-    .eq("jobs.firm_id", firmId)
-    .eq("generated", true);
+  const { data: modifications } = await excludingDeleted((live) => {
+    const query = supabase
+      .from("modifications")
+      .select("generated, generated_date, issued_by, jobs!inner(firm_id, address, pathway)")
+      .eq("jobs.firm_id", firmId)
+      .eq("generated", true);
+    return live ? query.is("jobs.deleted_at", null) : query;
+  });
   for (const m of modifications || []) {
     if (m.issued_by && m.generated_date) {
       const job = m.jobs as unknown as { address: string; pathway: string };
@@ -67,7 +84,10 @@ export async function getAuditEvents(supabase: SupabaseServerClient, firmId: str
     }
   }
 
-  const { data: ocRecords } = await supabase.from("oc_records").select("type, generated_date, issued_by, jobs!inner(firm_id, address)").eq("jobs.firm_id", firmId);
+  const { data: ocRecords } = await excludingDeleted((live) => {
+    const query = supabase.from("oc_records").select("type, generated_date, issued_by, jobs!inner(firm_id, address)").eq("jobs.firm_id", firmId);
+    return live ? query.is("jobs.deleted_at", null) : query;
+  });
   for (const r of ocRecords || []) {
     if (r.issued_by && r.generated_date) {
       const job = r.jobs as unknown as { address: string };
@@ -75,11 +95,14 @@ export async function getAuditEvents(supabase: SupabaseServerClient, firmId: str
     }
   }
 
-  const { data: inspections } = await supabase
-    .from("inspections")
-    .select("title, date, outcome, inspector_certifier_id, jobs!inner(firm_id, address)")
-    .eq("jobs.firm_id", firmId)
-    .neq("outcome", "pending");
+  const { data: inspections } = await excludingDeleted((live) => {
+    const query = supabase
+      .from("inspections")
+      .select("title, date, outcome, inspector_certifier_id, jobs!inner(firm_id, address)")
+      .eq("jobs.firm_id", firmId)
+      .neq("outcome", "pending");
+    return live ? query.is("jobs.deleted_at", null) : query;
+  });
   for (const i of inspections || []) {
     if (i.inspector_certifier_id && i.date) {
       const job = i.jobs as unknown as { address: string };

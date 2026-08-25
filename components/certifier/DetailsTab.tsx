@@ -642,7 +642,7 @@ export function DetailsTab({
       </div>
 
       <div className="bg-white rounded-lg border border-line p-5">
-        <DeleteJobButton jobId={job.id} address={job.address || ""} />
+        <DeleteJobButton jobId={job.id} />
       </div>
     </div>
   );

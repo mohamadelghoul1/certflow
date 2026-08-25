@@ -1,5 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { excludingDeleted } from "@/lib/softDelete";
 import { NavBar } from "@/components/certifier/NavBar";
 import { MobileTabBar } from "@/components/certifier/MobileTabBar";
 
@@ -8,7 +9,10 @@ export default async function CertifierLayout({ children }: { children: React.Re
   const supabase = await createClient();
   const [{ data: firm }, { data: recentJobs }, { data: recentQuotes }] = await Promise.all([
     supabase.from("firms").select("name").eq("id", profile.firm_id).single(),
-    supabase.from("jobs").select("id, address, description").eq("firm_id", profile.firm_id).order("created_at", { ascending: false }).limit(6),
+    excludingDeleted((live) => {
+      const query = supabase.from("jobs").select("id, address, description").eq("firm_id", profile.firm_id);
+      return (live ? query.is("deleted_at", null) : query).order("created_at", { ascending: false }).limit(6);
+    }),
     supabase.from("quotes").select("id, proposal_address, project_title").eq("firm_id", profile.firm_id).order("created_at", { ascending: false }).limit(6),
   ]);
 

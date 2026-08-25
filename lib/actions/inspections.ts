@@ -9,6 +9,7 @@ import type { ActionState } from "@/lib/actions/auth";
 import { inspectionDescriptionFor, MAX_INSPECTION_PHOTOS } from "@/lib/constants";
 import { reorderedIds } from "@/lib/checklists";
 import { storeSignedInspectionReport } from "@/lib/certificates/storeInspectionReport";
+import { recordAuditEvent } from "@/lib/audit";
 
 export async function assignInspector(formData: FormData) {
   await requireProfile("certifier");
@@ -134,9 +135,21 @@ export async function signInspectionReport(_prev: ActionState, formData: FormDat
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
-  const { error, data } = await supabase.from("inspections").update({ report_signed_at: new Date().toISOString() }).eq("id", inspectionId).select("id");
+  const { error, data } = await supabase.from("inspections").update({ report_signed_at: new Date().toISOString() }).eq("id", inspectionId).select("id, title, outcome, date");
   if (error) return { error: error.message };
   if (!data || data.length === 0) return { error: "Could not find this inspection to sign." };
+
+  const signed = data[0];
+  const { data: signedJob } = await supabase.from("jobs").select("address").eq("id", jobId).single();
+  await recordAuditEvent(supabase, {
+    firmId: profile.firm_id,
+    action: "inspection.signed",
+    summary: `Signed the ${signed.title} inspection report`,
+    jobId,
+    jobAddress: signedJob?.address || null,
+    actor: profile,
+    detail: { inspectionId, outcome: signed.outcome, date: signed.date },
+  });
 
   // Built here rather than on every download. A signed report cannot
   // change until it is reopened, and this is a moment the certifier is
@@ -270,16 +283,33 @@ export async function moveInspection(formData: FormData) {
 // would leave the app disagreeing with the Portal about what happened on
 // the job, with nothing to show why — so once reported, it stays.
 export async function removeInspection(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireProfile("certifier");
+  const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
 
-  const { data: inspection } = await supabase.from("inspections").select("portal_reported").eq("id", inspectionId).single();
+  const { data: inspection } = await supabase.from("inspections").select("portal_reported, title, outcome, date, report_signed_at").eq("id", inspectionId).single();
   if (inspection?.portal_reported) return { error: "This inspection has been reported to the NSW Planning Portal and can no longer be removed." };
 
   const { error } = await supabase.from("inspections").delete().eq("id", inspectionId);
   if (error) return { error: error.message };
+
+  // Only worth recording once the inspection was something: removing a
+  // stage that was never carried out is housekeeping, not history.
+  if (inspection?.outcome && inspection.outcome !== "pending") {
+    const { data: job } = await supabase.from("jobs").select("address").eq("id", jobId).single();
+    await recordAuditEvent(supabase, {
+      firmId: profile.firm_id,
+      action: "inspection.deleted",
+      summary: `Removed the ${inspection.title} inspection, which had been carried out`,
+      jobId,
+      jobAddress: job?.address || null,
+      actor: profile,
+      detail: { outcome: inspection.outcome, date: inspection.date, wasSigned: !!inspection.report_signed_at },
+      severity: "warning",
+    });
+  }
+
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
 }

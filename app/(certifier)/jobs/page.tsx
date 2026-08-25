@@ -1,5 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { excludingDeleted } from "@/lib/softDelete";
 import { JobsList } from "@/components/certifier/JobsList";
 import { stageComplete, checklistProgress, unresolvedCount, inspectionsComplete, inspectionProgress, issuesCertificate, pathwayLabel } from "@/lib/business";
 import type { Job } from "@/types/db";
@@ -12,15 +13,26 @@ export default async function JobsListPage() {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const [{ data: rawJobs }, { data: certifiers }] = await Promise.all([
-    supabase
-      .from("jobs")
-      .select(
-        "id, address, description, pathway, status, assigned_certifier_id, details, pathway_generated, checklists(kind, checklist_items(status, amendments(resolved))), inspections(outcome), oc_records(id)"
-      )
-      .eq("firm_id", profile.firm_id)
-      .order("created_at", { ascending: false }),
+    excludingDeleted((live) => {
+      const query = supabase
+        .from("jobs")
+        .select(
+          "id, address, description, pathway, status, assigned_certifier_id, details, pathway_generated, checklists(kind, checklist_items(status, amendments(resolved))), inspections(outcome), oc_records(id)"
+        )
+        .eq("firm_id", profile.firm_id);
+      return (live ? query.is("deleted_at", null) : query).order("created_at", { ascending: false });
+    }),
     supabase.from("certifiers").select("id, name").eq("firm_id", profile.firm_id).order("name"),
   ]);
+
+  // Only to decide whether the "deleted projects" link is worth showing —
+  // head:true asks for the count without the rows. Before migration 0028
+  // there is no such column, and no deleted projects either.
+  const { count: deletedCount } = await supabase
+    .from("jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("firm_id", profile.firm_id)
+    .not("deleted_at", "is", null);
 
   const jobs = ((rawJobs || []) as unknown as JobQueryRow[]).map((j) => {
     const pathwayItems = j.checklists.find((c) => c.kind === "pathway")?.checklist_items || [];
@@ -66,7 +78,7 @@ export default async function JobsListPage() {
   return (
     <div>
       <h1 className="text-xl font-bold text-primary mb-6">Projects</h1>
-      <JobsList jobs={jobs} certifiers={certifiers || []} />
+      <JobsList jobs={jobs} certifiers={certifiers || []} deletedCount={deletedCount || 0} />
     </div>
   );
 }

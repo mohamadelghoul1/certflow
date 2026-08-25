@@ -1,6 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { checklistProgress, stageComplete, pathwayStageComplete, inspectionsCarriedOut } from "@/lib/business";
 import { DetailsTab } from "@/components/certifier/DetailsTab";
@@ -77,6 +77,9 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     supabase.from("job_shared_access").select("client_id, clients(id, name, type)").eq("job_id", id),
   ]);
   if (!job) notFound();
+  // Opening a deleted project's old link lands on the list it can be
+  // restored from, rather than a dead end.
+  if (job.deleted_at) redirect("/jobs/deleted");
   const typedJob = job as Job;
   const sharedClients = (sharedAccessRows || []).map((r) => r.clients).filter(Boolean) as unknown as { id: string; name: string; type: string }[];
 

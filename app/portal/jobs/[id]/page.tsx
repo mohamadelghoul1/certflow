@@ -26,7 +26,9 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
   const supabase = await createClient();
 
   const { data: job } = await supabase.from("jobs").select("*").eq("id", id).single();
-  if (!job) notFound();
+  // A deleted project is gone as far as the client is concerned, even
+  // though the certifier can still bring it back.
+  if (!job || job.deleted_at) notFound();
 
   const [{ data: checklists }, { data: modifications }, { data: ocRecords }, { data: inspections }, { data: certifiers }] = await Promise.all([
     supabase

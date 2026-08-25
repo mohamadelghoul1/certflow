@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, Plus, AlertTriangle } from "lucide-react";
+import { Search, Plus, AlertTriangle, Trash2 } from "lucide-react";
 
 type JobRow = {
   id: string;
@@ -48,7 +48,7 @@ function StagePill({ label, done, toIssue, progress }: { label: string; done: bo
   );
 }
 
-export function JobsList({ jobs, certifiers }: { jobs: JobRow[]; certifiers: { id: string; name: string }[] }) {
+export function JobsList({ jobs, certifiers, deletedCount = 0 }: { jobs: JobRow[]; certifiers: { id: string; name: string }[]; deletedCount?: number }) {
   const [query, setQuery] = useState("");
   const [certifierFilter, setCertifierFilter] = useState("");
 
@@ -149,6 +149,12 @@ export function JobsList({ jobs, certifiers }: { jobs: JobRow[]; certifiers: { i
           </tbody>
         </table>
       </div>
+
+      {deletedCount > 0 && (
+        <Link href="/jobs/deleted" className="mt-4 inline-flex items-center gap-1.5 text-xs text-placeholder hover:text-muted hover:underline">
+          <Trash2 size={13} /> {deletedCount} deleted {deletedCount === 1 ? "project" : "projects"}
+        </Link>
+      )}
     </div>
   );
 }

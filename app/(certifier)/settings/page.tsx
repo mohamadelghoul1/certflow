@@ -5,6 +5,8 @@ import { CloudBackupSection } from "@/components/certifier/CloudBackupSection";
 import { getBackupStatus } from "@/lib/actions/backup";
 import { DocumentLibrarySection } from "@/components/certifier/DocumentLibrarySection";
 import { signedUrl } from "@/lib/storage";
+import { runSystemChecks, runEnvChecks } from "@/lib/systemCheck";
+import { SystemCheckSection } from "@/components/certifier/SystemCheckSection";
 
 export default async function SettingsPage() {
   const { profile } = await requireProfile("certifier");
@@ -18,6 +20,7 @@ export default async function SettingsPage() {
   ]);
 
   const backup = await getBackupStatus(profile.firm_id);
+  const systemChecks = await runSystemChecks(supabase);
 
   const signatureUrls: Record<string, string> = {};
   // A contract certifier's own company logo, for the letterhead their
@@ -74,6 +77,13 @@ export default async function SettingsPage() {
         <div className="px-5 py-3 border-b border-line font-bold text-primary">Clients &amp; portal access</div>
         <div className="p-5">
           <ClientList clients={clients || []} />
+        </div>
+      </section>
+
+      <section className="bg-white rounded-lg border border-line">
+        <div className="px-5 py-3 border-b border-line font-bold text-primary">System check</div>
+        <div className="p-5">
+          <SystemCheckSection checks={systemChecks} env={runEnvChecks()} />
         </div>
       </section>
 

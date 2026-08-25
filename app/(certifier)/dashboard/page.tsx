@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { countJob } from "@/lib/dashboardCounts";
 import { unresolvedCount, daysUntil, calcCdcLapseDate, formatISODate, todayISO } from "@/lib/business";
 import { getAuditEvents, getIssuanceEvents } from "@/lib/reporting";
+import { excludingDeleted } from "@/lib/softDelete";
 import Link from "next/link";
 import { DashboardSearch } from "@/components/certifier/DashboardSearch";
 import { TaskBoard } from "@/components/certifier/TaskBoard";
@@ -92,15 +93,17 @@ export default async function DashboardPage() {
   const supabase = await createClient();
 
   const [{ data: jobs }, { data: certifiers }, { data: taskLists }, { data: manualTasks }, auditEvents, issuanceEvents] = await Promise.all([
-    supabase
-      .from("jobs")
-      .select(
-        "id, address, description, pathway, status, pathway_generated, created_at, details, " +
-          "checklists(kind, checklist_items(status, amendments(resolved))), " +
-          "inspections(id, title, date, outcome, booked_by_client, confirmed)"
-      )
-      .eq("firm_id", profile.firm_id)
-      .returns<DashboardJob[]>(),
+    excludingDeleted((live) => {
+      const query = supabase
+        .from("jobs")
+        .select(
+          "id, address, description, pathway, status, pathway_generated, created_at, details, " +
+            "checklists(kind, checklist_items(status, amendments(resolved))), " +
+            "inspections(id, title, date, outcome, booked_by_client, confirmed)"
+        )
+        .eq("firm_id", profile.firm_id);
+      return (live ? query.is("deleted_at", null) : query).returns<DashboardJob[]>();
+    }),
     supabase.from("certifiers").select("id, name, pi_insurance_expiry, registration_expiry").eq("firm_id", profile.firm_id),
     supabase.from("task_lists").select("*").eq("firm_id", profile.firm_id).order("sort_order"),
     supabase.from("manual_tasks").select("*, task_lists!inner(firm_id)").eq("task_lists.firm_id", profile.firm_id).order("sort_order"),

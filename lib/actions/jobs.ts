@@ -11,6 +11,8 @@ import type { ActionState } from "@/lib/actions/auth";
 import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
 import { insertChecklistItems, reorderedIds } from "@/lib/checklists";
 import { mergeJobDetails } from "@/lib/jobDetails";
+import { recordAuditEvent } from "@/lib/audit";
+import { isUnknownColumn } from "@/lib/softDelete";
 import type { JobDetails, CriticalStageInspection } from "@/types/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -853,7 +855,7 @@ export async function signPathwayCertificate(_prev: ActionState, formData: FormD
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
 
-  const { data: job } = await supabase.from("jobs").select("id, pathway_version").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  const { data: job } = await supabase.from("jobs").select("id, address, pathway, pathway_version").eq("id", jobId).eq("firm_id", profile.firm_id).single();
   if (!job) return { error: "Project not found." };
 
   const signedAt = new Date().toISOString();
@@ -868,6 +870,16 @@ export async function signPathwayCertificate(_prev: ActionState, formData: FormD
 
   const { error: jobError } = await supabase.from("jobs").update({ pathway_signed_at: signedAt }).eq("id", jobId);
   if (jobError) return { error: jobError.message };
+
+  await recordAuditEvent(supabase, {
+    firmId: profile.firm_id,
+    action: "certificate.signed",
+    summary: `Signed the ${job.pathway} certificate (version ${job.pathway_version})`,
+    jobId,
+    jobAddress: job.address,
+    actor: profile,
+    detail: { pathway: job.pathway, version: job.pathway_version },
+  });
 
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pathway/${jobId}`);
@@ -885,7 +897,7 @@ export async function sendPathwayCertificateToClient(_prev: ActionState, formDat
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
 
-  const { data: job } = await supabase.from("jobs").select("id, pathway, pathway_version, pathway_signed_at, pathway_approval_uploaded").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  const { data: job } = await supabase.from("jobs").select("id, address, pathway, pathway_version, pathway_signed_at, pathway_approval_uploaded").eq("id", jobId).eq("firm_id", profile.firm_id).single();
   if (!job) return { error: "Project not found." };
   if (!job.pathway_signed_at && !job.pathway_approval_uploaded) return { error: "Sign the certificate (or upload a signed copy) before sending it to the client." };
 
@@ -903,6 +915,16 @@ export async function sendPathwayCertificateToClient(_prev: ActionState, formDat
   if (jobError) return { error: jobError.message };
 
   await notifyJobClient(supabase, jobId, `${job.pathway} issued`, `<p>Your ${job.pathway} has been issued and is now available to view in your portal.</p>`);
+
+  await recordAuditEvent(supabase, {
+    firmId: profile.firm_id,
+    action: "certificate.sent",
+    summary: `Released the ${job.pathway} certificate to the client`,
+    jobId,
+    jobAddress: job.address,
+    actor: profile,
+    detail: { pathway: job.pathway, version: job.pathway_version },
+  });
 
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pathway/${jobId}`);
@@ -1128,16 +1150,89 @@ export async function uploadOcApproval(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
-// Deletes a job and everything under it. The database cascades the
+// Deleting a project no longer destroys it. It leaves the jobs list, the
+// dashboard counts, the reports and the client's portal straight away,
+// but the row and its files stay exactly where they are, and it can be
+// brought back from Projects -> Deleted at any time.
+//
+// A certifier has to be able to account for a job years after the fact,
+// and "someone deleted it and there is no record" is not an answer. The
+// deletion is written to the audit log as it happens.
+export async function deleteJob(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile, userId } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+
+  const { data: job } = await supabase.from("jobs").select("id, address").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return { error: "That job could not be found." };
+
+  const { error } = await supabase
+    .from("jobs")
+    .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
+    .eq("id", jobId)
+    .eq("firm_id", profile.firm_id);
+  if (error) {
+    if (isUnknownColumn(error)) {
+      return { error: "This database is still missing the update that makes deleting recoverable, so nothing has been deleted. Run migration 0028 in Supabase first." };
+    }
+    return { error: error.message };
+  }
+
+  await recordAuditEvent(supabase, {
+    firmId: profile.firm_id,
+    action: "job.deleted",
+    summary: `Deleted the project at ${job.address || "(no address)"}`,
+    jobId,
+    jobAddress: job.address,
+    actor: profile,
+    severity: "warning",
+  });
+
+  revalidatePath("/jobs");
+  revalidatePath("/jobs/deleted");
+  revalidatePath("/dashboard");
+  redirect("/jobs");
+}
+
+// Puts a deleted project back. Nothing was thrown away, so this is only
+// clearing the two columns that hid it.
+export async function restoreJob(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+
+  const { data: job } = await supabase.from("jobs").select("id, address").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return { error: "That job could not be found." };
+
+  const { error } = await supabase.from("jobs").update({ deleted_at: null, deleted_by: null }).eq("id", jobId).eq("firm_id", profile.firm_id);
+  if (error) return { error: error.message };
+
+  await recordAuditEvent(supabase, {
+    firmId: profile.firm_id,
+    action: "job.restored",
+    summary: `Restored the project at ${job.address || "(no address)"}`,
+    jobId,
+    jobAddress: job.address,
+    actor: profile,
+  });
+
+  revalidatePath("/jobs");
+  revalidatePath("/jobs/deleted");
+  revalidatePath("/dashboard");
+  redirect(`/jobs/${jobId}`);
+}
+
+// Destroys a deleted project for good. The database cascades the
 // checklists, items, amendments, inspections, photos, certificate
 // versions, OC records and shared access, so the only thing that needs
 // clearing by hand is the uploaded files — they live in storage under
 // {firm}/{job}/, outside the database's reach.
 //
-// Guarded by requiring the job's own address to be typed back: this
-// destroys a complete project history, including issued certificates, and
-// there is no undo.
-export async function deleteJob(_prev: ActionState, formData: FormData): Promise<ActionState> {
+// Guarded by requiring the job's own address to be typed back: this is
+// the one step in the app that genuinely cannot be undone. What it
+// leaves behind is the audit entry, which is the point of writing it
+// somewhere the job itself does not reach.
+export async function purgeJob(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
@@ -1150,6 +1245,18 @@ export async function deleteJob(_prev: ActionState, formData: FormData): Promise
   if (typed.toLowerCase() !== expected.toLowerCase()) {
     return { error: "The address you typed doesn't match this job's address, so nothing has been deleted." };
   }
+
+  // Written before the row goes, so a failure part-way through still
+  // leaves a record of what was attempted.
+  await recordAuditEvent(supabase, {
+    firmId: profile.firm_id,
+    action: "job.purged",
+    summary: `Permanently deleted the project at ${job.address || "(no address)"}, including its documents`,
+    jobId,
+    jobAddress: job.address,
+    actor: profile,
+    severity: "warning",
+  });
 
   // Storage has no recursive delete, so the paths are listed first. A
   // failure here is not fatal — the job still goes, and orphaned files
@@ -1164,8 +1271,9 @@ export async function deleteJob(_prev: ActionState, formData: FormData): Promise
   if (error) return { error: error.message };
 
   revalidatePath("/jobs");
+  revalidatePath("/jobs/deleted");
   revalidatePath("/dashboard");
-  redirect("/jobs");
+  redirect("/jobs/deleted");
 }
 
 export async function markJobComplete(formData: FormData) {

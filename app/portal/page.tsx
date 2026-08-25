@@ -1,20 +1,29 @@
-import { pathwayLabel } from "@/lib/business";
+import { pathwayLabel, type Pathway } from "@/lib/business";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { excludingDeleted } from "@/lib/softDelete";
 import Link from "next/link";
 
 export default async function PortalHomePage() {
   const { profile } = await requireProfile("client");
   const supabase = await createClient();
 
-  const { data: direct } = await supabase.from("jobs").select("id, address, description, pathway, status").eq("client_id", profile.client_id);
-  const { data: shared } = await supabase
-    .from("job_shared_access")
-    .select("jobs(id, address, description, pathway, status)")
-    .eq("client_id", profile.client_id);
+  // A deleted project disappears from the client's portal straight away,
+  // even though the certifier can still bring it back.
+  const { data: direct } = await excludingDeleted((live) => {
+    const query = supabase.from("jobs").select("id, address, description, pathway, status").eq("client_id", profile.client_id);
+    return live ? query.is("deleted_at", null) : query;
+  });
+  const { data: shared } = await excludingDeleted((live) =>
+    supabase
+      .from("job_shared_access")
+      .select(live ? "jobs(id, address, description, pathway, status, deleted_at)" : "jobs(id, address, description, pathway, status)")
+      .eq("client_id", profile.client_id)
+  );
 
-  const sharedJobs = (shared || []).map((s) => s.jobs).filter(Boolean) as unknown as { id: string; address: string; description: string; pathway: string; status: string }[];
-  const jobs = [...(direct || []), ...sharedJobs];
+  type PortalJob = { id: string; address: string; description: string; pathway: Pathway; status: string; deleted_at?: string | null };
+  const sharedJobs = ((shared || []) as unknown as { jobs: PortalJob | null }[]).map((s) => s.jobs).filter((j): j is PortalJob => !!j && !j.deleted_at);
+  const jobs = [...((direct || []) as unknown as PortalJob[]), ...sharedJobs];
 
   return (
     <div>
