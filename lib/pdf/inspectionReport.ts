@@ -1,6 +1,7 @@
 import { Layout, INSPECTION_HEADER_FILL, MARGIN, SMALL_SIZE, MUTED, LINE } from "@/lib/pdf/layout";
 import { letterheadHeader, projectFooter, type PackageImages } from "@/lib/pdf/letterhead";
 import { formatAddress } from "@/lib/certificates/pathwayData";
+import { INSPECTION_OUTCOME_TEXT, INSPECTION_REINSPECTION_TEXT } from "@/lib/constants";
 import { formatISODate } from "@/lib/business";
 import type { InspectionReportData } from "@/lib/certificates/inspectionReportData";
 
@@ -14,16 +15,6 @@ import type { InspectionReportData } from "@/lib/certificates/inspectionReportDa
 
 const LABEL_FRACTION = 0.38;
 
-const OUTCOME_TEXT: Record<string, string> = {
-  passed: "Satisfactory — no issues identified",
-  passed_subject_to: "Satisfactory (minor issues) subject to documents/conditions being provided",
-  failed: "Unsatisfactory — see required documents below",
-  pending: "Pending",
-};
-const REINSPECTION_TEXT: Record<string, string> = {
-  failed: "Re-inspection required",
-  passed_subject_to: "No re-inspection required, subject to documents/conditions being provided",
-};
 
 export type ReportPhoto = { image: PackageImages["signature"]; caption: string };
 
@@ -77,7 +68,7 @@ export async function buildInspectionReportPdf(
   l.gap(4);
   l.table(
     ["Inspection Area", "Inspection Outcome", "Reinspections"],
-    [[`1. ${inspection.title}`, OUTCOME_TEXT[inspection.outcome] || "Pending", REINSPECTION_TEXT[inspection.outcome] || "No re-inspections required for this inspection."]],
+    [[`1. ${inspection.title}`, INSPECTION_OUTCOME_TEXT[inspection.outcome], INSPECTION_REINSPECTION_TEXT[inspection.outcome]]],
     [34, 36, 30],
     { headerFill: INSPECTION_HEADER_FILL, zebra: true }
   );

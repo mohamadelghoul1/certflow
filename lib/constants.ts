@@ -303,3 +303,25 @@ export function defaultScopeOfWorks(pathway: Pathway) {
     "Determination of an Occupation Certificate",
   ];
 }
+
+// How an inspection's outcome is worded on the generated report — on
+// screen, in the Word export and in the PDF, which all read from here so
+// the three can't drift apart.
+export const INSPECTION_OUTCOME_TEXT: Record<string, string> = {
+  passed: "Satisfactory — no issues identified",
+  passed_subject_to: "Satisfactory (minor issues) subject to documents/conditions being provided",
+  failed: "Unsatisfactory — see required documents below",
+  pending: "Pending",
+};
+
+// The re-inspection column. A satisfactory result needs no re-inspection,
+// and saying so plainly is the whole content of the cell: the condition
+// it used to trail — "subject to documents/conditions being provided" —
+// already sits in the outcome beside it, and repeating it there read as
+// though the re-inspection itself were conditional.
+export const INSPECTION_REINSPECTION_TEXT: Record<string, string> = {
+  passed: "No re-inspection required",
+  passed_subject_to: "No re-inspection required",
+  failed: "Re-inspection required",
+  pending: "No re-inspection required",
+};

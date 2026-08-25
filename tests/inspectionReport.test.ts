@@ -63,3 +63,36 @@ describe("the inspection report", () => {
     assert.equal(pages.length, 1, "the photo page is added only when there are photos");
   });
 });
+
+describe("the re-inspection column", () => {
+  // It used to read "No re-inspection required, subject to
+  // documents/conditions being provided" — repeating a condition that
+  // already sits in the outcome beside it, and reading as though the
+  // re-inspection itself were the conditional part.
+  test("says only that no re-inspection is required, on both satisfactory outcomes", async () => {
+    for (const outcome of ["passed", "passed_subject_to"] as const) {
+      const { text } = await pdf({ inspection: { ...inspectionReportFixture().inspection, outcome } });
+      assert.ok(text.includes("No re-inspection required"), `${outcome} says no re-inspection is required`);
+      assert.ok(!text.includes("No re-inspection required, subject to"), `${outcome} no longer trails the condition`);
+      assert.ok(!text.includes("No re-inspections required for this inspection"), `${outcome} no longer uses the old fallback wording`);
+    }
+  });
+
+  test("keeps the condition in the outcome itself", async () => {
+    const { text } = await pdf({ inspection: { ...inspectionReportFixture().inspection, outcome: "passed_subject_to" } });
+    assert.ok(text.includes("Satisfactory (minor issues) subject to documents/conditions being provided"));
+  });
+
+  test("a failed inspection still calls for one", async () => {
+    const { text } = await pdf({ inspection: { ...inspectionReportFixture().inspection, outcome: "failed" } });
+    assert.ok(text.includes("Re-inspection required"));
+  });
+
+  // The screen, the Word export and the PDF all read the same wording, so
+  // a change to one can't leave the other two behind.
+  test("the Word export words it identically", async () => {
+    const text = await docx({ inspection: { ...inspectionReportFixture().inspection, outcome: "passed_subject_to" } });
+    assert.ok(text.includes("No re-inspection required"));
+    assert.ok(!text.includes("No re-inspection required, subject to"));
+  });
+});

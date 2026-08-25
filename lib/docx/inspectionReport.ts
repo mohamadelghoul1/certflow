@@ -3,22 +3,13 @@ import type { FileChild } from "docx";
 import type { ImageAsset } from "@/lib/docx/shared";
 import { p, mixed, pageBreak, image, fieldTable, gridTable, headingRule, photoGrid, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, type FieldRow, documentTitle, SMALL_SIZE, INSPECTION_HEADER_FILL, BODY_SIZE, signatory } from "@/lib/docx/shared";
 import { formatAddress } from "@/lib/certificates/pathwayData";
+import { INSPECTION_OUTCOME_TEXT, INSPECTION_REINSPECTION_TEXT } from "@/lib/constants";
 import { letterheadHeader, projectFooter } from "@/lib/docx/pathwayCertificate";
 import { formatISODate } from "@/lib/business";
 import type { InspectionReportData } from "@/lib/certificates/inspectionReportData";
 
 // Mirrors app/jobs/[jobId]/inspections/[inspectionId]/report/page.tsx.
 
-const OUTCOME_TEXT: Record<string, string> = {
-  passed: "Satisfactory — no issues identified",
-  passed_subject_to: "Satisfactory (minor issues) subject to documents/conditions being provided",
-  failed: "Unsatisfactory — see required documents below",
-  pending: "Pending",
-};
-const REINSPECTION_TEXT: Record<string, string> = {
-  failed: "Re-inspection required",
-  passed_subject_to: "No re-inspection required, subject to documents/conditions being provided",
-};
 
 // The on-screen CertRow skips a field entirely when it has no value,
 // rather than showing "—" — this report reads as a checklist of what's
@@ -61,7 +52,7 @@ export async function buildInspectionReportDocx(data: InspectionReportData, imag
     p(introText, { size: SMALL_SIZE, color: MUTED_COLOR, spacingAfter: 120 }),
     gridTable(
       ["Inspection Area", "Inspection Outcome", "Reinspections"],
-      [[`1. ${inspection.title}`, OUTCOME_TEXT[inspection.outcome] || "Pending", REINSPECTION_TEXT[inspection.outcome] || "No re-inspections required for this inspection."]],
+      [[`1. ${inspection.title}`, INSPECTION_OUTCOME_TEXT[inspection.outcome], INSPECTION_REINSPECTION_TEXT[inspection.outcome]]],
       [30, 40, 30],
       { headerFill: INSPECTION_HEADER_FILL, rowHeight: 460 }
     ),

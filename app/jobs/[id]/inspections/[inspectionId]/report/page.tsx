@@ -6,6 +6,7 @@ import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
 import { getInspectionReportData } from "@/lib/certificates/inspectionReportData";
 import { formatAddress } from "@/lib/certificates/pathwayData";
+import { INSPECTION_OUTCOME_TEXT, INSPECTION_REINSPECTION_TEXT } from "@/lib/constants";
 
 // Set the way the certificate and the pre-inspection report are — navy
 // ruled headings, right-aligned labels against their values, the same
@@ -46,16 +47,6 @@ function Heading({ children }: { children: React.ReactNode }) {
   return <div className="text-sm font-bold uppercase text-doc-heading border-b border-line pb-1 pt-4 mb-2">{children}</div>;
 }
 
-const OUTCOME_TEXT: Record<string, string> = {
-  passed: "Satisfactory — no issues identified",
-  passed_subject_to: "Satisfactory (minor issues) subject to documents/conditions being provided",
-  failed: "Unsatisfactory — see required documents below",
-  pending: "Pending",
-};
-const REINSPECTION_TEXT: Record<string, string> = {
-  failed: "Re-inspection required",
-  passed_subject_to: "No re-inspection required, subject to documents/conditions being provided",
-};
 
 // The folder is [id] rather than [jobId] to match
 // app/(certifier)/jobs/[id]. Next.js requires one name per dynamic
@@ -157,8 +148,8 @@ export default async function InspectionReportPage({ params }: { params: Promise
                   <td className="px-3 py-1.5 border border-line">
                     {i + 1}. {r.title}
                   </td>
-                  <td className="px-3 py-1.5 border border-line">{OUTCOME_TEXT[r.outcome] || "Pending"}</td>
-                  <td className="px-3 py-1.5 border border-line">{REINSPECTION_TEXT[r.outcome] || "No re-inspections required for this inspection."}</td>
+                  <td className="px-3 py-1.5 border border-line">{INSPECTION_OUTCOME_TEXT[r.outcome]}</td>
+                  <td className="px-3 py-1.5 border border-line">{INSPECTION_REINSPECTION_TEXT[r.outcome]}</td>
                 </tr>
               ))}
             </tbody>
