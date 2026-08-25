@@ -1,6 +1,6 @@
 import { formatISODate, stageComplete, resolvePathwayCertRef, portalRefKindFor } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { setVisiblePathwayVersion, startModification, uploadModificationApproval, uploadPathwayApproval, notifyClientMessage, sendPathwayCertificateToClient } from "@/lib/actions/jobs";
+import { setVisiblePathwayVersion, startModification, uploadModificationApproval, uploadPathwayApproval, notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { buildStampPreview } from "@/lib/pdf/stampDetails";
@@ -9,11 +9,10 @@ import { PreInspectionField } from "@/components/certifier/PreInspectionField";
 import { IssueCertificateForm, IssueModificationForm } from "@/components/certifier/IssueCertificateForm";
 import { DeletePathwayVersionButton } from "@/components/certifier/DeletePathwayVersionButton";
 import { DeleteModificationButton } from "@/components/certifier/DeleteModificationButton";
-import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import { EditableCertRef } from "@/components/certifier/EditableCertRef";
-import { SignCertificateButton } from "@/components/certifier/SignCertificateButton";
+import { ApprovalSigningProvider, VersionCard, VersionSignedLabel, VersionSignedBadge, VersionSignActions, SendToClientWhenSigned } from "@/components/certifier/ApprovalSigning";
 import Link from "next/link";
-import { ChevronDown, Download, FileText, Layers, CheckCircle2 } from "lucide-react";
+import { ChevronDown, Download, FileText } from "lucide-react";
 import type { Job, Certifier, Modification, ChecklistItem, Amendment, PathwayCertificateVersion } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -97,68 +96,65 @@ export async function CertificatesPanel({
         <ChecklistSection jobId={job.id} firmId={firmId} checklistId={pathwayChecklistId} label={job.pathway} library={library} items={pathwayItems} stamp={stamp} partOfApproval />
       </div>
 
-      <div className="border border-line rounded-xl p-6 shadow-sm bg-white">
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-base font-semibold text-heading">{job.pathway}</div>
-          {!complete && !job.pathway_generated && <span className="text-xs text-muted">Checklist not yet complete</span>}
-        </div>
-        <p className="text-xs text-muted mb-1">
-          Regenerating keeps every earlier version below — nothing is overwritten. Pick which one is active, or delete a version issued by mistake. A
-          version only reaches the client once you sign it and press Send to client.
-        </p>
+      <ApprovalSigningProvider jobId={job.id} signedAt={job.pathway_signed_at}>
+        <div className="border border-line rounded-xl p-6 shadow-sm bg-white">
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-base font-semibold text-heading">{job.pathway}</div>
+            {!complete && !job.pathway_generated && <span className="text-xs text-muted">Checklist not yet complete</span>}
+          </div>
+          <p className="text-xs text-muted mb-1">
+            Regenerating keeps every earlier version below — nothing is overwritten. Pick which one is active, or delete a version issued by mistake. A
+            version only reaches the client once you sign it and press Send to client.
+          </p>
 
-        {complete && (
-          <>
-            <PlanningPortalRefField jobId={job.id} value={portalRef} kind={portalRefKindFor(job.pathway)} />
-            {/* The pre-inspection that precedes the certificate — the two
-                dates it needs, and a link to the report itself. */}
-            <PreInspectionField
-              jobId={job.id}
-              isCdc={job.pathway === "CDC"}
-              applicationDate={job.details?.preInspection?.applicationDate || ""}
-              inspectionDate={job.details?.preInspection?.inspectionDate || ""}
-            />
-            <IssueCertificateForm
-              jobId={job.id}
-              assignedCertifierId={job.assigned_certifier_id}
-              certifiers={certifiers}
-              isRegenerate={job.pathway_generated}
-              hasPortalRef={portalRef.trim().length > 0}
-            />
-          </>
-        )}
-
-        {job.pathway_generated && (
-          <div className="mt-3 flex items-center gap-4 flex-wrap">
-            {job.pathway_sent_to_client ? (
-              <span className="text-xs font-semibold text-success">Sent to client {formatISODate(job.pathway_sent_to_client_date)}</span>
-            ) : (
-              <SendToClientButton
-                action={sendPathwayCertificateToClient}
-                fields={{ job_id: job.id }}
-                disabled={!job.pathway_signed_at && !job.pathway_approval_uploaded}
-                disabledReason="Sign the certificate document first"
+          {complete && (
+            <>
+              <PlanningPortalRefField jobId={job.id} value={portalRef} kind={portalRefKindFor(job.pathway)} />
+              {/* The pre-inspection that precedes the certificate — the two
+                  dates it needs, and a link to the report itself. */}
+              <PreInspectionField
+                jobId={job.id}
+                isCdc={job.pathway === "CDC"}
+                applicationDate={job.details?.preInspection?.applicationDate || ""}
+                inspectionDate={job.details?.preInspection?.inspectionDate || ""}
               />
-            )}
-            {job.pathway_sent_to_client && (
-              <form action={notifyClientMessage}>
-                <input type="hidden" name="job_id" value={job.id} />
-                <input type="hidden" name="subject" value="Certificate issued" />
-                <input type="hidden" name="message" value="Your certificate has been issued and is now available to view in your portal." />
-                <button className="text-xs font-semibold text-secondary hover:underline">Notify client again</button>
-              </form>
-            )}
-          </div>
-        )}
+              <IssueCertificateForm
+                jobId={job.id}
+                assignedCertifierId={job.assigned_certifier_id}
+                certifiers={certifiers}
+                isRegenerate={job.pathway_generated}
+                hasPortalRef={portalRef.trim().length > 0}
+              />
+            </>
+          )}
 
-        {versions.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-line space-y-3">
-            {versions.map((v) => (
-              <PathwayVersionCard key={v.id} version={v} job={job} firmId={firmId} certifiers={certifiers} />
-            ))}
-          </div>
-        )}
-      </div>
+          {job.pathway_generated && (
+            <div className="mt-3 flex items-center gap-4 flex-wrap">
+              {job.pathway_sent_to_client ? (
+                <span className="text-xs font-semibold text-success">Sent to client {formatISODate(job.pathway_sent_to_client_date)}</span>
+              ) : (
+                <SendToClientWhenSigned jobId={job.id} approvalUploaded={!!job.pathway_approval_uploaded} />
+              )}
+              {job.pathway_sent_to_client && (
+                <form action={notifyClientMessage}>
+                  <input type="hidden" name="job_id" value={job.id} />
+                  <input type="hidden" name="subject" value="Certificate issued" />
+                  <input type="hidden" name="message" value="Your certificate has been issued and is now available to view in your portal." />
+                  <button className="text-xs font-semibold text-secondary hover:underline">Notify client again</button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {versions.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-line space-y-3">
+              {versions.map((v) => (
+                <PathwayVersionCard key={v.id} version={v} job={job} firmId={firmId} certifiers={certifiers} />
+              ))}
+            </div>
+          )}
+        </div>
+      </ApprovalSigningProvider>
 
       {job.pathway_generated && (
         <div>
@@ -185,7 +181,7 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
   const ref = resolvePathwayCertRef(version.cert_ref, job.pathway, job.details?.projectNumber || job.id.slice(0, 8), version.version);
 
   return (
-    <div className={`border rounded-xl p-4 ${version.signed_at ? "border-accent/40 bg-success-bg" : "border-line bg-white"}`}>
+    <VersionCard isActive={!!version.visible_to_client} signedAt={version.signed_at}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-heading">
@@ -193,7 +189,7 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
           </div>
           <div className="text-xs text-muted mt-0.5">
             Issued {formatISODate(version.generated_date)} by {issuedBy?.name || "—"}
-            {version.signed_at ? ` · Signed ${formatISODate(version.signed_at)}` : " · Not yet signed"}
+            <VersionSignedLabel isActive={!!version.visible_to_client} signedAt={version.signed_at} />
             {version.sent_to_client ? ` · Sent to client ${formatISODate(version.sent_to_client_date)}` : " · Not sent to client"}
           </div>
         </div>
@@ -203,13 +199,7 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
               active-version marker is a separate idea (which version the
               client sees), so it reads as a plain tag rather than competing
               for the same colour. */}
-          {version.signed_at ? (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent">
-              <CheckCircle2 size={12} /> Approved
-            </span>
-          ) : (
-            <span className="text-[11px] font-semibold text-muted">Not yet signed</span>
-          )}
+          <VersionSignedBadge isActive={!!version.visible_to_client} signedAt={version.signed_at} />
           {version.visible_to_client ? (
             <span className="text-[11px] text-muted">Active version</span>
           ) : (
@@ -245,12 +235,7 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
                 the set that actually gets handed on. Only offered once
                 the approval is signed, since an unsigned bundle isn't a
                 set anyone should be circulating. */}
-            {version.signed_at && (
-              <a href={`/api/jobs/${job.id}/approval-bundle`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
-                <Layers size={12} /> Download full approved set (PDF)
-              </a>
-            )}
-            {!version.signed_at && <SignCertificateButton jobId={job.id} />}
+            <VersionSignActions jobId={job.id} isActive={!!version.visible_to_client} signedAt={version.signed_at} />
           </>
         )}
         {/* Closes the Export → edit in Word → bring it back loop on the card
@@ -270,7 +255,7 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
         )}
         <DeletePathwayVersionButton jobId={job.id} versionId={version.id} versionLabel={`v${version.version}`} />
       </div>
-    </div>
+    </VersionCard>
   );
 }
 

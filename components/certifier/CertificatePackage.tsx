@@ -1,14 +1,20 @@
 "use client";
 
-import { Suspense, useActionState } from "react";
+import { Suspense, useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { AutoPrint } from "@/components/certifier/AutoPrint";
 import type { ActionState } from "@/lib/actions/auth";
 
-// Its own component (rather than inline in the toolbar) because useActionState
-// must run unconditionally, and signAction is only present for documents
-// that support signing.
+// Its own component (rather than inline in the toolbar) because the
+// signing hooks must run unconditionally, and signAction is only present
+// for documents that support signing.
+//
+// Signing is three quick row updates, but the press used to wait on the
+// whole page being re-rendered and streamed back before the button
+// changed. It flips the moment it is pressed instead, the way approving a
+// checklist item does; if the update fails, React drops the optimistic
+// value, the button comes back, and the error is shown beside it.
 function SignButton({
   signAction,
   signFields,
@@ -20,20 +26,34 @@ function SignButton({
   signed?: boolean;
   signedLabel?: string;
 }) {
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(signAction, undefined);
-  if (signed) {
-    return <span className="px-3 py-2 rounded-md bg-success-bg text-success text-sm font-semibold">{signedLabel || "Signed"}</span>;
+  const [optimisticSigned, setOptimisticSigned] = useOptimistic(!!signed);
+  const [, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  if (optimisticSigned) {
+    // The label carries the date the server recorded, which doesn't exist
+    // yet in the moment between the press and the save — so until it does,
+    // the button says simply "Signed".
+    return <span className="px-3 py-2 rounded-md bg-success-bg text-success text-sm font-semibold">{(signed && signedLabel) || "Signed"}</span>;
   }
+
+  const sign = () =>
+    startTransition(async () => {
+      setError(null);
+      setOptimisticSigned(true);
+      const fd = new FormData();
+      Object.entries(signFields || {}).forEach(([k, v]) => fd.set(k, v));
+      const result = await signAction(undefined, fd);
+      if (result?.error) setError(result.error);
+    });
+
   return (
-    <form action={formAction} className="flex items-center gap-2">
-      {Object.entries(signFields || {}).map(([k, v]) => (
-        <input key={k} type="hidden" name={k} value={v} />
-      ))}
-      <button disabled={pending} className="px-4 py-2 rounded-md bg-success text-white text-sm font-semibold hover:bg-success disabled:opacity-60">
-        {pending ? "Signing…" : "Sign"}
+    <div className="flex items-center gap-2">
+      <button type="button" onClick={sign} className="px-4 py-2 rounded-md bg-success text-white text-sm font-semibold hover:bg-success">
+        Sign
       </button>
-      {state?.error && <span className="text-xs text-error">{state.error}</span>}
-    </form>
+      {error && <span className="text-xs text-error">{error}</span>}
+    </div>
   );
 }
 
