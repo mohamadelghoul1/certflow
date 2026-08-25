@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import { scheduleRows } from "@/lib/checklistDocuments";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { signedUrl } from "@/lib/storage";
 import { formatISODate, resolvePathwayCertRef, calcCdcLapseDate } from "@/lib/business";
-import type { Job, Firm, Certifier, ConditionOfConsent, CriticalStageInspection, JobDetails } from "@/types/db";
+import type { Job, Firm, Certifier, ConditionOfConsent, CriticalStageInspection, JobDetails, ChecklistItemFile } from "@/types/db";
 
 export function formatAddress(a?: Record<string, string> | null) {
   if (!a) return "—";
@@ -47,6 +48,9 @@ export type PathwayCertificateData = {
   firm: Firm | null;
   issuedBy: Certifier | null;
   conditions: ConditionOfConsent[];
+  // One entry per document, not per checklist item: an item satisfied by
+  // two certificates contributes two rows to Schedule 1, each with its
+  // own preparer, reference and date.
   allItems: { id: string; title: string; status: string; document_date: string | null; prepared_by: string | null; drawing_number: string | null; revision: string | null }[];
   selectedInspections: CriticalStageInspection[];
   activeVersionId: string | null;
@@ -88,7 +92,14 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
     supabase.from("firms").select("*").eq("id", firmId).single(),
     supabase.from("conditions_of_consent").select("*").eq("job_id", jobId).order("created_at"),
     job.pathway_issued_by ? supabase.from("certifiers").select("*").eq("id", job.pathway_issued_by).single() : Promise.resolve({ data: null }),
-    supabase.from("checklists").select("id, kind, checklist_items(*)").eq("job_id", jobId).order("sort_order", { referencedTable: "checklist_items" }).order("created_at", { referencedTable: "checklist_items" }),
+    supabase
+      .from("checklists")
+      // The files too: an item can hold more than one document, and
+      // Schedule 1 lists each of them with its own details.
+      .select("id, kind, checklist_items(*, checklist_item_files(*))")
+      .eq("job_id", jobId)
+      .order("sort_order", { referencedTable: "checklist_items" })
+      .order("created_at", { referencedTable: "checklist_items" }),
     supabase.from("inspections").select("outcome").eq("job_id", jobId),
     supabase.from("pathway_certificate_versions").select("id, cert_ref").eq("job_id", jobId).eq("version", job.pathway_version).single(),
   ]);
@@ -102,7 +113,7 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
   // certifier has left out of the approval is left out here too. The
   // column is undefined until migration 0020 has been run, which counts
   // as included.
-  const allItems = (((pathwayChecklist?.checklist_items as never[]) || []) as {
+  const includedItems = (((pathwayChecklist?.checklist_items as never[]) || []) as {
     id: string;
     title: string;
     status: string;
@@ -113,7 +124,13 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
     // a BASIX certificate number as readily as a drawing number.
     drawing_number: string | null;
     revision: string | null;
+    file_path?: string | null;
+    checklist_item_files?: ChecklistItemFile[] | null;
   }[]).filter((i) => i.include_in_approval !== false);
+
+  // Expanded document by document, so an item satisfied by two
+  // certificates is two rows on Schedule 1 rather than one.
+  const allItems = scheduleRows(includedItems);
 
   const lapseDate = calcCdcLapseDate(
     job.pathway,

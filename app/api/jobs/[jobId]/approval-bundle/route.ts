@@ -5,6 +5,7 @@ import { signedUrl } from "@/lib/storage";
 import { resolvePathwayCertRef, formatISODate, todayISO } from "@/lib/business";
 import { buildApprovalBundle, type BundleDocument } from "@/lib/pdf/bundle";
 import { attachmentHeader, jobDocumentName } from "@/lib/downloadName";
+import { currentDocuments, documentTitle, type ItemDocument } from "@/lib/checklistDocuments";
 import { buildCertificatePackagePdf } from "@/lib/pdf/certificatePackage";
 import { getPathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { getPreInspectionData } from "@/lib/certificates/preInspectionData";
@@ -47,7 +48,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   const [{ data: firm }, { data: checklists }, { data: versions }] = await Promise.all([
     supabase.from("firms").select("*").eq("id", profile.firm_id).single(),
-    supabase.from("checklists").select("id, kind, checklist_items(*)").eq("job_id", jobId),
+    supabase.from("checklists").select("id, kind, checklist_items(*, checklist_item_files(*))").eq("job_id", jobId),
     supabase.from("pathway_certificate_versions").select("*").eq("job_id", jobId).order("version"),
   ]);
 
@@ -64,16 +65,28 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     .filter((i) => i.status === "approved" && i.include_in_approval !== false)
     .sort((a, b) => a.sort_order - b.sort_order);
 
+  // One entry per document rather than per item: an item satisfied by two
+  // certificates puts both into the set, each stamped where the item says
+  // it needs stamping.
+  type Entry = { item: ChecklistItem; doc: ItemDocument | null; total: number };
+  const entries: Entry[] = items.flatMap((item): Entry[] => {
+    const docs = currentDocuments(item);
+    // An approved item with nothing uploaded still gets an entry, so the
+    // set's closing page can name what could not be included.
+    if (docs.length === 0) return [{ item, doc: null, total: 0 }];
+    return docs.map((doc) => ({ item, doc, total: docs.length }));
+  });
+
   // Fetched in parallel — a full set can be a dozen files, and doing them
   // one after another is what makes a download like this feel broken.
-  const files = await Promise.all(items.map((i) => fetchBytes(i.file_path)));
+  const files = await Promise.all(entries.map((e) => fetchBytes(e.doc?.filePath ?? e.item.file_path)));
 
-  const documents: BundleDocument[] = items.map((item, idx) => ({
-    title: item.title,
-    preparedBy: item.prepared_by,
-    reference: item.drawing_number,
-    revision: item.revision,
-    date: item.document_date ? formatISODate(item.document_date) : null,
+  const documents: BundleDocument[] = entries.map(({ item, doc, total }, idx) => ({
+    title: doc ? documentTitle(item.title, doc, total) : item.title,
+    preparedBy: doc?.preparedBy ?? item.prepared_by,
+    reference: doc?.drawingNumber ?? item.drawing_number,
+    revision: doc?.revision ?? item.revision,
+    date: (doc?.documentDate ?? item.document_date) ? formatISODate((doc?.documentDate ?? item.document_date)!) : null,
     bytes: files[idx]?.bytes || null,
     contentType: files[idx]?.contentType || null,
     stamp: item.requires_stamping,

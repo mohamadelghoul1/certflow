@@ -7,8 +7,7 @@ import { ItemStatusProvider, ItemCard, ItemStatusBadge, ItemStatusActions, Appro
 import { ChecklistOrderProvider, MoveButtons } from "@/components/certifier/ChecklistOrder";
 import { EditableChecklistItemHeader } from "@/components/certifier/EditableChecklistItemHeader";
 import { AmendmentsList } from "@/components/certifier/AmendmentsList";
-import { DocumentVersions } from "@/components/certifier/DocumentVersions";
-import { DocumentDetailsForm } from "@/components/certifier/DocumentDetailsForm";
+import { ItemDocuments } from "@/components/certifier/ItemDocuments";
 import { StampPositioner } from "@/components/certifier/StampPositioner";
 import { stampLines } from "@/lib/pdf/stamp";
 import type { StampPreview } from "@/lib/pdf/stampDetails";
@@ -229,11 +228,11 @@ async function ItemRow({
         </div>
 
         <details className="mt-3">
-          <summary className="text-xs text-muted cursor-pointer hover:text-heading">Document details (prepared by, reference no., revision, date)</summary>
-          <DocumentDetailsForm item={item} jobId={jobId} />
+          {/* An item usually holds one document; some are satisfied by
+              two, and each carries its own Schedule 1 details. */}
+          <summary className="text-xs text-muted cursor-pointer hover:text-heading">Documents and details (prepared by, reference no., revision, date)</summary>
+          <ItemDocuments item={item} jobId={jobId} firmId={firmId} />
         </details>
-
-        <DocumentVersions files={item.checklist_item_files || []} currentPath={item.file_path} />
 
         <AmendmentsList itemId={item.id} jobId={jobId} amendments={item.amendments} />
       </ItemCard>

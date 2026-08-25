@@ -260,6 +260,16 @@ export type ChecklistItemFile = {
   uploaded_by_role: "client" | "certifier";
   uploaded_by: string | null;
   created_at: string;
+  // All added by migration 0023, and absent until it has been run: which
+  // document on the item this is, whether it is that document's latest
+  // version, and the Schedule 1 details belonging to it.
+  document_no?: number;
+  is_current?: boolean;
+  label?: string | null;
+  prepared_by?: string | null;
+  drawing_number?: string | null;
+  revision?: string | null;
+  document_date?: string | null;
 };
 
 export type Amendment = {

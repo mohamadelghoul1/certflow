@@ -369,31 +369,108 @@ export async function approveItem(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// A document uploaded on the client's behalf. Without a document number
+// this replaces the item's first document; with one it replaces that
+// document; "new" adds another alongside — an item satisfied by two
+// certificates rather than one.
 export async function certifierUploadItem(formData: FormData) {
   const { userId } = await requireProfile("certifier");
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
   const filePath = String(formData.get("file_path"));
+  const requested = String(formData.get("document_no") || "");
+
   const { data: item } = await supabase.from("checklist_items").select("version").eq("id", itemId).single();
   const version = (item?.version || 0) + 1;
 
-  await supabase.from("checklist_items").update({ file_path: filePath, status: "submitted", version }).eq("id", itemId);
+  const { data: existing } = await supabase.from("checklist_item_files").select("document_no").eq("checklist_item_id", itemId);
+  const highest = Math.max(0, ...((existing || []).map((f) => f.document_no ?? 1) as number[]));
+  const documentNo = requested === "new" ? highest + 1 : Number(requested) || 1;
 
-  // The version history behind the current file, so a document replaced
-  // later can still be produced. Mirrors what client_submit_document
-  // records when the client uploads it themselves — recorded as a
-  // certifier upload, since that is what happened.
+  // The item's own pointer follows the first document, which is what
+  // every screen showing "the" file for an item reads.
+  if (documentNo === 1) await supabase.from("checklist_items").update({ file_path: filePath, status: "submitted", version }).eq("id", itemId);
+  else await supabase.from("checklist_items").update({ status: "submitted", version }).eq("id", itemId);
+
+  // Only the newest upload of this document is in force; the ones before
+  // it stay as its history, so a document replaced later can still be
+  // produced.
+  await supabase.from("checklist_item_files").update({ is_current: false }).eq("checklist_item_id", itemId).eq("document_no", documentNo);
+
   const { error: historyError } = await supabase.from("checklist_item_files").insert({
     checklist_item_id: itemId,
     file_path: filePath,
     version,
+    document_no: documentNo,
+    is_current: true,
     uploaded_by_role: "certifier",
     uploaded_by: userId,
   });
-  // The upload itself has already succeeded; a missing history table
-  // (migration 0021 not yet run) must not make it look like it failed.
-  if (historyError) console.error("could not record the document's version history:", historyError.message);
+  // Retried without the columns migration 0023 adds: PostgREST rejects
+  // the whole insert if any column is unknown, and an upload that has
+  // already succeeded must not look like it failed.
+  if (historyError) {
+    const retry = await supabase.from("checklist_item_files").insert({
+      checklist_item_id: itemId,
+      file_path: filePath,
+      version,
+      uploaded_by_role: "certifier",
+      uploaded_by: userId,
+    });
+    if (retry.error) console.error("could not record the document's version history:", retry.error.message);
+  }
+
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+// The Schedule 1 details belonging to one document on an item. Two
+// certificates under a single item rarely share a preparer, a reference
+// or a date, so each carries its own.
+export async function updateItemDocument(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const fileId = String(formData.get("file_id"));
+  const jobId = String(formData.get("job_id"));
+  const text = (name: string) => String(formData.get(name) || "").trim() || null;
+
+  const { error } = await supabase
+    .from("checklist_item_files")
+    .update({
+      label: text("label"),
+      prepared_by: text("prepared_by"),
+      drawing_number: text("drawing_number"),
+      revision: text("revision"),
+      document_date: text("document_date"),
+    })
+    .eq("id", fileId);
+  if (error) console.error("could not save the document's details:", error.message);
+
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+// Drops one document from an item, with every version of it. The item
+// keeps the rest; removing the last one leaves the item awaiting a
+// document again, which is what it is.
+export async function removeItemDocument(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const itemId = String(formData.get("item_id"));
+  const jobId = String(formData.get("job_id"));
+  const documentNo = Number(formData.get("document_no")) || 1;
+
+  await supabase.from("checklist_item_files").delete().eq("checklist_item_id", itemId).eq("document_no", documentNo);
+
+  // The item's pointer follows the first document, so it has to move when
+  // that document is the one that just went.
+  const { data: remaining } = await supabase
+    .from("checklist_item_files")
+    .select("file_path, document_no, is_current")
+    .eq("checklist_item_id", itemId)
+    .eq("is_current", true)
+    .order("document_no");
+  const first = (remaining || [])[0];
+  await supabase.from("checklist_items").update({ file_path: first?.file_path ?? null }).eq("id", itemId);
 
   revalidatePath(`/jobs/${jobId}`);
 }

@@ -7,8 +7,7 @@ import Link from "next/link";
 import { Download } from "lucide-react";
 import { displayStatus, unresolvedCount, checklistProgress, formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { UploadClientDocument } from "@/components/portal/UploadClientDocument";
-import { DocumentVersions } from "@/components/certifier/DocumentVersions";
+import { ClientItemDocuments } from "@/components/portal/ClientItemDocuments";
 import { BookInspectionForm } from "@/components/portal/BookInspectionForm";
 import type { ChecklistItem, Amendment, ChecklistItemFile, Certifier, Inspection, Defect, OcRecord } from "@/types/db";
 
@@ -200,15 +199,12 @@ async function StageSection({
                     <Download size={14} /> Download blank form
                   </a>
                 )}
-                {item.status !== "approved" && (
-                  <UploadClientDocument itemId={item.id} pathPrefix={`${firmId}/${jobId}/checklist/${item.id}`} hasFile={!!item.file_path} />
-                )}
               </div>
 
-              {/* What has already been sent for this document — so a
-                  client can check which version the certifier is holding
-                  before uploading another. */}
-              <DocumentVersions files={item.checklist_item_files || []} currentPath={item.file_path} />
+              {/* What has already been sent for this item — every document
+                  on it, each with its own history, so a client can check
+                  what the certifier is holding before sending more. */}
+              <ClientItemDocuments item={item} jobId={jobId} firmId={firmId} canUpload={item.status !== "approved"} />
             </div>
           );
         })}
