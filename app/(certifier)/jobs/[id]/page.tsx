@@ -170,7 +170,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
                 pathwayItems={(pathwayChecklist.checklist_items as never[]) || []}
                 certifiers={certifiers || []}
                 modifications={modificationsWithChecklist as never[]}
-                library={libraries[job.pathway]}
+                library={libraries[job.pathway] || []}
                 versions={(pathwayVersions as never[]) || []}
               />
               {/* The s134 notice is about a CDC application being received,

@@ -55,7 +55,9 @@ export async function ChecklistSection({
   // checklists are rendered without it and show no positioner.
   stamp?: StampPreview | null;
 }) {
-  const pickerLibrary = library.map((l) => ({ id: l.id, title: l.title, desc: l.description || "", category: l.category || "Other" }));
+  // Tolerates a missing library outright: a job type without one (PC/OC)
+  // must degrade to an empty picker, never take the whole page down.
+  const pickerLibrary = (library || []).map((l) => ({ id: l.id, title: l.title, desc: l.description || "", category: l.category || "Other" }));
   // The firm's blank forms, by library item id, so a row can offer the
   // form the client is being asked to fill in. Taken from the library this
   // checklist was built from — every item here links to a row in it.
