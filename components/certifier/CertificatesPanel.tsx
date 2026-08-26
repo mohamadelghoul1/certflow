@@ -77,6 +77,10 @@ export async function CertificatesPanel({
                 <td className="py-1.5 pr-4 font-semibold text-heading">Issued by</td>
                 <td className="py-1.5 text-muted">{prior?.issuedBy || "—"}</td>
               </tr>
+              <tr>
+                <td className="py-1.5 pr-4 font-semibold text-heading">Planning Portal reference</td>
+                <td className="py-1.5 text-muted">{prior?.portalRef || "— not yet recorded"}</td>
+              </tr>
             </tbody>
           </table>
         </div>

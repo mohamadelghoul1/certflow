@@ -133,12 +133,19 @@ function extractJobDetails(formData: FormData, pathway: Pathway): JobDetails {
     // another certifier's approval on its documents.
     priorApproval:
       pathway === "PC_OC"
-        ? {
-            type: String(formData.get("priorApprovalType") || "CDC") === "CC" ? ("CC" as const) : ("CDC" as const),
-            number: String(formData.get("priorApprovalNumber") || "").trim(),
-            date: String(formData.get("priorApprovalDate") || ""),
-            issuedBy: String(formData.get("priorApprovalIssuedBy") || "").trim(),
-          }
+        ? (() => {
+            const type = String(formData.get("priorApprovalType") || "CDC") === "CC" ? ("CC" as const) : ("CDC" as const);
+            return {
+              type,
+              number: String(formData.get("priorApprovalNumber") || "").trim(),
+              date: String(formData.get("priorApprovalDate") || ""),
+              issuedBy: String(formData.get("priorApprovalIssuedBy") || "").trim(),
+              // The original certificate's Portal case: CDC series for a
+              // CDC, the CFT series for a CC — same normalisation as a
+              // job's own reference, so a bare number gets its prefix.
+              portalRef: normalizePortalRef(String(formData.get("priorApprovalPortalRef") || ""), type),
+            };
+          })()
         : undefined,
   };
 }

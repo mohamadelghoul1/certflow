@@ -15,7 +15,7 @@ const labelCls = "block text-xs font-semibold text-placeholder mb-1";
 // decides what else is asked for — a CC sits on a development consent,
 // which the OC documents also name, while a CDC is the consent itself.
 
-export type PriorApprovalValue = { type?: "CDC" | "CC"; number?: string; date?: string; issuedBy?: string };
+export type PriorApprovalValue = { type?: "CDC" | "CC"; number?: string; date?: string; issuedBy?: string; portalRef?: string };
 
 export function PriorApprovalFields({
   defaults,
@@ -65,6 +65,18 @@ export function PriorApprovalFields({
       <div>
         <label className={labelCls}>Issued by</label>
         <input name="priorApprovalIssuedBy" defaultValue={defaults?.issuedBy || ""} placeholder="The certifier or council that issued it" className={inputCls} />
+      </div>
+      <div>
+        <label className={labelCls}>NSW Planning Portal reference of the original {type}</label>
+        <input
+          name="priorApprovalPortalRef"
+          defaultValue={defaults?.portalRef || ""}
+          placeholder={type === "CDC" ? "e.g. CDC-331766" : "e.g. CFT-123456"}
+          className={inputCls}
+        />
+        <p className="text-[11px] text-placeholder mt-1">
+          The Portal case the original {type} was lodged under. It links this job to that case — inspections reported to the Portal are filed against it.
+        </p>
       </div>
       {/* A construction certificate is granted under a development
           consent, and the OC names that consent too. A CDC is the consent,

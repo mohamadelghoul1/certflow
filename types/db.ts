@@ -174,6 +174,9 @@ export type JobDetails = {
     // Who issued it — printed on the OC so the council can trace the
     // approval back to its author.
     issuedBy?: string;
+    // The original certificate's own Planning Portal case reference —
+    // the case this job's inspections are reported against.
+    portalRef?: string;
   };
 };
 

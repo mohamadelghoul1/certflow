@@ -189,7 +189,11 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
                 firmId={profile.firm_id}
                 inspections={(inspections as never[]) || []}
                 certifiers={certifiers || []}
-                portalCaseRef={typedJob.details?.certificateDetails?.planningPortalRef || ""}
+                portalCaseRef={
+                  job.pathway === "PC_OC"
+                    ? typedJob.details?.priorApproval?.portalRef || ""
+                    : typedJob.details?.certificateDetails?.planningPortalRef || ""
+                }
               />
           ),
           oc: ocChecklist ? (
