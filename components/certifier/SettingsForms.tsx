@@ -130,6 +130,19 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
             Only clients who still owe documents are emailed, listing exactly what&rsquo;s missing with a link to their portal. Any project can be paused individually from its own page.
           </p>
         </div>
+        <div className="sm:col-span-2 pt-1 border-t border-line">
+          <label className={`${labelCls} mt-2`}>Payment details (printed on every invoice)</label>
+          <textarea
+            name="payment_details"
+            rows={3}
+            defaultValue={firm?.payment_details || ""}
+            placeholder={"Account name: \u2026\nBSB: \u2026    Account number: \u2026\nPlease use the invoice number as the payment reference."}
+            className={inputCls}
+          />
+          <p className="text-[11px] text-muted mt-1">
+            Copied onto each new invoice automatically — an already-issued invoice keeps the details it went out with.
+          </p>
+        </div>
       </div>
       {state?.error && <div className="text-sm text-error">{state.error}</div>}
       <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">

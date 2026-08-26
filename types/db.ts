@@ -19,6 +19,8 @@ export type Firm = {
   // Automatic document chasing. Added by migration 0033.
   document_reminders_enabled?: boolean;
   document_reminder_days?: number;
+  // Bank details printed on invoices. Added by migration 0035.
+  payment_details?: string | null;
   // The firm's own stamp artwork, placed above the drawn stamp on
   // approved documents. Null keeps the drawn stamp on its own.
   stamp_url: string | null;
@@ -131,6 +133,11 @@ export type Invoice = {
   bill_to: string | null;
   reference: string | null;
   notes: string | null;
+  // Copied from the firm at creation so an issued invoice keeps the bank
+  // details it went out with. Added by migration 0035.
+  payment_details?: string | null;
+  stripe_payment_link_id?: string | null;
+  stripe_payment_link_url?: string | null;
   paid_date: string | null;
   created_at: string;
 };

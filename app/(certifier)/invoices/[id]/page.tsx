@@ -7,6 +7,8 @@ import { todayISO } from "@/lib/business";
 import { setInvoiceStatus, deleteInvoice } from "@/lib/actions/invoices";
 import { InvoiceEditForm } from "@/components/certifier/InvoiceEditForm";
 import { EmailInvoiceButton } from "@/components/certifier/EmailInvoiceButton";
+import { CardPaymentButton } from "@/components/certifier/CardPaymentButton";
+import { stripeConfigured } from "@/lib/payments/stripe";
 import { isOverdue } from "@/lib/invoices/invoiceLogic";
 import type { Invoice, InvoiceLine } from "@/types/db";
 
@@ -40,6 +42,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <Link href={`/invoices/${id}/document`} className="px-3.5 py-2 rounded-md border border-line text-sm text-primary font-medium hover:bg-hover">
             View invoice
           </Link>
+          {stripeConfigured() && invoice.status !== "paid" && invoice.status !== "void" && (
+            <CardPaymentButton invoiceId={id} existingUrl={invoice.stripe_payment_link_url || null} />
+          )}
           {invoice.status === "draft" && <EmailInvoiceButton invoiceId={id} />}
           {invoice.status === "draft" && (
             <form action={setInvoiceStatus}>

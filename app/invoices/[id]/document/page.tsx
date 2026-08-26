@@ -137,6 +137,18 @@ export default async function InvoiceDocumentPage({ params }: { params: Promise<
           </div>
         </div>
 
+        {(invoice.payment_details || invoice.stripe_payment_link_url) && (
+          <div className="text-sm mb-6 border border-line rounded-md p-4">
+            <div className="font-semibold mb-1">Payment details</div>
+            {invoice.payment_details && <div className="whitespace-pre-line">{invoice.payment_details}</div>}
+            {invoice.stripe_payment_link_url && (
+              <div className={invoice.payment_details ? "mt-2" : ""}>
+                Pay online by card: <a href={invoice.stripe_payment_link_url} className="text-info underline break-all">{invoice.stripe_payment_link_url}</a>
+              </div>
+            )}
+          </div>
+        )}
+
         {invoice.notes && <div className="text-sm whitespace-pre-line mb-6">{invoice.notes}</div>}
 
         <div className="text-sm mt-6">

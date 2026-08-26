@@ -71,3 +71,38 @@ describe("overdue and the owed totals", () => {
     assert.equal(summary.overdueCount, 1);
   });
 });
+
+// Card payments: the signature gate on the webhook and the cents
+// conversion are the two places a mistake is money.
+import { verifyStripeSignature, amountInCents } from "@/lib/payments/stripe";
+import { createHmac } from "crypto";
+
+describe("card payment plumbing", () => {
+  test("the card amount equals the invoice to the cent", () => {
+    assert.equal(amountInCents(2035.55), 203555);
+    assert.equal(amountInCents(363), 36300);
+    // 19.99 * 100 is 1998.9999999999998 in floating point.
+    assert.equal(amountInCents(19.99), 1999);
+  });
+
+  const secret = "whsec_test";
+  const sign = (payload: string, t: number) => `t=${t},v1=${createHmac("sha256", secret).update(`${t}.${payload}`).digest("hex")}`;
+
+  test("accepts Stripe's own signature and nothing else", () => {
+    const payload = '{"type":"checkout.session.completed"}';
+    const now = 1_700_000_000;
+    assert.equal(verifyStripeSignature(payload, sign(payload, now), secret, now), true);
+    assert.equal(verifyStripeSignature(payload, sign(payload, now), "whsec_other", now), false);
+    assert.equal(verifyStripeSignature('{"tampered":true}', sign(payload, now), secret, now), false);
+    assert.equal(verifyStripeSignature(payload, null, secret, now), false);
+    assert.equal(verifyStripeSignature(payload, "t=1,v1=zz", secret, now), false);
+  });
+
+  // A captured webhook body must not stay replayable forever.
+  test("refuses a signature older than the replay window", () => {
+    const payload = "{}";
+    const then = 1_700_000_000;
+    assert.equal(verifyStripeSignature(payload, sign(payload, then), secret, then + 11 * 60), false);
+    assert.equal(verifyStripeSignature(payload, sign(payload, then), secret, then + 5 * 60), true);
+  });
+});

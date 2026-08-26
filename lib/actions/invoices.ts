@@ -8,6 +8,7 @@ import { todayISO } from "@/lib/business";
 import { sendEmail, emailConfigured } from "@/lib/email";
 import { recordAuditEvent } from "@/lib/audit";
 import { invoiceTotals, invoiceNumberOf, nextInvoiceNumber, formatMoney } from "@/lib/invoices/invoiceLogic";
+import { stripeConfigured, createInvoicePaymentLink } from "@/lib/payments/stripe";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Invoice, InvoiceLine } from "@/types/db";
 
@@ -33,8 +34,15 @@ export async function createInvoice(formData: FormData): Promise<void> {
   const quoteId = String(formData.get("quote_id") || "");
   const jobId = String(formData.get("job_id") || "");
 
+  // The firm's standing bank details, copied onto the invoice so it
+  // keeps forever what it actually went out with. Fetched tolerantly: a
+  // database without migration 0035 simply contributes nothing.
+  const { data: firmRow } = await supabase.from("firms").select("payment_details").eq("id", profile.firm_id).maybeSingle();
+  const firmPaymentDetails = (firmRow as { payment_details?: string | null } | null)?.payment_details || null;
+
   const issueDate = todayISO();
   const invoice: Record<string, unknown> = {
+    payment_details: firmPaymentDetails,
     firm_id: profile.firm_id,
     status: "draft",
     issue_date: issueDate,
@@ -68,7 +76,13 @@ export async function createInvoice(formData: FormData): Promise<void> {
     }
   }
 
-  const { data: row, error } = await supabase.from("invoices").insert(invoice).select("id").single();
+  let { data: row, error } = await supabase.from("invoices").insert(invoice).select("id").single();
+  if (error && (error.code === "PGRST204" || error.code === "42703")) {
+    // Migration 0035 not run yet — create the invoice without the copied
+    // payment details rather than refusing to invoice at all.
+    delete invoice.payment_details;
+    ({ data: row, error } = await supabase.from("invoices").insert(invoice).select("id").single());
+  }
   if (error || !row) return;
   if (feeLines.length > 0) {
     await supabase.from("invoice_lines").insert(feeLines.map((l) => ({ ...l, invoice_id: row.id })));
@@ -90,6 +104,7 @@ export async function updateInvoice(_prev: ActionState, formData: FormData): Pro
       bill_to: String(formData.get("bill_to") || "").trim() || null,
       reference: String(formData.get("reference") || "").trim() || null,
       notes: String(formData.get("notes") || "").trim() || null,
+      payment_details: String(formData.get("payment_details") || "").trim() || null,
       client_id: String(formData.get("client_id") || "") || null,
       updated_at: new Date().toISOString(),
     })
@@ -164,6 +179,42 @@ export async function deleteInvoice(formData: FormData) {
   redirect("/invoices");
 }
 
+// A card-payment link for this invoice, created once on the certifier's
+// click and reused from then on — in the email, and on the printed
+// invoice. Needs the firm's Stripe account connected in Vercel first.
+export async function createCardPaymentLink(_prev: InvoiceEmailState, formData: FormData): Promise<InvoiceEmailState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const invoiceId = String(formData.get("invoice_id"));
+  if (!stripeConfigured()) return { error: "Card payments aren't connected yet (STRIPE_SECRET_KEY in Vercel)." };
+
+  const [{ data: invoice }, { data: lines }] = await Promise.all([
+    supabase.from("invoices").select("*").eq("id", invoiceId).eq("firm_id", profile.firm_id).single(),
+    supabase.from("invoice_lines").select("*").eq("invoice_id", invoiceId).order("sort_order"),
+  ]);
+  if (!invoice) return { error: "Invoice not found." };
+  const typed = invoice as Invoice;
+  if (typed.stripe_payment_link_url) return { success: "This invoice already has its payment link." };
+  const { total } = invoiceTotals((lines || []) as InvoiceLine[]);
+  if (total <= 0) return { error: "Add the fees first — a payment link needs an amount." };
+
+  const link = await createInvoicePaymentLink({
+    invoiceId,
+    invoiceNumber: invoiceNumberOf(typed),
+    reference: typed.reference,
+    totalIncGst: total,
+  });
+  if ("error" in link) return { error: link.error };
+
+  const { error } = await supabase
+    .from("invoices")
+    .update({ stripe_payment_link_id: link.linkId, stripe_payment_link_url: link.url, updated_at: new Date().toISOString() })
+    .eq("id", invoiceId);
+  if (error) return { error: error.code === "PGRST204" || error.code === "42703" ? "Run database update 0035 first (Settings → System check)." : error.message };
+  revalidatePath(`/invoices/${invoiceId}`);
+  return { success: "Card payment link created — it will be included when the invoice is emailed." };
+}
+
 export type InvoiceEmailState = { error?: string; success?: string } | undefined;
 
 // Emails the invoice to its client and marks it sent. The email carries
@@ -201,6 +252,10 @@ export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: F
     `<tr><td style="padding:6px 12px 6px 0">GST (10%)</td><td style="padding:6px 0;text-align:right">${formatMoney(gst)}</td></tr>`,
     `<tr><td style="padding:6px 12px 6px 0;font-weight:bold">Total due</td><td style="padding:6px 0;text-align:right;font-weight:bold">${formatMoney(total)}</td></tr></table>`,
     typed.due_date ? `<p>Payment is due by <strong>${typed.due_date}</strong>.</p>` : "",
+    typed.stripe_payment_link_url
+      ? `<p><a href="${typed.stripe_payment_link_url}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">Pay online by card</a></p>`
+      : "",
+    typed.payment_details ? `<p style="padding:10px 12px;background:#f8fafc;border-radius:6px;white-space:pre-line">${escapeHtml(typed.payment_details)}</p>` : "",
     typed.notes ? `<p>${escapeHtml(typed.notes)}</p>` : "",
     `<p>Kind regards,<br/>${escapeHtml(firm?.name || "")}</p>`,
   ].join("");

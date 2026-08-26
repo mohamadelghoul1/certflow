@@ -6,8 +6,12 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // api/portal-files is excluded outright: it serves documents to the
-  // NSW Planning Portal's downloader, which holds no CertFlow login —
-  // its authority is the sealed token inside the link itself.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/portal-files/|api/eplanning/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // Excluded outright, because their callers hold no CertFlow login and
+  // each carries its own proof instead: api/portal-files and
+  // api/eplanning serve the NSW Planning Portal's downloader (sealed
+  // token in the link / Basic Auth), api/cron is Vercel's scheduler
+  // (CRON_SECRET header), api/stripe is Stripe's webhook (signed
+  // payload). Redirecting any of them to the login page would silently
+  // break the feature behind it.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/portal-files/|api/eplanning/|api/cron/|api/stripe/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

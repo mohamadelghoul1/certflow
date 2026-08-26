@@ -64,8 +64,19 @@ export function InvoiceEditForm({
             <input name="reference" defaultValue={invoice.reference || ""} disabled={locked} placeholder="usually the property address" className={inputCls} />
           </div>
           <div className="sm:col-span-2">
+            <label className={labelCls}>Payment details (printed on the invoice)</label>
+            <textarea
+              name="payment_details"
+              rows={3}
+              defaultValue={invoice.payment_details || ""}
+              disabled={locked}
+              placeholder="filled in from Settings when the invoice is created"
+              className={inputCls}
+            />
+          </div>
+          <div className="sm:col-span-2">
             <label className={labelCls}>Notes (printed on the invoice)</label>
-            <textarea name="notes" rows={2} defaultValue={invoice.notes || ""} disabled={locked} placeholder="e.g. bank details, payment reference" className={inputCls} />
+            <textarea name="notes" rows={2} defaultValue={invoice.notes || ""} disabled={locked} placeholder="anything else the client should read" className={inputCls} />
           </div>
         </div>
         {state?.error && <div className="text-sm text-error">{state.error}</div>}

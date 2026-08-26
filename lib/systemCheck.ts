@@ -135,6 +135,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Tax invoices from quotes and projects, with what's owed on the dashboard.",
       probe: hasTable(supabase, "invoices"),
     },
+    {
+      migration: "0035",
+      label: "Invoice payment details",
+      detail: "The firm's bank details on every invoice, and card-payment links through Stripe.",
+      probe: hasColumn(supabase, "invoices", "payment_details"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));
@@ -167,6 +173,11 @@ export function runEnvChecks(): EnvCheck[] {
       label: "NSW Planning Portal",
       detail: "Set once ePlanning finishes API onboarding — then inspections can be reported from CertFlow.",
       configured: portalConfigured(),
+    },
+    {
+      label: "Card payments",
+      detail: "Stripe, for the Pay-online button on invoices. Both the secret key and the webhook secret are needed.",
+      configured: !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET),
     },
     {
       label: "Reminder schedule",
