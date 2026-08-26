@@ -58,6 +58,16 @@ export function portalInspectionResult(outcome: string, kind: "building" | "work
 // A document as the Portal wants it: not the file itself but a link it
 // downloads from. CertFlow's storage links are signed and short-lived,
 // which suits this — the Portal fetches promptly, and the link then dies.
+//
+// Each call accepts only its own documentType, enforced by the live
+// service though absent from the specification: recording the visit
+// takes "Inspection images" (the photos), and the type for the close-out
+// was learned the same way — from the service's own refusals.
+export const PORTAL_DOC_TYPES = {
+  photos: "Inspection images",
+  report: "Inspection report",
+} as const;
+
 export type PortalDocument = {
   documentName: string;
   documentType: string;
@@ -65,7 +75,7 @@ export type PortalDocument = {
   documentURL: string;
 };
 
-export function portalDocument(fileName: string, signedUrl: string, documentType = "Inspection Report"): PortalDocument {
+export function portalDocument(fileName: string, signedUrl: string, documentType: string): PortalDocument {
   return {
     documentName: fileName,
     documentType,

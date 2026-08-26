@@ -6,6 +6,7 @@ import {
   portalInspectionType,
   portalInspectionResult,
   portalDocument,
+  PORTAL_DOC_TYPES,
   initiateInspectionBody,
   performInspectionBody,
   completeInspectionBody,
@@ -42,7 +43,8 @@ function assertConforms(body: Record<string, unknown>, schema: Schema, where: st
   }
 }
 
-const doc = portalDocument("inspection-report.pdf", "https://example.supabase.co/signed/abc");
+const doc = portalDocument("inspection-report.pdf", "https://example.supabase.co/signed/abc", PORTAL_DOC_TYPES.report);
+const photo = portalDocument("site-photo.jpg", "https://example.supabase.co/signed/photo", PORTAL_DOC_TYPES.photos);
 
 describe("speaking the Portal's language", () => {
   test("every CertFlow standard stage lands on a value the Portal accepts", () => {
@@ -108,12 +110,13 @@ describe("the three calls that report one inspection", () => {
       outcome: "passed_subject_to",
       inspectorName: "Mohamad El Ghoul",
       comments: "Minor sealing gap at the shower hob to be rectified.",
-      documents: [doc],
+      documents: [photo],
       updatedByEmail: "m@example.com",
     });
     assertConforms(body, spec.requests.PerformInspection, "PerformInspection");
     assert.equal(body.inspectionResult, "Building has minor defects but is satisfactory");
-    assert.equal((body.documents as { documentURL: string }[])[0].documentURL, "https://example.supabase.co/signed/abc");
+    // The live service allows only "Inspection images" on the visit record.
+    assert.equal((body.documents as { documentType: string }[])[0].documentType, "Inspection images");
   });
 
   test("closing the inspection out conforms to the specification", () => {

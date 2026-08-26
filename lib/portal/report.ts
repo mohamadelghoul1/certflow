@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { portalConfig } from "@/lib/portal/config";
 import { callPortal, extractChildCaseId } from "@/lib/portal/client";
-import { initiateInspectionBody, performInspectionBody, completeInspectionBody, portalDocument, type PortalDocument } from "@/lib/portal/inspections";
+import { initiateInspectionBody, performInspectionBody, completeInspectionBody, portalDocument, PORTAL_DOC_TYPES, type PortalDocument } from "@/lib/portal/inspections";
 import { recordAuditEvent } from "@/lib/audit";
 import type { Profile } from "@/types/db";
 
@@ -62,15 +62,32 @@ export async function sendInspectionToPortal(
       severity: ok ? "info" : "error",
     });
 
-  // The signed report travels as a link the Portal downloads. An hour of
-  // validity is far beyond what it needs, and the link dies afterwards.
-  const documents: PortalDocument[] = [];
+  // Documents travel as links the Portal downloads. An hour of validity
+  // is far beyond what it needs, and the links die afterwards. Each call
+  // takes its own kind: the visit record carries the site photos, the
+  // close-out carries the signed report.
+  const sign = async (path: string) => {
+    const { data: signed } = await supabase.storage.from("certflow-files").createSignedUrl(path, 3600);
+    return signed?.signedUrl || null;
+  };
+
+  const reportDocuments: PortalDocument[] = [];
   if (inspection.report_pdf_path) {
-    const { data: signed } = await supabase.storage.from("certflow-files").createSignedUrl(inspection.report_pdf_path, 3600);
-    if (signed?.signedUrl) documents.push(portalDocument(`${inspection.title} inspection report.pdf`, signed.signedUrl));
+    const url = await sign(inspection.report_pdf_path);
+    if (url) reportDocuments.push(portalDocument(`${inspection.title} inspection report.pdf`, url, PORTAL_DOC_TYPES.report));
   }
-  if (documents.length === 0) {
+  if (reportDocuments.length === 0) {
     return { ok: false, error: "The signed inspection report could not be attached. Sign the report first — the Portal requires the document." };
+  }
+
+  const photoDocuments: PortalDocument[] = [];
+  const { data: photos } = await supabase.from("inspection_photos").select("file_path").eq("inspection_id", inspection.id);
+  for (const photo of photos || []) {
+    const url = await sign(photo.file_path);
+    if (url) {
+      const name = photo.file_path.split("/").pop() || "photo.jpg";
+      photoDocuments.push(portalDocument(name, url, PORTAL_DOC_TYPES.photos));
+    }
   }
 
   // 1. Open the inspection case — unless the Portal already holds one
@@ -107,7 +124,7 @@ export async function sendInspectionToPortal(
     inspectionDate: inspection.date,
     outcome: inspection.outcome,
     inspectorName,
-    documents,
+    documents: photoDocuments,
     updatedByEmail,
   }));
   await log("PerformInspection", perform.ok, { childCaseId, status: perform.status, response: perform.body.slice(0, 2000) });
@@ -119,7 +136,7 @@ export async function sendInspectionToPortal(
     furtherInspectionRequired: inspection.outcome !== "passed",
     declarations: DECLARATION,
     inspectionResultDeclaration: CC_RESULT_DECLARATION,
-    documents,
+    documents: reportDocuments,
     updatedByEmail,
   }));
   await log("CompleteInspection", complete.ok, { childCaseId, status: complete.status, response: complete.body.slice(0, 2000) });
