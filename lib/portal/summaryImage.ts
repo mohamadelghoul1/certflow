@@ -1,11 +1,11 @@
 import sharp from "sharp";
 
 // The Portal refuses to record a visit without at least one "Inspection
-// images" document. An inspection without photos is common — not every
-// stage needs them — so CertFlow generates one: a clean card stating
-// what the inspection was and how it ended, pointing at the signed
-// report for the detail. Real information in image form, made so the
-// certifier never has to hunt for a file just to satisfy a field.
+// images" document. CertFlow deliberately sends this generated card and
+// nothing else: the firm's site photographs are its own working records
+// and stay on its file, while the government record gets a clean card
+// stating what the inspection was and how it ended, pointing at the
+// signed report for the detail.
 
 function escapeXml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
@@ -30,8 +30,8 @@ export async function buildInspectionSummaryImage(input: {
   <text x="80" y="460" font-family="Helvetica, Arial, sans-serif" font-size="30" fill="#334155">Date of inspection: ${e(input.date)}</text>
   <text x="80" y="515" font-family="Helvetica, Arial, sans-serif" font-size="30" fill="#334155">Carried out by: ${e(input.inspectorName)}</text>
   <text x="80" y="570" font-family="Helvetica, Arial, sans-serif" font-size="30" fill="#334155">Result: ${e(input.outcomeText)}</text>
-  <text x="80" y="690" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#64748b">No site photographs were taken for this inspection.</text>
-  <text x="80" y="730" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#64748b">Refer to the attached signed inspection report for the full record.</text>
+  <text x="80" y="690" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#64748b">Refer to the attached signed inspection report for the full record.</text>
+  <text x="80" y="730" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#64748b">Site photographs, where taken, are retained on the certifier's file.</text>
 </svg>`;
   const png = await sharp(Buffer.from(svg)).png().toBuffer();
   return new Uint8Array(png);

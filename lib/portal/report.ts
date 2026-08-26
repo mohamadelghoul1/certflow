@@ -84,38 +84,28 @@ export async function sendInspectionToPortal(
     return { ok: false, error: "The signed inspection report could not be attached. Sign the report first — the Portal requires the document." };
   }
 
-  const photoDocuments: PortalDocument[] = [];
-  const { data: photos } = await supabase.from("inspection_photos").select("file_path").eq("inspection_id", inspection.id);
-  for (const photo of photos || []) {
-    const url = await sign(photo.file_path);
-    if (url) {
-      const name = photo.file_path.split("/").pop() || "photo.jpg";
-      photoDocuments.push(portalDocument(name, url, PORTAL_DOC_TYPES.photos));
-    }
+  // The Portal refuses a visit record without at least one image.
+  // Deliberately, the firm's site photographs are never sent — they are
+  // its own working records — and the government record always gets the
+  // same generated card: what the inspection was, how it ended, and
+  // where the full record lives.
+  const recordImages: PortalDocument[] = [];
+  const image = await buildInspectionSummaryImage({
+    firmName,
+    address: jobAddress || "",
+    inspectionTitle: inspection.title,
+    date: formatISODate(inspection.date),
+    outcomeText: INSPECTION_OUTCOME_TEXT[inspection.outcome] || inspection.outcome,
+    inspectorName,
+  });
+  const imagePath = `${profile.firm_id}/${jobId}/inspections/${inspection.id}/portal-summary-${Date.now()}.png`;
+  const { error: uploadError } = await supabase.storage.from("certflow-files").upload(imagePath, image, { contentType: "image/png", upsert: false });
+  if (!uploadError) {
+    const url = await sign(imagePath);
+    if (url) recordImages.push(portalDocument("inspection-record.png", url, PORTAL_DOC_TYPES.photos));
   }
-
-  // The Portal refuses a visit record without at least one image, and an
-  // inspection without photos is common. CertFlow generates one — a card
-  // stating what the inspection was and how it ended — so the certifier
-  // never uploads anything by hand just to satisfy the field.
-  if (photoDocuments.length === 0) {
-    const image = await buildInspectionSummaryImage({
-      firmName,
-      address: jobAddress || "",
-      inspectionTitle: inspection.title,
-      date: formatISODate(inspection.date),
-      outcomeText: INSPECTION_OUTCOME_TEXT[inspection.outcome] || inspection.outcome,
-      inspectorName,
-    });
-    const imagePath = `${profile.firm_id}/${jobId}/inspections/${inspection.id}/portal-summary-${Date.now()}.png`;
-    const { error: uploadError } = await supabase.storage.from("certflow-files").upload(imagePath, image, { contentType: "image/png", upsert: false });
-    if (!uploadError) {
-      const url = await sign(imagePath);
-      if (url) photoDocuments.push(portalDocument("inspection-record.png", url, PORTAL_DOC_TYPES.photos));
-    }
-    if (photoDocuments.length === 0) {
-      return { ok: false, error: "The Portal requires an image on the inspection record and one could not be prepared. Add a photo to the inspection and try again." };
-    }
+  if (recordImages.length === 0) {
+    return { ok: false, error: "The Portal requires an image on the inspection record and one could not be prepared. Try again, and tell your developer if it repeats." };
   }
 
   // 1. Open the inspection case — unless the Portal already holds one
@@ -152,7 +142,7 @@ export async function sendInspectionToPortal(
     inspectionDate: inspection.date,
     outcome: inspection.outcome,
     inspectorName,
-    documents: photoDocuments,
+    documents: recordImages,
     updatedByEmail,
   }));
   await log("PerformInspection", perform.ok, { childCaseId, status: perform.status, response: perform.body.slice(0, 2000) });
