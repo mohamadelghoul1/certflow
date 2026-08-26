@@ -116,9 +116,12 @@ export function ReportToPortalButton({
           name="portal_case_id"
           value={caseId}
           onChange={(e) => setCaseId(e.target.value)}
-          placeholder="e.g. the CDC or PCA case number"
+          placeholder="e.g. PCA-123456"
           className="w-full sm:w-80 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
         />
+        <p className="text-[11px] text-placeholder mt-1">
+          Usually your Principal Certifier appointment (PCA) case — that is the open case inspections are filed under. A determined CDC/CC case is closed and cannot take them.
+        </p>
       </div>
 
       {state?.error && <div className="text-xs text-error font-medium">{state.error}</div>}
