@@ -196,9 +196,10 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
                 inspections={(inspections as never[]) || []}
                 certifiers={certifiers || []}
                 portalCaseRef={
-                  job.pathway === "PC_OC"
+                  typedJob.details?.inspectionPortalCase ||
+                  (job.pathway === "PC_OC"
                     ? typedJob.details?.priorApproval?.portalRef || ""
-                    : typedJob.details?.certificateDetails?.planningPortalRef || ""
+                    : typedJob.details?.certificateDetails?.planningPortalRef || "")
                 }
                 submitterEmail={
                   (certifiers || []).find((c) => c.id === profile.certifier_id)?.portal_email || firmPortalEmail || profile.email || ""

@@ -245,6 +245,13 @@ export function DetailsTab({
                 <label className={labelCls}>NSW Planning Portal ref</label>
                 <input name="planningPortalRef" defaultValue={d.certificateDetails?.planningPortalRef || ""} placeholder={portalRefPlaceholder(portalRefKindFor(job.pathway))} className={inputCls} />
               </div>
+              <div className="sm:col-span-2">
+                <label className={labelCls}>Portal case for inspection reporting</label>
+                <input name="inspectionPortalCase" defaultValue={d.inspectionPortalCase || ""} placeholder="e.g. CFT-1007788 or PCA-123456" className={inputCls} />
+                <p className="text-[11px] text-muted mt-1">
+                  The open Portal case this job&rsquo;s inspections are filed against. Recorded once here, it fills itself in every time you press Report to NSW Planning Portal.
+                </p>
+              </div>
             </div>
             <div>
               <label className={labelCls}>BCA / NCC version</label>

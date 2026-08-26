@@ -172,6 +172,10 @@ export type JobDetails = {
   // this firm is appointed as Principal Certifier under and issues the
   // Occupation Certificate against. Left empty on jobs that produce their
   // own certificate, where certificateDetails above holds the equivalent.
+  // The Portal case inspections are reported against — often the CFT
+  // series, sometimes the PCA appointment case. Recorded once so nobody
+  // hunts for it at reporting time.
+  inspectionPortalCase?: string;
   priorApproval?: {
     type?: "CDC" | "CC";
     number?: string;
