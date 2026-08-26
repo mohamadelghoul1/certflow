@@ -271,8 +271,18 @@ describe("a paste with no heading row", () => {
     assert.deepEqual(address, { streetNumber: "27", street: "Mundamatta Street", suburb: "Villawood", state: "NSW", postcode: "2163" });
   });
 
-  test("keeps the case reference for reporting inspections", () => {
-    assert.equal(preview().jobs[0].details.inspectionPortalCase, "CDC-26257");
+  // The reference an export files a job under is the CDC's own
+  // application case. The Portal closes that case on determination and
+  // refuses inspections against it, so using it as the reporting case
+  // would hand every imported job a number certain to be rejected.
+  test("does not mistake the CDC's own case for the one inspections are reported against", () => {
+    const job = preview().jobs[0];
+    assert.equal(job.details.inspectionPortalCase, "");
+    assert.equal(job.details.priorApproval?.portalRef, "CDC-26257", "but it is kept as the original certificate's case");
+    assert.ok(
+      job.warnings.some((w) => /portal case for reporting inspections/i.test(w)),
+      "and the gap is named rather than left to be discovered at the first inspection"
+    );
   });
 
   // A real heading row must still win: inference is the fallback, not

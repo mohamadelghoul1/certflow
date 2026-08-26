@@ -104,6 +104,9 @@ export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []):
     const lotSectionDp = cell("lotSectionDp") || lotAndPlan;
     if (!lotSectionDp) warnings.push(`No ${FIELD_LABELS.lotSectionDp.toLowerCase()}`);
     need(cell("lga"), "lga");
+    if (!cell("portalCase")) {
+      warnings.push("No Portal case for reporting inspections — add it on the project before reporting one");
+    }
 
     const details: JobDetails = {
       projectNumber: cell("projectNumber") || cell("reference"),
@@ -154,9 +157,15 @@ export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []):
         floorAreaNew: "",
       },
       siteArea: "",
-      // The case inspections are reported against, so the Portal panel
-      // fills itself in on an imported job the same as on a new one.
-      inspectionPortalCase: cell("portalCase") || cell("reference"),
+      // The case inspections are reported against — and only ever from a
+      // column that genuinely holds one. The reference an export files a
+      // job under is the CDC's own application case, which the Portal
+      // closes the moment the certificate is determined and then refuses
+      // to accept inspections against ("Cannot perform this action for
+      // closed cases"). Filling this from that reference would give every
+      // imported job a case number certain to be rejected, discovered one
+      // by one at the moment each inspection was reported.
+      inspectionPortalCase: cell("portalCase"),
       certificateDetails: {
         lotSectionDp,
         planningPortalRef: "",
@@ -173,7 +182,9 @@ export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []):
         number: approvalNumber,
         date: cell("approvalDate"),
         issuedBy: cell("approvalIssuedBy"),
-        portalRef: normalizePortalRef(cell("portalCase") || cell("reference"), approvalType),
+        // The original certificate's own Portal case, which is exactly
+        // what that reference is.
+        portalRef: normalizePortalRef(cell("reference") || cell("portalCase"), approvalType),
       },
     };
 
