@@ -147,6 +147,21 @@ export function ReportToPortalButton({
         </p>
       </div>
 
+      <details>
+        <summary className="text-[11px] text-placeholder cursor-pointer hover:text-muted">The Portal already opened this inspection? (from an earlier attempt)</summary>
+        <div className="mt-2">
+          <label className="block text-xs font-semibold text-placeholder mb-1">Inspection case number the Portal already holds</label>
+          <input
+            name="existing_child_case_id"
+            placeholder="the inspection case's own number, from the Portal"
+            className="w-full sm:w-80 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
+          />
+          <p className="text-[11px] text-placeholder mt-1">
+            Only for an inspection a previous attempt already created on the Portal: the visit is recorded onto that case instead of opening a second one.
+          </p>
+        </div>
+      </details>
+
       {state?.error && <div className="text-xs text-error font-medium">{state.error}</div>}
 
       <div className="flex items-center gap-2">

@@ -422,6 +422,7 @@ export async function reportInspectionToPortalLive(_prev: ActionState, formData:
     inspectorName: inspector.name,
     registrationNumber: inspector.registration_no,
     updatedByEmail: portalEmail,
+    existingChildCaseId: String(formData.get("existing_child_case_id") || "").trim() || null,
   });
   if (!outcome.ok) return { error: outcome.error };
 

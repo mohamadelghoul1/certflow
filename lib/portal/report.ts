@@ -35,12 +35,17 @@ export async function sendInspectionToPortal(
     // The Portal requires the email of the registered Portal user making
     // the submission — it rejected the call outright without it.
     updatedByEmail: string;
+    // An inspection case the Portal has already opened — from an earlier
+    // attempt that created it but could not read its number back. When
+    // set, the opening call is skipped and the visit is recorded straight
+    // onto that case, so nothing is duplicated.
+    existingChildCaseId?: string | null;
   }
 ): Promise<PortalSendOutcome> {
   const config = portalConfig();
   if (!config) return { ok: false, error: "The Planning Portal connection is not set up yet — see Settings → System check." };
 
-  const { caseId, jobId, jobAddress, inspection, inspectorName, registrationNumber, updatedByEmail } = input;
+  const { caseId, jobId, jobAddress, inspection, inspectorName, registrationNumber, updatedByEmail, existingChildCaseId } = input;
 
   if (!inspection.date) return { ok: false, error: "The inspection has no date recorded." };
   if (!inspection.outcome || inspection.outcome === "pending") return { ok: false, error: "Record the inspection outcome before reporting it." };
@@ -68,23 +73,31 @@ export async function sendInspectionToPortal(
     return { ok: false, error: "The signed inspection report could not be attached. Sign the report first — the Portal requires the document." };
   }
 
-  // 1. Open the inspection case.
-  const initiate = await callPortal(config, "POST", `/InitiateInspection/${encodeURIComponent(caseId)}`, initiateInspectionBody({
-    certflowTitle: inspection.title,
-    scheduledDate: inspection.date,
-    registrationNumber,
-    updatedByEmail,
-  }));
-  await log("InitiateInspection", initiate.ok, { status: initiate.status, response: initiate.body.slice(0, 2000), responseHeaders: initiate.headers });
-  if (!initiate.ok) return { ok: false, error: portalErrorMessage("open the inspection case", initiate.status, initiate.body) };
+  // 1. Open the inspection case — unless the Portal already holds one
+  // from an earlier attempt, in which case the visit is recorded onto it.
+  let childCaseId: string;
+  if (existingChildCaseId) {
+    childCaseId = existingChildCaseId;
+    await log("InitiateInspection", true, { note: "resuming an inspection case the Portal already opened", childCaseId });
+  } else {
+    const initiate = await callPortal(config, "POST", `/InitiateInspection/${encodeURIComponent(caseId)}`, initiateInspectionBody({
+      certflowTitle: inspection.title,
+      scheduledDate: inspection.date,
+      registrationNumber,
+      updatedByEmail,
+    }));
+    await log("InitiateInspection", initiate.ok, { status: initiate.status, response: initiate.body.slice(0, 2000), responseHeaders: initiate.headers });
+    if (!initiate.ok) return { ok: false, error: portalErrorMessage("open the inspection case", initiate.status, initiate.body) };
 
-  const childCaseId = extractChildCaseId(initiate.body, initiate.headers);
-  if (!childCaseId) {
-    await log("InitiateInspection", false, { status: initiate.status, response: initiate.body.slice(0, 2000), responseHeaders: initiate.headers, reason: "no inspection case id in the response" });
-    return {
-      ok: false,
-      error: `The Portal accepted the request but its answer did not carry the new inspection case number. It said: ${initiate.body.slice(0, 250) || "(empty response)"}`,
-    };
+    const extracted = extractChildCaseId(initiate.body, initiate.headers);
+    if (!extracted) {
+      await log("InitiateInspection", false, { status: initiate.status, response: initiate.body.slice(0, 2000), responseHeaders: initiate.headers, reason: "no inspection case id in the response" });
+      return {
+        ok: false,
+        error: `The Portal opened the inspection but its answer did not carry the new case number, so the visit was not recorded onto it. Find the inspection case's number on the Portal and enter it under "already opened" in this panel — do not press Send again without it, or a second case will be opened. The Portal said: ${initiate.body.slice(0, 250) || "(empty response)"}`,
+      };
+    }
+    childCaseId = extracted;
   }
 
   // 2. Record the visit.
