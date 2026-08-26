@@ -75,7 +75,18 @@ export function ReportToPortalButton({
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-xs font-semibold text-secondary hover:underline">
+      <button
+        type="button"
+        onClick={() => {
+          // Pulled fresh on every open, not once when the page loaded —
+          // a case or email recorded on the Details tab or in Settings a
+          // moment ago must show up here without a page refresh.
+          setCaseId(defaultCaseId);
+          setPortalEmail(summary.submittedBy);
+          setOpen(true);
+        }}
+        className="text-xs font-semibold text-secondary hover:underline"
+      >
         Report to NSW Planning Portal
       </button>
     );
