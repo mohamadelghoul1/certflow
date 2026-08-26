@@ -33,6 +33,9 @@ export async function buildInspectionSummaryImage(input: {
   <text x="80" y="690" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#64748b">Refer to the attached signed inspection report for the full record.</text>
   <text x="80" y="730" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#64748b">Site photographs, where taken, are retained on the certifier's file.</text>
 </svg>`;
-  const png = await sharp(Buffer.from(svg)).png().toBuffer();
-  return new Uint8Array(png);
+  // JPEG rather than PNG: the Portal's document validation is pickier
+  // than its specification, and JPEG is the one image format nothing
+  // government-side ever objects to.
+  const jpeg = await sharp(Buffer.from(svg)).flatten({ background: "#ffffff" }).jpeg({ quality: 90 }).toBuffer();
+  return new Uint8Array(jpeg);
 }

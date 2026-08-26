@@ -167,7 +167,7 @@ describe("reading the inspection case number out of the Portal's answer", () => 
 // every inspection has photographs. The generated stand-in must be a
 // real, readable image carrying the inspection's actual facts.
 describe("the generated inspection record image", () => {
-  test("is a real PNG with sensible dimensions", async () => {
+  test("is a real JPEG with sensible dimensions", async () => {
     const { buildInspectionSummaryImage } = await import("@/lib/portal/summaryImage");
     const sharp = (await import("sharp")).default;
     const bytes = await buildInspectionSummaryImage({
@@ -179,7 +179,8 @@ describe("the generated inspection record image", () => {
       inspectorName: "Mohamad El Ghoul",
     });
     const meta = await sharp(Buffer.from(bytes)).metadata();
-    assert.equal(meta.format, "png");
+    // JPEG on purpose: the Portal's validator refused a PNG outright.
+    assert.equal(meta.format, "jpeg");
     assert.equal(meta.width, 1200);
     assert.equal(meta.height, 800);
   });
@@ -195,6 +196,42 @@ describe("the generated inspection record image", () => {
       outcomeText: "Satisfactory — no issues identified",
       inspectorName: "D'Arcy O'Neill",
     });
-    assert.equal((await sharp(Buffer.from(bytes)).metadata()).format, "png");
+    assert.equal((await sharp(Buffer.from(bytes)).metadata()).format, "jpeg");
+  });
+});
+
+// The links handed to the Portal carry their authority in a sealed token
+// rather than a query string, because the Portal's document validation
+// refused a storage link. The seal has to hold.
+describe("the document links handed to the Portal", () => {
+  test("a token serves exactly the file it names, then expires", async () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "test-secret";
+    const { portalFileToken, verifyPortalFileToken } = await import("@/lib/portal/files");
+    const token = portalFileToken("firm/job/inspections/i1/report.pdf", 60);
+    assert.equal(verifyPortalFileToken(token), "firm/job/inspections/i1/report.pdf");
+
+    const expired = portalFileToken("firm/job/inspections/i1/report.pdf", -1);
+    assert.equal(verifyPortalFileToken(expired), null);
+  });
+
+  test("a tampered token serves nothing", async () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "test-secret";
+    const { portalFileToken, verifyPortalFileToken } = await import("@/lib/portal/files");
+    const token = portalFileToken("firm/job/a.pdf", 60);
+    const [payload] = token.split(".");
+    const other = Buffer.from(JSON.stringify({ p: "firm/job/SOMETHING-ELSE.pdf", e: Math.floor(Date.now() / 1000) + 60 })).toString("base64url");
+    assert.equal(verifyPortalFileToken(`${other}.${token.split(".")[1]}`), null, "someone else's path under my seal");
+    assert.equal(verifyPortalFileToken(`${payload}.AAAA`), null, "a forged seal");
+    assert.equal(verifyPortalFileToken("rubbish"), null);
+  });
+
+  test("the URL ends in the plain filename", async () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "test-secret";
+    process.env.NEXT_PUBLIC_SITE_URL = "https://certflow.example";
+    const { portalFileUrl } = await import("@/lib/portal/files");
+    const url = portalFileUrl("firm/job/x.jpg", "inspection-record.jpg");
+    assert.ok(url.startsWith("https://certflow.example/api/portal-files/"));
+    assert.ok(url.endsWith("/inspection-record.jpg"));
+    assert.ok(!url.includes("?"), "no query string for the Portal's validator to refuse");
   });
 });

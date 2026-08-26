@@ -4,6 +4,7 @@ import { callPortal, extractChildCaseId } from "@/lib/portal/client";
 import { initiateInspectionBody, performInspectionBody, completeInspectionBody, portalDocument, PORTAL_DOC_TYPES, type PortalDocument } from "@/lib/portal/inspections";
 import { recordAuditEvent } from "@/lib/audit";
 import { buildInspectionSummaryImage } from "@/lib/portal/summaryImage";
+import { portalFileUrl } from "@/lib/portal/files";
 import { INSPECTION_OUTCOME_TEXT } from "@/lib/constants";
 import { formatISODate } from "@/lib/business";
 import type { Profile } from "@/types/db";
@@ -66,19 +67,13 @@ export async function sendInspectionToPortal(
       severity: ok ? "info" : "error",
     });
 
-  // Documents travel as links the Portal downloads. An hour of validity
-  // is far beyond what it needs, and the links die afterwards. Each call
-  // takes its own kind: the visit record carries the site photos, the
-  // close-out carries the signed report.
-  const sign = async (path: string) => {
-    const { data: signed } = await supabase.storage.from("certflow-files").createSignedUrl(path, 3600);
-    return signed?.signedUrl || null;
-  };
-
+  // Documents travel as links the Portal downloads — CertFlow's own
+  // clean links, ending in a plain filename, because the Portal's
+  // document validation refused a storage link's long query string. The
+  // filenames are deliberately plain ASCII for the same reason.
   const reportDocuments: PortalDocument[] = [];
   if (inspection.report_pdf_path) {
-    const url = await sign(inspection.report_pdf_path);
-    if (url) reportDocuments.push(portalDocument(`${inspection.title} inspection report.pdf`, url, PORTAL_DOC_TYPES.report));
+    reportDocuments.push(portalDocument("inspection-report.pdf", portalFileUrl(inspection.report_pdf_path, "inspection-report.pdf"), PORTAL_DOC_TYPES.report));
   }
   if (reportDocuments.length === 0) {
     return { ok: false, error: "The signed inspection report could not be attached. Sign the report first — the Portal requires the document." };
@@ -98,11 +93,10 @@ export async function sendInspectionToPortal(
     outcomeText: INSPECTION_OUTCOME_TEXT[inspection.outcome] || inspection.outcome,
     inspectorName,
   });
-  const imagePath = `${profile.firm_id}/${jobId}/inspections/${inspection.id}/portal-summary-${Date.now()}.png`;
-  const { error: uploadError } = await supabase.storage.from("certflow-files").upload(imagePath, image, { contentType: "image/png", upsert: false });
+  const imagePath = `${profile.firm_id}/${jobId}/inspections/${inspection.id}/portal-summary-${Date.now()}.jpg`;
+  const { error: uploadError } = await supabase.storage.from("certflow-files").upload(imagePath, image, { contentType: "image/jpeg", upsert: false });
   if (!uploadError) {
-    const url = await sign(imagePath);
-    if (url) recordImages.push(portalDocument("inspection-record.png", url, PORTAL_DOC_TYPES.photos));
+    recordImages.push(portalDocument("inspection-record.jpg", portalFileUrl(imagePath, "inspection-record.jpg"), PORTAL_DOC_TYPES.photos));
   }
   if (recordImages.length === 0) {
     return { ok: false, error: "The Portal requires an image on the inspection record and one could not be prepared. Try again, and tell your developer if it repeats." };
