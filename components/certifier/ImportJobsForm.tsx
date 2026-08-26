@@ -4,8 +4,8 @@ import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
 import { Check, AlertTriangle, Upload } from "lucide-react";
 import { importJobs, type ImportResult } from "@/lib/actions/importJobs";
-import { parseTable } from "@/lib/import/parseTable";
-import { buildPreview } from "@/lib/import/jobRows";
+import { parsePaste } from "@/lib/import/parseTable";
+import { buildPreview, looksLikeHeadings } from "@/lib/import/jobRows";
 import { FIELD_LABELS, type JobField } from "@/lib/import/jobColumns";
 
 // Moving a firm's existing jobs across from whatever they used before.
@@ -18,17 +18,30 @@ import { FIELD_LABELS, type JobField } from "@/lib/import/jobColumns";
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 
 export function ImportJobsForm({ certifiers }: { certifiers: { id: string; name: string }[] }) {
+  const certifierNames = useMemo(() => certifiers.map((c) => c.name), [certifiers]);
   const [pasted, setPasted] = useState("");
   const [certifierId, setCertifierId] = useState(certifiers[0]?.id || "");
   const [state, formAction, pending] = useActionState<ImportResult | undefined, FormData>(importJobs, undefined);
 
   const preview = useMemo(() => {
-    const table = parseTable(pasted);
-    if (!table) return null;
-    return { headers: table.headers, ...buildPreview(table) };
-  }, [pasted]);
+    const paste = parsePaste(pasted, looksLikeHeadings);
+    if (!paste) return null;
+    return buildPreview(paste, certifierNames);
+  }, [pasted, certifierNames]);
 
   const readyCount = preview?.jobs.filter((job) => job.address).length || 0;
+
+  // One chip per column: its heading where there was one, otherwise its
+  // position, and what CertFlow took it to mean.
+  const columnLabels = useMemo(() => {
+    if (!preview) return [];
+    const width = preview.headers ? preview.headers.length : Math.max(...preview.jobs.map((_, i) => i), 0, ...[0]);
+    const count = preview.headers ? width : Math.max(...Object.values(preview.matched).map((i) => i + 1), 0);
+    return Array.from({ length: count }, (_, i) => ({
+      label: preview.headers ? preview.headers[i] || "(blank)" : `Column ${i + 1}`,
+      field: (Object.keys(preview.matched) as JobField[]).find((key) => preview.matched[key] === i),
+    }));
+  }, [preview]);
 
   if (state?.created !== undefined) {
     return (
@@ -79,19 +92,22 @@ export function ImportJobsForm({ certifiers }: { certifiers: { id: string; name:
         <div className="bg-white rounded-lg border border-line p-5 space-y-4">
           <div>
             <div className="text-sm font-semibold text-primary mb-2">What CertFlow read</div>
+            {preview.inferred && (
+              <p className="text-[11px] text-warning-text mb-2">
+                No heading row, so the columns were read from the values themselves. Check the table below before importing — and if anything is wrong, paste the heading row too and it
+                will be read from that instead.
+              </p>
+            )}
             <div className="flex flex-wrap gap-1.5">
-              {preview.headers.map((heading, i) => {
-                const field = (Object.keys(preview.matched) as JobField[]).find((key) => preview.matched[key] === i);
-                return (
-                  <span
-                    key={i}
-                    className={`px-2 py-1 rounded text-[11px] font-medium border ${field ? "bg-success-bg text-accent border-success/40" : "bg-hover text-placeholder border-line"}`}
-                    title={field ? `Imported as ${FIELD_LABELS[field]}` : "Not imported"}
-                  >
-                    {heading || "(blank)"} {field ? `→ ${FIELD_LABELS[field]}` : "→ not imported"}
-                  </span>
-                );
-              })}
+              {columnLabels.map(({ label, field }, i) => (
+                <span
+                  key={i}
+                  className={`px-2 py-1 rounded text-[11px] font-medium border ${field ? "bg-success-bg text-accent border-success/40" : "bg-hover text-placeholder border-line"}`}
+                  title={field ? `Imported as ${FIELD_LABELS[field]}` : "Not imported"}
+                >
+                  {label} {field ? `→ ${FIELD_LABELS[field]}` : "→ not imported"}
+                </span>
+              ))}
             </div>
             {preview.unmatchedHeadings.length > 0 && (
               <p className="text-[11px] text-placeholder mt-2">

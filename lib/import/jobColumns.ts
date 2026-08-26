@@ -9,6 +9,7 @@
 // called, longest and most specific first.
 
 export type JobField =
+  | "reference"
   | "address"
   | "description"
   | "lotSectionDp"
@@ -25,7 +26,18 @@ export type JobField =
   | "portalCase"
   | "projectNumber"
   | "classification"
-  | "zoning";
+  | "zoning"
+  // Exports commonly split what CertFlow keeps together, so the parts
+  // are recognised in their own right and joined back up on the way in.
+  | "lot"
+  | "plan"
+  | "applicantStreetNumber"
+  | "applicantStreet"
+  | "applicantSuburb"
+  | "applicantState"
+  | "applicantPostcode"
+  | "estimatedCost"
+  | "certifierName";
 
 // Order matters: the first field whose name matches a heading claims it,
 // so the more specific names are listed before the ones that would also
@@ -48,6 +60,16 @@ const NAMES: { field: JobField; label: string; names: string[] }[] = [
   { field: "projectNumber", label: "Project number", names: ["projectnumber", "jobnumber", "jobno", "projectno", "reference", "referencenumber", "ourref", "fileno", "filenumber"] },
   { field: "classification", label: "BCA classification", names: ["classification", "bcaclass", "bcaclassification", "buildingclass", "class", "nccclass"] },
   { field: "zoning", label: "Zoning", names: ["zoning", "zone", "landusezone", "landzoning", "landuse"] },
+  { field: "lot", label: "Lot", names: ["lotnumber", "lotno"] },
+  { field: "plan", label: "Plan", names: ["plan", "dp", "dpnumber", "planno", "depositedplan", "strataplan"] },
+  { field: "applicantStreetNumber", label: "Applicant street number", names: ["streetnumber", "streetno", "housenumber", "unitnumber"] },
+  { field: "applicantStreet", label: "Applicant street", names: ["street", "streetname", "roadname"] },
+  { field: "applicantSuburb", label: "Applicant suburb", names: ["suburb", "town", "locality", "city"] },
+  { field: "applicantState", label: "Applicant state", names: ["state", "stateterritory"] },
+  { field: "applicantPostcode", label: "Applicant postcode", names: ["postcode", "postalcode", "zip"] },
+  { field: "estimatedCost", label: "Estimated cost", names: ["estimatedcost", "cost", "costofworks", "value", "constructionvalue", "estimatedvalue", "contractvalue"] },
+  { field: "certifierName", label: "Certifier", names: ["assignedcertifier", "certifiername", "nominatedcertifier", "principalcertifier"] },
+  { field: "reference", label: "Reference", names: ["ref", "casereference", "applicationnumber", "applicationno"] },
 ];
 
 export const FIELD_LABELS: Record<JobField, string> = NAMES.reduce(

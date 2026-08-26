@@ -68,6 +68,19 @@ export function parseDelimited(text: string, delimiter = detectDelimiter(text)):
   return rows;
 }
 
+// A pasted list may or may not carry its heading row: someone exporting
+// a file brings it, someone copying a few rows out of a screen does not.
+// Refusing the second is refusing the most natural way to try this, so
+// the shape says which it is and the reading adapts.
+export type ParsedPaste = { headers: string[] | null; rows: string[][] };
+
+export function parsePaste(text: string, looksLikeHeadings: (row: string[]) => boolean): ParsedPaste | null {
+  const rows = parseDelimited(text);
+  if (rows.length === 0) return null;
+  if (rows.length >= 2 && looksLikeHeadings(rows[0])) return { headers: rows[0], rows: rows.slice(1) };
+  return { headers: null, rows };
+}
+
 export function parseTable(text: string): Table | null {
   const rows = parseDelimited(text);
   if (rows.length < 2) return null;

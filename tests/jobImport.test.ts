@@ -1,9 +1,9 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { parseDelimited, parseTable, detectDelimiter } from "@/lib/import/parseTable";
+import { parseDelimited, parseTable, parsePaste, detectDelimiter } from "@/lib/import/parseTable";
 import { matchColumns } from "@/lib/import/jobColumns";
 import { splitAddress } from "@/lib/import/address";
-import { buildPreview } from "@/lib/import/jobRows";
+import { buildPreview, looksLikeHeadings } from "@/lib/import/jobRows";
 
 // A certifier moving off another system pastes in a list of every job
 // they hold. A parser that quietly shifts a column by one, or drops a
@@ -141,7 +141,7 @@ describe("turning a row into a project", () => {
   )!;
 
   test("carries every column into the right place", () => {
-    const { jobs } = buildPreview(table);
+    const { jobs } = buildPreview({ headers: table.headers, rows: table.rows });
     assert.equal(jobs.length, 1);
     const job = jobs[0];
     assert.equal(job.address, "21 Coquet Way, Green Valley");
@@ -156,7 +156,7 @@ describe("turning a row into a project", () => {
   // The whole point of the import: these jobs are mid-construction, so
   // the certificate someone else issued is recorded rather than invented.
   test("records the previous certifier's approval, ready for inspections", () => {
-    const { jobs } = buildPreview(table);
+    const { jobs } = buildPreview({ headers: table.headers, rows: table.rows });
     const prior = jobs[0].details.priorApproval;
     assert.equal(prior?.type, "CDC");
     assert.equal(prior?.number, "CDC-26091/01");
@@ -167,14 +167,14 @@ describe("turning a row into a project", () => {
 
   test("recognises a construction certificate when that is what was issued", () => {
     const cc = parseTable("Address,Certificate Type,Certificate Number\n1 Test St,Construction Certificate,CFT-99")!;
-    assert.equal(buildPreview(cc).jobs[0].details.priorApproval?.type, "CC");
+    assert.equal(buildPreview({ headers: cc.headers, rows: cc.rows }).jobs[0].details.priorApproval?.type, "CC");
   });
 
   // A migration that refuses a job over a missing postcode does not
   // happen. The gaps are reported instead.
   test("imports an incomplete row and says what is missing", () => {
     const sparse = parseTable("Address\n9 Bare St")!;
-    const { jobs } = buildPreview(sparse);
+    const { jobs } = buildPreview({ headers: sparse.headers, rows: sparse.rows });
     assert.equal(jobs[0].address, "9 Bare St");
     assert.ok(jobs[0].warnings.some((w) => /scope of works/i.test(w)));
     assert.ok(jobs[0].warnings.some((w) => /cdc \/ cc number/i.test(w)));
@@ -183,12 +183,104 @@ describe("turning a row into a project", () => {
 
   test("names the headings it could not place, so nothing is lost in silence", () => {
     const extra = parseTable("Address,Widget count\n1 Test St,7")!;
-    assert.deepEqual(buildPreview(extra).unmatchedHeadings, ["Widget count"]);
+    assert.deepEqual(buildPreview({ headers: extra.headers, rows: extra.rows }).unmatchedHeadings, ["Widget count"]);
   });
 
   test("numbers the rows the way the spreadsheet does, counting its heading", () => {
     const two = parseTable("Address\n1 First St\n2 Second St")!;
-    const { jobs } = buildPreview(two);
+    const { jobs } = buildPreview({ headers: two.headers, rows: two.rows });
     assert.deepEqual(jobs.map((j) => j.rowNumber), [2, 3]);
+  });
+});
+
+// A certifier's first attempt is to copy a row or two straight out of
+// their old system, which brings no heading row with it. Refusing that
+// paste refuses the most natural way to try this — so the columns are
+// read from the values instead. This is a real row from a real export.
+describe("a paste with no heading row", () => {
+  const realRow = [
+    "CDC-26257",
+    "27 Mundamatta Street, Villawood",
+    "Mohamad El Ghoul",
+    "CDC-26257/01",
+    "4/08/2026 13:38",
+    "Complying Development Certificate",
+    "1a, 10a",
+    "766",
+    "DP36608",
+    "Canterbury-Bankstown Council",
+    "$200,000.00",
+    "Behram Aslam Chattha",
+    "Behram Aslam Chattha",
+    "",
+    "27",
+    "Mundamatta Street",
+    "Villawood",
+    "NSW",
+    "2163",
+  ].join("\t");
+
+  const preview = () => {
+    const paste = parsePaste(realRow, looksLikeHeadings)!;
+    return buildPreview(paste, ["Mohamad El Ghoul"]);
+  };
+
+  test("is read as data rather than refused as headings", () => {
+    const paste = parsePaste(realRow, looksLikeHeadings);
+    assert.ok(paste, "the paste was refused outright");
+    assert.equal(paste!.headers, null, "a row of data was mistaken for headings");
+    assert.equal(paste!.rows.length, 1);
+    assert.equal(preview().inferred, true);
+  });
+
+  test("finds the property address and the scope", () => {
+    const job = preview().jobs[0];
+    assert.equal(job.address, "27 Mundamatta Street, Villawood");
+  });
+
+  test("finds the certificate, its date and its type", () => {
+    const { priorApproval } = preview().jobs[0].details;
+    assert.equal(priorApproval?.number, "CDC-26257/01");
+    assert.equal(priorApproval?.type, "CDC");
+    assert.equal(priorApproval?.date, "4/08/2026 13:38");
+  });
+
+  // Lot and plan arrive as two columns and print as one line.
+  test("joins the lot and the plan", () => {
+    assert.equal(preview().jobs[0].details.certificateDetails?.lotSectionDp, "766 / DP36608");
+  });
+
+  test("finds the council, the classification and the cost", () => {
+    const details = preview().jobs[0].details;
+    assert.equal(details.council?.lga, "Canterbury-Bankstown Council");
+    assert.deepEqual(details.proposal?.classifications, ["1a", "10a"]);
+    assert.equal(details.proposal?.estimatedCost, "200000");
+  });
+
+  // Three columns hold a person's name. The firm's own certifier is
+  // known by name, so the applicant and owner are the other two.
+  test("tells the certifier apart from the applicant and the owner", () => {
+    const details = preview().jobs[0].details;
+    assert.equal(details.contact?.nameOrCompany, "Behram Aslam Chattha");
+    assert.equal(details.owner?.name, "Behram Aslam Chattha");
+    assert.notEqual(details.contact?.nameOrCompany, "Mohamad El Ghoul", "the certifier was taken for the applicant");
+  });
+
+  test("assembles the applicant's address from its separate columns", () => {
+    const address = preview().jobs[0].details.applicantAddress;
+    assert.deepEqual(address, { streetNumber: "27", street: "Mundamatta Street", suburb: "Villawood", state: "NSW", postcode: "2163" });
+  });
+
+  test("keeps the case reference for reporting inspections", () => {
+    assert.equal(preview().jobs[0].details.inspectionPortalCase, "CDC-26257");
+  });
+
+  // A real heading row must still win: inference is the fallback, not
+  // the preference.
+  test("a heading row is still read as headings", () => {
+    const withHeadings = ["Site Address\tCouncil", "1 Test St\tLiverpool"].join("\n");
+    const paste = parsePaste(withHeadings, looksLikeHeadings)!;
+    assert.deepEqual(paste.headers, ["Site Address", "Council"]);
+    assert.equal(buildPreview(paste).inferred, false);
   });
 });

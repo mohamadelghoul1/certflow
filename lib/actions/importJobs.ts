@@ -3,8 +3,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { parseTable } from "@/lib/import/parseTable";
-import { buildPreview } from "@/lib/import/jobRows";
+import { parsePaste } from "@/lib/import/parseTable";
+import { buildPreview, looksLikeHeadings } from "@/lib/import/jobRows";
 import { setUpJob } from "@/lib/jobSetup";
 import { recordAuditEvent } from "@/lib/audit";
 import { defaultCriticalStageInspections } from "@/lib/constants";
@@ -28,10 +28,13 @@ export async function importJobs(_prev: ImportResult | undefined, formData: Form
   const certifierId = String(formData.get("assigned_certifier_id") || "") || null;
   if (!certifierId) return { error: "Choose which certifier these projects belong to." };
 
-  const table = parseTable(pasted);
-  if (!table) return { error: "That does not look like a spreadsheet — paste the heading row and at least one project." };
+  const paste = parsePaste(pasted, looksLikeHeadings);
+  if (!paste) return { error: "Nothing was pasted — copy your projects from the other system and paste them in." };
 
-  const { jobs } = buildPreview(table);
+  // The firm's own certifiers, so a column of their names is not taken
+  // for the applicant's when the paste carries no headings.
+  const { data: certifiers } = await supabase.from("certifiers").select("name").eq("firm_id", profile.firm_id);
+  const { jobs } = buildPreview(paste, (certifiers || []).map((c) => c.name || ""));
   const wanted = jobs.filter((job) => job.address);
   if (wanted.length === 0) return { error: "None of those rows carry a property address." };
 

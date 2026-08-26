@@ -1,6 +1,7 @@
 import { splitAddress } from "@/lib/import/address";
 import { matchColumns, FIELD_LABELS, type JobField } from "@/lib/import/jobColumns";
-import type { Table } from "@/lib/import/parseTable";
+import { inferColumns } from "@/lib/import/inferColumns";
+import type { ParsedPaste } from "@/lib/import/parseTable";
 import type { JobDetails } from "@/types/db";
 import { normalizePortalRef } from "@/lib/business";
 
@@ -30,7 +31,19 @@ export type ImportPreview = {
   matched: Partial<Record<JobField, number>>;
   unmatchedHeadings: string[];
   jobs: ImportedJob[];
+  // True when the paste carried no heading row and the columns were read
+  // from the values instead — worth saying, because it is a reading the
+  // certifier should check rather than assume.
+  inferred: boolean;
+  headers: string[] | null;
 };
+
+// A row is a heading row when enough of it matches names CertFlow knows.
+// Two is deliberately low: a spreadsheet with only "Address" and "Scope"
+// as recognisable headings is still a heading row.
+export function looksLikeHeadings(row: string[]): boolean {
+  return Object.keys(matchColumns(row)).length >= 2;
+}
 
 function classificationsFrom(text: string): string[] {
   // "1a", "Class 1a", "1a, 10a" and "Class 1a & 10b" all mean the same
@@ -44,12 +57,13 @@ function approvalTypeFrom(text: string, approvalNumber: string): "CDC" | "CC" {
   return "CDC";
 }
 
-export function buildPreview(table: Table): ImportPreview {
-  const matched = matchColumns(table.headers);
+export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []): ImportPreview {
+  const inferred = paste.headers === null;
+  const matched = inferred ? inferColumns(paste.rows, certifierNames) : matchColumns(paste.headers!);
   const claimed = new Set(Object.values(matched));
-  const unmatchedHeadings = table.headers.filter((heading, i) => heading.trim() !== "" && !claimed.has(i));
+  const unmatchedHeadings = (paste.headers || []).filter((heading, i) => heading.trim() !== "" && !claimed.has(i));
 
-  const jobs = table.rows.map((row, index) => {
+  const jobs = paste.rows.map((row, index) => {
     const cell = (field: JobField): string => {
       const at = matched[field];
       return at === undefined ? "" : (row[at] || "").trim();
@@ -65,19 +79,34 @@ export function buildPreview(table: Table): ImportPreview {
     const description = cell("description") || "Building works";
     if (!cell("description")) warnings.push("No scope of works — set to “Building works”");
 
+    // An export either keeps the applicant's address as one line or
+    // splits it into its parts. Both arrive here; the split parts win,
+    // because they need no interpreting.
     const applicantLine = cell("applicantAddress");
-    const applicant = splitAddress(applicantLine);
-    if (applicantLine && !applicant.suburb) warnings.push("Applicant address could not be split — check it on the job");
+    const fromLine = splitAddress(applicantLine);
+    const applicant = {
+      streetNumber: cell("applicantStreetNumber") || fromLine.streetNumber,
+      street: cell("applicantStreet") || fromLine.street,
+      suburb: cell("applicantSuburb") || fromLine.suburb,
+      state: cell("applicantState") || fromLine.state,
+      postcode: cell("applicantPostcode") || fromLine.postcode,
+    };
+    if (applicantLine && !fromLine.suburb && !cell("applicantSuburb")) warnings.push("Applicant address could not be split — check it on the job");
+
+    // Lot and plan are often separate columns; the certificate prints
+    // them as one line.
+    const lotAndPlan = [cell("lot"), cell("plan")].filter(Boolean).join(" / ");
 
     const approvalNumber = need(cell("approvalNumber"), "approvalNumber");
     const approvalType = approvalTypeFrom(cell("approvalType"), approvalNumber);
     const classifications = classificationsFrom(cell("classification"));
     if (classifications.length === 0) warnings.push("No BCA classification");
-    need(cell("lotSectionDp"), "lotSectionDp");
+    const lotSectionDp = cell("lotSectionDp") || lotAndPlan;
+    if (!lotSectionDp) warnings.push(`No ${FIELD_LABELS.lotSectionDp.toLowerCase()}`);
     need(cell("lga"), "lga");
 
     const details: JobDetails = {
-      projectNumber: cell("projectNumber"),
+      projectNumber: cell("projectNumber") || cell("reference"),
       zoning: cell("zoning"),
       bcaVersion: "",
       bcaVolumes: [],
@@ -116,7 +145,7 @@ export function buildPreview(table: Table): ImportPreview {
         dwellingsExisting: "",
         dwellingsDemolished: "",
         dwellingsNew: "",
-        estimatedCost: "",
+        estimatedCost: cell("estimatedCost").replace(/[$,]/g, "").replace(/\.00$/, ""),
         storeysAbove: "",
         storeysBelow: "",
         storeysTotal: "",
@@ -127,9 +156,9 @@ export function buildPreview(table: Table): ImportPreview {
       siteArea: "",
       // The case inspections are reported against, so the Portal panel
       // fills itself in on an imported job the same as on a new one.
-      inspectionPortalCase: cell("portalCase"),
+      inspectionPortalCase: cell("portalCase") || cell("reference"),
       certificateDetails: {
-        lotSectionDp: cell("lotSectionDp"),
+        lotSectionDp,
         planningPortalRef: "",
         relevantInstrument: "",
         relevantPartOfCode: "",
@@ -144,12 +173,12 @@ export function buildPreview(table: Table): ImportPreview {
         number: approvalNumber,
         date: cell("approvalDate"),
         issuedBy: cell("approvalIssuedBy"),
-        portalRef: normalizePortalRef(cell("portalCase"), approvalType),
+        portalRef: normalizePortalRef(cell("portalCase") || cell("reference"), approvalType),
       },
     };
 
     return { rowNumber: index + 2, address, description, details, warnings };
   });
 
-  return { matched, unmatchedHeadings, jobs };
+  return { matched, unmatchedHeadings, jobs, inferred, headers: paste.headers };
 }
