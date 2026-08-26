@@ -1,0 +1,76 @@
+openapi: 3.0.1
+info:
+  title: Resend Application
+  description: "# Authentication    \n\nPlease use the subscription key provided by\
+    \ the Department to access the APIs.\n"
+  contact: {}
+  version: v1
+servers:
+- url: https://api-uat.apps1.nsw.gov.au/planning/EventMgmt/v1
+paths:
+  /GetCaseInfo/{CaseID}:
+    get:
+      summary: GetCaseInfo
+      description: This operation enables council or Private Certifier's to request
+        ePlanning to resend the respective digital service details from the Planning
+        Portal to their IT system.
+      operationId: GetCaseInfo
+      parameters:
+      - name: CaseID
+        in: path
+        description: A fully qualified application number or case id
+        required: true
+        schema:
+          type: string
+      - name: OrganisationID
+        in: header
+        description: Organisation name to indicate where the request is  originated
+          from.
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: ePlanning will send the event payload.
+          content: {}
+        400:
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+components:
+  schemas:
+    Error:
+      required:
+      - errorCode
+      - statusCode
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 404
+        message:
+          type: string
+          example: Internal Server error 19876
+        activityId:
+          type: string
+          example: 00000011-0ab-xy00-0000-500000000000
+        errorCode:
+          type: string
+          example: DPE_TMS01
+        errorDetails:
+          type: string
+          example: Inner Exceptions, Stack Trace, etc
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api-key
+      in: header

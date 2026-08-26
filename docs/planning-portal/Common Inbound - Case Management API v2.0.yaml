@@ -1,0 +1,521 @@
+swagger: '2.0'
+info:
+  description: Case Management Inbound API.
+  version: 'v2'
+  title: 'Case Management Inbound API'
+host: 'api.apps1.nsw.gov.au'
+basePath: '/planning/CaseMgmt/v2'
+tags:
+  - name: Case Management Inbound
+schemes:
+  - https
+paths:
+  '/Return/{CaseID}':
+    put:
+      summary: Return
+      description: This operation transfers the council's/certifier's decision to return the Digital Service from the council's/Certifier's IT system to the Online Digital Service. This operation does not apply to Post consent certificates, Complying Development Certificate, Development Application and Certificate Registration. This is a functionality which supports upcoming releases for new Digital Services APIs. 
+      consumes:
+        - application/json
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          type: string
+        - name: OrganisationID
+          in: header
+          description: The council LGA name or Private Certifier Organisation name to indicate where the request is originated from.
+          required: true
+          type: string
+        - name: IdempotencyID
+          in: header
+          description: >-
+            Unique Id for this request. Allows the API to respond in an
+            idempotent way if it has already been called with these parameters
+            and prevents duplicate processing. Typically a UUID such as
+            "63a9ba30-7a4b-4fac-b343-d1f05cf089f1"
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Return'
+      responses:
+        '200':
+          description: Case returned
+        '400':
+          description: Invalid request supplied
+          schema:
+            $ref: '#/definitions/Error'
+        '404':
+          description: Case not found or locked by another user
+          schema:
+            $ref: '#/definitions/Error'
+  '/Reassign/{CaseID}':
+    put:
+      summary: Reassign
+      description: This operation transfers the council's reassigning of the case to another officer from the council's IT system to the Online Digital Service.
+      consumes:
+        - application/json
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          type: string
+        - name: OrganisationID
+          in: header
+          description: The council LGA name or Private Certifier Organisation name to indicate where the request is originated from.
+          required: true
+          type: string
+        - name: IdempotencyID
+          in: header
+          description: >-
+            Unique Id for this request. Allows the API to respond in an
+            idempotent way if it has already been called with these parameters
+            and prevents duplicate processing. Typically a UUID such as
+            "63a9ba30-7a4b-4fac-b343-d1f05cf089f1"
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Reassign'
+      responses:
+        '200':
+          description: Case reassigned
+        '400':
+          description: Invalid request supplied
+          schema:
+            $ref: '#/definitions/Error'
+        '404':
+          description: Case not found or locked by another user
+          schema:
+            $ref: '#/definitions/Error'
+  '/ProvideAddInfo/{CaseID}':
+    post:
+      summary: ProvideAddInfo
+      description: This operation transfers additional information uploaded by the certifier from their IT system to the Online Digital Services. This operation is Applicable to Certificate Registration Service and Referral cases.
+      operationId: ProvideAddInfo
+      produces:
+        - application/json
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          type: string
+        - name: OrganisationID
+          in: header
+          description: Private Certifier Organisation Name to indicate where the request is originated from in CR . For Referral, the certifier Organisation who has initiated referral case(LGAName for Council and Organisation for private certifier)
+          required: true
+          type: string
+        - in: body
+          name: body
+          description: body
+          required: true
+          schema:
+              $ref: '#/definitions/ProvideAddInfo'
+      responses:
+        200:  
+          description: Additional Information Provided
+          headers: {}
+          schema:
+           $ref: '#/definitions/ProvideAddInfoResponse'
+          
+        400:
+          description: Invalid request supplied
+          schema: {}
+        404:
+          description: Case not found or locked by another user
+          schema: {}    
+  '/Withdraw/{CaseID}':
+    put:
+      summary: Withdraw
+      description: This operation transfers the council's decision to withdraw the Digital Service from the council's IT system to the Online Digital Services.
+      consumes:
+        - application/json
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          type: string
+        - name: OrganisationID
+          in: header
+          description: The council LGA name or Private Certifier Organisation name to indicate where the request is originated from.
+          required: true
+          type: string
+        - name: IdempotencyID
+          in: header
+          description: >-
+            Unique Id for this request. Allows the API to respond in an
+            idempotent way if it has already been called with these parameters
+            and prevents duplicate processing. Typically a UUID such as
+            "63a9ba30-7a4b-4fac-b343-d1f05cf089f1"
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Withdraw'
+      responses:
+        '200':
+          description: Case withdrawn
+        '400':
+          description: Invalid request supplied
+          schema:
+            $ref: '#/definitions/Error'
+        '404':
+          description: Case not found or locked by another user
+          schema:
+            $ref: '#/definitions/Error'
+  '/ReqAddInfo/{CaseID}':
+    post:
+      summary: ReqAddInfo
+      description: This operation enables the council to request the applicant to upload additional information to the Online Digital service from the council IT system.
+      consumes:
+        - application/json
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          type: string
+        - name: OrganisationID
+          in: header
+          description: The council LGA name or Private Certifier Organisation name to indicate where the request is originated from.
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ReqAddInfo'
+      responses:
+        '200':
+          description: Request created
+          schema:
+            $ref: '#/definitions/ReqAddInfoResponse'
+        '400':
+          description: Invalid request supplied
+          schema:
+            $ref: '#/definitions/Error'
+        '404':
+          description: Case not found or locked by another user
+          schema:
+            $ref: '#/definitions/Error'
+  '/CloseAICase/{CaseID}':
+        put:
+          description: 
+            This operation transfers the council's decision to complete the AI case of a digital service from the council's IT system to the Online system for digital services.
+
+          summary: CloseAICase
+         
+          operationId: put-CloseAICase-caseid
+          deprecated: false
+          produces:
+          - application/json
+          consumes:
+          - application/json
+          parameters:
+          - name: CaseID
+            in: path
+            required: true
+            type: string
+            description: A fully qualified Portal application number
+          - name: OrganisationID
+            in: header
+            required: true
+            type: string
+            description: The council LGA name or Private Certifier Organisation name to indicate where the request is originated from.
+          - name: IdempotencyID
+            in: header
+            required: true
+            type: string
+            description: Unique Id for this request. Allows the API to respond in an idempotent way if it has already been called with these parameters and prevents duplicate processing. Typically a UUID such as "63a9ba30-7a4b-4fac-b343-d1f05cf089f1"
+          - name: body
+            in: body
+            required: true
+            description: Information request object
+            schema:
+              $ref: '#/definitions/CloseAICase'
+          responses:
+            200:
+              description: Case closed successfully
+              headers: {}
+            400:
+              description: Invalid request supplied
+              schema:
+                $ref: '#/definitions/Error'
+            404:
+              description: Case not found or locked by another user
+              schema:
+                $ref: '#/definitions/Error'  
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: api-key
+    in: header
+definitions:
+  CloseAICase:
+        title: CloseAICase
+        type: object
+        properties:
+          childCaseID:
+            type: string
+            example: 'AI-XXXX'
+          updatedByEmail:
+            type: string
+            maxLength: 250
+            description: User must be registered in the planning portal
+            example: john.smith@gmail.com
+        required:
+        - updatedByEmail 
+  DocResponse:
+    title: DocResponse
+    type: object
+    properties:
+      documentName:
+        description: DocumentName which was uploaded as part of respective API opeartion
+        example: test.docx
+        type: string
+      documentType:
+        description: Type of Document under which repsective document was uploaded
+        type: string
+      eplanningDocId:
+        description: DocId of the respective document which was uploaded
+        type: string
+      externalOrgDocURL:
+        description: URL of the document which was uploaded
+        type: string      
+        
+  Return:
+    type: object
+    required:
+    - returnDate
+    - returnReasons
+    - returnReasonDescriptionForOther
+    - updatedByEmail
+    properties:
+      returnDate:
+        type: string
+        format: date
+        description: Date of return
+      returnReasons:
+        type: array
+        items:
+            $ref: '#/definitions/returnReason'
+      returnReasonDescriptionForOther:
+        type: string
+        maxLength: 512
+        description: Detailed reason the council is returning the application, required only when return reason was selected as Other.
+      updatedByEmail:
+        type: string
+        maxLength: 250
+        description: User must be registered in the planning portal
+        example: john.smith@gmail.com
+  Reassign:
+    type: object
+    description: Person this case is assigned to
+    required:
+    - assignee
+    - updatedByEmail
+    properties:
+      assignee:
+        $ref: '#/definitions/Person'
+      updatedByEmail:
+        type: string
+        maxLength: 250
+        description: User must be registered in the planning portal
+        example: john.smith@gmail.com      
+  Withdraw:
+    type: object
+    required:
+    - withdrawalDate
+    - updatedByEmail
+    properties:
+      withdrawalDate:
+        type: string
+        description: Date on which case is withdrawn
+        format: date
+      withdrawalReason:
+        type: string
+        description: The reason as to why the case is withdrawn
+        maxLength: 512
+      Documents:
+        type: array
+        items:
+          $ref: '#/definitions/DownloadableDocument'      
+      updatedByEmail:
+        type: string
+        maxLength: 250
+        description: User must be registered in the planning portal
+        example: john.smith@gmail.com      
+  ReqAddInfo:
+    type: object
+    required:
+    - requestDetails
+    - updatedByEmail
+    properties:
+      requestDetails:
+        type: string
+        description: Short description of request
+        maxLength: 512
+      Documents:
+        type: array
+        items:
+          $ref: '#/definitions/DownloadableDocument'
+      updatedByEmail:
+        type: string
+        maxLength: 250
+        description: User must be registered in the planning portal
+        example: john.smith@gmail.com       
+  Person: 
+    type: object
+    properties:
+        person: 
+            $ref: '#/definitions/PersonBody'
+  returnReason:
+    type: string
+    description : Reason for returning this digital service
+    enum:
+          - Incomplete
+          - Poor Quality
+          - Payment Not Received
+          - Other    
+  ProvideAddInfo:
+      required:
+        - provideDetails
+        - updatedByEmail
+      type: object
+      properties:
+        provideDetails:
+          maxLength: 512
+          type: string
+          description: description of response, required when certifier is providing additional information
+        childCaseID:
+          type: string
+          description: Required only if responding to an existing AI case id for RFI
+        Documents:
+          type: array
+          items:
+            $ref: '#/definitions/DownloadableDocument'
+        updatedByEmail:
+          type: string
+          maxLength: 250
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com  
+  PersonBody:
+    type: object
+    required:
+    - firstName
+    - surname
+    - emailAddress
+    - contactNumber
+    properties:
+      firstName:
+        type: string
+        maxLength: 20
+        example: John
+      otherName:
+        type: string
+        example: Darren
+      surname:
+        type: string
+        maxLength: 20
+        example: Smith
+      emailAddress:
+        type: string
+        maxLength: 250
+        description: User must be registered in the planning portal
+        example: john.smith@gmail.com
+      contactNumber:
+        type: string
+        minLength: 8
+        maxLength: 10
+        pattern: '^[0-9]+$'
+  DownloadableDocument:
+    type: object
+    required:
+    - documentName
+    - documentType
+    - uploadedDateTime
+    - documentURL
+    properties:
+      documentName:
+        type: string
+        maxLength: 150
+      documentType:
+        type: string
+        maxLength: 100
+      uploadedDateTime:
+        type: string
+        format: date-time
+      documentURL:
+        type: string
+        format: uri
+        maxLength: 500
+        description: URL of the document to be downloaded
+  Error:
+    type: object
+    required:
+    - statusCode
+    - errorCode
+    properties:
+      statusCode:
+        type: integer
+        example: 404
+      message:
+        type: string
+        example: Internal Server error 19876
+      activityId:
+        type: string
+        example: 00000011-0ab-xy00-0000-500000000000
+      errorCode:
+        type: string
+        example: DPE_TMS01
+      errorDetails:
+        type: string
+        example: Inner Exceptions, Stack Trace, etc
+        
+  ProvideAddInfoResponse:
+    type: object
+    properties:
+      statusCode:
+        type: integer
+        example: 200
+      message:
+        type: string
+        example: "Additional Information Provided"
+      activityId:
+        type: string
+      Documents:
+        type: array
+        description: Attached documents with eplanningDocIds.
+        items:
+          $ref: '#/definitions/DocResponse'
+          
+  ReqAddInfoResponse:
+    type: object
+    properties:
+      statusCode:
+        type: integer
+        example: 200
+      message:
+        type: string
+        example: "Request created"
+      caseID:
+        type: string
+        description: Case ID of the additional information request.
+        example: "AI-XXXX"
+      activityId:
+        type: string
+      Documents:
+        type: array
+        description: Attached documents with eplanningDocIds.
+        items:
+          $ref: '#/definitions/DocResponse'        

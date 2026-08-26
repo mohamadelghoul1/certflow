@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isUnknownColumn } from "@/lib/softDelete";
 import { emailConfigured } from "@/lib/email";
+import { portalConfigured } from "@/lib/portal/config";
 
 // Whether this database has actually had each migration run against it.
 //
@@ -131,6 +132,11 @@ export function runEnvChecks(): EnvCheck[] {
       label: "OneDrive backup",
       detail: "Needed before a firm can connect its OneDrive.",
       configured: !!(process.env.ONEDRIVE_CLIENT_ID && process.env.ONEDRIVE_CLIENT_SECRET),
+    },
+    {
+      label: "NSW Planning Portal",
+      detail: "Set once ePlanning finishes API onboarding — then inspections can be reported from CertFlow.",
+      configured: portalConfigured(),
     },
   ];
 }

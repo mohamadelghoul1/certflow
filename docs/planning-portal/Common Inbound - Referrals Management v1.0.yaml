@@ -1,0 +1,209 @@
+openapi: 3.0.1
+info:
+  title: Referrals Management
+  description: "# Authentication    \n\nPlease use the subscription key provided by\
+    \ the Department to access the APIs.\n"
+  contact: {}
+  version: v1
+servers:
+- url: https://api.apps1.nsw.gov.au/planning/ReferralMgmt/v1
+paths:
+  /CreateRef/{CaseID}:
+    post:
+      summary: CreateRef
+      description: "This operation transfers the Referrals application created by\
+        \ the applicant/Certifer from the   \nthe Post Consent Service.   \n"
+      operationId: CreateRef
+      parameters:
+      - name: CaseID
+        in: path
+        description: A fully qualified application number or case id
+        required: true
+        schema:
+          type: string
+      - name: OrganisationID
+        in: header
+        description: The council LGA name or Private Certifier or Agency Organisation
+          name to indicate where the request is originated from.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRef'
+        required: true
+      responses:
+        200:
+          description: Case Submitted by Applicant
+          content: {}
+        400:
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+components:
+  schemas:
+    Error:
+      title: Error
+      required:
+      - errorCode
+      - statusCode
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          format: int32
+          example: 404
+        message:
+          type: string
+          example: Internal Server error 19876
+        activityId:
+          type: string
+          example: 00000011-0ab-xy00-0000-500000000000
+        errorCode:
+          type: string
+          example: DPE_TMS01
+        errorDetails:
+          type: string
+          example: Inner Exceptions, Stack Trace, etc
+    PersonBody:
+      title: PersonBody
+      required:
+      - emailAddress
+      - firstName
+      - surname
+      type: object
+      properties:
+        firstName:
+          maxLength: 20
+          type: string
+          example: John
+        surname:
+          maxLength: 20
+          type: string
+          example: Smith
+        emailAddress:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+        contactNumber:
+          maxLength: 10
+          minLength: 8
+          pattern: ^[0-9]+$
+          type: string
+    DownloadableDocument:
+      title: DownloadableDocument
+      required:
+      - documentName
+      - documentType
+      - documentURL
+      - uploadedDateTime
+      type: object
+      properties:
+        documentName:
+          maxLength: 150
+          type: string
+          description: documentName has to be appended with file extension
+          example: test.docx
+        documentType:
+          maxLength: 100
+          type: string
+        uploadedDateTime:
+          type: string
+          format: date-time
+        documentURL:
+          maxLength: 500
+          type: string
+          description: URL of the document to be downloaded
+    UpdatedBy:
+      title: UpdatedBy
+      type: object
+      properties:
+        person:
+          $ref: '#/components/schemas/PersonBody'
+    CreateRef:
+      required:
+      - updatedByEmail
+      type: object
+      properties:
+        updateReason:
+          maxLength: 1500
+          type: string
+          description: Please enter reason/s for adding new referral/s and/or uploading
+            documents.
+        agencyList:
+          type: array
+          description: Holds the agency name.
+          items:
+            $ref: '#/components/schemas/agencyList'
+        Documents:
+          type: array
+          description: Upload the documents if required as it is an optional field.
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        updatedByEmail:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+    referralRequiredDocType:
+      type: string
+      enum:
+      - Land Title Instruments
+      - Compliance Certificate
+      - Boundary Approvals
+      - Other
+    agencyList:
+      type: object
+      required:
+      - agencyName
+      - reasonForReferral
+      properties:
+        agencyName:
+          type: string
+          description: Provide the agency name from which you need the decision.
+          enum:
+          - Ausgrid
+          - City of Sydney (Heritage Act delegation)
+          - Crown Lands
+          - Endeavour Energy
+          - Essential Energy
+          - Hunter Water Corporation
+          - Jemena Gas Networks (NSW) Ltd
+          - National Parks and Wildlife Services (NPWS)
+          - Rail Infrastructure Corporation (Sydney Trains)
+          - Roads and Maritime Service
+          - Sydney Water Corporation
+          - Transgrid Services Pty Limited
+          - WaterNSW
+          - Other Agency
+        otherAgencyName:
+          type: string
+          description: Holds the other agency name, applicable only when agencyName=="other
+            Agency".
+        agencyReferenceNumber:
+          type: string
+          description: Holds the agency reference number and it's an optional field.
+        reasonForReferral:
+          maxLength: 512
+          type: string
+          description: Please clearly explain why this referral is being made.
+        requiredDocumentType:
+          type: array
+          description: Holds the list of required documents for each agency name.
+          items:
+            $ref: '#/components/schemas/referralRequiredDocType'
+      description: Holds the fields of agency.

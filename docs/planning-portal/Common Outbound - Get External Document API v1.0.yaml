@@ -1,0 +1,67 @@
+swagger: '2.0'
+info:
+  description: ePlanning to External Orginasation - Get External Document
+  version: v1
+  title: 'Get External Document API'
+tags:
+  - name: External Documents
+schemes:
+  - https
+paths:
+  '/Documents/{DocID}':
+    get:
+      summary: Documents
+      description: Download a document attached to an application or a certificate from external organisation’s IT system
+      produces:
+        - application/*
+      parameters:
+        - name: OrganisationID
+          in: header
+          description: Used by the API gateway to route the request to the outisde (council or private certifier) API endpoint
+          required: true
+          type: string
+        - name: DocID
+          in: path
+          description: The unique ID of the document to download
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Returns the file as a binary download
+          schema:
+            type: file
+        '400':
+          description: Invalid request supplied
+          schema:
+            $ref: '#/definitions/Error'
+        '404':
+          description: Document not found
+          schema:
+            $ref: '#/definitions/Error'            
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: api-key
+    in: header
+definitions:
+  Error:
+    type: object
+    required:
+    - statusCode
+    - errorCode
+    properties:
+      statusCode:
+        type: integer
+        example: 404
+      message:
+        type: string
+        example: Internal Server error 19876
+      activityId:
+        type: string
+        example: 00000011-0ab-xy00-0000-500000000000
+      errorCode:
+        type: string
+        example: DPE_TMS01
+      errorDetails:
+        type: string
+        example: Inner Exceptions, Stack Trace, etc

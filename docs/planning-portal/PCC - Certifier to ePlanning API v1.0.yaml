@@ -1,0 +1,1426 @@
+﻿openapi: 3.0.1
+info:
+  title: PCC - Certifier to ePlanning API
+  description: "# Authentication    \n\nPlease use the subscription key provided by\
+    \ the Department to access the APIs.\n"
+  contact: {}
+  version: v1
+servers:
+- url: https://api.apps1.nsw.gov.au/planning/PCCMgmt/Certifiers/v1
+paths:
+  /AcceptReturn/{CaseID}:
+    put:
+      summary: AcceptReturn
+      description: This operation transfers the certifier's decision regarding acceptance, declination, or return of the Post Consent Certificate case from the certifier's IT system to the Online PCC Service.
+      operationId: put-acceptreturn-caseid
+      parameters:
+      - name: CaseID
+        in: path
+        description: A fully qualified application number or case id
+        required: true
+        schema:
+          type: string
+      - name: OrganisationID
+        in: header
+        description: The council LGA name or Private Certifier Organisation name to
+          indicate where the request is originated from.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/acceptReturn'
+        required: true
+      responses:
+        200:
+          description: Case Accepted Successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        400:
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /Assessment/{CaseID}:
+    put:
+      summary: Assessment
+      description: This operation transfers the certifier's assessment information
+        for Occupation, Construction and Sub-divisio certificate on the Post-consent
+        Certificate case from the certifier's IT system to the Online Post-consent
+        Certificate Service.
+      operationId: put-assessment-caseid
+      parameters:
+      - name: CaseID
+        in: path
+        description: A fully qualified application number or case id
+        required: true
+        schema:
+          type: string
+      - name: OrganisationID
+        in: header
+        description: The council LGA name or Private Certifier Organisation name to
+          indicate where the request is originated from.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/assessment'
+        required: true
+      responses:
+        200:
+          description: Assessment Created sucessfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        400:
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /ReportFireSafetyIssue/{CaseID}:
+    put:
+      summary: ReportFireSafetyIssue
+      description: This operation transfers the notification details of the significant
+        fire safety issues reported to the councils on the Post-consent Certificate
+        case from the certifier's IT system to the Online Post-consent Certificate
+        Service. This section extends to a council that is a certifier or principal
+        certifier.
+      operationId: put-ReportFireSafetyIssue-caseid
+      parameters:
+      - name: CaseID
+        in: path
+        description: A fully qualified application number or case id
+        required: true
+        schema:
+          type: string
+      - name: OrganisationID
+        in: header
+        description: The council LGA name or Private Certifier Organisation name to
+          indicate where the request is originated from.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FireSafetyIssue'
+        required: true
+      responses:
+        200:
+          description: Performed Report significant fire safety issue.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        400:
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /InitiateInspection/{CaseID}:
+    post:
+      summary: InitiateInspection
+      description: This operation transfers the certifier's initial inspection information
+        on the Post-consent Certificate case from the certifier's IT system to the
+        Online Post-consent Certificate Service. This will not be applicable for subdivision
+        work certificate
+      operationId: post-initiateinspection-caseid
+      parameters:
+      - name: CaseID
+        in: path
+        description: A fully qualified application number or case id
+        required: true
+        schema:
+          type: string
+      - name: organisationID
+        in: header
+        description: The council LGA name or Private Certifier Organisation name to
+          indicate where the request is originated from.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/initiateInspection'
+        required: true
+      responses:
+        200:
+          description: CaseID--XXX created Sucessfully.
+          content: {}
+        400:
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /PerformInspection/{CaseID}:
+    put:
+      summary: PerformInspection
+      description: This operation transfers the certifier's inspection information
+        at the assessment stage from the certifier's IT system to the Online Post-consent
+        Certificate Service.
+      operationId: put-performinspection-Caseid
+      parameters:
+      - name: CaseID
+        in: path
+        description: A fully qualified application number or case id
+        required: true
+        schema:
+          type: string
+      - name: OrganisationID
+        in: header
+        description: The council LGA name or Private Certifier Organisation name to
+          indicate where the request is originated from.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/performInspection'
+        required: true
+      responses:
+        200:
+          description: Case Performed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        400:
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /MissedInspection/{CaseID}:
+    put:
+      summary: MissedInspection
+      description: 'This operation transfers the certifier''s Missed inspection information
+        on the Post-consent Certificate case from the certifier''s IT system.By performing this operation, the certifier consents to all declarations associated with recording the missed inspection details. Please refer to the ReferenceData API for the latest declaration information. This
+        operation represents the missed action from UI and is not applicable for SWC. '
+      operationId: put-Missedinspection-Caseid
+      parameters:
+      - name: CaseID
+        in: path
+        description: A fully qualified application number or case id
+        required: true
+        schema:
+          type: string
+      - name: OrganisationID
+        in: header
+        description: The council LGA name or Private Certifier Organisation name to
+          indicate where the request is originated from.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MissedInspection'
+        required: true
+      responses:
+        200:
+          description: Inspection Completed successfully
+          content: {}
+        400:
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /CompleteInspection/{CaseID}:
+    put:
+      summary: CompleteInspection
+      description: This operation transfers the certifier's inspection completion
+        information on the Post-consent Certificate case from the certifier's IT system
+        to the Online Post-consent Certificate Service.
+      operationId: put-completeinspection-Caseid
+      parameters:
+      - name: CaseID
+        in: path
+        description: A fully qualified application number or case id
+        required: true
+        schema:
+          type: string
+      - name: OrganisationID
+        in: header
+        description: The council LGA name or Private Certifier Organisation name to
+          indicate where the request is originated from.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/completeInspection'
+        required: true
+      responses:
+        200:
+          description: Case Completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        400:
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /Determine/{CaseID}:
+    put:
+      summary: Determine
+      description: This operation transfers the certifier's Determination decision
+        for Occupation, Construction, PC Appointment, Subdivision works & Sub-division certificate
+        on the Post-consent Certificate case from the certifier's IT system to the
+        Online Post-consent Certificate Service.Certifiers will be unable to approve the certificates if the linked parent cases ( DA/StateDA/CDC) are still in progress and have not yet been determined. They will also be unable to approve certificates if there are outstanding Housing and Productivity payments. The only exception is for Principal Certifying Authority (PCA).
+      operationId: put-determination-caseid
+      parameters:
+      - name: CaseID
+        in: path
+        description: A fully qualified application number or case id
+        required: true
+        schema:
+          type: string
+      - name: OrganisationID
+        in: header
+        description: The council LGA name or Private Certifier Organisation name to
+          indicate where the request is originated from.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Determination'
+        required: true
+      responses:
+        200:
+          description: Case Determined Sucessfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetermineResponse'
+        400:
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /NotifyCriticalStageInspection/{CaseID}:
+    put:
+      summary: NotifyCriticalStageInspection
+      description: This operation is to notify the applicant of the critical stage
+        inspections via the Portal so that the applicant can be informed.
+      operationId: put-NotifyCriticalStageInspection-caseid
+      parameters:
+      - name: CaseID
+        in: path
+        description: A fully qualified application number or case id
+        required: true
+        schema:
+          type: string
+      - name: OrganisationID
+        in: header
+        description: The council LGA name or Private Certifier Organisation name to
+          indicate where the request is originated from.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotifyCriticalStageInspection'
+        required: true
+      responses:
+        200:
+          description: NotifyCriticalStageInspection was Successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        400:
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /IssueBASIXCompletionReceipt/{CaseID}:
+    put:
+      summary: IssueBASIXCompletionReceipt
+      description: This operation facilitates the certifier in issuing a BASIX completion receipt before the issuance of the Occupation Certificate (OC). This is specifically designed for the process of obtaining an Occupation Certificate and is intended to be carried out before the assessment operation.
+      operationId: put-IssueBASIXCompletionReceipt-caseid
+      parameters:
+      - name: CaseID
+        in: path
+        description: A fully qualified application number or case id
+        required: true
+        schema:
+          type: string
+      - name: OrganisationID
+        in: header
+        description: The council LGA name or Private Certifier Organisation name to
+          indicate where the request is originated from.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueBASIXCompletionReceipt'
+        required: true
+      responses:
+        200:
+          description: BASIX Completion Receipt Issued Sucessfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueBASIXCompletionReceiptResponse'
+        400:
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+        404:
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Person:
+      required:
+      - familyName
+      - firstName
+      type: object
+      properties:
+        firstName:
+          maxLength: 20
+          type: string
+        otherName:
+          maxLength: 20
+          type: string
+        familyName:
+          maxLength: 20
+          type: string
+        contactNumber:
+          maxLength: 10
+          minLength: 8
+          pattern: ^[0-9]+$
+          type: string
+        email:
+          maxLength: 250
+          type: string
+          format: email
+    Error:
+      required:
+      - errorCode
+      - statusCode
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 404
+        message:
+          type: string
+          example: Internal Server error 19876
+        activityId:
+          type: string
+          example: 00000011-0ab-xy00-0000-500000000000
+        errorCode:
+          type: string
+          example: DPE_TMS01
+        errorDetails:
+          type: string
+          example: Inner Exceptions, Stack Trace, etc
+    Error400:
+      required:
+      - errorCode
+      - statusCode
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: Bad Request
+        activityId:
+          type: string
+          example: 00000011-0ab-xy00-0000-500000000000
+        errorCode:
+          type: string
+          example: DPE_TMS01
+        errorDetails:
+          type: string
+          example: Inner Exceptions, Stack Trace, etc
+    PersonBody:
+      required:
+      - emailAddress
+      - firstName
+      - surname
+      type: object
+      properties:
+        firstName:
+          maxLength: 20
+          type: string
+          example: John
+        surname:
+          maxLength: 20
+          type: string
+          example: Smith
+        emailAddress:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+        contactNumber:
+          maxLength: 10
+          minLength: 8
+          pattern: ^[0-9]+$
+          type: string
+    DownloadableDocument:
+      required:
+      - documentName
+      - documentType
+      - documentURL
+      - uploadedDateTime
+      type: object
+      properties:
+        documentName:
+          maxLength: 150
+          type: string
+          description: document name has to be appended with file extension
+          example: test.docx
+        documentType:
+          maxLength: 100
+          type: string
+        uploadedDateTime:
+          type: string
+          format: date-time
+        documentURL:
+          maxLength: 500
+          type: string
+          description: URL of the document to be downloaded
+          format: uri
+    UpdatedBy:
+      type: object
+      properties:
+        person:
+          $ref: '#/components/schemas/PersonBody'
+    completeInspection:
+      required:
+      - childCaseID
+      - declarations
+      - documents
+      - inspectionResultDeclaration
+      - isfurtherInspectionrequired
+      - issueInspectionResultSheet
+      type: object
+      properties:
+        childCaseID:
+          type: string
+          description: Used to hold the child case ID (Inspection case) to perform
+            Complete Inspection action.
+        issueInspectionResultSheet:
+          type: boolean
+          description: This is to indicate if the inspection sheet can be issued.
+        isfurtherInspectionrequired:
+          type: boolean
+          description: This is to indicate if any further inspection is required.
+        declarations:
+          type: string
+          description: required for Principal Certifier appointment,Occupation certificate,Subdivision
+            certificate, Declaration for inspection result. Not applicable for Construction
+            certificate. One of the below mentioned values must be selected for declarations
+            1. I confirm that I have inspected the site subject of this application
+          example: Refer to description for values
+        inspectionResultDeclaration:
+          type: string
+          description: Declaration for inspection result. Required field for Construction
+            Certificate type. One of the below mentioned values must be selected for
+            inspectionResultDeclaration 1. I confirm that I have inspected the site
+            subject of this application and existing works on the site are appropriately
+            reflected in the construction certificate plans. 2. I confirm I have inspected
+            the site subject of this application and there are site features which
+            requires the construction certificate plans to be amended.
+          example: Refer to description for values
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        updatedByEmail:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+    initiateInspection:
+      required:
+      - registrationNumber
+      - inspectionType
+      type: object
+      properties:
+        dateOfInspection:
+          type: string
+          description: This indicates the date on which inspection is scheduled.This field is available  only for Principal Certifier appointment and Occupation certificate .
+          format: date
+        description:
+          maxLength: 512
+          type: string
+          description: This indicates the description of inspection, required for for Principal Certifier
+            appointment and Occupation certificate Optional for Subdivision certificate
+            and Construction Certificate. This will not be applicable for subdivision
+            work certificate
+        registrationNumber:
+          maxLength: 100
+          type: string
+          description: This indicates the Registration number associated. This is a mandatory
+            field and required only for Principal Certifier appointment and Occupation
+            certificate, Subdivision certificate and Construction Certificate and
+            not for SWC.
+        inspectionType:
+          type: array
+          description: This indicates the type of inspection. Required for all types of certificates.
+          items:
+            $ref: '#/components/schemas/inspectionType'
+        updatedByEmail:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+    PCCdeclarations:
+      type: string
+      description: PCC declarations are replaced with the confirmation text that reads
+        ' By submitting this page and uploading the relevant documentation, I confirm
+        that all documents have been signed by an appropriately qualified person and
+        that all relevant legislative and regulatory requirements have been considered
+        and adhered to as attested to by the signatory on the certificate.'This attribute
+        will soon become obsolete. Required only when we select application status
+        as approved but for Subdivision certificate if refused also mandatory.This
+        field required for Subdivision certificate, Construction certificate and Occupation
+        certificate s. (For Principal Certifier appointment Occupation certificate-
+        Declarations four to ten are applicable for Principal Certifier appointment-Occupation
+        certificate. Declaration four and six are required for Principal Certifier
+        appointment-Occupation certificate). (For Principal Certifier appointment-Subdivision
+        certificate Required, select all item as part of declaration if applicationStatus
+        is selected as 'Yes, proceed to subdivision certificate' and select '11th'
+        and '6th' if applicationStatus is selected as 'No, further works are required'.).This
+        is an obsolete attribute.
+    Determination:
+      required:
+      - accreditationNumber
+      - registeredCertifierState
+      - applicationDecision
+      - documents
+      type: object
+      properties:
+        isFurtherInspectionRequired:
+          type: boolean
+          description: Check for "Is further inspection required" and this field is
+            required and applicable only for Principal Certifier appointment.
+        ownersConsentProvided:
+          type: string
+          description:  This is to track whether written evidence of the owner's consent has been provided. Applicable only for Subdivision Certificates (SC) when 'developmentSiteOwner' is not 'I am the sole owner of the development site'.
+           Example values are as below. 1. Yes 2. No 
+           Please refer to the reference data API for the latest values.
+        registerCertificate:
+          type: string
+          description: This is applicable for private certifiers only and not applicable
+            for councils. When the value 'Yes' is given, a related inprogress Certificate
+            Registration case will be created. When 'No' value is given, Certificate
+            Registration case will not be created. This is not applicable for PCA.
+            Defaulted to 'No'. 1. No 2. Yes
+        applicationDecision:
+          type: string
+          description: This indicates whether the certificate is approved or refused. Required
+            field for Subdivision certificate,Occupation certificate and Construction
+            . 1st and 2nd are applicable for Construction certificate, Subdivision
+            certificate ,Occupation certificate while 3rd to 5th are applicable for
+            Principal Certifier appointment-Occupation certificate, Principal Certifier
+            appointment-Subdivision certificate. One of the below mentioned values
+            must be selected. 1. Approved 2. Refused 3. Yes, proceed
+            to subdivision certificate 4. Yes, proceed to occupation certificate 5.
+            No, further works are required
+          example: Refer to description for values
+        housingAndProductivityContributions:
+          type: array
+          description: This indicates the stages for the certificate that is being sought for staged developments. This is applicable when Housing and Productivity contributions have been identified for the certificates. Stages can be supplied whenever the certifier is required to amend stages supplied by the applicant. If the information is not available during submission, the certifier must input this information. This is not applicable for PCA. Below values can be used to capture stages. 
+                 1.Stage 1,
+                 2.Stage 2,
+                 3.Stage 3, 
+                 4.Stage 4, 
+                 5.Stage 5
+          items: 
+            $ref: '#/components/schemas/Stage'  
+        subType:
+          type: string
+          description: Required when we select the application status as approved
+            only and this field used to select the type of certificate. the first
+            two fields in the options are for Occupation certificate and next two
+            are for the Construction certificate type and Subdivision work certififcate
+            type. This option is not available for Subdivision certificate type. One
+            of the below mentioned values must be selected for subType. 1. Occupation
+            Certificate for part of the development 2. Occupation Certificate for
+            the full development 3. Partial construction certificate 4. Full construction
+            certificate
+          example: Refer to description for values
+        comments:
+          type: string
+          description: This indicates the determination related comments. Is an optional for Subdivision certificate, Occupation certificate.
+            Is applicable for Occupation certificate when applicationDecision is 'Refused'
+            and not available for PCA certificate and Construction certificate.
+        determinationDate:
+          type: string
+          description: This indicates the date of determination, this field is required for Construction certificate, Occupation certificate and Principal Certifier appointment  and
+            optional field for Subdivision certificate.
+          format: date
+        numOfBedrooms:
+          type: array
+          description: Applicable when determinationOutcome is 'Approved' . This is applicable for Occupation certificate.
+          items:
+            $ref: '#/components/schemas/NumberofBedrooms'
+        categoryOfDevelopment:
+          type: array
+          description: Applicable when determinationOutcome is 'Approved'. This is applicable for Occupation certificate.
+          items:
+            $ref: '#/components/schemas/AddcategoryOfDevelopment'
+        roomType:
+          type: array
+          description: This is to track the room types as part of development statistics. This is applicable for PCC-OC when determinationOutcome is 'Approved' and for development types - Hostel, Co-living House, Boarding house, Medium Density Housing, Attached dwelling, Dual occupancy, Manor house, Multi-dwelling housing,Multi-dwelling housing (terraces),Semi-detached dwelling. 
+          items:
+            $ref: '#/components/schemas/RoomTypes'
+        declarations:
+          type: array
+          description: PCC declarations are replaced with the confirmation text that
+            reads ' By submitting this page and uploading the relevant documentation,
+            I confirm that all documents have been signed by an appropriately qualified
+            person and that all relevant legislative and regulatory requirements have
+            been considered and adhered to as attested to by the signatory on the
+            certificate.This is an obsolete attribute.
+          items:
+            $ref: '#/components/schemas/PCCdeclarations'
+        certifiersFullName:
+            type: string
+            maxLength: 50
+            description: Certifiers full name, Optional field for Subdivision certificate and required field for Construction certificate, Principal Certifier appointment and Occupation certificates. Validation will be ignored, as there is a validation done on the Certifiers accreditationNumber for CC & OC for private and principal certifier.
+        certifierCategory:
+            type: string
+            description: This indicates the category of the certifiers. This is required for private certifiers and not councils. This is applicable for CC and OC certificates only. One of the below values are expected to be supplied.     
+                 1. Individual registered certifier under the Building and Development Certificates 2018 
+                 2. Registered body corporate under the Building and Development Certificates 2018
+              Individual registered certifier value will be defaulted for private certifiers to support existing API users. 
+        RBCnumber:
+            type: string
+            description: This indicates Registered body corporate number. This is required only when certifierCategory is selected as 'Registered body corporate under the Building and Development Certificates 2018'. Registration number can be checked in the link -  https://applications.fairtrading.nsw.gov.au/bdcregister/    
+        accreditationNumber:
+          type: string
+          description: This field refers to the certifier's registration number. This is to track the BDC registration number that is applicable for NSW certifiers (OR) AMR registration number (e.g. AMR-123456) that's applicable for interstate certifiers. This field is mandatory for all certificate types. 
+        registeredCertifierState:
+          type: string
+          description: This is to track the state of the registered certifier. This field is relevant to Constuction certificates and Occupation Certificates only. NSW state is enabled as the default selection for the Council and the private certifiers.   
+            1. Yes, in NSW
+            2. Yes, in another state
+          example: Refer to description for values
+        registrationStateorTerritoryName:
+          type: string
+          description: This is to track the Registration state or territory. This is required when registeredCertifierState is "Yes, in another state"
+            1. Victoria
+            2. South Australia
+            3. Western Australia
+            4. Tasmania
+            5. Northern Territory
+            6. Australian Capital Territory
+          example: Refer to description for values
+        interStateLicenseNumber:
+          type: string
+          description: This is to track the Interstate license number. This is required when registeredCertifierState is "Yes, in another state"
+          
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        DANumber:
+          type: string
+          description: Development Application (DA) number that the consent authority has provided and applicable only for  Construction certificate,
+            Occupation certificate & Subdivision certificate  when application is
+            selected DA during Post consent certificate case was created.
+        CDCNumber:
+          type: string
+          description: Complying Development Certificate number that consent authority has provided and applicable only for Occupation certificate
+            & Subdivision certificate  when application is selected CDC during Post
+            consent certificate.
+        updatedByEmail:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+    FireSafetyIssue:
+      required:
+      - fireSafetyIssueAwarenessDate
+      - updatedByEmail
+      type: object
+      properties:
+        fireSafetyIssueAwarenessDate:
+          type: string
+          description: This field is to capture the date on which the certifier became
+            aware of the firesafety issue. This is captured in accordance with Section
+            60 of the Environmental Planning and Assessment (Development Certification
+            and Fire Safety) Regulation 2021, a certifier must notify the relevant
+            council of significant fire safety issues within two days of becoming
+            aware of them.
+          format: date
+        descOfAffectedBuildingParts:
+          type: string
+          description: This is to capture which part/s of the building are affected
+            by this firesafety issue. Documents could be provided if relevant.
+        descOfFireSafetyIssue:
+          type: string
+          description: This is to capture the description of the fire safety issue.
+            Document can be provided if relevant.
+        documents:
+          type: array
+          description: Upload the documents if required as it is an optional field.
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        updatedByEmail:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+    MissedInspection:
+      required:
+      - childCaseID
+      - missedInspectionDeclaration
+      - missedInspectionParticulars
+      - missedInspectionReliedEvidence
+      - missedInspectionUnavoidableCircumstances
+      - updatedByEmail
+      type: object
+      properties:
+        childCaseID:
+          type: string
+          description: Inspection case Id linked to the PCC (Post Consent Certificate)
+            case.
+        missedInspectionParticulars:
+          maxLength: 200
+          type: string
+          description: This is to track the particulars of the inspection that was
+            missed.
+        missedInspectionUnavoidableCircumstances:
+          maxLength: 200
+          type: string
+          description: This is to track the response of the Certifier for the question'
+            What circumstances does the principal certifier consider were unavoidable
+            that caused the inspection to be missed?'
+        missedInspectionReliedEvidence:
+          maxLength: 200
+          type: string
+          description: This is to tracke the response of the Certifier for the question'What
+            documentary evidence was relied on to satisfy the Principal Certifier
+            that the work that would have been the subject of the missed inspection
+            was satisfactory?
+        missedInspectionDeclaration:
+          type: array
+          description: By performing this operation, the certifier consents to all declarations associated with recording the missed inspection details. Please refer to the ReferenceData API for the latest declaration information. 
+          items:
+            $ref: '#/components/schemas/MissedInspectionDeclaration'
+        Documents:
+          type: array
+          description: Upload the documents if required as it is an optional field.
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        updatedByEmail:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+    MissedInspectionDeclaration:
+      title: MissedInspectionDeclaration
+      type: string
+      description: required only for CC,SC PCA,OC . 1. I confirm the work that would
+        have been the subject of the missed inspection is satisfactory.
+      example: Refer to description for values
+    NotifyCriticalStageInspection:
+      required:
+      - documents
+      - updatedByEmail
+      type: object
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        updatedByEmail:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+    assessment:
+      required:
+      - bcaPerformanceReq
+      - certificatePayments
+      - consistentDevConsent
+      - opDevConsentIssued
+      - relevantConditionsComplied
+      - scRequiredConditionsMet
+      type: object
+      properties:
+        opDevConsentIssued:
+          type: boolean
+          description: This indicates if the operative development consent has been issued in relation to the proposed development.Has an operative development consent been issued in relation
+            to the proposed development,required only for Construction certificate
+        lapseDate:
+          type: string
+          description: This indicates the lapse date of the consent. Optional field for both Subdivision
+            certificate and Construction certificate.Not applicable at Occupation
+            certificate.
+          format: date
+        relevantConditionsComplied:
+          type: string
+          description: This indicates if all of the relevant conditions of consent have been complied with. Required field for Construction certificate ,Occupation certificate
+            and Subdivision certificate . One of the below mentioned values must be
+            selected for relevantConditionsComplied 1. Yes 2. No 3. Not applicable
+          example: Refer to description for values
+        bcaPerformanceReq:
+          type: boolean
+          description: This indicates if the proposed development meets the performance requirements of the BCA. Required field only Construction certificate not available
+            for Subdivision certificate and Occupation certificate.
+        sustainableBuildingsRequirementsMet:
+          type: string
+          description: This is to track if the requirements for the Sustainable Buildings SEPP were met. Values for this attribute are "Yes","No","NA". This is applicable and required for construction certificate and for the cases that are created after 1stOctober2023.
+        isApplicantDBPSelectionCorrect:
+          type: boolean
+          description: This attribute is an obsolete attribute. Value for this is not required to be supplied anymore and when supplied the value will be ignored, as this attribute is functionally irrelavant. (Old description N/A - This indicates if the DBPexempt selection done by the applicant is correct. It is an Mandatory field for Construction certificate when classofdevelopemt is Class2. )
+        certificatePayments:
+          type: array
+          description: This indicates if the relevant payments have been paid. Required field for Construction certificate, Occupation certificate and Subdivision certificate.
+          items:
+            $ref: '#/components/schemas/certificatePayments'
+        scRequiredConditionsMet:
+          type: boolean
+          description: This indicates whether all conditions required for the issuing of this subdivision certificate been satisfied or not. Required field only for Subdivision certificate type and used to hold.
+        consistentDevConsent:
+          type: boolean
+          description: This indicates if the construction subject of this occupation certificate consistent with the development consent in force. Only applicable for Occupation certificate. Not available for Subdivision certificate and Construction certificate.
+        isFireSafetyReferralRequired:
+          type: boolean
+          description: This indicates if the fire safety referral is required. It is an optional field applicable for Occupation certificate
+            and construction certficate. It infers whether the application require
+            referral for fire rescue NSW. For OC, it will be asking question as “Does
+            this application require a Fire Safety referral to Fire Rescue NSW?” while
+            for CC it will be asking question as “Does this application require a
+            referral to Fire and Rescue NSW?”
+        assessmentNotes:
+          maxLength: 512
+          type: string
+          description: This indicates the assessment notes. Optional field for Occupation certificate.
+        updatedByEmail:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+    certificatePayments:
+      type: string
+      description: Capture type of payment made prior to release of certificate, whenever
+        we select the 'No payment applicable' option then all option will reset to
+        No. Applicable for all Subdivision certificate,Occupation certificate, Construction
+        certificate . One of the below mentioned values must be selected for certificatePayments.
+        1. Local contributions plan payment 2. Local voluntary planning agreement
+        3. Special infrastructure contribution 4. State voluntary planning agreement
+        5. Bond(s) 6. Long service levy 7. Other payment 8. No payments applicable
+      example: Refer to description for values
+    performInspection:
+      required:
+      - childCaseID
+      - documents
+      - inspectionConductedBy
+      - inspectionPerformedDate
+      - inspectionResult
+      type: object
+      properties:
+        childCaseID:
+          type: string
+          description: Inspection case Id linked to the Post Consent Certificate case,
+            Used to perform the Peform Inspection action.
+        inspectionPerformedDate:
+          type: string
+          description: This indicates the date on which the inspection was completed. 
+          format: date
+        enterComments:
+          maxLength: 512
+          type: string
+          description: This indicates the comments on inspection. To hold the User entered comments.Optional Field for all certificate
+            types.
+        inspectionConductedBy:
+          type: string
+          description: This indicates the certifier who conducted the inspection.
+        inspectionResult:
+          type: string
+          description: This indicates the inspection results. Required for Subdivision certificate,Occupation certificate and Principal Certifier appointment but not there for Construction certificate.
+        inspectionType:
+          type: array
+          description: This indicates the type of inspection.
+          items:
+            $ref: '#/components/schemas/inspectionType'
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        updatedByEmail:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+    NumberofBedrooms:
+      required:
+      - noOfBedrooms
+      type: object
+      properties:
+        noOfBedrooms:
+          type: string
+          description: Number of bedrooms..This field is applicable when approvalType
+            was selected as DA OR CDC . 1. Studio
+            2. 1 bedroom 3. 2 bedrooms 4. 3 bedrooms 5. 4 bedrooms 6. 5 bedrooms 7.
+            6+ bedrooms
+          example: Refer to description for values.
+        noOfDwellingsDemolished:
+          type: number
+          maxLength: 4
+          description: Number of dwellings to be demolished.This field is applicable
+            when approvalType was selected as DA OR CDC.
+        noOfDwellingsErected:
+          type: number
+          maxLength: 4
+          description: Number of dwellings to be erected.This field is applicable
+            when approvalType was selected as DA OR CDC 
+        noOfAffordableHousesErected:
+          type: number
+          maxLength: 4
+          description: Number of dwellings classified as ‘affordable housing’ to be
+            erected.This field is applicable when approvalType was selected as DA
+            
+    RoomTypes:
+      required:
+      - roomType
+      type: object
+      properties:
+        roomType:
+          type: string
+          description: Room type 1. Single Room 2. Double Room
+          example: Refer to description for values.
+        selfContainedPrivateRooms:
+          type: number
+          maxLength: 4
+          description: Private rooms that are self-contained
+        nonSelfContainedPrivateRooms:
+          type: number
+          maxLength: 4
+          description: Private rooms that are not self-contained
+    AddcategoryOfDevelopment:
+      required:
+      - categoryOfDevelopment
+      type: object
+      properties:
+        categoryOfDevelopment:
+          type: string
+          description: This is to track the Category of development details. 
+            This is applicable where the application is 'approved' .  1. Residential accommodation 2. Commercial including
+            business premises and retail premises 3. Industry 4. Other
+          example: Refer to description for values.
+        areaDemolished:
+          type: number
+          maxLength: 4
+          description: Area demolished (m2).
+        proposedArea:
+          type: number
+          maxLength: 4
+          description: Proposed area (m2).
+    inspectionResult:
+      type: string
+      description: Building works are satisfactory, Building has minor defects but
+        is satisfactory and Building works are not satisfactory options are present
+        only for Principal Certifier appointment and Occupation certificate , Works
+        are satisfactory, Work has minor defects but is satisfactory Works are not
+        satisfactory options only present for Subdivision certificate type. One of
+        the below mentioned values must be selected for inspectionResult 1. Building
+        works are satisfactory 2. Building has minor defects but is satisfactory 3.
+        Building works are not satisfactory 4. Works are satisfactory 5. Work has
+        minor defects but is satisfactory 6. Works are not satisfactory
+      example: Refer to description for values
+    inspectionType:
+      type: string
+      description: preliminary Inspection option valid for Subdivision certificate,
+        Construction certificate  and for Principal Certifier appointment(when we
+        select Occupation certificate type in Assessment stage),Other Inspection option
+        is valid for Subdivision certificate, Construction certificate ,Occupation
+        certificate  and for Principal Certifier appointment (when we select Occupation
+        certificate type in Assessment stage),Pre commencement site meeting,Erosion
+        and sediment control installed,Tree protection installed,Clearing and grubbing
+        and soil stockpiles and covered,Installation of stormwater pipes,Reinforcement
+        inspection of pits prior to placement of concrete,Inspection of bio retention
+        basins/swales,Services (gas, NBN, electricity) conduits installed prior to
+        back filling ,Sewer and water mains prior to back filling,Subgrade proof roll,Sub
+        base proof roll ,Placement of kerb and gutter, driveway laybacks and stormwater
+        pit lintels,Bitumen seal,Form work inspection of footpath before placement
+        of concrete ,Pedestrian access constructed including stair, ramps and handrails,Visual
+        inspection of proposed fill material (venm/enm),Landscaping inspection ,Fencing
+        inspection, Bushfire compliance measures been completed and certified, final
+        inspection is only valid for only for Principal Certifier appointment(when
+        we select subdivision certificate type in Assessment stage of Principal Certifier
+        appointment) ,Finalisation of works (all works completed) is only valid for
+        only Occupation certificate,After excavation (prior to placement of foot),after
+        excavation (prior to placement of foot),Foundation / footings (prior to pouring
+        of concrete), Framework (prior to fixing floor, wall and ceiling linings),Waterproofing
+        of wet areas (prior to covering),Stormwater drainage (prior to covering)(when
+        we select Occupation certificate as certificate type in Assessment stage in
+        Principal Certifier appointment ). One of the below mentioned values must
+        be selected for inspectionType 1. preliminary Inspection 2. Other Inspection
+        3. Pre commencement site meeting 4. Erosion and sediment control installed
+        5. Tree protection installed 6. Clearing and grubbing and soil stockpiles
+        and covered 7. Installation of stormwater pipes 8. Reinforcement inspection
+        of pits prior to placement of concrete 9. Inspection of bio retention basins/swales
+        10. Services (gas, NBN, electricity) conduits installed prior to back filling
+        11. Sewer and water mains prior to back filling 12. Pressure test sewer and
+        water mains once back filled 13. Subgrade proof roll 14. Sub base proof roll
+        15. Placement of kerb and gutter, driveway laybacks and stormwater pit lintels
+        16. Bitumen seal 17. Form work inspection of footpath before placement of
+        concrete 18. Pedestrian access constructed including stair, ramps and handrails
+        19. Visual inspection of proposed fill material (venm/enm) 20. Landscaping
+        inspection 21. Fencing inspection 22. Bushfire compliance measures been completed
+        and certified 23. Final inspection 24. Finalisation of works (all works completed)
+        25. After excavation (prior to placement of foot) 26. Foundation / footings
+        (prior to pouring of concrete) 27. Framework (prior to fixing floor, wall
+        and ceiling linings) 28. Waterproofing of wet areas (prior to covering) 29.
+        Stormwater drainage (prior to covering)
+      example: Refer to description for values
+    acceptReturn:
+      type: object
+      properties:
+        reviewOutcome:
+          type: string
+          description: This is to track the certifier's decision regarding acceptance, declination, or return of the PCC Certificates to the applicant.
+            For PC Appointment values are 1.Accept the nomination as the principal certifier 2.Reject the nomination as the principal certifier and return application are applicable. For Subdivision certificate, Subdivision Works certificate, Construction certificate and Occupation certificate below values are applicable. Please refer to the reference data API for the latest values. 
+               1. Accept application for assessment
+               2. Decline application for assessment
+               3. Return to applicant
+          example: Refer to description for values
+        certifierComments:
+          type: string
+          description: This indicates the additional certifier comments. Required for Construction Certificate. Additional Certifier
+            Comments.
+        certifierReferenceNumber:
+          type: string
+          description: This indicates the certifiers reference number.Required for Occupation certificate, Subdivision certificate.
+            Certifier reference number.
+        telephoneNumber:
+          maxLength: 100
+          type: string
+          description: This indicates the contact number of the Principal certifier.This
+            field is applicable for PCA case only.
+        applicantPaidFee:
+          type: boolean
+          description: This is to identify if the applicant has paid the application fees or not.
+        certifierFullname:
+          maxLength: 55
+          type: string
+          description: This indicates the full name of the certifier. This field is applicable for PCA case only.
+        certifier:
+          maxLength: 100
+          type: string
+          description: This indicates the Principal certifier's organisation. This field is applicable for PCA case only.
+        accreditationNumber:
+          maxLength: 55
+          type: string
+          description: This indicates the Registration number number of the Principal certifier and is applicable for PCA Case only.
+        lodgementDate:
+          type: string
+          description: This indicates the date the application was lodgement into the certifier's system. This field is required for all certificate types and is used for validation during the determination process
+        consentAuthorityName:
+          maxLength: 30
+          type: string
+          description: This indicates the name of the Consent Authority. Required field whenever we select review outcome as Accept application. Applicable for Subdivision certificate & Principal Certifier appointment.
+        consentAuthorityEmail:
+          maxLength: 250
+          type: string
+          description: This indicates the consent authority email. Required field whenever we select reviewoutcome as Accept application. Applicable for Subdivision certificate & Principal Certifier appointment certification
+            types.
+          format: email
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        reasonForReturnApplication:
+          type: string
+          description: This indicates the reason for returning. This is obsolete and will be replaced by additionalCommentsForDeclineOrReturn, with the exception of PCA. 
+        reasonsForReturn: 
+          type: array
+          description: This is to track the reasons for returning the application to the applicant. This is required when the review outcome is 'Return to applicant'. This is applicable for SC, SWC, CC and OC certificate types. 
+          items:
+            $ref: '#/components/schemas/ReasonsForReturn' 
+        additionalCommentsForDeclineOrReturn:
+           maxLength: 2000
+           type: string
+           description: This is to track the comments provided by the certifier while returning or declining the application. This is required when 'reasonsForReturn' is 'other' during the 'Return to applicant' scenario. This is also required for the decline scenario when reviewOfOutcome is 'Decline application for assessment'. This is applicable for all certificates excepting PCA.     
+        consentIssued:
+          type: boolean
+          description: This indicates the value to identify if an operative development consent been issued in relation to the proposed development. Required field when reviewoutcome is Accept. Applicable only for Principal Certifier appointment certification type.
+        certTypeToApply:
+          type: string
+          description: This indicates the Certificate type to be applied when development is completed.
+            Required field when reviewoutcome is Accept. Applicable only for Principal
+            Certifier appointment certification type. One of the below mentioned values
+            must be selected for certTypeToApply 1. Subdivision certificate 2. Occupation
+            certificate
+          example: Refer to description for values
+        updatedByEmail:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+    Response:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+        activityId:
+          type: string
+        Documents:
+          type: array
+          description: Attached documents with eplanningDocIds.
+          items:
+            $ref: '#/components/schemas/DocResponse'
+    IssueBASIXCompletionReceiptResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+        activityId:
+          type: string
+        BASIXCertificateDetails:
+          type: array
+          description: This indicates the BASIX certificate details of the development. 
+          items:
+            $ref: '#/components/schemas/BASIXCertificateDetailsResponse'
+    DetermineResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+        activityId:
+          type: string
+        CRCaseID:
+          type: string
+          description: This indicates the CaseID of the Certificate Registration case.
+            This is available only when the certifier gives 'Yes' for registerCertificate.
+          example: CR-XXXX-XXX
+        Documents:
+          type: array
+          description: Attached documents with eplanningDocIds.
+          items:
+            $ref: '#/components/schemas/DocResponse'
+    DocResponse:
+      title: DocResponse
+      type: object
+      properties:
+        documentName:
+          type: string
+          description: documentName which was uploaded as part of respective API opeartion
+          example: test.docx
+        documentType:
+          type: string
+          description: Type of Document under which repsective document was uploaded
+        eplanningDocId:
+          type: string
+          description: DocId of the respective document which was uploaded
+        externalOrgDocURL:
+          type: string
+          description: URL of the document which was uploaded
+    IssueBASIXCompletionReceipt:
+      required:
+      - updatedByEmail
+      - BASIXCertificateDetails
+      - certifierRegistrationNumber
+      type: object
+      properties:
+        BASIXCertificateDetails:
+          type: array
+          description: This indicates the BASIX certificate details of the development. The data provided through the API request will be utilized to generate the BASIX completion receipt number. This is applicable for Class 1a, 1b, 2, 3, 4 and the type of occupation certificate is "Occupation certificate for whole building"
+          items:
+            $ref: '#/components/schemas/BASIXCertificateDetails'
+        certifierRegistrationNumber:
+          type: string
+          description: This indicates the Registration number of the certifier. (BDC number for the NSW state  or AMR number for the interstate certifiers ).
+          example: Refer to description for values
+        updatedByEmail:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com 
+    BASIXCertificateDetails:
+      required:
+      - BASIXCertificateNumber
+      - finalInspectionDate
+      - issuanceDate
+      type: object
+      properties:
+        BASIXCertificateNumber:
+          type: string
+          description: This indicates the BASIX certificate number of the development. 
+          example: 1370434S
+        finalInspectionDate:
+          type: string
+          description: This indicates the final Inspection date on when the site was inspected.
+          format: date
+          example: 2023-06-17
+        issuanceDate: 
+          type: string
+          description: This indicates the BASIX certificate's issuance date.
+          format: date
+          example: 2023-06-17
+    BASIXCertificateDetailsResponse:
+      type: object
+      properties:
+        BASIXCertificateNumber:
+          type: string
+          description: This indicates the BASIX certificate number of the development.
+          example: 1370434S
+        finalInspectionDate:
+          type: string
+          description: This indicates the final Inspection date on when the site was inspected.
+          format: date
+          example: 2023-06-17
+        BASIXCompletionReceiptNumber:
+          type: string
+          description: This indicates the BASIX completion receipt number.
+          example: CR-CKJK9KMA-1370434S
+    ReasonsForReturn:
+      title: ReasonsforReturn
+      type: string
+      description: This is track the list of reasons for returning the application to the applicant for any amendment on the application. Below are the sample values. Please refer to the reference data API for the list of latest values. 
+             1. The application is missing relevant documents
+             2. The application contains incorrect information
+             3. The application contains incorrect information
+             4. Other       
+    Stage:
+     type: object
+     properties: 
+      stage: 
+        type: string    
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api-key
+      in: header

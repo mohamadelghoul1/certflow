@@ -1,0 +1,374 @@
+{
+  "source": "PCC - Certifier to ePlanning API v1.0.yaml (NSW DPE, official)",
+  "baseUrl": "https://api.apps1.nsw.gov.au/planning/PCCMgmt/Certifiers/v1",
+  "inspectionTypes": [
+    "preliminary Inspection",
+    "Other Inspection",
+    "Pre commencement site meeting",
+    "Erosion and sediment control installed",
+    "Tree protection installed",
+    "Clearing and grubbing and soil stockpiles and covered",
+    "Installation of stormwater pipes",
+    "Reinforcement inspection of pits prior to placement of concrete",
+    "Inspection of bio retention basins/swales",
+    "Services (gas, NBN, electricity) conduits installed prior to back filling",
+    "Sewer and water mains prior to back filling",
+    "Pressure test sewer and water mains once back filled",
+    "Subgrade proof roll",
+    "Sub base proof roll",
+    "Placement of kerb and gutter, driveway laybacks and stormwater pit lintels",
+    "Bitumen seal",
+    "Form work inspection of footpath before placement of concrete",
+    "Pedestrian access constructed including stair, ramps and handrails",
+    "Visual inspection of proposed fill material (venm/enm)",
+    "Landscaping inspection",
+    "Fencing inspection",
+    "Bushfire compliance measures been completed and certified",
+    "Final inspection",
+    "Finalisation of works (all works completed)",
+    "After excavation (prior to placement of foot)",
+    "Foundation / footings (prior to pouring of concrete)",
+    "Framework (prior to fixing floor, wall and ceiling linings)",
+    "Waterproofing of wet areas (prior to covering)",
+    "Stormwater drainage (prior to covering)"
+  ],
+  "inspectionResults": [
+    "Building works are satisfactory",
+    "Building has minor defects but is satisfactory",
+    "Building works are not satisfactory",
+    "Works are satisfactory",
+    "Work has minor defects but is satisfactory",
+    "Works are not satisfactory"
+  ],
+  "requests": {
+    "InitiateInspection": {
+      "required": [
+        "registrationNumber",
+        "inspectionType"
+      ],
+      "type": "object",
+      "properties": {
+        "dateOfInspection": {
+          "type": "string",
+          "description": "This indicates the date on which inspection is scheduled.This field is available  only for Principal Certifier appointment and Occupation certificate .",
+          "format": "date"
+        },
+        "description": {
+          "maxLength": 512,
+          "type": "string",
+          "description": "This indicates the description of inspection, required for for Principal Certifier appointment and Occupation certificate Optional for Subdivision certificate and Construction Certificate. This will not be applicable for subdivision work certificate"
+        },
+        "registrationNumber": {
+          "maxLength": 100,
+          "type": "string",
+          "description": "This indicates the Registration number associated. This is a mandatory field and required only for Principal Certifier appointment and Occupation certificate, Subdivision certificate and Construction Certificate and not for SWC."
+        },
+        "inspectionType": {
+          "type": "array",
+          "description": "This indicates the type of inspection. Required for all types of certificates.",
+          "items": {
+            "type": "string",
+            "description": "preliminary Inspection option valid for Subdivision certificate, Construction certificate  and for Principal Certifier appointment(when we select Occupation certificate type in Assessment stage),Other Inspection option is valid for Subdivision certificate, Construction certificate ,Occupation certificate  and for Principal Certifier appointment (when we select Occupation certificate type in Assessment stage),Pre commencement site meeting,Erosion and sediment control installed,Tree protection installed,Clearing and grubbing and soil stockpiles and covered,Installation of stormwater pipes,Reinforcement inspection of pits prior to placement of concrete,Inspection of bio retention basins/swales,Services (gas, NBN, electricity) conduits installed prior to back filling ,Sewer and water mains prior to back filling,Subgrade proof roll,Sub base proof roll ,Placement of kerb and gutter, driveway laybacks and stormwater pit lintels,Bitumen seal,Form work inspection of footpath before placement of concrete ,Pedestrian access constructed including stair, ramps and handrails,Visual inspection of proposed fill material (venm/enm),Landscaping inspection ,Fencing inspection, Bushfire compliance measures been completed and certified, final inspection is only valid for only for Principal Certifier appointment(when we select subdivision certificate type in Assessment stage of Principal Certifier appointment) ,Finalisation of works (all works completed) is only valid for only Occupation certificate,After excavation (prior to placement of foot),after excavation (prior to placement of foot),Foundation / footings (prior to pouring of concrete), Framework (prior to fixing floor, wall and ceiling linings),Waterproofing of wet areas (prior to covering),Stormwater drainage (prior to covering)(when we select Occupation certificate as certificate type in Assessment stage in Principal Certifier appointment ). One of the below mentioned values must be selected for inspectionType 1. preliminary Inspection 2. Other Inspection 3. Pre commencement site meeting 4. Erosion and sediment control installed 5. Tree protection installed 6. Clearing and grubbing and soil stockpiles and covered 7. Installation of stormwater pipes 8. Reinforcement inspection of pits prior to placement of concrete 9. Inspection of bio retention basins/swales 10. Services (gas, NBN, electricity) conduits installed prior to back filling 11. Sewer and water mains prior to back filling 12. Pressure test sewer and water mains once back filled 13. Subgrade proof roll 14. Sub base proof roll 15. Placement of kerb and gutter, driveway laybacks and stormwater pit lintels 16. Bitumen seal 17. Form work inspection of footpath before placement of concrete 18. Pedestrian access constructed including stair, ramps and handrails 19. Visual inspection of proposed fill material (venm/enm) 20. Landscaping inspection 21. Fencing inspection 22. Bushfire compliance measures been completed and certified 23. Final inspection 24. Finalisation of works (all works completed) 25. After excavation (prior to placement of foot) 26. Foundation / footings (prior to pouring of concrete) 27. Framework (prior to fixing floor, wall and ceiling linings) 28. Waterproofing of wet areas (prior to covering) 29. Stormwater drainage (prior to covering)",
+            "example": "Refer to description for values"
+          }
+        },
+        "updatedByEmail": {
+          "maxLength": 250,
+          "type": "string",
+          "description": "User must be registered in the planning portal",
+          "example": "john.smith@gmail.com"
+        }
+      }
+    },
+    "PerformInspection": {
+      "required": [
+        "childCaseID",
+        "documents",
+        "inspectionConductedBy",
+        "inspectionPerformedDate",
+        "inspectionResult"
+      ],
+      "type": "object",
+      "properties": {
+        "childCaseID": {
+          "type": "string",
+          "description": "Inspection case Id linked to the Post Consent Certificate case, Used to perform the Peform Inspection action."
+        },
+        "inspectionPerformedDate": {
+          "type": "string",
+          "description": "This indicates the date on which the inspection was completed.",
+          "format": "date"
+        },
+        "enterComments": {
+          "maxLength": 512,
+          "type": "string",
+          "description": "This indicates the comments on inspection. To hold the User entered comments.Optional Field for all certificate types."
+        },
+        "inspectionConductedBy": {
+          "type": "string",
+          "description": "This indicates the certifier who conducted the inspection."
+        },
+        "inspectionResult": {
+          "type": "string",
+          "description": "This indicates the inspection results. Required for Subdivision certificate,Occupation certificate and Principal Certifier appointment but not there for Construction certificate."
+        },
+        "inspectionType": {
+          "type": "array",
+          "description": "This indicates the type of inspection.",
+          "items": {
+            "type": "string",
+            "description": "preliminary Inspection option valid for Subdivision certificate, Construction certificate  and for Principal Certifier appointment(when we select Occupation certificate type in Assessment stage),Other Inspection option is valid for Subdivision certificate, Construction certificate ,Occupation certificate  and for Principal Certifier appointment (when we select Occupation certificate type in Assessment stage),Pre commencement site meeting,Erosion and sediment control installed,Tree protection installed,Clearing and grubbing and soil stockpiles and covered,Installation of stormwater pipes,Reinforcement inspection of pits prior to placement of concrete,Inspection of bio retention basins/swales,Services (gas, NBN, electricity) conduits installed prior to back filling ,Sewer and water mains prior to back filling,Subgrade proof roll,Sub base proof roll ,Placement of kerb and gutter, driveway laybacks and stormwater pit lintels,Bitumen seal,Form work inspection of footpath before placement of concrete ,Pedestrian access constructed including stair, ramps and handrails,Visual inspection of proposed fill material (venm/enm),Landscaping inspection ,Fencing inspection, Bushfire compliance measures been completed and certified, final inspection is only valid for only for Principal Certifier appointment(when we select subdivision certificate type in Assessment stage of Principal Certifier appointment) ,Finalisation of works (all works completed) is only valid for only Occupation certificate,After excavation (prior to placement of foot),after excavation (prior to placement of foot),Foundation / footings (prior to pouring of concrete), Framework (prior to fixing floor, wall and ceiling linings),Waterproofing of wet areas (prior to covering),Stormwater drainage (prior to covering)(when we select Occupation certificate as certificate type in Assessment stage in Principal Certifier appointment ). One of the below mentioned values must be selected for inspectionType 1. preliminary Inspection 2. Other Inspection 3. Pre commencement site meeting 4. Erosion and sediment control installed 5. Tree protection installed 6. Clearing and grubbing and soil stockpiles and covered 7. Installation of stormwater pipes 8. Reinforcement inspection of pits prior to placement of concrete 9. Inspection of bio retention basins/swales 10. Services (gas, NBN, electricity) conduits installed prior to back filling 11. Sewer and water mains prior to back filling 12. Pressure test sewer and water mains once back filled 13. Subgrade proof roll 14. Sub base proof roll 15. Placement of kerb and gutter, driveway laybacks and stormwater pit lintels 16. Bitumen seal 17. Form work inspection of footpath before placement of concrete 18. Pedestrian access constructed including stair, ramps and handrails 19. Visual inspection of proposed fill material (venm/enm) 20. Landscaping inspection 21. Fencing inspection 22. Bushfire compliance measures been completed and certified 23. Final inspection 24. Finalisation of works (all works completed) 25. After excavation (prior to placement of foot) 26. Foundation / footings (prior to pouring of concrete) 27. Framework (prior to fixing floor, wall and ceiling linings) 28. Waterproofing of wet areas (prior to covering) 29. Stormwater drainage (prior to covering)",
+            "example": "Refer to description for values"
+          }
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "required": [
+              "documentName",
+              "documentType",
+              "documentURL",
+              "uploadedDateTime"
+            ],
+            "type": "object",
+            "properties": {
+              "documentName": {
+                "maxLength": 150,
+                "type": "string",
+                "description": "document name has to be appended with file extension",
+                "example": "test.docx"
+              },
+              "documentType": {
+                "maxLength": 100,
+                "type": "string"
+              },
+              "uploadedDateTime": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "documentURL": {
+                "maxLength": 500,
+                "type": "string",
+                "description": "URL of the document to be downloaded",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "updatedByEmail": {
+          "maxLength": 250,
+          "type": "string",
+          "description": "User must be registered in the planning portal",
+          "example": "john.smith@gmail.com"
+        }
+      }
+    },
+    "CompleteInspection": {
+      "required": [
+        "childCaseID",
+        "declarations",
+        "documents",
+        "inspectionResultDeclaration",
+        "isfurtherInspectionrequired",
+        "issueInspectionResultSheet"
+      ],
+      "type": "object",
+      "properties": {
+        "childCaseID": {
+          "type": "string",
+          "description": "Used to hold the child case ID (Inspection case) to perform Complete Inspection action."
+        },
+        "issueInspectionResultSheet": {
+          "type": "boolean",
+          "description": "This is to indicate if the inspection sheet can be issued."
+        },
+        "isfurtherInspectionrequired": {
+          "type": "boolean",
+          "description": "This is to indicate if any further inspection is required."
+        },
+        "declarations": {
+          "type": "string",
+          "description": "required for Principal Certifier appointment,Occupation certificate,Subdivision certificate, Declaration for inspection result. Not applicable for Construction certificate. One of the below mentioned values must be selected for declarations 1. I confirm that I have inspected the site subject of this application",
+          "example": "Refer to description for values"
+        },
+        "inspectionResultDeclaration": {
+          "type": "string",
+          "description": "Declaration for inspection result. Required field for Construction Certificate type. One of the below mentioned values must be selected for inspectionResultDeclaration 1. I confirm that I have inspected the site subject of this application and existing works on the site are appropriately reflected in the construction certificate plans. 2. I confirm I have inspected the site subject of this application and there are site features which requires the construction certificate plans to be amended.",
+          "example": "Refer to description for values"
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "required": [
+              "documentName",
+              "documentType",
+              "documentURL",
+              "uploadedDateTime"
+            ],
+            "type": "object",
+            "properties": {
+              "documentName": {
+                "maxLength": 150,
+                "type": "string",
+                "description": "document name has to be appended with file extension",
+                "example": "test.docx"
+              },
+              "documentType": {
+                "maxLength": 100,
+                "type": "string"
+              },
+              "uploadedDateTime": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "documentURL": {
+                "maxLength": 500,
+                "type": "string",
+                "description": "URL of the document to be downloaded",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "updatedByEmail": {
+          "maxLength": 250,
+          "type": "string",
+          "description": "User must be registered in the planning portal",
+          "example": "john.smith@gmail.com"
+        }
+      }
+    },
+    "MissedInspection": {
+      "required": [
+        "childCaseID",
+        "missedInspectionDeclaration",
+        "missedInspectionParticulars",
+        "missedInspectionReliedEvidence",
+        "missedInspectionUnavoidableCircumstances",
+        "updatedByEmail"
+      ],
+      "type": "object",
+      "properties": {
+        "childCaseID": {
+          "type": "string",
+          "description": "Inspection case Id linked to the PCC (Post Consent Certificate) case."
+        },
+        "missedInspectionParticulars": {
+          "maxLength": 200,
+          "type": "string",
+          "description": "This is to track the particulars of the inspection that was missed."
+        },
+        "missedInspectionUnavoidableCircumstances": {
+          "maxLength": 200,
+          "type": "string",
+          "description": "This is to track the response of the Certifier for the question' What circumstances does the principal certifier consider were unavoidable that caused the inspection to be missed?'"
+        },
+        "missedInspectionReliedEvidence": {
+          "maxLength": 200,
+          "type": "string",
+          "description": "This is to tracke the response of the Certifier for the question'What documentary evidence was relied on to satisfy the Principal Certifier that the work that would have been the subject of the missed inspection was satisfactory?"
+        },
+        "missedInspectionDeclaration": {
+          "type": "array",
+          "description": "By performing this operation, the certifier consents to all declarations associated with recording the missed inspection details. Please refer to the ReferenceData API for the latest declaration information.",
+          "items": {
+            "title": "MissedInspectionDeclaration",
+            "type": "string",
+            "description": "required only for CC,SC PCA,OC . 1. I confirm the work that would have been the subject of the missed inspection is satisfactory.",
+            "example": "Refer to description for values"
+          }
+        },
+        "Documents": {
+          "type": "array",
+          "description": "Upload the documents if required as it is an optional field.",
+          "items": {
+            "required": [
+              "documentName",
+              "documentType",
+              "documentURL",
+              "uploadedDateTime"
+            ],
+            "type": "object",
+            "properties": {
+              "documentName": {
+                "maxLength": 150,
+                "type": "string",
+                "description": "document name has to be appended with file extension",
+                "example": "test.docx"
+              },
+              "documentType": {
+                "maxLength": 100,
+                "type": "string"
+              },
+              "uploadedDateTime": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "documentURL": {
+                "maxLength": 500,
+                "type": "string",
+                "description": "URL of the document to be downloaded",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "updatedByEmail": {
+          "maxLength": 250,
+          "type": "string",
+          "description": "User must be registered in the planning portal",
+          "example": "john.smith@gmail.com"
+        }
+      }
+    },
+    "NotifyCriticalStageInspection": {
+      "required": [
+        "documents",
+        "updatedByEmail"
+      ],
+      "type": "object",
+      "properties": {
+        "documents": {
+          "type": "array",
+          "items": {
+            "required": [
+              "documentName",
+              "documentType",
+              "documentURL",
+              "uploadedDateTime"
+            ],
+            "type": "object",
+            "properties": {
+              "documentName": {
+                "maxLength": 150,
+                "type": "string",
+                "description": "document name has to be appended with file extension",
+                "example": "test.docx"
+              },
+              "documentType": {
+                "maxLength": 100,
+                "type": "string"
+              },
+              "uploadedDateTime": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "documentURL": {
+                "maxLength": 500,
+                "type": "string",
+                "description": "URL of the document to be downloaded",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "updatedByEmail": {
+          "maxLength": 250,
+          "type": "string",
+          "description": "User must be registered in the planning portal",
+          "example": "john.smith@gmail.com"
+        }
+      }
+    }
+  }
+}

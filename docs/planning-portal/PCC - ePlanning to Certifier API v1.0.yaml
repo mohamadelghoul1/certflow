@@ -1,0 +1,3088 @@
+openapi: 3.0.1
+info:
+  title: PCC - ePlanning to Certifier API
+  description: "# Authentication    \n\nPlease use the subscription key provided by\
+    \ the Department to access the APIs.\n"
+  contact: {}
+  version: v1
+servers:
+  - url: /
+paths:
+  /CreatePCC/{CaseID}:
+    post:
+      summary: CreatePCC
+      description: 
+        This operation transfers the Post-consent Certificate application
+        created by the applicant from the Online Post-consent Certificate
+        Service to the certifier's IT system.
+      operationId: post-createpcc-caseid
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          schema:
+            type: string
+        - name: OrganisationID
+          in: header
+          description: 
+            The council LGA name or Private Certifier Organisation name to
+            indicate where the response is routed to.
+          required: true
+          schema:
+            type: string
+        - name: IdempotencyId
+          in: header
+          description: 
+            Unique Id for this request. Allows the API to respond in an
+            idempotent way if it has already been called with these parameters
+            and prevents duplicate processing. Typically a UUID such as
+            "63a9ba30-7a4b-4fac-b343-d1f05cf089f1"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PCCertificate'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content: {}
+        '400':
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '412':
+          description: Post Consent Certificate case already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: applicable field values not provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /UpdatePCC/{CaseID}:
+    put:
+      summary: UpdatePCC
+      description: 
+        This operation transfers the Post-consent Certificate application's
+        updated details from the Online Post-consent Certificate Service to the
+        certifier's IT system.
+      operationId: post-updatepcc-caseid
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          schema:
+            type: string
+        - name: OrganisationID
+          in: header
+          description: 
+            The council LGA name or Private Certifier Organisation name to
+            indicate where the response is routed to.
+          required: true
+          schema:
+            type: string
+        - name: IdempotencyId
+          in: header
+          description: 
+            Unique Id for this request. Allows the API to respond in an
+            idempotent way if it has already been called with these parameters
+            and prevents duplicate processing. Typically a UUID such as
+            "63a9ba30-7a4b-4fac-b343-d1f05cf089f1"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePCCertificate'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content: {}
+        '400':
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '412':
+          description: Post Consent Certificate case already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: applicable field values not provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /UpdateAdditionalInfo/{CaseID}:
+    put:
+      summary: UpdateAdditionalInfo
+      description: >
+        This operation transfers the additional information uploaded by the
+        applicant from the Online Post-consent Certificate Service to the
+        certifier's IT system.
+      operationId: post-provideaddinfo-caseid
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          schema:
+            type: string
+        - name: OrganisationID
+          in: header
+          description: 
+            The council LGA name or Private Certifier Organisation name to
+            indicate where the response is routed to.
+          required: true
+          schema:
+            type: string
+        - name: IdempotencyId
+          in: header
+          description: 
+            Unique Id for this request. Allows the API to respond in an
+            idempotent way if it has already been called with these parameters
+            and prevents duplicate processing. Typically a UUID such as
+            "63a9ba30-7a4b-4fac-b343-d1f05cf089f1"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvideAddInfo'
+        required: true
+      responses:
+        '201':
+          description: Request created
+          content: {}
+        '400':
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /Withdraw/{CaseID}:
+    put:
+      summary: Withdraw
+      description: 
+        This operation transfers the applicant's decision to withdraw the
+        Post-consent Certificate application from the Online Post-consent
+        Certificate Service to the certifier's IT system.
+      operationId: post-withdrawpcc-caseid
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          schema:
+            type: string
+        - name: OrganisationID
+          in: header
+          description: 
+            The council LGA name or Private Certifier Organisation name to
+            indicate where the response is routed to.
+          required: true
+          schema:
+            type: string
+        - name: IdempotencyId
+          in: header
+          description: 
+            Unique Id for this request. Allows the API to respond in an
+            idempotent way if it has already been called with these parameters
+            and prevents duplicate processing. Typically a UUID such as
+            "63a9ba30-7a4b-4fac-b343-d1f05cf089f1"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/withdraw'
+        required: true
+      responses:
+        '200':
+          description: Case withdrawn
+          content: {}
+        '400':
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /ReqAddInfo/{CaseID}:
+    put:
+      summary: ReqAddInfo
+      description: 
+        This operation requests further information from certifier to process
+        the case
+      operationId: put-ReqAddInfo-caseid
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          schema:
+            type: string
+        - name: OrganisationID
+          in: header
+          description: 
+            The council LGA name or Private Certifier Organisation name to
+            indicate where the response is routed to.
+          required: true
+          schema:
+            type: string
+        - name: IdempotencyId
+          in: header
+          description: 
+            Unique Id for this request. Allows the API to respond in an
+            idempotent way if it has already been called with these parameters
+            and prevents duplicate processing. Typically a UUID such as
+            "63a9ba30-7a4b-4fac-b343-d1f05cf089f1"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReqAddInfo'
+        required: true
+      responses:
+        '200':
+          description: Case ID (AI) created
+          content: {}
+        '400':
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-codegen-request-body-name: body
+  /IntentToCommenceWork/{CaseID}:
+    put:
+      summary: IntentToCommenceWork
+      description: 
+        This operation transfers the 'Intentiontocommencework' related
+        application details in the Post-consent Certificate application ( PCA
+        )created by the applicant from the Online Post-consent Certificate
+        Service to the certifier's IT system. This is applicable only for
+        principal certifiying authority appointment (PCA).
+      operationId: put-Intentiontocommencework-caseid-out
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          schema:
+            type: string
+        - name: OrganisationID
+          in: header
+          description: 
+            The council LGA name or Private Certifier Organisation name to
+            indicate where the response is routed to.
+          required: true
+          schema:
+            type: string
+        - name: IdempotencyId
+          in: header
+          description: 
+            Unique Id for this request. Allows the API to respond in an
+            idempotent way if it has already been called with these parameters
+            and prevents duplicate processing. Typically a UUID such as
+            "63a9ba30-7a4b-4fac-b343-d1f05cf089f1"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Intenttocommencework'
+        required: true
+      responses:
+        '201':
+          description: Request created
+          content: {}
+        '400':
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Case not found or locked by another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /ReferralAssessment/{CaseID}:
+    put:
+      summary: ReferralAssessment
+      description: 
+        This operation sends the information of the assessment of Referrals to
+        Certifier's IT system.
+      operationId: put-referralassessment-caseid
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          schema:
+            type: string
+        - name: OrganisationID
+          in: header
+          description: 
+            The council LGA name or Private Certifier or Agency Organisation
+            name to indicate where the request is originated from.
+          required: true
+          schema:
+            type: string
+        - name: IdempotencyId
+          in: header
+          description: 
+            Unique Id for this request. Allows the API to respond in an
+            idempotent way if it has already been called with these parameters
+            and prevents duplicate processing. Typically a UUID such as
+            "63a9ba30-7a4b-4fac-b343-d1f05cf089f1"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferralAssessment'
+        required: true
+      responses:
+        '200':
+          description: Case Submitted by Applicant
+          content: {}
+        '400':
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+  /ReferralDecision/{CaseID}:
+    put:
+      summary: ReferralDecision
+      description: 
+        This operation sends referral case information of subdivision PCC case
+        created by the applicant from the eplanning to the certifier's IT
+        system.
+      operationId: post-refdecision-caseid
+      parameters:
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          schema:
+            type: string
+        - name: OrganisationID
+          in: header
+          description: 
+            The council LGA name or Private Certifier Organisation name to
+            indicate where the response is routed to.
+          required: true
+          schema:
+            type: string
+        - name: IdempotencyId
+          in: header
+          description: 
+            Unique Id for this request. Allows the API to respond in an
+            idempotent way if it has already been called with these parameters
+            and prevents duplicate processing. Typically a UUID such as
+            "63a9ba30-7a4b-4fac-b343-d1f05cf089f1"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Information request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRef'
+        required: true
+      responses:
+        '200':
+          description: Created
+          content: {}
+        '400':
+          description: Invalid request supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      deprecated: false
+      x-codegen-request-body-name: body
+components:
+  schemas:
+    Location:
+      title: Location
+      required:
+        - address
+        - lga
+      type: object
+      properties:
+        address:
+          minLength: 1
+          maxLength: 250
+          type: string
+          description: Site addresses
+          example: 19-33 Elizabeth Street, Narrandera, 2700
+        addressDetail:
+          $ref: '#/components/schemas/AddressDetail'
+        lotList:
+          type: array
+          items:
+            $ref: '#/components/schemas/LotSectionPlan'
+        lga:
+          minLength: 1
+          maxLength: 30
+          type: string
+          description: Local Government Area under which this case falls
+          example: PENRITH
+        isPrimary:
+          type: boolean
+          description: 
+            This is to track if the address provided is the primary address when
+            multiple lot addresses are provided.
+    TagsList:
+      type: string
+      description:
+       This defines Tags which are set on the respective document. like isPublish,isSensitive etc
+    AddressDetail:
+      required:
+        - postCode
+        - state
+        - streetName
+        - suburb
+      type: object
+      properties:
+        complexUnitType:
+          type: string
+        complexLevelType:
+          type: string
+        complexLevelNumber:
+          type: string
+        complexUnitIdentifier:
+          type: string
+        streetNumber1:
+          type: string
+        streetNumber2:
+          type: string
+        streetName:
+          type: string
+          minLength: 1
+        streetSuffix:
+          type: string
+        streetType:
+          type: string
+        suburb:
+          type: string
+          minLength: 1
+        latitude:
+          type: number
+        longitude:
+          type: number
+        wkid:
+          type: string
+        cadastralID:
+          type: string
+        gurasID:
+          type: string
+        primarySecondary:
+          type: string
+        state:
+          type: string
+          minLength: 1
+        postCode:
+          type: number
+    LotSectionPlan:
+      required:
+        - lotsectionplan
+      type: object
+      properties:
+        lotsectionplan:
+          type: string
+          example: 1/-/SPXXXXX
+          minLength: 1
+    Person:
+      title: Person
+      required:
+        - familyName
+        - firstName
+      type: object
+      properties:
+        firstName:
+          maxLength: 20
+          type: string
+          minLength: 1
+        otherName:
+          maxLength: 20
+          type: string
+        familyName:
+          maxLength: 20
+          type: string
+          minLength: 1
+        contactNumber:
+          maxLength: 10
+          minLength: 8
+          pattern: ^[0-9]+$
+          type: string
+        email:
+          maxLength: 250
+          type: string
+    Error:
+      title: Error
+      required:
+        - errorCode
+        - statusCode
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          format: int32
+          example: 404
+        message:
+          type: string
+          example: Internal Server error 19876
+        activityId:
+          type: string
+          example: 00000011-0ab-xy00-0000-500000000000
+        errorCode:
+          type: string
+          example: DPE_TMS01
+          minLength: 1
+        errorDetails:
+          type: string
+          example: Inner Exceptions, Stack Trace, etc
+    PersonBody:
+      title: PersonBody
+      required:
+        - email
+        - familyName
+        - firstName
+      type: object
+      properties:
+        firstName:
+          maxLength: 20
+          type: string
+          example: John
+          minLength: 1
+        familyName:
+          maxLength: 20
+          type: string
+          example: Smith
+          minLength: 1
+        email:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+          minLength: 1
+        contactNumber:
+          maxLength: 10
+          minLength: 8
+          pattern: ^[0-9]+$
+          type: string
+    PersonBodyOut:
+      required:
+        - familyName
+        - firstName
+        - email
+      type: object
+      properties:
+        firstName:
+          maxLength: 20
+          type: string
+          example: John
+          minLength: 1
+        familyName:
+          maxLength: 20
+          type: string
+          example: Smith
+          minLength: 1
+        email:
+          maxLength: 250
+          type: string
+          description: User must be registered in the planning portal
+          example: john.smith@gmail.com
+          minLength: 1
+        contactNumber:
+          maxLength: 10
+          minLength: 8
+          pattern: ^[0-9]+$
+          type: string
+    DownloadableDocument:
+      title: DownloadableDocument
+      required:
+        - documentName
+        - documentType
+        - documentURL        
+        - uploadedDateTime
+      type: object
+      properties:
+        documentName:
+          maxLength: 150
+          type: string
+          description: documentName has to be appended with file extension
+          example: test.docx
+          minLength: 1
+        documentType:
+          maxLength: 100
+          type: string
+          minLength: 1
+        uploadedDateTime:
+          type: string
+          format: date-time
+          minLength: 1
+        documentURL:
+          maxLength: 500
+          type: string
+          description: URL of the document to be downloaded
+          minLength: 1
+        documentCaseID:
+          description: documentCaseID of respective document
+          type: string
+        documentTags:
+          description: This defines documentTags which are set on the respective document.. like isPublish,isSensitive.. etc..
+          type: array
+          items:
+            $ref: '#/components/schemas/TagsList'
+        documentSize:
+          description: This indicates the file size of the document in bytes
+          type: number
+        updatedBy:
+          type: string
+          example: Council
+    Intenttocommencework:
+      required:
+        - buildingWorkCommencementDate
+        - relatedDevelopmentConsent
+        - relatedCCCaseID
+        - relatedCCIssueDate
+        - relatedDevelopmentConsentCaseID
+        - relatedDevelopmentConsentDeterminationDate
+        - typeOfWorkIntendedToCommence
+        - updatedBy
+      type: object
+      properties:
+        typeOfWorkIntendedToCommence:
+          type: string
+          description: 
+            This is to track the type of work intended for commencement. One of
+            the below mentioned values to be selected for
+            typeOfWorkIntendedToCommence. Please refer to the reference data API
+            for the latest values. 1.Erection of the building 2.Subdivision work
+          example: Refer to description for values.
+          minLength: 1
+        buildingWorkCommencementDate:
+          type: string
+          description: This is to track the commencement date for building work.
+          format: date
+          minLength: 1
+        relatedDevelopmentConsent:
+          type: string
+          description: 
+            This is to track the related development consent. One of the below
+            mentioned values to be selected for relatedDevelopmentConsent.
+            Please refer to the reference data API for the latest values.
+            1.Development Application number (DA) 2.Complying Development
+            Certificate (CDC) 3.State determined (SSI / SSD)
+          example: Refer to description for values.
+          minLength: 1
+        relatedDevelopmentConsentCaseID:
+          maxLength: 20
+          type: string
+          description: This is to track the related development consent (DA) caseID.
+          minLength: 1
+        relatedDevelopmentConsentDeterminationDate:
+          type: string
+          description: This is to track the development consent determination date.
+          format: date
+          minLength: 1
+        relatedCCCaseID:
+          maxLength: 20
+          type: string
+          description: 
+            This is to track the related construction certificate reference
+            number. This field is not applicable when related development
+            consent type is CDC and is an applicable field.
+          minLength: 1
+        relatedCCIssueDate:
+          type: string
+          description: 
+            This is to track the related construction certificate's issue date.
+            This field is not applicable when related development consent type
+            is CDC.
+          format: date
+          minLength: 1
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        updatedBy:
+          $ref: '#/components/schemas/updatedBy'
+    ProvideAddInfo:
+      title: ProvideAddInfo
+      required:
+        - caseStatus
+        - responseDate
+      type: object
+      properties:
+        caseStatus:
+          type: string
+          description: Status of the request for additional information
+          example: Complete
+          minLength: 1
+        childCaseID:
+          type: string
+          description: An AI case id for RFI
+          example: AI-XXXX
+        responseDate:
+          type: string
+          description: Date and time of response
+          format: date
+          minLength: 1
+        responseDetails:
+          type: string
+          description: Additional information description provided by the applicant
+        Documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        updatedBy:
+          $ref: '#/components/schemas/updatedBy'
+    updatedBy:
+      title: updatedBy
+      type: object
+      properties:
+        person:
+          $ref: '#/components/schemas/PersonBody'
+    CreateRef:
+      title: CreateRef
+      required:
+        - caseStatus
+      type: object
+      properties:
+        parentCaseID:
+          type: string
+          example: CFT-XXXX
+        caseStatus:
+          maxLength: 80
+          type: string
+          description: 
+            This is to track the case status of the post consent certificate
+            application.
+          example: Submitted
+          minLength: 1
+        referralDetails:
+          title: agencyToConsultWith
+          type: object
+          properties:
+            agencyName:
+              maxLength: 150
+              type: string
+              description: This is to track to which agency is the activity being referred.
+            agencyReferenceNumber:
+              maxLength: 150
+              type: string
+              description: This is to track the reference number of corresponding agency.
+            reasonForReferral:
+              maxLength: 2000
+              type: string
+              description: This is to track the reason for referral.
+            referredBy:
+              type: string
+              description: This is to track the referral creators role.
+            selectRequiredDocuments:
+              type: array
+              description: Select documents
+              items:
+                $ref: '#/components/schemas/SelectReferralDocuments'
+          description: Add agency
+        reviewOfOutcome:
+          $ref: '#/components/schemas/ReviewOfOutcome'
+        preliminaryReview:
+          $ref: '#/components/schemas/PreliminaryReview'
+        retunApplication:
+          type: string
+          description: Required if the reviewOfOutcome is 'Return application'
+        commentsOnDecisionNotRequired:
+          type: string
+          description: 
+            This field will be available on UI if the reviewOfOutcome is
+            'Referral noted, decision not required'
+        decisionOutcome:
+          $ref: '#/components/schemas/DecisionOutcome'
+        comments:
+          maxLength: 2000
+          type: string
+          description: This is to track the  Decision outcome comments.
+        Documents:
+          type: array
+          description: 
+            This is to track the Documents avialable if the reviewOfOutcome is
+            'Return application'
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        updatedBy:
+          $ref: '#/components/schemas/updatedBy'
+    ReferralAssessment:
+      required:
+        - caseStatus
+        - reviewOfOutcome
+        - updatedBy
+      type: object
+      properties:
+        primaryCaseID:
+          type: string
+          description: This is to track the Post Consent Certificate case ID.
+          example: CFT-XXXX
+        caseStatus:
+          maxLength: 80
+          type: string
+          description: Status of the Referral case
+          example: Submitted
+          minLength: 1
+        referralDetails:
+          title: agencyToConsultWith
+          type: object
+          properties:
+            agencyName:
+              maxLength: 150
+              type: string
+              description: This is to track to which agency is the activity being referred?
+            agencyReferenceNumber:
+              maxLength: 150
+              type: string
+              description: This is to track the reference number of corresponding agency.
+            reasonForReferral:
+              maxLength: 2000
+              type: string
+              description: 
+                This is to track the reason as to why the referral is being
+                made.
+            referredBy:
+              type: string
+              description: This is to track the referral creators  role.
+            selectRequiredDocuments:
+              type: array
+              description: This is to track the Selectd documents.
+              items:
+                $ref: '#/components/schemas/SelectReferralDocuments'
+          description: Add agency
+        reviewOfOutcome:
+          $ref: '#/components/schemas/ReviewOfOutcome'
+        preliminaryReview:
+          $ref: '#/components/schemas/PreliminaryReview'
+        retunApplication:
+          maxLength: 1500
+          type: string
+          description: 
+            This is to track the reviewoutcome. Required if the reviewOfOutcome
+            is 'Return application'
+        commentsOnDecisionNotRequired:
+          maxLength: 1500
+          type: string
+          description: 
+            This is to track the the comments, when the decision is not
+            required.  This becomes application when reviewOfOutcome is
+            'Referral noted, decision not required'
+        Documents:
+          type: array
+          description: 
+            This is to track the Documents  avialble if the reviewOfOutcome is
+            'Return application'
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        updatedBy:
+          $ref: '#/components/schemas/updatedBy'
+    SelectReferralDocuments:
+      title: selectDocument
+      type: string
+      description: 
+        This indicates the documents uploaded for referrals. Following are the
+        example values. Please refer to the reference data API for the latest
+        values 1. Land Title Instruments 2. Compliance Certificate 3. Boundary
+        Approvals 4. Other
+      example: Refer to description for values
+    DecisionOutcome:
+      title: DecisionOutcome
+      type: string
+      description: 
+        This is to track the  outcome of the review. One of the below mentioned
+        values to be selected for DecisionOutcome 1. Approved 2. Not Approved
+      example: Refer to description for values
+    ReviewOfOutcome:
+      title: ReviewOfOutcome
+      type: string
+      description: 
+        This is to track the outcome of the review One of the below mentioned 
+        values are applicable for ReviewOfOutcome. Please refer to the reference
+        data API for the latest values. 1 . Accept application 2. Return
+        application 3. Referral noted, decision not required
+      example: Refer to description for values
+    PreliminaryReview:
+      title: Preliminary Review
+      type: string
+      description: 
+        This is to track the Preliminary review outcome. Applicable if the 
+        reviewOfOutcome is 'Accept application'. One of the below mentioned
+        values  to be selected for PreliminaryReview. Please refer to the
+        reference data API for the latest values. 1. Yes, the application is
+        ready for decision 2. No, need more information
+      example: Refer to description for values
+    withdraw:
+      title: withdraw
+      required:
+        - updatedBy
+        - withdrawalDate
+      type: object
+      properties:
+        caseStatus:
+          type: string
+          description: case status
+        withdrawalReason:
+          type: string
+          description: This is to track the Reason for withdrawal of the application.
+        withdrawalDate:
+          type: string
+          description: This is to track the Date on which case is withdrawn.
+          format: date
+          example: 2020-09-10
+          minLength: 1
+        updatedBy:
+          $ref: '#/components/schemas/updatedBy'
+    PCCertificate:
+      title: PCCertificate
+      required:
+        - applyOnBehalfOfCompany
+        - approvalType
+        - businessName
+        - caseStatus
+        - ownership
+        - siteAddresses
+      type: object
+      properties:
+        caseStatus:
+          maxLength: 80
+          type: string
+          description: 
+            This is to track the case status of the post consent certificate
+            application.
+          example: Submitted
+          minLength: 1
+        caseSubmittedDate:
+          type: string
+          description: 
+            This is to track the date on which the applicant submitted the
+            application in the ePlanning portal.
+        certificateType:
+          $ref: '#/components/schemas/CertificateType'
+        subType:
+          $ref: '#/components/schemas/SubType'
+        typeofSWCSeeking:
+          $ref: '#/components/schemas/TypeofSWCSeeking'
+        relevantSWCForNSW:
+          type: boolean
+          description: 
+            This is to track the relevant SWC certificates that's applied via
+            NSW planning portal or not. This is applicable for Subdivision works
+            certificate and when TypeofSWCSeeking is 'Modification to an
+            existing SWC'.
+        existingSWCRefNum:
+          type: string
+          description: 
+            This is to track the existing SWC application reference number when
+            available.
+        SWCDetermined:
+          type: boolean
+          description: 
+            This is to track if the relevant SWC has been determined or not.
+            Applicable when TypeofSWCSeeking is 'Modification to an existing
+            SWC'.
+        dateSWCDetermined: 
+          type: string
+          description: 
+            This is to track the determination date of relevant SWC when
+            available.
+          format: date
+        approvalType:
+          $ref: '#/components/schemas/ApprovalType'
+        relatedCaseNumber:
+          type: string
+          description: This is to track the related approval type’s case ID.
+        hasPortalCaseNumber:
+          type: boolean
+          description: 
+            This is to track if the related 'approvalType' for the certificate
+            applied is submitted via NSW planning portal. This is only
+            applicable when the user selects the 'approvalType' as Complying
+            Development Certificate (CDC) or Development Application number (DA)
+        relatedPortalCaseID:
+          maxLength: 10
+          type: string
+          description: 
+            This is to track the caseID of the related 'approvalType' if it is
+            submitted via NSW planning portal. This is applicable when
+            “hasPortalCaseNumber” is selected as true.
+        isCaseDetermined:
+          type: boolean
+          description: 
+            This is to track determination status of the certificate's related
+            DA or CDC or SSI/SSD application.
+        dateDetermined:
+          type: string
+          description: 
+            This is to track the determination date of the related DA or CDC or
+            SSI/SSD application. This is applicable when 'isCaseDetermined' is
+            true.
+          format: date
+        applicationToTrackPCA:
+          type: string
+          description: 
+            This is to indicate if the application submitted is to track
+            transfer of Principal certifier. This is applicable for PCA
+            certificate type.
+        classOfDevelopments:
+          type: array
+          description: 
+            This is to track the development classes. This may not be applicable
+            for SC and SWC. Please refer to the reference data API for the
+            latest values.
+          items:
+            $ref: '#/components/schemas/classOfDevelopment'
+        isDevelopmentExemptfromDBPAct:
+          type: boolean
+          description:  
+            This is to track if the development is exempt from DBAAct. This is
+            applicable when 'Class 2', 'Class 3' and 'Class 9c' is chosen for the 'classofdevelopments'
+            and certificateType OC only.
+        developmentExemptReason:
+          maxLength: 510
+          type: string
+          description: 
+            This is an obsolete attribute as the DBP exempt reasons are captured in the Building Work/ITSOC applications. 
+        modifyApplication:
+          type: boolean
+          description: 
+            This is applicable for Construction Certificate when applying for a
+            modification construction certificate.
+        hasPortalCCCase:
+          $ref: '#/components/schemas/HasOnlineCCCase'
+        hasViaPortalModificationCCCase:
+          type: boolean
+          description: 
+            This is to track if the related construction certificate is applied
+            via NSW Planning portal. This becomes applicable when 'approvalType'
+            is DA, and 'Modify Application' is selected as 'Yes' for a
+            Construction Certificate.
+        certificateCCNumber:
+          type: string
+          description: 
+            This is to track the related construction certificate number when
+            available.
+        CCDetermined:
+          type: boolean
+          description: 
+            This is to track the related DA approval type’s CC case
+            determination status.
+        isExemptFromSEPPNonResidential: 
+          type: boolean
+          description: 
+            This is to track if the development is exempt from the State Environmental Planning Policy (Sustainable Buildings) 2022, Chapter 3, relating to non-residential buildings for any of the following reasons. This is exempted if DA was submitted on the NSW Planning Portal before 1st October 2023 or The DA was submitted on the NSW Planning Portal on or after 1st October 2023 but was deemed exempt due to the reasons outlined in Chapter 3.1.
+            This is applicable for construction certificate.
+        CCDateDetermined:
+          type: string
+          description: 
+            This is to track the determination date of the construction
+            certificate. This becomes applicable when CCDetermined is true.
+          format: date
+        isPortalCCCaseByPCA:
+          type: boolean
+          description: 
+            This is to track if the related Construction certificate for PCA is
+            applied via NSW Planning portal. This becomes applicable when
+            'approvalType' is DA and Certificate type is Principal Certifier
+            Appointment.
+        constructionCertificateNumber:
+          type: string
+          description: 
+            This is to track the related Construction Certificate number for
+            PCA. This is applicable when 'isPortalCCCaseByPCA' is true.
+        CCDeterminedByPCA:
+          type: boolean
+          description: 
+            This is to track the determination status of the construction
+            certificate. This becomes applicable when 'approvalType' is DA and
+            Certificate type is Principal Certifier Appointment.
+        dateOfCCIssuedbyPCA:
+          type: string
+          description: 
+            This is to track the related construction certificate's issuance
+            date. This is applicable for PCA certificate type when
+            'CCDeterminedByPCA' is true.
+          format: date
+        PCAPortalCaseID:
+          type: string
+          description: 
+            This is an obsolete attribute and is not relevant anymore.  This is to track related caseID of the  Principal certifier
+            appointment application applied through NSW planning portal. This is  applicable for Occupation certificate for class 2 developments only. 
+        ITSOCCaseNumber:
+          type: string
+          description: 
+            This is to track the related caseID of the the ITSOC (Intention to  seek Occupation Certificate) application applied through NSW planning portal. This is applicable when 'Class 2', 'Class 3' and 'Class 9c' is chosen for the 'classofdevelopments' and certificateType OC only.
+        siteAddresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
+        applicantDetails:
+          $ref: '#/components/schemas/applicantDetails'
+        applyOnBehalfOfCompany:
+          type: boolean
+          description: This is to track if the user has applied on behalf of the company.
+        applicantCompany:
+          $ref: '#/components/schemas/applicantCompany'
+        buildersDetailsOrPrincipalContractor:
+          type: object
+          properties:
+            builderType:
+              $ref: '#/components/schemas/BuilderType'
+            builderPerson:
+              $ref: '#/components/schemas/BuilderPerson'
+            builderCompany:
+              $ref: '#/components/schemas/BuilderCompany'
+          description: 
+            This is to track the builder or Principal Contractor details. This
+            is not applicable to Subdivision certificate.
+        additionalBuilderDetails:
+          type: array
+          description: 
+            This is to track any additional builder details excluding the one
+            mentioned in 'buildersDetailsOrPrincipalContractor'.
+          items:
+            $ref: '#/components/schemas/AdditionalBuilderDetails'
+        ownership:
+          $ref: '#/components/schemas/Ownership'
+        ownerDetails:
+          type: array
+          items:
+            $ref: '#/components/schemas/OwnerDetails'
+        buildingWork:
+          $ref: '#/components/schemas/BuildingWork'
+        longServiceLevyPaid:
+          $ref: '#/components/schemas/LongServiceLevyPaid'
+        securityConditions:
+          type: boolean
+          description: 
+            This is to track the security or site conditions which may impact on
+            the person undertaking the inspection like locked gates, dogs,
+            animals etc. This is not applicable for subdivision certificate.
+        detailsOfSecurityConditions:
+          maxLength: 2000
+          type: string
+          description: 
+            This is to track the details of the security conditions. This is
+            applicable when 'securityConditions' is selected as 'Yes'.
+        payerInformation:
+          type: object
+          properties:
+            payerType:
+              $ref: '#/components/schemas/PayerType'
+            payerPerson:
+              $ref: '#/components/schemas/payerPerson'
+            payerCompany:
+              $ref: '#/components/schemas/payerCompany'
+        developerDetails:
+          $ref: '#/components/schemas/developerDetail'
+        devPurpose:
+          maxLength: 2000
+          type: string
+          description: 
+            This is to track the detailed description of the development. This
+            is applicable for PCA, SWC, CC & OC, but not applicable for
+            'Subdivision Certificate'
+        commonApplicationTypes:
+         type: array
+         items: 
+           $ref: '#/components/schemas/CommonApplicationType'
+         description: This is to track the common Application types.This is required for CC, OC ,PCA and for it's corresponding parent cases that are created after 1st of September'23.
+            Example values are 
+              1. Advertising and signage
+              2. Alterations or additions to an existing building or structure
+              3. Change of use of land or a building or the classification of a building under the Building Code of Australia
+              4. Demolition
+              5. Erection of a new structure
+              6. Hours of operation and trading
+              7. Temporary building, structure or use
+        typeOfDevelopment:
+          type: array
+          items:
+            $ref: '#/components/schemas/typeOfDevelopment'
+        isDevelopmentIncludeAffordableHousing:
+          type: boolean
+          description: 
+            This is to track if the development includes affordable housing.
+            This is applicable only when Approval type is DA and CertficateType
+            is "Occupational certificate" and based on relevant development types. 
+        isApplicationForInfillAffordableHousing:
+          type: boolean
+          description: 
+            This is to track if the application is submitted for infill
+            affordable housing. This is applicable only when 
+            isDevelopmentIncludeAffordableHousing attribute is true.
+        regCommunityHousingProviderName:
+          maxLength: 512
+          type: string
+          description: 
+            This is to track the name of the registered community housing
+            provider that will be managing the affordable housing component of
+            the site. This is applicable only when Approval type is DA and
+            CertficateType equals "Occupational certificate" and
+            typeOfDevelopment is "Boarding house" and
+            isDevelopmentIncludeAffordableHousing is true.
+        isBuildToRentHousing:
+          type: boolean
+          description: 
+            This is to track if the development proposed to be build-to-rent
+            housing. Applicable  when Approval type is DA and CertificateType is
+            "Occupational certificate" and when applicable. 
+        typeofSWCProposed:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeofSWCProposed'
+        typeofSWCdevelopment:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeofSWCdevelopment'
+        investmentValue:
+          type: string
+          description: 
+            This is to track the estimated cost of the development. This
+            indicates the full contract price inclusive of GST
+        capitalInvestmentValue:
+          type: number
+          maxLength: 15
+          description: This is to track the capital investment value in accordance with the Environmental Planning and Assessment Regulation 2021.Capital Investment Value of a development or project includes all costs necessary to establish and operate the project.This is applicable for construction certificate.
+        developmentInformation:
+          $ref: '#/components/schemas/DevelopmentInformation'
+        materialsToBeUsed:
+          $ref: '#/components/schemas/MaterialsToBeUsed'
+        businessName:
+          $ref: '#/components/schemas/BusinessName'
+        registeredCertifierOrgDetails:
+          $ref: '#/components/schemas/registeredCertifierOrgDetails'
+        principalCertifierOrgDetails:
+          $ref: '#/components/schemas/principalCertifierOrgDetails'  
+        buildingpractitioner:
+          type: array
+          description: 
+            This is to track the building practitioner details. This applies to
+             Occupation Certificate where all or part
+            of the development is within 'Class 2', 'Class 3' & 'Class 9C' buildings.
+          items:
+            $ref: '#/components/schemas/buildingpractitioner'
+        designpractitioner:
+          type: array
+          description: 
+            This is to track the design Practitioner details.This applies to
+            Occupation Certificate where all or part
+            of the development is within 'Class 2', 'Class 3' & 'Class 9C' buildings.
+          items:
+            $ref: '#/components/schemas/designpractitioner'
+        principaldesignpractitioner:
+          type: array
+          description: 
+            This is to track the principal design Practitioner details. This
+            applies to  Occupation Certificate where
+            all or part of the development is within 'Class 2', 'Class 3' & 'Class 9C' buildings.
+          items:
+            $ref: '#/components/schemas/principaldesignpractitioner'
+        isChangesRequiredInFireSafetySystem:
+          type: boolean
+          description: 
+            This indicates if the applicant is proposing to carry out
+            alterations/modifications to existing 'relevant fire safety
+            systems'.This is applicable for CC.
+        isFireSafetyMeasuresRequiredForBuilding:
+          type: boolean
+          description: 
+            This is to indicate if the proposed fire safety measures are
+            required to be installed in the building. This is applicable for CC.
+        modifiedSafeteyMeasures:
+          type: array
+          description: 
+            This is to track the types of fire safety measures when carrying out
+            modifications/alterations to the existing fire safety systems.
+            Please refer to the reference data API for the latest values. This
+            is applicable for CC.
+          items:
+            $ref: '#/components/schemas/modifiedSafeteyMeasures'
+        proposedSafetyMeasures:
+          type: array
+          description: 
+            This is to track the types of fire safety measures when accepting to
+            installthe proposed fire safety systems.Please refer to the
+            reference data API for the latest values.
+          items:
+            $ref: '#/components/schemas/proposedSafetyMeasure'
+        isNABERSFormAccompanied:
+          type: boolean
+          description: 
+            This is to track if the NABERS Embodied Emissions Materials Form accompany this application. This is applicable for construction certificate when the development is not exempt from SBSEPP (isExemptFromSEPPNonResidential=false).
+        emissionsReportVerifierDetails:
+            $ref: '#/components/schemas/emissionsReportVerifierDetails'   
+        isPrescribedLCDMetTheCriteria:  
+          type: boolean
+          description: 
+           This is to track if the development is a prescribed large commercial development that involves any of the consideration. This is applicable for construction certificate when the development is not exempt from SBSEPP (isExemptFromSEPPNonResidential=false).  
+        waterReportMethodsRequired:
+          type: array
+          description: 
+              This is to track, how the water standards are being achieved by indicating where water saving measured are integrated into drawings and specifications. Please find below example values. This is applicable for construction certificate when the development is a prescribed large commercial development(isPrescribedLCDMetTheCriteria=true).
+              1. Annotated drawings, and/or
+              2. Specifications  
+              3. Other
+          items: 
+               $ref: '#/components/schemas/WaterReportMethodsRequired'
+        waterReportMethodRequiredOther: 
+          type: string
+          maxLength: 2000
+          description : This is to track the data entered under any 'Other' reason entered by the applicant on the water standards (waterReportMethodsRequired). This is applicable for construction certificate.
+        waterReportDocumentReferences:
+          type: string
+          maxLength: 2000
+          description : This is track the details and document references of the water report. This is applicable for construction certificate.
+        isDevelopmentInCityOfSydneyLGA:
+          type: boolean
+          description: 
+                This is to track if development is in the City of Sydney Local Government Area. This is applicable for construction certificate when not exempted from SEPP and when the development is a prescribed large commercial development (isExemptFromSEPPNonResidential=false & isPrescribedLCDMetTheCriteria = true ).        
+        developmentRequirements:
+          type: array
+          description: 
+            This is to track the proposed development details. This is
+            applicable  for 'Subdivision Certificate'.
+          items:
+            $ref: '#/components/schemas/developmentRequire'
+        anticipatedConstructionStartDate:
+          type: string
+          description: 
+            This is to track the Building works commencement date. This is
+            applicable for PCA.
+          format: date
+        anticipatedOCSoughtDate:
+          type: string
+          description: 
+            This is to track anticipated OC sought date. This is applicable for
+            Principal Certifier Appointment.
+          format: date
+        typeOfSubDivisionProposed:
+          type: array
+          description: 
+            This is to track if the Type of Subdivision is Proposed. Below are
+            the example values. Please refer to the reference data API for the
+            latest values.
+          items:
+            $ref: '#/components/schemas/typeOfSubDivisionProposed'
+        devCategoryForParkingSpaces:
+          type: array
+          description: This is to track the number of parking spaces for application. This is applicable for Occupation certificate.
+          items:
+            $ref: '#/components/schemas/devCategoryForParkingSpaces'    
+        isNaturalDisaster:
+          type: boolean
+          description: 
+            This is to track if this application is a direct result of a matter
+            declared by the government to be an emergency and/or a natural
+            disaster (for example, an application for re-building a home
+            destroyed by bushfire). Not applicable when certificateType is
+            'Principal Certifier Appointment'(PCA)
+        housingAndProductivityContributions:
+          type: array
+          description: This is to track the stages for which the certificate is being sought. This is applicable when Housing and Productivity contributions have been identified for the certificates for the staged developments. This is not applicable for PCA. 
+          items: 
+            $ref: '#/components/schemas/Stage'
+        subjectOfOrder:
+          type: boolean
+          description: 
+            This is to track the subject of an order. This is will hold the
+            value for the question 'Is the subdivision the subject of an order
+            of the Land and Environment Court under section 40 of the Land and
+            Environment Court Act 1979'. This is applicable for Subdivision
+            Certificate.
+        PPN:
+          type: string
+          description: 
+            This is to track the value of Pre-allocated Plan Number. This is
+            applicable for Subdivision certificate type. PPN number is a plan
+            identifier generated by a registered surveyor through NSW Land
+            registry services portal.
+        referralCases:
+          type: array
+          description: This is to track the Referral case IDs.
+          items:
+            $ref: '#/components/schemas/referralCases'
+        buildingWorkCommencementDt:
+          type: string
+          description: This is to track the date on which the building work would commence.
+          format: date
+        isResend:
+          type: boolean
+          description: 
+            This is to track if application details are resent. True indicates a
+            retriggered event.
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        declarations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Declaration'
+    AdditionalBuilderDetails:
+      type: object
+      properties:
+        builderType:
+          $ref: '#/components/schemas/BuilderType'
+        builderPerson:
+          $ref: '#/components/schemas/BuilderPerson'
+        builderCompany:
+          $ref: '#/components/schemas/BuilderCompany'
+    UpdatePCCertificate:
+      title: PCCertificate
+      required:
+        - applyOnBehalfOfCompany
+        - approvalType
+        - businessName
+        - caseStatus
+        - ownership
+        - siteAddresses
+      type: object
+      properties:
+        caseStatus:
+          maxLength: 80
+          type: string
+          description: 
+            This is to track the Case status of the applied Post Consent
+            certificates.
+          example: Submitted
+          minLength: 1
+        caseSubmittedDate:
+          type: string
+          description: 
+            This is to track the date on which the applicant submitted the
+            application in the ePlanning portal.
+        certificateType:
+          $ref: '#/components/schemas/CertificateType'
+        subType:
+          $ref: '#/components/schemas/SubType'
+        typeofSWCSeeking:
+          $ref: '#/components/schemas/TypeofSWCSeeking'
+        relevantSWCForNSW:
+          type: boolean
+          description: 
+            This is to track if the relevant SWC certificates that's applied via
+            NSW planning portal or not. This is applicable for Subdivision works
+            certificate and when TypeofSWCSeeking is 'Modification to an
+            existing SWC'.
+        existingSWCRefNum:
+          type: string
+          description: 
+            This is to track the existing SWC application reference number when
+            available.
+        SWCDetermined:
+          type: boolean
+          description: 
+            This is to track if the relevant SWC has been determined or not.
+            Applicable when TypeofSWCSeeking is 'Modification to an existing
+            SWC'.
+        dateSWCDetermined:
+          type: string
+          description: 
+            This is to track the determination date of relevant SWC when
+            available.
+          format: date
+        approvalType:
+          $ref: '#/components/schemas/ApprovalType'
+        relatedCaseNumber:
+          type: string
+          description: This is to track the related approval type’s case ID.
+        hasPortalCaseNumber:
+          type: boolean
+          description: 
+            This is to track if the related 'approvalType' for the certificate
+            applied is submitted via NSW planning portal. This is only
+            applicable when the user selects the 'approvalType' as Complying
+            Development Certificate (CDC) or Development Application number (DA)
+        relatedPortalCaseID:
+          maxLength: 10
+          type: string
+          description: 
+            This is to track the caseID of the related 'approvalType' if it is
+            submitted via NSW planning portal. This is applicable when
+            “hasPortalCaseNumber” is selected as 'true'.
+        isCaseDetermined:
+          type: boolean
+          description: 
+            This is to track determination status of the certificate's related
+            DA or CDC or SSI/SSD application.
+        dateDetermined:
+          type: string
+          description: 
+            This is to track the determination date of the related DA or CDC or
+            SSI/SSD application. This is applicable when 'isCaseDetermined' is
+            true.
+          format: date
+        applicationToTrackPCA:
+          type: string
+          description: 
+            This is to indicate if the application submitted is to track
+            transfer of Principal certifier. This is applicable for PCA
+            certificate type.
+        classOfDevelopments:
+          type: array
+          description: 
+            This is to track the development classes. This may not be applicable
+            for SC and SWC. Please refer to the reference data API for the
+            latest values
+          items:
+            $ref: '#/components/schemas/classOfDevelopment'
+        isDevelopmentExemptfromDBPAct:
+          type: boolean
+          description: 
+            This is to track if the development is exempt from DBAAct. This is
+            applicable when 'Class 2', 'Class 3' and 'Class 9c' is chosen for the 'classofdevelopments' and certificateType OC only.
+        developmentExemptReason:
+          maxLength: 510
+          type: string
+          description: 
+           This is an obsolete attribute as the DBP exempt reasons are captured in the Building Work/ITSOC applications.
+        modifyApplication:
+          type: boolean
+          description: 
+            This is applicable for Construction Certificate when applying for a
+            modification construction certificate.
+        hasPortalCCCase:
+          $ref: '#/components/schemas/HasOnlineCCCase'
+        hasViaPortalModificationCCCase:
+          type: boolean
+          description: 
+            This is to track if the related construction certificate is applied
+            via NSW Planning portal. This becomes applicable when 'approvalType'
+            is DA, and 'Modify Application' is selected as 'Yes' for a
+            Construction Certificate.
+        certificateCCNumber:
+          type: string
+          description: 
+            This is to track the related construction certificate number when
+            available.
+        CCDetermined:
+          type: boolean
+          description: 
+            This is to track the related DA approval type’s CC case
+            determination status.
+        isExemptFromSEPPNonResidential: 
+          type: boolean
+          description: 
+            This is to track if the development is exempt from the State Environmental Planning Policy (Sustainable Buildings) 2022, Chapter 3, relating to non-residential buildings for any of the following reasons. Either DA was submitted on the NSW Planning Portal before 1st October 2023 or The DA was submitted on the NSW Planning Portal on or after 1st October 2023 but was deemed exempt due to the reasons outlined in Chapter 3.1.    
+        CCDateDetermined:
+          type: string
+          description: 
+            This is to track the determination date of the construction
+            certificate. This becomes applicable when CCDetermined is true.
+          format: date
+        isPortalCCCaseByPCA:
+          type: boolean
+          description: 
+            This is to track if the related Construction certificate for PCA is
+            applied via NSW Planning portal. This becomes applicable when
+            'approvalType' is DA and Certificate type is Principal Certifier
+            Appointment.
+        constructionCertificateNumber:
+          type: string
+          description: 
+            This is to track the related Construction Certificate number for
+            PCA. This is applicable when 'isPortalCCCaseByPCA' is true.
+        CCDeterminedByPCA:
+          type: boolean
+          description: 
+            This is to track the determination status of the construction
+            certificate. This becomes applicable when 'approvalType' is DA and
+            Certificate type is Principal Certifier Appointment.
+        dateOfCCIssuedbyPCA:
+          type: string
+          description: 
+            This is to track the related construction certificate's issuance
+            date. This is applicable for PCA certificate type when
+            'CCDeterminedByPCA' is true.
+          format: date
+        PCAPortalCaseID:
+          type: string
+          description: 
+            This is an obsolete attribute and is not relevant anymore. This is to track related caseID of the  Principal certifier
+            appointment application applied through NSW planning portal. This is applicable for Occupation certificate for class 2 developments only.
+        ITSOCCaseNumber:
+          type: string
+          description: 
+            This is to track the related caseID of the the ITSOC (Intention to
+            seek Occupation Certificate) application applied through NSW
+            planning portal. This is applicable when 'Class 2', 'Class 3' and 'Class 9c' is chosen for the 'classofdevelopments' and certificateType OC only.
+        siteAddresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
+        applicantDetails:
+          $ref: '#/components/schemas/applicantDetails'
+        applyOnBehalfOfCompany:
+          type: boolean
+          description: 
+            This is to track whether the applicant is company or Not. If YES
+            need to provide the company details.
+        applicantCompany:
+          $ref: '#/components/schemas/applicantCompany'
+        buildersDetailsOrPrincipalContractor:
+          type: object
+          properties:
+            builderType:
+              $ref: '#/components/schemas/BuilderType'
+            builderPerson:
+              $ref: '#/components/schemas/BuilderPerson'
+            builderCompany:
+              $ref: '#/components/schemas/BuilderCompany'
+          description: 
+            This is to track the Builder or Principal Contractor details. This
+            is not applicable to Subdivision certificate.
+        additionalBuilderDetails:
+          type: array
+          description: 
+            This is to track any additional builder details excluding the one
+            mentioned in 'buildersDetailsOrPrincipalContractor'.
+          items:
+            $ref: '#/components/schemas/AdditionalBuilderDetails'
+        ownership:
+          $ref: '#/components/schemas/Ownership'
+        ownerDetails:
+          type: array
+          description: 
+            This is to track the ownerdetails. Either individual(ownerPerson) or
+            Company(ownerCompany)
+          items:
+            $ref: '#/components/schemas/OwnerDetails'
+        buildingWork:
+          $ref: '#/components/schemas/BuildingWork'
+        longServiceLevyPaid:
+          $ref: '#/components/schemas/LongServiceLevyPaid'
+        securityConditions:
+          type: boolean
+          description: 
+            This is to track the security or site conditions which may impact on
+            the person undertaking the inspection like locked gates, dogs,
+            animals etc. This is not applicable for subdivision certificate.
+        detailsOfSecurityConditions:
+          maxLength: 2000
+          type: string
+          description: 
+            This is to track the details of the security conditions. This is
+            applicable when 'securityConditions' is selected as 'Yes'
+        payerInformation:
+          type: object
+          properties:
+            payerType:
+              $ref: '#/components/schemas/PayerType'
+            payerPerson:
+              $ref: '#/components/schemas/payerPerson'
+            payerCompany:
+              $ref: '#/components/schemas/payerCompany'
+        developerDetails:
+          $ref: '#/components/schemas/developerDetail'
+        devPurpose:
+          maxLength: 2000
+          type: string
+          description: 
+            This is to track the detailed description of the development. Not
+            applicable for 'Subdivision Certificate'
+        commonApplicationTypes:
+          type: array
+          items: 
+            $ref: '#/components/schemas/CommonApplicationType'
+          description: This is to track the common Application types.This is required for CC, OC ,PCA and for it's corresponding parent cases that are created after 1st of September'23.
+            Example values are 
+              1. Advertising and signage
+              2. Alterations or additions to an existing building or structure
+              3. Change of use of land or a building or the classification of a building under the Building Code of Australia
+              4. Demolition
+              5. Erection of a new structure
+              6. Hours of operation and trading
+              7. Temporary building, structure or use
+        typeOfDevelopment:
+          type: array
+          items:
+            $ref: '#/components/schemas/typeOfDevelopment'
+        isDevelopmentIncludeAffordableHousing:
+          type: boolean
+          description: 
+            This is to track if the development includes affordable housing.
+            This is applicable only when Approval type is DA and CertficateType
+            is "Occupational certificate" and based on relevant development types. 
+        isApplicationForInfillAffordableHousing:
+          type: boolean
+          description: 
+            This is to track if the application is submitted for infill
+            affordable housing. This is applicable only when 
+            isDevelopmentIncludeAffordableHousing attribute is true.
+        regCommunityHousingProviderName:
+          maxLength: 512
+          type: string
+          description: 
+            This is to track the name of the registered community housing
+            provider that will be managing the affordable housing component of
+            the site. This is applicable only when Approval type is DA and
+            CertficateType equals "Occupational certificate" and
+            typeOfDevelopment is "Boarding house" and
+            isDevelopmentIncludeAffordableHousing is true.
+        isBuildToRentHousing:
+          type: boolean
+          description: 
+            This is to track if the development proposed to be build-to-rent
+            housing. Applicable  when Approval type is DA and CertificateType is
+            "Occupational certificate" and typeOfDevelopment is "Residential
+            flat building","Shop top housing","Multi-dwelling housing".
+        typeofSWCProposed:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeofSWCProposed'
+        typeofSWCdevelopment:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeofSWCdevelopment'
+        investmentValue:
+          type: string
+          description: 
+            This is to track the estimated cost of the development. Full
+            contract price inclusive of GST is indicated.
+        capitalInvestmentValue:
+          type: number
+          maxLength: 15
+          description: This is to track the capital investment value in accordance with the Environmental Planning and Assessment Regulation 2021.Capital Investment Value of a development or project includes all costs necessary to establish and operate the project.This is applicable for construction certificate.
+        developmentInformation:
+          $ref: '#/components/schemas/DevelopmentInformation'
+        materialsToBeUsed:
+          $ref: '#/components/schemas/MaterialsToBeUsed'
+        businessName:
+          $ref: '#/components/schemas/BusinessName'
+        registeredCertifierOrgDetails:
+          $ref: '#/components/schemas/registeredCertifierOrgDetails'
+        principalCertifierOrgDetails:
+          $ref: '#/components/schemas/principalCertifierOrgDetails'   
+        buildingpractitioner:
+          type: array
+          description: 
+            This is to track the building practitioner details. This applies to
+            Occupation Certificate where all or part
+            of the development is within 'Class 2', 'Class 3' & 'Class 9C' buildings .
+          items:
+            $ref: '#/components/schemas/buildingpractitioner'
+        designpractitioner:
+          type: array
+          description: 
+            This is to track the design Practitioner details.This applies to
+             Occupation Certificate where all or part
+            of the development is within 'Class 2', 'Class 3' & 'Class 9C' buildings.
+          items:
+            $ref: '#/components/schemas/designpractitioner'
+        principaldesignpractitioner:
+          type: array
+          description: 
+            This is to track the principal design Practitioner   details. This
+            applies to  Occupation Certificate where
+            all or part of the development is within 'Class 2', 'Class 3' & 'Class 9C' buildings.
+          items:
+            $ref: '#/components/schemas/principaldesignpractitioner'
+        isChangesRequiredInFireSafetySystem:
+          type: boolean
+          description: 
+            This is to track the values(yes/no) whether are we going to modify
+            existing relevant fire safety systems or not.Not required for
+            'Subdivision works certificate'.
+        isFireSafetyMeasuresRequiredForBuilding:
+          type: boolean
+          description: 
+            This is to track whether values(yes/no) whether are we proposed fire
+            safety measures to be installed in the building or not.Not required
+            for 'Subdivision works certificate'.
+        modifiedSafeteyMeasures:
+          type: array
+          description: If RelevantSafety selected as 'Yes'.
+          items:
+            $ref: '#/components/schemas/modifiedSafeteyMeasures'
+        proposedSafetyMeasures:
+          type: array
+          description: 
+            If Relevant Safety selected as 'Yes' and Safety Measures selected as
+            'Yes'
+          items:
+            $ref: '#/components/schemas/proposedSafetyMeasure'
+        isNABERSFormAccompanied:
+          type: boolean
+          description: 
+            This is to track if the NABERS Embodied Emissions Materials Form accompany this application. This is applicable for construction certificate when the development is not exempt from SBSEPP (isExemptFromSEPPNonResidential=false).
+        emissionsReportVerifierDetails:
+            $ref: '#/components/schemas/emissionsReportVerifierDetails'    
+        isPrescribedLCDMetTheCriteria:  
+          type: boolean
+          description: 
+           This is to track if the development is a prescribed large commercial development that involves any of the consideration. This is applicable for construction certificate when the development is not exempt from SBSEPP (isExemptFromSEPPNonResidential=false).
+        waterReportMethodsRequired:
+          type: array
+          description: 
+              This is to track, how the water standards are being achieved by indicating where water saving measured are integrated into drawings and specifications. Please find below example values. This is applicable for construction certificate when the development is a prescribed large commercial development(isPrescribedLCDMetTheCriteria=true).
+              1. Annotated drawings, and/or
+              2. Specifications  
+              3. Other
+          items: 
+               $ref: '#/components/schemas/WaterReportMethodsRequired'   
+        waterReportMethodRequiredOther: 
+          maxLength: 2000
+          type: string
+          description : This is to track the data entered under any 'Other' reason entered by the applicant on the water standards (waterReportMethodsRequired).This is applicable for construction certificate.
+        waterReportDocumentReferences:
+          type: string
+          maxLength: 2000
+          description : This is track the details and document references of the water report.This is applicable for construction certificate.
+        isDevelopmentInCityOfSydneyLGA:
+          type: boolean
+          description: 
+                This is to track if development is in the City of Sydney Local Government Area. This is applicable for construction certificate when  the development is not exempt from SBSEPP and when the development is a prescribed large commercial development (isExemptFromSEPPNonResidential=false & isPrescribedLCDMetTheCriteria = true ).      
+        developmentRequirements:
+          type: array
+          description: 
+            This is to track the proposed development details. This is
+            applicable  for 'Subdivision Certificate'.
+          items:
+            $ref: '#/components/schemas/developmentRequire'
+        anticipatedConstructionStartDate:
+          type: string
+          description: 
+            This is to track the Building works commencement date. This is
+            applicable for PCA.
+          format: date
+        anticipatedOCSoughtDate:
+          type: string
+          description: 
+            This is to track anticipated OC sought date. This is applicable for
+            Principal Certifier Appointment.
+          format: date
+        typeOfSubDivisionProposed:
+          type: array
+          description: 
+            This is to track the type of subdivision proposed. This is
+            applicable for Subdivision Certificate.
+          items:
+            $ref: '#/components/schemas/typeOfSubDivisionProposed'
+        devCategoryForParkingSpaces:
+          type: array
+          description: This is to track the number of parking spaces for application. This is applicable for Occupation certificate. 
+          items:
+            $ref: '#/components/schemas/devCategoryForParkingSpaces'    
+        isNaturalDisaster:
+          type: boolean
+          description: 
+            This is to track if this application is a direct result of a matter
+            declared by the government to be an emergency and/or a natural
+            disaster (for example, an application for re-building a home
+            destroyed by bushfire).This is not applicable when certificateType
+            is 'Principal Certifier Appointment'(PCA)
+        housingAndProductivityContributions:
+          type: array
+          description: This is to track the stages for which the certificate is being sought. This is applicable when Housing and Productivity contributions have been identified for the certificates for the staged developments. This is not applicable for PCA. 
+          items: 
+            $ref: '#/components/schemas/Stage'
+        subjectOfOrder:
+          type: boolean
+          description: 
+            This is to track the subject of an order. This is will hold the
+            value for the question 'Is the subdivision the subject of an order
+            of the Land and Environment Court under section 40 of the Land and
+            Environment Court Act 1979'. This is applicable for Subdivision
+            Certificate.
+        PPN:
+          type: string
+          description: 
+            This is to track the value of Pre-allocated Plan Number. This is
+            applicable for Subdivision certificate type. PPN number is a plan
+            identifier generated by a registered surveyor through NSW Land
+            registry services portal.
+        referralCases:
+          type: array
+          description: 
+            This is to track the referral case IDs and they are applicable for
+            Subdivision certificate.
+          items:
+            $ref: '#/components/schemas/referralCases'
+        buildingWorkCommencementDt:
+          type: string
+          description: This is to track the date of the Building work commencement.
+          format: date
+        documents:
+          type: array
+          description: This block will contain the full set of documents.
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        deltaDocuments:
+          type: array
+          description: 
+            This block will be sending the delta documents uploaded or updated
+            as part of update operation.
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        postDetermination:
+          $ref: '#/components/schemas/PostDetermination'
+        declarations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Declaration'
+        determinationOutcome:
+          type: string
+          description: 
+            This is to track the determination outcome of the application. This is applicable for the UpdatePCC which is emitted post determination and for all certificates except PCA.
+    applicantDetails:
+      title: applicantDetails
+      type: object
+      properties:
+        title:
+          $ref: '#/components/schemas/Title'
+        applicantPerson:
+          $ref: '#/components/schemas/Person'
+        address:
+          maxLength: 250
+          type: string
+          description: This is applicable while providing applicant details.
+    BuilderPerson:
+      type: object
+      properties:
+        title:
+          $ref: '#/components/schemas/Title'
+        person:
+          $ref: '#/components/schemas/Person'
+        address:
+          maxLength: 250
+          type: string
+        licenseNumber:
+          type: string
+          description: 
+            This is to track the Licence number or Permit number (in case of an
+            owner builder).
+    applicantCompany:
+      type: object
+      properties:
+        companyName:
+          maxLength: 150
+          type: string
+          description: This is to track the company name.
+        ABN:
+          maxLength: 14
+          type: string
+          description: 
+            The Australian Business Number (ABN) is a unique 11 digit identifier
+            issued to all entities registered in the Australian Business
+            Register (ABR)
+        ACN:
+          maxLength: 11
+          type: string
+          description: The Australian Company Number (ACN) is a nine digit number
+        tradingName:
+          maxLength: 256
+          type: string
+          description: This is to track the trading name.
+    classOfDevelopment:
+      title: classOfDevelopment
+      type: string
+      description: 
+        example values for classOfDevelopment
+
+
+        1. Class 1a 2. Class 1b 3. Class 2 4. Class 3 5. Class 4 6. Class 5 7.
+        Class 6 8. Class 7a 9. Class 7b 10. Class 8 11. Class 9a 12. Class 9b
+        13. Class 9c 14. Class 10a 15. Class 10b 16. Class 10c
+    OwnerDetails:
+      type: object
+      properties:
+        isOwnerABuilder:
+          type: boolean
+          description: 
+            This is track the if the owner is the builder or not. This is
+            applicable when either of the below options are chosen by the
+            applicant. 1. There are one or more owners of the development site
+            and I am NOT one of them. OR 2. There are multiple owners of the
+            development site and I am one of them.
+        title:
+          $ref: '#/components/schemas/Title'
+        ownerPerson:
+          $ref: '#/components/schemas/PersonBodyOut'
+        ownerCompany:
+          $ref: '#/components/schemas/ownerCompany'
+        address:
+          maxLength: 250
+          type: string
+          description: Owner's Address
+          example: 19-33 Elizabeth Street, Narrandera, 2700
+      description: This is applicable for either an ownerPerson or an ownerCompany
+    ownerPerson:
+      title: ownerPerson
+      type: object
+      properties:
+        isOwnerABuilder:
+          type: boolean
+          description: 
+            This is track the development site owner. This is applicable either
+            of the below options are chosen by the applicant. 1. There are one
+            or more owners of the development site and I am NOT one of them. OR
+            2. There are multiple owners of the development site and I am one of
+            them.
+        title:
+          $ref: '#/components/schemas/Title'
+        applicantPerson:
+          $ref: '#/components/schemas/Person'
+        address:
+          maxLength: 250
+          type: string
+          description: Applicable as part of Owner details
+      description: 
+        This is applicable if Ownership is NOT selected as 'I am the sole owner
+        of the development site' and 'A company, business, government entity or
+        other similar body owns the development site'.
+    ownerCompany:
+      title: ownerCompany
+      type: object
+      properties:
+        companyName:
+          type: string
+          description: Company Name
+        ABNorACN:
+          maxLength: 14
+          type: string
+          description: 
+            This is to track thr ABNorACN. It should be 11 digit number for ABN
+            or 9 digit number for ACN
+      description: 
+        If Ownership selected as 'A company, business, government entity or
+        other similar body owns the development site'
+    buildingpractitioner:
+      type: object
+      properties:
+        isOrgRegisteredPractioner:
+          type: string
+          description: 
+            This is to track if the organisation registered as a body corporate
+            for class 2 buildings.
+        isPractitionerRegisteredForClass2:
+          type: string
+          description: 
+            This is to track if the practitioner registered for class 2
+            buildings. Following are the values. Please refer to the reference
+            data API for the latest values.    1. Yes 2. No 3. Not Applicable.
+          example: refer to description for values.
+        appropriatePractitioner:
+          type: string
+          description: 
+            This is to track the given practitioner is an appropriate
+            practitioner or not.
+        organisationDetails:
+          $ref: '#/components/schemas/organisationDetails'
+        practitionerdetails:
+          $ref: '#/components/schemas/practitionerdetails'
+    registeredCertifierOrgDetails:
+      type: object
+      description: This indicates the organisation details of the nominated Registered certifier. This is applicable for Construction certificates only. 
+      properties:
+        ABN:
+          maxLength: 14
+          type: string
+          description: 
+            This is to track the Australian Business Number (ABN) which is a
+            unique 11 digit identifier issued to all entities registered in the
+            Australian Business Register (ABR)
+          minLength: 1
+        ACN:
+          maxLength: 11
+          type: string
+          description: 
+            This is to track the Australian Company Number (ACN). 
+        companyName:
+          type: string
+          description: 
+            This is to track the company name. 
+          minLength: 1
+        tradingName:
+          type: string
+          description: 
+            This is to track the trading name. 
+        address:
+          type: string
+          description: 
+            This is to track the company's address. 
+          minLength: 1
+        email:
+          maxLength: 250
+          type: string
+          description: 
+            This is to track the email address. 
+          format: email
+          minLength: 1
+    principalCertifierOrgDetails:
+      type: object
+      description: This indicates the organisation details of the nominated Principal certifier. This is applicable for Construction certificates and Occupation certificates only. 
+      properties:
+        ABN:
+          maxLength: 14
+          type: string
+          description: 
+            This is to track the Australian Business Number (ABN) which is a
+            unique 11 digit identifier issued to all entities registered in the
+            Australian Business Register (ABR)
+          minLength: 1
+        ACN:
+          maxLength: 11
+          type: string
+          description: 
+            This is to track the Australian Company Number (ACN). 
+        companyName:
+          type: string
+          description: 
+            This is to track the company name. 
+          minLength: 1
+        tradingName:
+          type: string
+          description: 
+            This is to track the trading name. 
+        address:
+          type: string
+          description: 
+            This is to track the company's address. 
+          minLength: 1
+        email:
+          maxLength: 250
+          type: string
+          description: 
+            This is to track the email address. 
+          format: email
+          minLength: 1
+    organisationDetails:
+      required:
+        - ABN
+        - companyAddress
+        - companyEmail
+        - legalName
+      type: object
+      properties:
+        bodyCorporateRegisterationNo:
+          type: string
+          description: 
+            This is to track the body Corporate Registeration number. It will be
+            applicable if isOrgRegisteredPractitioner is true.
+        ABN:
+          maxLength: 14
+          type: string
+          description: 
+            This is to track the Australian Business Number (ABN) which is a
+            unique 11 digit identifier issued to all entities registered in the
+            Australian Business Register (ABR)
+          minLength: 1
+        ACN:
+          maxLength: 11
+          type: string
+          description: 
+            This is to track the Australian Company Number (ACN). It will be
+            editable if isOrgRegisteredPractitioner is selected as 'No'
+        legalName:
+          type: string
+          description: 
+            This is to track the company name. It will be editable if
+            isOrgRegisteredPractitioner is selected as 'No'
+          minLength: 1
+        tradingName:
+          type: string
+          description: 
+            This is to track the trading name. It will be editable if
+            isOrgRegisteredPractitioner is selected as 'No'
+        companyAddress:
+          type: string
+          description: 
+            This is to track the company's address. It will be editable if
+            isOrgRegisteredPractitioner is selected as 'No'
+          minLength: 1
+        companyEmail:
+          maxLength: 250
+          type: string
+          description: 
+            This is to track the email address. It will be editable if
+            isOrgRegisteredPractitioner is selected as 'No'
+          format: email
+          minLength: 1
+      description: This is to track the organisation details.
+    practitionerdetails:
+      type: object
+      properties:
+        practitionerTypes:
+          type: array
+          description: 
+            MultiSelect List  where we can choose sub type of practitioner. One
+            of the below mentioned values to be selected for practitionertype.
+          items:
+            $ref: '#/components/schemas/practitionertypes'
+        practitionerRegistrationNumber:
+          type: string
+          description: 
+            This is to track the Practitioner registration number. It will be
+            applicable and if isPractitionerRegisteredForClass2 is selected as
+            'Yes'
+        title:
+          type: string
+          description: 
+            This is to track the salutation. It will be applicable if
+            isPractitionerRegisteredForClass2 is selected as 'No'. One of the
+            below mentioned values to be selected for title 1. Miss 2. Mr 3. Mrs
+            4. Ms
+          example: Refer to description for values
+        firstName:
+          maxLength: 20
+          type: string
+          description: 
+            This is to track the first name and is required if
+            isPractitionerRegisteredForClass2 is selected as 'No'.
+        otherName:
+          maxLength: 20
+          type: string
+          description: This is to track the other name
+        familyName:
+          maxLength: 20
+          type: string
+          description: 
+            This is to track the family Name and is applicable if
+            'isPractitionerRegisteredForClass2' is selected as 'false'.
+        contactNumber:
+          maxLength: 10
+          minLength: 8
+          pattern: ^[0-9]+$
+          type: string
+          description: 
+            This is to track the phone number and applicable if
+            isPractitionerRegisteredForClass2 is selected as 'false'.
+        email:
+          maxLength: 250
+          type: string
+          description: 
+            This is to track the email and is applicable if
+            'isPractitionerRegisteredForClass2' is selected as 'No'.
+          format: email
+        address:
+          maxLength: 250
+          type: string
+          description: 
+            This is to track the address and applicable if
+            'isPractitionerRegisteredForClass2' is selected as 'No'.
+      description: This is to track the Practitioner Details.
+    designpractitioner:
+      type: object
+      properties:
+        isOrgRegisteredPractioner:
+          type: string
+          description: 
+            This is to track if the organisation registered as a body corporate
+            for class 2 buildings.
+        isPractitionerRegisteredForClass2:
+          type: string
+          description: 
+            This is to track if the practitioner registered for class 2
+            buildings. Following are the values. Please refer to the reference
+            data API for the latest values.  1. Yes 2. No 3. Not Applicable.
+          example: refer to description for values.
+        appropriatePractitioner:
+          type: string
+          description: 
+            TThis is to track the given practitioner is an appropriate
+            practitioner or not.
+        designPractitionerType:
+          type: string
+          description: 
+            As the planning portal has been uplifted to include multiple values
+            for this field, a new field practitionerTypes has been introduced to
+            accommodate  this multiselect field list. However, this field will
+            be continued to be supported by appending the multiple values into
+            single field with ";"  separated until the next subsequent major
+            release of API.Where possible, please use "practitionerTypes" under
+            the 'designpractitioner'object instead of this attribute.
+        organisationDetails:
+          $ref: '#/components/schemas/organisationDetails'
+        practitionerdetails:
+          $ref: '#/components/schemas/practitionerdetails'
+    principaldesignpractitioner:
+      type: object
+      properties:
+        isOrgRegisteredPractioner:
+          type: string
+          description: 
+            This is to track if the organisation registered as a body corporate
+            for class 2 buildings.
+        isPractitionerRegisteredForClass2:
+          type: string
+          description: 
+            TThis is to track if the practitioner registered for class 2
+            buildings. Following are the values. Please refer to the reference
+            data API for the latest values. 1. Yes 2. No 3. Not Applicable.
+          example: refer to description for values.
+        appropriatePractitioner:
+          type: string
+          description: 
+            This is to track the given practitioner is an appropriate
+            practitioner or not.
+        organisationDetails:
+          $ref: '#/components/schemas/organisationDetails'
+        practitionerdetails:
+          $ref: '#/components/schemas/practitionerdetails'
+    payerPerson:
+      type: object
+      properties:
+        title:
+          $ref: '#/components/schemas/Title'
+        payerInfo:
+          $ref: '#/components/schemas/Person'
+        billingAddress:
+          maxLength: 250
+          type: string
+          description: 
+            This is to track the billing address. This is applicable if Payer
+            Type selected as 'Individual'.
+      description: 
+        This is to track the payer person. Applicable,  if Payer Type selected
+        as 'Individual'.
+    payerCompany:
+      type: object
+      properties:
+        applicantCompany:
+          $ref: '#/components/schemas/applicantCompany'
+        mailingAddress:
+          type: string
+          description: Billing Address
+        email:
+          maxLength: 250
+          type: string
+          description: Email
+      description: 
+        This is to track the payer company. This is applicable if payer Type is
+        selected. as 'A Company, Business, Government entity or other similar
+        body'.
+    developerDetail:
+      type: object
+      properties:
+        developerInfo:
+          $ref: '#/components/schemas/applicantCompany'
+        fullAddress:
+          maxLength: 250
+          type: string
+          description: Address of the developer
+        email:
+          maxLength: 250
+          type: string
+          description: This is to capture the email address.
+      description: Ths is to track the developer details.
+
+    typeOfDevelopment:
+      type: string
+      description: 
+        This is to track the type of developments.
+    TypeofSWCProposed:
+      type: string
+      description: 
+        This indicates the types of the proposed subdivision works certificate.
+        Few example values are 1. Stratum 2. Community title 3. Torrens 4.
+        Strata. Please refer to the reference data API for the latest values.
+      example: Refer to description for values
+    TypeofSWCdevelopment:
+      type: string
+      description: 
+        This indicates the types of SWC development. Few example values are
+        Earthworks, Roadworks, Road pavement. Please refer to the reference data
+        API for the latest values.
+      example: 
+        Earthworks, Roadworks, Road pavement, Road furnishings, Stormwater
+        drainage, Water supply works, Sewerage works, Landscaping works, Erosion
+        control works, Other
+    buildingAttached:
+      type: string
+      description: 
+        This is to track the type of proposed building.This is applicable for relevant development types.
+        1. Attached 2. Detached (Free-standing) 3.Semi-detached 
+      example: Refer to description for values
+    MaterialsToBeUsed:
+      type: object
+      properties:
+        walls:
+          type: array
+          items:
+            $ref: '#/components/schemas/wall'
+        roofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/roof'
+        floor:
+          type: array
+          items:
+            $ref: '#/components/schemas/floor'
+        frame:
+          type: array
+          items:
+            $ref: '#/components/schemas/frame'
+      description: 
+        This is to track the materials that are used for construction. This may
+        not be applicable for SC & SWC.
+    wall:
+      type: string
+      description: 
+        Materials to be used for Wall. One of the below mentioned values to be
+        selected. Please refer to reference data API for the latest values.  1.
+        Brick veneer (12) 2. Cladding-aluminium (70) 3. Concrete (20) 4.
+        Concrete block (11) 5. Concrete/masonry (20) 6. Curtain glass (50) 7.
+        Fibrous cement (30) 8. Full brick (11) 9. Hard plank (30) 10. Single
+        brick (11) 11. Steel (60) 12. Timber/weatherboard (40) 13. Other (80)
+        14. Unknown (90)
+      example: Refer to description for values
+    roof:
+      type: string
+      description: 
+        Materials to be used for Roof. One of the below mentioned values to be
+        selected for roof. Please refer to reference data API for the latest
+        values.  1. Aluminium (70) 2. Concrete (20) 3. Concrete tile (10) 4.
+        Fibreglass (80) 5. Fibrous cement (30) 6. Masonry/Terracotta shingle
+        tiles (10) 7. Slate (20) 8. Steel (60) 9. Terracotta tile (10) 10. Other
+        (80) 11. Unknown (90)
+      example: Refer to description for values
+    floor:
+      type: string
+      description: 
+        Materials used for flooring. One of the below mentioned values to be
+        selected for floor. Please refer to reference data API for the latest
+        values.  1. Concrete (20) 2. Timber (40) 3. Other (80) 4. Unknown (90)
+      example: Refer to description for values
+    frame:
+      type: string
+      description: 
+        This is to track the Frame Materials. One of the below mentioned values
+        to be selected for frame. Please refer to reference data API for the
+        latest values.  1. Aluminium (70) 2. Steel (60) 3. Timber (40) 4. Other
+        (80) 5. Unknown (90)
+      example: Refer to description for values
+    practitionertypes:
+      type: string
+      description: 
+        This is to track the practitioner types. MultiSelect List where we can
+        choose one or more sub type of Building practitioner. 1. General 2. Body
+        Corporate Nominee MultiSelect List filed where we can choose sub type of
+        Design practitioner. 1. Architectural 2. Building Design (Low Rise) 3.
+        Building Design (Medium Rise) 4. Civil Engineering 5. Drainage 6.
+        Drainage (restricted) 7. Electrical Engineering 8. Facade 9. Fire Safety
+        Engineering 10. Fire Systems (detection and alarm systems) 11. Fire
+        Systems (fire hydrant and fire hose reel) 12. Fire Systems (fire
+        sprinkler) 13. Fire Systems (mechanical smoke control) 14. Geotechnical
+        Engineering 15. Mechanical Engineering 16. Structural Engineering 17.
+        Vertical transportation MultiSelect List filed where we can choose one
+        or more sub type of principal design practitioner. 1. General
+      example: Refer to description for values.
+    modifiedSafeteyMeasures:
+      type: object
+      properties:
+        safetyMeasure:
+          $ref: '#/components/schemas/SafetyMeasure'
+        isMeasureInstall:
+          type: string
+          description: 
+            This is to track if the safety measures are installed in the
+            building.
+        enterProposedStandard:
+          maxLength: 2000
+          type: string
+          description: 
+            This is to track the proposed standard of performance. This is
+            available if the 'isMeasureInstall' attribute is 'Yes'.
+      description: Modified Fire Safety Measures
+    proposedSafetyMeasure:
+      type: object
+      properties:
+        safetyMeasure:
+          $ref: '#/components/schemas/SafetyMeasure'
+        isMeasureInstall:
+          type: string
+          description: 
+            This is to track if the safety measures are installed in the
+            building.
+        enterProposedStandard:
+          maxLength: 2000
+          type: string
+          description: 
+            This is to track the proposed standard of performance. This is
+            available if the 'isMeasureInstall' attribute is 'Yes'.
+      description: Fire Safety Measures
+    Declaration:
+      type: string
+      example: 
+        I declare that all the information in the application and checklist is,
+        to the best of my knowledge, true and correct.
+    developmentRequire:
+      type: string
+      description: 
+        This is to track if the development is required.  One of the below
+        mentioned values to be selected. 1. Build earthworks 2. Lot fill 3.
+        Construction of any new roads (including kerb and gutter) 4.
+        Construction of any new roads (without kerb and gutter) 5. Bridge or
+        major culvert works 6. Inter-allotment 7. Stormwater drainage 8. Works
+        to water and sewer mains 9. Encroachment into the driveway 10. Not
+        applicable
+      example: Refer to description for values
+    typeOfSubDivisionProposed:
+      type: string
+      description: 
+        Below are the example values. Please refer to the reference data API for
+        the latest values. 1. Strata Title 2. Community Title 3. Torrens Title
+        4. Consolidation 5. Boundary Adjustment 6. Stratum Title 7. Easements or
+        Rights of Carriageway 8. Termination of Strata 9. Covenant 10.
+        Restriction as to use 11. Other
+      example: Refer to description for values
+    referralCases:
+      type: string
+      description: 
+        referral case ID. Use this case ID to provide as part of GetCaseInfo
+        digital service to get case information
+      example: REF-XXXX
+    ApprovalType:
+      type: string
+      description: 
+        This is to track the related approval type of the certificate applied.
+        Example values would be 1. Development Application number (DA) 2.
+        Complying Development Certificate (CDC) 3. State determined (SSI / SSD).
+        Please refer the reference data API for latest values.
+      example: Refer to description for values
+    LongServiceLevyPaid:
+      type: string
+      description: 
+        This is to track if the Building and Industry Long Service Levy is paid
+        when the value of the work is $25,000 or more. This is applicable for
+        Constuction certificate. Example values are 1. Yes 2. No 3. NA
+    PostDetermination:
+      required:
+        - buildingComplianceDeclaration
+      type: object
+      properties:
+        isPractitionerDeclaredAsBuiltVariationConfirmation:
+          type: boolean
+          description: 
+            This is to track variations to the As-built regulated designs indicated by the practitioner. The value false means there are no further variations to the As-Built regulated designs and declarations.The value true means there are additional regulated designs and building compliance declarations are required.
+        buildingComplianceDeclaration:
+          required:
+            - isDesignComplianceDeclarationObtained
+            - isDesignPreparedByRegisteredPractitioner
+            - isPrincipalComplianceDeclarationObtained
+            - isRegisteredPrincipalDesignPractitionerAppointed
+            - isbuildingWorkComplied
+            - stepsToEnsureCompliance
+          type: object
+          description: It infers Building Compliance Declarations. 
+          properties:
+            isbuildingWorkComplied:
+              type: boolean
+              description: 
+                This is to track if the building work is complied with the
+                requirements of the Building Code of Australia.
+            reasonForbuildingWorkNotCompliant:
+              type: string
+              description: 
+                This is to track if the response to "Has the building work
+                complied with the requirements of the Builiding Code of
+                Australia." Applicable when isbuildingWorkComplied is false
+            stepsToEnsureCompliance:
+              type: string
+              description: This is to track the steps taken to set out compliance. 
+              minLength: 1
+            isDesignPreparedByRegisteredPractitioner:
+              type: boolean
+              description: 
+                This is to track if the design has been prepared by a registered
+                design practitioner and the building work built in accordance
+                with the design.
+            reasonForDesignNotPreparedByRegisteredPractitioner:
+              type: string
+              description: 
+                This is to track the reason when the response to
+                "isDesignPreparedByRegisteredPractitioner" is false.
+            isDesignComplianceDeclarationObtained:
+              type: boolean
+              description: 
+                This is to track if the design compliance declaration has been
+                obtained in relation to regulated designs used for the building
+                work.
+            designComplianceDeclarationObtainedInfo:
+              type: string
+              description: 
+                This is to track if the response to
+                "isDesignComplianceDeclarationObtained" is false.
+            isRegisteredPrincipalDesignPractitionerAppointed:
+              type: boolean
+              description: 
+                This is to track if a registered principal design practitioner
+                appointed in relation to the building work. If true, Principal
+                Design practitioner - Principal compliance declartion should be
+                lodged.
+            isPrincipalComplianceDeclarationObtained:
+              type: boolean
+              description: 
+                This is to track if a principal compliance declaration been
+                obtained in relation to the regulated designs compliance
+                declarations relating to the building work.
+            principalComplianceDeclarationObtainedInfo:
+              type: string
+              description: 
+                This is to track if the response to "Has a principal compliance
+                decalaration been obtained in relation to the regulated designs
+                and design compliance declarations relating to the building
+                work." Applicable when isPrincipalComplianceDeclarationObtained is false.
+        buildingdesignComplianceDeclarations:
+          type: array
+          description: 
+            These are the declarations checked by the builder when completing
+            the questions under business compliance declaration section & 
+            design Compliance Declaration section.
+          items:
+            $ref: '#/components/schemas/buildingDesignComplianceDeclarations'
+      description: 
+        This is to track Post determination. This will be applicable only
+        for OC when class of development is Class 2.
+    buildingDesignComplianceDeclarations:
+      type: string
+      description: 
+        This is to track Building and design Compliance declarations that are declared by the practitioner when the additional regulated designs and declarations are supplied.
+        1. Copy of each design compliance declaration given
+        under section 9(3)(b) of the Act for a varied regulated design. 
+        2. Copy of Varied regulated design.
+        3. Copy of each design compliance declaration obtained under section 20(3) of the Act for a new building element or
+        performance solution.
+        4. Copy of the regulated design for the new building element or performance solution. 
+      example: Refer to description for values
+    BuilderCompany:
+      type: object
+      properties:
+        company:
+          $ref: '#/components/schemas/applicantCompany'
+        address:
+          maxLength: 250
+          type: string
+          description: This is to track the address.
+        email:
+          type: string
+          description: This is to track the email.
+      description: A Company, Business, Government entity or other similar body.
+    BuilderType:
+      type: string
+      description: 
+        This is to track the type of the builder chosen for the development.
+        Please refer to reference data API for the latest values. Example values
+        are as below 1.Individual 2.A company, Business, Government entity or
+        other similar body.
+      example: Refer to description for values
+    BuildingWork:
+      type: string
+      description: 
+        This indicates the entity that would be doing the building work. One of
+        the below mentioned values to be selected for BuildingWork. Please refer
+        the reference date API for the latest values. 1. Licensed Builder 2.
+        Owner Builder 3. Not determined at this time (This information will be
+        required prior to work commencing).
+    BusinessName:
+      type: object
+      description: This is to track the business name of the nominated Principal Certifier. This is obsolete for CC & OC and is replaced by the relevant registeredCertifierOrgDetails & principalCertifierOrgDetails object.
+      properties:
+        nominatedPCCompanyName:
+          type: string
+          description: 
+            This is to track the nominated principal certifier's company name. 
+            e.g A Allen Consulting Surveyors Pty Ltd
+        address:
+          maxLength: 150
+          type: string
+          description: Address Ex- 5/211 Ramsgate Road RAMSGATE BEACH NSW 2217
+    CertificateType:
+      type: string
+      description: 
+        This is to track the type of certificate submitted. Applicable values
+        are 1. Subdivision Certificate 2. Construction Certificate 3. Principal
+        Certifier Appointment 4. Occupation Certificate 5. Subdivision works
+        certificate. Please refer to reference data API for the latest values.
+      example: Refer to description for values
+    TypeofSWCSeeking:
+      type: string
+      description: 
+        This is to track the type of subdivision works certificate that is being
+        sought. Applicable for Subdivision works certificate. One of the below
+        mentioned values to be selected for TypeofSWCSeeking 1. New application
+        2. Modification to an existing SWC
+      example: Refer to description for values
+    DevelopmentInformation:
+      type: object
+      properties:
+        landArea:
+          type: number
+          description: 
+            This is to track the Total site area in sqm when applicable. 
+          format: double
+        existingGrossFloorArea:
+          type: number
+          description: 
+            This is to track the existing gross floor area floor area (sqm) of
+            the development.
+          format: double
+        proposedGrossFloorArea:
+          type: number
+          description: 
+            This is to track the proposed gross floor area of the new
+            development when applicable. 
+          format: double
+        totalNetLettableArea:
+          type: integer
+          description: 
+            This is to track the Net Lettable Area(NLA) which is the total area of all internal tenancies across all floors in a commerical building, excluding public access, building services, staff and cleaning areas. This is applicable for construction certificate. 
+        currentBuildingUse:
+          type: string
+          description: 
+            This is to track the current uses of all parts of the
+            building(s)/land.
+        proposedBuildingUse:
+          type: string
+          description: 
+            This is to track the if the proposed use of all parts of the
+            building(s)/land.
+        buildingAttached:
+          type: array
+          description: 
+            This is to track the type of proposed building.This is applicable for relevant development types.
+            1. Attached 2. Detached (Free-standing) 3.Semi-detached 
+          items:
+            $ref: '#/components/schemas/buildingAttached'
+        oneBedProposedDev:
+          type: number
+          description: 
+            Number of one-bedroom dwellings in the proposed development. This
+            attribute will soon become obsolete in the upcoming versions as it's
+            replaced with the relevant attributes under the object
+            'NumberofBedrooms'. Value for this attribute can be referred to the
+            value against the 'noofDwellingsErected' when the value '1
+            bedroom'appears against 'noOfBedrooms'.
+          format: double
+        twoBedProposedDev:
+          type: number
+          description: 
+            Number of two-bedroom dwellings in the proposed development. This
+            attribute will soon become obsolete in the upcoming versions as it's
+            replaced with the relevant attributes under the object
+            'NumberofBedrooms'. Value for this attribute can be referred to the
+            value against the 'noofDwellingsErected' when the value '2
+            bedrooms'appears against 'noOfBedrooms'.
+          format: double
+        threeBedProposedDev:
+          type: number
+          description: 
+            Number of three-bedroom dwellings in the proposed development. This
+            attribute will soon become obsolete in the upcoming versions as it's
+            replaced with the relevant attributes under the object
+            'NumberofBedrooms'. Value for this attribute can be referred to the
+            value against the 'noofDwellingsErected' when the value '3
+            bedrooms'appears against 'noOfBedrooms'.
+          format: double
+        fourBedProposedDev:
+          type: number
+          description: 
+            Number of four-bedroom dwellings in the proposed development. This
+            attribute will soon become obsolete in the upcoming versions as it's
+            replaced with the relevant attributes under the object
+            'NumberofBedrooms'. Value for this attribute can be referred to the
+            value against the 'noofDwellingsErected' when the value '4 bedrooms'
+            appears against 'noOfBedrooms'.
+          format: double
+        height:
+          type: number
+          description: Ultimate height of the development (m) when applicable. 
+          format: double
+        preExistingDwellingsOnSite:
+          type: number
+          description: Number of pre-existing dwellings on site when applicable. 
+          format: double
+        dwellingsDemolished:
+          type: number
+          description: Number of dwellings to be demolished. 
+          format: double
+        unitsProposed:
+          type: number
+          description: Number of dwellings proposed as part of this certificate. 
+          format: double
+        storiesProposed:
+          type: number
+          description: Number of storeys proposed in the new building(s) when applicable. 
+          format: double
+          maxLength: 4
+        proposedLots:
+          type: integer
+          description: Number of proposed lots when applicable. 
+          format: int32
+        existingLots:
+          type: integer
+          description: Number of proposed lots when applicable. 
+          format: int32
+        numOfBedrooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/NumberofBedrooms'
+      description: This is applicable for CC, PCA, SC & SWC. 
+    NumberofBedrooms:
+      required:
+        - noOfBedrooms
+      type: object
+      properties:
+        noOfBedrooms:
+          type: string
+          description: 
+            This is to track the number of bedrooms that are proposed to be
+            demolished and/or erectd by size of dwelling. 1. Studio 2. 1 bedroom
+            3. 2 bedrooms 4. 3 bedrooms 5. 4 bedrooms 6. 5 bedrooms 7. 6+
+            bedrooms
+          example: Refer to description for values.
+          minLength: 1
+        noOfDwellingsDemolished:
+          type: number
+          description: Number of dwellings to be demolished.
+          maxLength: 4
+        noOfDwellingsErected:
+          type: number
+          description: Number of dwellings to be erected.
+          maxLength: 4
+      description: 
+        This is to track the numbeer of dwellings that was proposed to be
+        demolished and/or erected by size of dwelling. This object becomes
+        applicable for the cases that are created on or after 1st July'22.
+    HasOnlineCCCase:
+      type: string
+      description: 
+        This is to track the approval type’s related construction certificate
+        that’s applied for via NSW Planning portal. This is applicable for 1.OC
+        when approvalType is other than CDC 2.CC when “modifyApplication” is No
+        & approvalType is DA.
+      example: Refer to description for values
+    Ownership:
+      type: string
+      description: 
+        This is to track the owner of the development site. Example values are
+        1. I am the sole owner of the development site 2. There are multiple
+        owners of the development site and I am one of them 3. There are one or
+        more owners of the development site and I am NOT one of them 4. A
+        company, business, government entity or other similar body owns the
+        development site
+      example: Refer to description for values
+    PayerType:
+      type: string
+      description: 
+        This is to track the type of the payer. Below are the example values.
+        Please refer to the reference data API for the latest values. 1.
+        Individual 2. A Company, Business, Government entity or other similar
+        body
+    SafetyMeasure:
+      type: string
+      description: 
+        This is to track the values of the firesafety measures. This is
+        applicable for CC. Below are few exampe values. Please refer the
+        reference data API for the latest values. 1. Access Panels, doors and
+        hoppers to fire resisting shaft 2. Automatic fail-safe devices 3.
+        Automatic fire detection and alarm system* 4. Automatic fire suppression
+        system (sprinkler)* 5. Emergency lighting 6. Emergency lifts 7.
+        Emergency warning and intercommunication system 8. Exit signs 9. Fire
+        control centres and rooms 10. Fire dampers 11. Fire doors 12. Fire
+        hydrant systems* 13. Fire seals (protecting openings in fire resisting
+        components of building) 14. Fire shutters 15. Fire windows 16. Hose reel
+        systems 17. Lightweight construction 18. Mechanical air handling systems
+        (smoke control) * 19. Perimeter vehicle access for emergency vehicles
+        20. Portable fire extinguishers 21. Safety curtains in proscenium
+        openings 22. Smoke and Heat Vents 23. Smoke dampers 24. Smoke detectors
+        and heat detectors 25. Smoke doors 26. Solid-Core doors 27. Standby
+        Power Systems 28. Wall wetting sprinkler and drencher systems* 29.
+        Warning and operational signs 30. Other (please specify)
+      example: Refer to description for values
+    SubType:
+      type: string
+      description: 
+        This indicates the subtype of the certificate applied. It is applicable
+        for Subdivision certificate, Construction certificate and Occupation
+        certificate. Example values for SC and CC would be 1.Certificate for
+        part of the development 2.Certificate for the full development. For OC,
+        when the approval type's determination status is 'false' 1.Occupation
+        certificate for a partially completed building 2.Occupation certificate
+        for part of the building 3.Occupation certificate for whole building.
+        For OC, when the approval type's determination status is 'true'
+        1.Interim Occupation certificate 2.Final occupation certificate. Please
+        refer to the reference data API for the latest values.
+      example: Refer to description for values
+    Title:
+      type: string
+      description: 
+        This is to track the title. One of the below mentioned values to be
+        selected for title. 1. Miss 2. Mr 3. Mrs 4. Ms
+      example: Refer to description for values
+    devCategoryForParkingSpaces:
+      required:
+      - categoryOfDevelopment
+      type: object
+      properties:
+        categoryOfDevelopment:
+          type: string
+          description: This is to track the Category of development 1. Residential
+            accommodation 2. Commercial including business premises and retail premises
+            3. Industry 4. Other for example rural/extractive industry  
+          example: Refer to description for values.  
+        carParkingSpaces:
+          type: integer
+          description: This is to track the carParkingSpaces in the proposed online
+            DA development. 
+        motorCycleSpaces:
+          type: integer
+          description: This is to track the number of motorCycleSpaces in the proposed
+            online DA development.
+        biCycleSpaces:
+          type: integer
+          description: This is to track the bicycleSpaces in the proposed
+            online DA development. 
+      description: This is to track the number of parking spaces for application.
+        If the development includes car share parking or other types of parking that
+        are not easilyt defined, 'Other' value under the category development would
+        be used.
+    CommonApplicationType:
+     type: object
+     properties:
+       commonApplicationType:
+        type: string              
+    Stage:
+     type: object
+     properties: 
+      stage: 
+        type: string
+    ReqAddInfo:
+      required:
+        - requestDetails
+        - updatedBy
+      type: object
+      properties:
+        childCaseID:
+          type: string
+          description: Used to hold the child case ID to perform RFI.
+          example: AI-XXXX
+        primaryCaseID:
+          type: string
+          description: Used to hold Post Consent Certificate case ID.
+          example: CFT-XXXX
+        caseStatus:
+          type: string
+          description: Used to hold the case status of ITSOC/SB
+        requestDate:
+          type: string
+          description: Date and time of request
+          format: date
+        requestDetails:
+          maxLength: 2000
+          type: string
+          description: Short description of request
+          minLength: 1
+        Documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DownloadableDocument'
+        updatedBy:
+          type: object
+          properties:
+            person:
+              $ref: '#/components/schemas/PersonBodyOut'              
+    emissionsReportVerifierDetails:
+      description: This is to track the details of the qualified person certifying the embodied emission amounts disclosed in the form. This is applicable for construction certificate when isExemptFromSEPPNonResidential=false & isNABERSFormAccompanied = true
+      type: object
+      properties:
+        firstName:
+          maxLength: 50
+          type: string
+        familyName:
+          maxLength: 50
+          type: string
+        professionalQualification:
+          description: Please find the sample values below
+           1. Architect or designer
+           2. Engineer
+           3. NABERS assessor
+           4. Quantity surveyor
+          type: string
+        registrationDetails:
+          maxLength: 50
+          type: string
+        businessName:
+          maxLength: 50
+          type: string
+        ABN:
+          maxLength: 11
+          type: string    
+    WaterReportMethodsRequired: 
+      type: object
+      properties:
+        waterReportMethodsRequired:
+          type: string

@@ -1,0 +1,171 @@
+swagger: '2.0'
+info:
+  description: Document API to retrieve all internal document for all digital services
+  version: 'v2'
+  title: 'Get ePlanning Document API'
+host: 'api.apps1.nsw.gov.au'
+basePath: '/planning/DocMgmt/v1'
+tags:
+  - name: Document API
+    externalDocs:
+      description: Find out more about the DA process
+      url: https://www.planning.nsw.gov.au/Assess-and-Regulate/Development-Assessment/Your-guide-to-the-DA-process
+schemes:
+  - https
+paths:
+  '/Documents/{DocID}':
+    get:
+      summary: Documents
+      description: This operation enables the external organizations to request documents available in ePlanning.
+      produces:
+        - application/*
+      operationId: GetDocumentsV2
+      parameters:
+        - name: OrganisationID
+          in: header
+          description: The Organisation Id (for example council LGA name or Private Certifier Id) to indicate the request is originating from a specific system
+          required: true
+          type: string
+        - name: DocID
+          in: path
+          description: The unique attachment ID
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Returns the file as a binary download
+          schema:
+            type: file
+        '404':
+          description: Document ID not found
+          schema:
+            $ref: '#/definitions/Error'
+  '/UpdateMetadata/{CaseID}':
+    put:
+      summary: UpdateMetadata
+      description: This operation enables certifier to mark or update sensitive and assessment documents.
+      produces:
+        - application/*
+      parameters:
+        - name: OrganisationID
+          in: header
+          description: The Organisation Id (for example council LGA name or Private Certifier Id) to indicate the request is originating from a specific system
+          required: true
+          type: string
+        - name: CaseID
+          in: path
+          description: A fully qualified application number or case id
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          description: Information request object
+          schema:
+             $ref: '#/definitions/MetaData'
+      responses:
+        200:
+          description: Metadata updated successfully.
+          headers: {}
+        400:
+          description: Invalid request supplied
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Case not found or locked by another user
+          schema:
+            $ref: '#/definitions/Error'
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: api-key
+    in: header
+definitions:
+  MetaData:
+    title: MetaData
+    type: object
+    properties:
+      Documents:
+        type: array
+        items:
+          $ref: '#/definitions/DocumentsInfo'
+      updatedByEmail:
+        type: string
+        maxLength: 250
+        description: User must be registered in the planning portal
+        example: john.smith@gmail.com 
+  DocumentsInfo:
+    type: object
+    required:
+      - docID
+      - isAssessmentDoc
+      - isSensitiveDoc
+    properties:
+      docID:
+        type: string
+        description: Doucment Id which was received as part of outbound call.
+        example: DATA-WORKATTACH-FILE PEC-DPE-EP-WORK CDC-7850!20201124T125127.562 GMT
+      isAssessmentDoc:
+        type: boolean
+        description: set this flag if you want to mark the doucmnet as assessment
+      isSensitiveDoc:
+        type: boolean
+        description: set this flag if you want to mark the doucmnet as sensitive
+        
+  Error:
+    type: object
+    required:
+      - errorCode
+      - statusCode
+    properties:
+      statusCode:
+        type: integer
+        example: 404
+      message:
+        type: string
+        example: Internal Server error 19876
+      activityId:
+        type: string
+        example: 00000011-0ab-xy00-0000-500000000000
+      errorCode:
+        type: string
+        example: DPE_TMS01
+      errorDetails:
+        type: string
+        example: Inner Exceptions, Stack Trace, etc
+  UpdatedBy:
+    title: UpdatedBy
+    type: object
+    properties:
+      person:
+        $ref: '#/definitions/PersonBody'
+  PersonBody:
+    title: PersonBody
+    type: object
+    required:
+      - firstName
+      - surname
+      - emailAddress
+    properties:
+      firstName:
+        example: John
+        type: string
+        maxLength: 20
+      surname:
+        example: Smith
+        type: string
+        maxLength: 20
+      emailAddress:
+        description: User must be registered in the planning portal
+        example: john.smith@gmail.com
+        type: string
+        maxLength: 250
+      contactNumber:
+        type: string
+        minLength: 8
+        maxLength: 10
+        pattern: ^[0-9]+$
+    
+externalDocs:
+  description: Find out more about the DA process
+  url: https://www.planning.nsw.gov.au/Assess-and-Regulate/Development-Assessment/Your-guide-to-the-DA-process
