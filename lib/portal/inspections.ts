@@ -79,7 +79,9 @@ export function portalDocument(fileName: string, signedUrl: string, documentType
   return {
     documentName: fileName,
     documentType,
-    uploadedDateTime: new Date().toISOString(),
+    // Whole seconds: a strict date-time validator can refuse the
+    // milliseconds JavaScript includes by default.
+    uploadedDateTime: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
     documentURL: signedUrl,
   };
 }
