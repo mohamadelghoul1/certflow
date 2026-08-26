@@ -32,8 +32,11 @@ export async function importJobs(_prev: ImportResult | undefined, formData: Form
   if (!paste) return { error: "Nothing was pasted — copy your projects from the other system and paste them in." };
 
   // The firm's own certifiers, so a column of their names is not taken
-  // for the applicant's when the paste carries no headings.
-  const { data: certifiers } = await supabase.from("certifiers").select("name").eq("firm_id", profile.firm_id);
+  // for the applicant's when the paste carries no headings — and so each
+  // job can go to the certifier the export names rather than all landing
+  // on one.
+  const { data: certifiers } = await supabase.from("certifiers").select("id, name").eq("firm_id", profile.firm_id);
+  const certifierByName = new Map((certifiers || []).map((c) => [(c.name || "").trim().toLowerCase(), c.id]));
   const { jobs } = buildPreview(paste, (certifiers || []).map((c) => c.name || ""));
   const wanted = jobs.filter((job) => job.address);
   if (wanted.length === 0) return { error: "None of those rows carry a property address." };
@@ -62,7 +65,7 @@ export async function importJobs(_prev: ImportResult | undefined, formData: Form
         description: job.description,
         job_types: [],
         pathway: "PC_OC",
-        assigned_certifier_id: certifierId,
+        assigned_certifier_id: certifierByName.get(job.certifierName.trim().toLowerCase()) || certifierId,
         client_id: null,
         details: job.details,
         critical_stage_inspections: defaultCriticalStageInspections(),
@@ -75,7 +78,8 @@ export async function importJobs(_prev: ImportResult | undefined, formData: Form
       continue;
     }
 
-    await setUpJob(supabase, profile.firm_id, row.id, "PC_OC", certifierId);
+    const jobCertifier = certifierByName.get(job.certifierName.trim().toLowerCase()) || certifierId;
+    await setUpJob(supabase, profile.firm_id, row.id, "PC_OC", jobCertifier);
     alreadyHere.add(job.address.trim().toLowerCase());
     created++;
   }

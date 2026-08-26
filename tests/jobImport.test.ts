@@ -353,3 +353,55 @@ describe("the export headings BCS actually produces", () => {
     assert.ok(job().warnings.some((w) => /portal case for reporting inspections/i.test(w)));
   });
 });
+
+// Which case an inspection is filed against decides whether reporting
+// works at all, and the two series behave differently: a CFT or PCA case
+// stays open through construction, a CDC case closes on determination
+// and refuses inspections.
+describe("choosing the case inspections are reported against", () => {
+  // "Portal CDC/CFT Number" is the heading a certifier would actually
+  // write, and it lands on the certificate number — so that is where the
+  // series has to be read from.
+  const withNumber = (value: string) =>
+    buildPreview(parsePaste(["Address\tPortal CDC/CFT Number", `1 Test St\t${value}`].join("\n"), looksLikeHeadings)!).jobs[0];
+
+  test("a CFT number serves, because that case stays open", () => {
+    const job = withNumber("CFT-1007788");
+    assert.equal(job.details.inspectionPortalCase, "CFT-1007788");
+    assert.ok(!job.warnings.some((w) => /portal case for reporting/i.test(w)));
+  });
+
+  test("a PCA appointment case serves too", () => {
+    assert.equal(withNumber("PCA-123456").details.inspectionPortalCase, "PCA-123456");
+  });
+
+  test("a CDC number does not, and the gap is named", () => {
+    const job = withNumber("CDC-26257/01");
+    assert.equal(job.details.inspectionPortalCase, "");
+    assert.equal(job.details.priorApproval?.number, "CDC-26257/01", "but it is still the approval on record");
+    assert.ok(job.warnings.some((w) => /portal case for reporting/i.test(w)));
+  });
+
+  // A column that plainly holds the reporting case always wins, whatever
+  // series the certificate itself is in.
+  test("an explicit Portal case column outranks the certificate number", () => {
+    const paste = parsePaste(["Address\tCDC Number\tPortal Case", "1 Test St\tCDC-26257/01\tCFT-99"].join("\n"), looksLikeHeadings)!;
+    assert.equal(buildPreview(paste).jobs[0].details.inspectionPortalCase, "CFT-99");
+  });
+});
+
+describe("assigning imported jobs to the right certifier", () => {
+  test("each row carries the certifier the export names", () => {
+    const paste = parsePaste(
+      ["Address\tCertifier Name", "1 First St\tMohamad El Ghoul", "2 Second St\tAnother Certifier"].join("\n"),
+      looksLikeHeadings
+    )!;
+    const { jobs } = buildPreview(paste, ["Mohamad El Ghoul", "Another Certifier"]);
+    assert.deepEqual(jobs.map((j) => j.certifierName), ["Mohamad El Ghoul", "Another Certifier"]);
+  });
+
+  test("an export naming no certifier leaves it to the one chosen on the form", () => {
+    const paste = parsePaste(["Address", "1 First St"].join("\n"), looksLikeHeadings)!;
+    assert.equal(buildPreview(paste).jobs[0].certifierName, "");
+  });
+});

@@ -23,6 +23,9 @@ export type ImportedJob = {
   address: string;
   description: string;
   details: JobDetails;
+  // The certifier this job is named against in the export, so a firm
+  // with several does not have every imported job land on one of them.
+  certifierName: string;
   // What is missing or was guessed at, in the certifier's words.
   warnings: string[];
 };
@@ -110,14 +113,24 @@ export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []):
 
     const approvalNumber = need(cell("approvalNumber"), "approvalNumber");
     const approvalType = approvalTypeFrom(cell("approvalType"), approvalNumber);
+
+    // Which case inspections are filed against. A CFT or PCA number is a
+    // case the Portal keeps open through construction, so it serves; a
+    // CDC number is the application case, which closes on determination
+    // and then refuses inspections outright. Where an export gives only
+    // the latter, the gap is named rather than filled with a number
+    // certain to be rejected.
+    const openCase = (value: string) => /^(CFT|PCA)\b/i.test(value.trim());
+    const reportingCase = cell("portalCase") || [approvalNumber, cell("reference")].find(openCase) || "";
+    if (!reportingCase) {
+      warnings.push("No Portal case for reporting inspections — add it on the project before reporting one");
+    }
     const classifications = classificationsFrom(cell("classification"));
     if (classifications.length === 0) warnings.push("No BCA classification");
     const lotSectionDp = cell("lotSectionDp") || lotAndPlan;
     if (!lotSectionDp) warnings.push(`No ${FIELD_LABELS.lotSectionDp.toLowerCase()}`);
     need(cell("lga"), "lga");
-    if (!cell("portalCase")) {
-      warnings.push("No Portal case for reporting inspections — add it on the project before reporting one");
-    }
+
 
     const details: JobDetails = {
       projectNumber: cell("projectNumber") || cell("reference"),
@@ -176,7 +189,7 @@ export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []):
       // closed cases"). Filling this from that reference would give every
       // imported job a case number certain to be rejected, discovered one
       // by one at the moment each inspection was reported.
-      inspectionPortalCase: cell("portalCase"),
+      inspectionPortalCase: reportingCase,
       principalContractor: cell("principalContractor"),
       certificateDetails: {
         lotSectionDp,
@@ -200,7 +213,7 @@ export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []):
       },
     };
 
-    return { rowNumber: index + 2, address, description, details, warnings };
+    return { rowNumber: index + 2, address, description, details, certifierName: cell("certifierName"), warnings };
   });
 
   return { matched, unmatchedHeadings, jobs, inferred, headers: paste.headers };
