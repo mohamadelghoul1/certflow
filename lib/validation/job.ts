@@ -39,10 +39,15 @@ export function missingJobFields({ pathway, address, description, certifierId, d
   const person = [d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ").trim();
   if (!String(d.contact?.nameOrCompany || "").trim() && !person) missing.push("Applicant name");
 
-  need(d.applicantAddress?.streetNumber, "Applicant street number");
-  need(d.applicantAddress?.street, "Applicant street");
-  need(d.applicantAddress?.suburb, "Applicant suburb");
-  need(d.applicantAddress?.postcode, "Applicant postcode");
+  // On most jobs the applicant lives at the site, and the property
+  // address is already required above — so saying so is enough, and the
+  // four fields aren't asked for again.
+  if (!d.applicantSameAsSite) {
+    need(d.applicantAddress?.streetNumber, "Applicant street number");
+    need(d.applicantAddress?.street, "Applicant street");
+    need(d.applicantAddress?.suburb, "Applicant suburb");
+    need(d.applicantAddress?.postcode, "Applicant postcode");
+  }
 
   if ((d.proposal?.classifications || []).length === 0) missing.push("BCA classification");
 

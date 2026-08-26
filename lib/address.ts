@@ -1,11 +1,13 @@
 // Splitting a one-line address into the parts a certificate prints.
 //
-// Other systems keep an applicant's address as a single line; CertFlow
-// prints it as street number, street, suburb, state and postcode on the
-// certificate and the letters. Rather than making someone split three
-// hundred of them by hand, they are split here — and anything that
-// cannot be read confidently is left whole in the street line, where it
-// is visible and easily corrected, never silently dropped.
+// A property address is held as one line; a certificate prints street
+// number, street, suburb, state and postcode separately. Used when
+// importing jobs from another system, and whenever an applicant's
+// address is taken to be the property's.
+//
+// Anything that cannot be read confidently is left whole in the street
+// line, where it is visible and easily corrected, never silently
+// dropped.
 
 export type SplitAddress = { streetNumber: string; street: string; suburb: string; state: string; postcode: string };
 

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { PRIOR_APPROVAL_DOCUMENTS, INSPECTION_LIBRARY, defaultCriticalStageInspections, normalizeCriticalStageInspections, epiForCodeParts } from "@/lib/constants";
 import { todayISO, normalizePortalRef, portalRefKindFor, type PortalRefKind, type Pathway } from "@/lib/business";
+import { splitAddress } from "@/lib/address";
 import { notifyJobClient } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
 import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
@@ -48,6 +49,11 @@ function numericText(value: FormDataEntryValue | null): string {
 // and edit). CDC's relevant instrument/part of code are computed from the
 // ticked SEPP code parts rather than typed in directly.
 function extractJobDetails(formData: FormData, pathway: Pathway): JobDetails {
+  // When the applicant's address is the site's, it is worked out from the
+  // property address rather than typed again — and worked out afresh on
+  // every save, so correcting the site address corrects both.
+  const applicantSameAsSite = formData.get("applicantSameAsSite") === "on";
+  const fromSite = applicantSameAsSite ? splitAddress(String(formData.get("address") || "")) : null;
   const codeParts = formData.getAll("codeParts").map(String);
   const relevantInstrument = pathway === "CDC" && codeParts.length > 0 ? epiForCodeParts(codeParts) : String(formData.get("relevantInstrument") || "");
   const relevantPartOfCode = pathway === "CDC" && codeParts.length > 0 ? codeParts.join(", ") : String(formData.get("relevantPartOfCode") || "");
@@ -66,7 +72,8 @@ function extractJobDetails(formData: FormData, pathway: Pathway): JobDetails {
       mobile: String(formData.get("contact_mobile") || ""),
       email: String(formData.get("contact_email") || ""),
     },
-    applicantAddress: {
+    applicantSameAsSite,
+    applicantAddress: fromSite || {
       streetNumber: String(formData.get("applicantAddress_streetNumber") || ""),
       street: String(formData.get("applicantAddress_street") || ""),
       suburb: String(formData.get("applicantAddress_suburb") || ""),

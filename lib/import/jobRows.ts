@@ -1,4 +1,4 @@
-import { splitAddress } from "@/lib/import/address";
+import { splitAddress } from "@/lib/address";
 import { matchColumns, FIELD_LABELS, type JobField } from "@/lib/import/jobColumns";
 import { inferColumns } from "@/lib/import/inferColumns";
 import type { ParsedPaste } from "@/lib/import/parseTable";
@@ -107,6 +107,13 @@ export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []):
     };
     if (applicantLine && !fromLine.suburb && !cell("applicantSuburb")) warnings.push("Applicant address could not be split — check it on the job");
 
+    // Where the export gives no applicant address of its own — or gives
+    // the very columns the site address was just built from — the two
+    // are the same address, so the job is marked as such rather than
+    // arriving short of the fields an occupation certificate needs.
+    const applicantSameAsSite = !!address && (!cell("address") || !(applicant.street || applicant.suburb));
+    const applicantAddress = applicantSameAsSite ? splitAddress(address) : applicant;
+
     // Lot and plan are often separate columns; the certificate prints
     // them as one line.
     const lotAndPlan = [cell("lot"), cell("plan")].filter(Boolean).join(" / ");
@@ -146,13 +153,8 @@ export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []):
         mobile: "",
         email: cell("applicantEmail"),
       },
-      applicantAddress: {
-        streetNumber: applicant.streetNumber,
-        street: applicant.street,
-        suburb: applicant.suburb,
-        state: applicant.state,
-        postcode: applicant.postcode,
-      },
+      applicantSameAsSite,
+      applicantAddress,
       // Only set to false when an owner is actually named, so a job with
       // no owner column does not demand owner details it never had.
       ownerSameAsApplicant: !cell("ownerName"),

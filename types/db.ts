@@ -126,6 +126,11 @@ export type JobDetails = {
   bcaVolumes?: string[];
   contact?: { nameOrCompany?: string; title?: string; givenNames?: string; surname?: string; phone?: string; mobile?: string; email?: string };
   applicantAddress?: { streetNumber?: string; street?: string; suburb?: string; state?: string; postcode?: string };
+  // The applicant's postal address is very often the site itself — an
+  // owner building at home. Ticking this saves recording the same
+  // address twice, and keeps the two in step if the site address is
+  // later corrected.
+  applicantSameAsSite?: boolean;
   ownerSameAsApplicant?: boolean;
   owner?: { name?: string; address?: Record<string, string>; phone?: string };
   council?: { lga?: string; address?: Record<string, string>; contact?: { phone?: string; email?: string } };

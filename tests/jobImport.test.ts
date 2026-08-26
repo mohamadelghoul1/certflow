@@ -2,7 +2,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { parseDelimited, parseTable, parsePaste, detectDelimiter } from "@/lib/import/parseTable";
 import { matchColumns } from "@/lib/import/jobColumns";
-import { splitAddress } from "@/lib/import/address";
+import { splitAddress } from "@/lib/address";
 import { buildPreview, looksLikeHeadings } from "@/lib/import/jobRows";
 
 // A certifier moving off another system pastes in a list of every job

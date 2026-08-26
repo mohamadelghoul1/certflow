@@ -29,6 +29,7 @@ import type { Job, ClientContact } from "@/types/db";
 import { DateField } from "@/components/DateField";
 import { portalRefPlaceholder, portalRefKindFor } from "@/lib/business";
 import { PriorApprovalFields } from "@/components/certifier/PriorApprovalFields";
+import { ApplicantAddressFields } from "@/components/certifier/ApplicantAddressFields";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -317,20 +318,7 @@ export function DetailsTab({
               <input name="contact_email" defaultValue={d.contact?.email || ""} className={inputCls} />
             </div>
           </div>
-          <div>
-            <label className={labelCls}>Applicant address</label>
-            <div className="grid sm:grid-cols-5 gap-2">
-              <input name="applicantAddress_streetNumber" defaultValue={d.applicantAddress?.streetNumber || ""} placeholder="No." className={inputCls} />
-              <input name="applicantAddress_street" defaultValue={d.applicantAddress?.street || ""} placeholder="Street" className={`${inputCls} sm:col-span-2`} />
-              <input name="applicantAddress_suburb" defaultValue={d.applicantAddress?.suburb || ""} placeholder="Suburb" className={inputCls} />
-              <input name="applicantAddress_postcode" defaultValue={d.applicantAddress?.postcode || ""} placeholder="Postcode" className={inputCls} />
-            </div>
-            <select name="applicantAddress_state" defaultValue={d.applicantAddress?.state || "NSW"} className={`${inputCls} mt-2 sm:w-40`}>
-              {NSW_STATE.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          </div>
+          <ApplicantAddressFields defaults={d.applicantAddress} defaultSameAsSite={d.applicantSameAsSite} />
         </Section>
 
         <Section title="Owner details">
