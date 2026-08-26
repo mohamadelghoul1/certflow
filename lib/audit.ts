@@ -26,6 +26,7 @@ export type AuditAction =
   | "oc.generated"
   | "portal.inspection"
   | "email.failed"
+  | "client.reminder"
   | "backup.failed";
 
 export type AuditSeverity = "info" | "warning" | "error";

@@ -16,6 +16,9 @@ export type Firm = {
   logo_url: string | null;
   // The company's Planning Portal account. Added by migration 0032.
   portal_email?: string | null;
+  // Automatic document chasing. Added by migration 0033.
+  document_reminders_enabled?: boolean;
+  document_reminder_days?: number;
   // The firm's own stamp artwork, placed above the drawn stamp on
   // approved documents. Null keeps the drawn stamp on its own.
   stamp_url: string | null;
@@ -228,6 +231,10 @@ export type Job = {
   pathway_approval_file_path: string | null;
   pathway_portal_reported: boolean;
   pathway_portal_reported_date: string | null;
+  // Automatic document chasing (migration 0033). Optional because a
+  // database still awaiting the migration simply has no columns to read.
+  document_reminders_paused?: boolean;
+  last_document_reminder_at?: string | null;
   created_at: string;
 };
 

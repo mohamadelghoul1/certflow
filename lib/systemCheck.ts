@@ -123,6 +123,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "The firm's own Planning Portal login, used for every report unless a certifier carries their own.",
       probe: hasColumn(supabase, "firms", "portal_email"),
     },
+    {
+      migration: "0033",
+      label: "Automatic document reminders",
+      detail: "Clients who still owe documents are chased by email, on a schedule set in Settings.",
+      probe: hasColumn(supabase, "jobs", "last_document_reminder_at"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));
@@ -155,6 +161,11 @@ export function runEnvChecks(): EnvCheck[] {
       label: "NSW Planning Portal",
       detail: "Set once ePlanning finishes API onboarding — then inspections can be reported from CertFlow.",
       configured: portalConfigured(),
+    },
+    {
+      label: "Reminder schedule",
+      detail: "Lets Vercel run the morning document-reminder sweep. Without it, only the manual Send reminder button works.",
+      configured: !!process.env.CRON_SECRET,
     },
     {
       label: "ePlanning inbound credentials",

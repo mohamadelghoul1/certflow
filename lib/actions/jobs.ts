@@ -8,6 +8,7 @@ import { PRIOR_APPROVAL_DOCUMENTS, INSPECTION_LIBRARY, defaultCriticalStageInspe
 import { todayISO, normalizePortalRef, portalRefKindFor, type PortalRefKind, type Pathway } from "@/lib/business";
 import { splitAddress } from "@/lib/address";
 import { notifyJobClient } from "@/lib/email";
+import { outstandingSections, outstandingCount, reminderEmailHtml } from "@/lib/documentReminders";
 import type { ActionState } from "@/lib/actions/auth";
 import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
 import { insertChecklistItems, reorderedIds } from "@/lib/checklists";
@@ -620,6 +621,56 @@ export async function notifyClientOfChecklist(formData: FormData) {
   );
 
   await supabase.from("jobs").update({ last_notified_at: new Date().toISOString() }).eq("id", jobId);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+// The same reminder the morning sweep sends, on demand — for the phone
+// call that ends with "I'll email you the list now". Uses the identical
+// wording and rules, so what the button sends is exactly what the
+// automatic one would have.
+export type ReminderActionState = { error?: string; success?: string } | undefined;
+
+export async function sendDocumentReminderNow(_prev: ReminderActionState, formData: FormData): Promise<ReminderActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("id, firm_id, address, pathway, client_id, checklists(kind, checklist_items(title, status, amendments(resolved)))")
+    .eq("id", jobId)
+    .eq("firm_id", profile.firm_id)
+    .single();
+  if (!job) return { error: "Project not found." };
+  if (!job.client_id) return { error: "This project has no client to remind — add one on the Details tab first." };
+
+  const sections = outstandingSections((job.checklists as never[]) || [], job.pathway as Pathway);
+  if (sections.length === 0) return { error: "Nothing is outstanding — the client has sent everything that was asked for." };
+
+  const count = outstandingCount(sections);
+  await notifyJobClient(supabase, jobId, `Documents outstanding — ${job.address}`, reminderEmailHtml(sections));
+  await supabase.from("jobs").update({ last_document_reminder_at: new Date().toISOString() }).eq("id", jobId);
+  await recordAuditEvent(supabase, {
+    firmId: profile.firm_id,
+    action: "client.reminder",
+    summary: `Reminded the client: ${count} document${count === 1 ? "" : "s"} outstanding`,
+    jobId,
+    jobAddress: job.address,
+    actor: profile,
+    detail: { outstanding: count, manual: true },
+  });
+  revalidatePath(`/jobs/${jobId}`);
+  return { success: `Reminder sent — ${count} outstanding document${count === 1 ? "" : "s"} listed.` };
+}
+
+// Some clients shouldn't be chased — a job on hold, a builder who has
+// asked to deal by phone. Pausing is per project and reversible.
+export async function toggleDocumentReminders(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const paused = String(formData.get("paused")) === "true";
+  await supabase.from("jobs").update({ document_reminders_paused: paused }).eq("id", jobId).eq("firm_id", profile.firm_id);
   revalidatePath(`/jobs/${jobId}`);
 }
 

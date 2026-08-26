@@ -109,6 +109,27 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
             their inspections.
           </p>
         </div>
+        <div className="sm:col-span-2 pt-1 border-t border-line">
+          <label className="flex items-center gap-2 text-sm text-muted mt-2">
+            <input type="checkbox" name="document_reminders_enabled" defaultChecked={firm?.document_reminders_enabled !== false} className="accent-icon" />
+            Automatically remind clients about outstanding documents
+          </label>
+          <div className="flex items-center gap-2 mt-2 text-sm text-muted">
+            Send a reminder every
+            <input
+              type="number"
+              name="document_reminder_days"
+              min={1}
+              max={90}
+              defaultValue={firm?.document_reminder_days || 7}
+              className="w-16 px-2 py-1 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
+            />
+            days while documents are outstanding
+          </div>
+          <p className="text-[11px] text-muted mt-1">
+            Only clients who still owe documents are emailed, listing exactly what&rsquo;s missing with a link to their portal. Any project can be paused individually from its own page.
+          </p>
+        </div>
       </div>
       {state?.error && <div className="text-sm text-error">{state.error}</div>}
       <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">

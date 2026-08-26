@@ -7,6 +7,7 @@ import { DetailsTab } from "@/components/certifier/DetailsTab";
 import { SiteSensitivities } from "@/components/certifier/SiteSensitivities";
 import { DownloadButton } from "@/components/certifier/DownloadButton";
 import { BackUpJobButton } from "@/components/certifier/BackUpJobButton";
+import { DocumentReminderControls } from "@/components/certifier/DocumentReminderControls";
 import { FolderArchive } from "lucide-react";
 import { NeighbourNotificationPanel } from "@/components/certifier/NeighbourNotificationPanel";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
@@ -136,6 +137,12 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           <BackUpJobButton jobId={id} />
         </div>
         <div className="text-sm text-muted mt-1">{job.description}</div>
+        <DocumentReminderControls
+          jobId={id}
+          hasClient={!!job.client_id}
+          paused={typedJob.document_reminders_paused === true}
+          lastRemindedAt={typedJob.last_document_reminder_at || null}
+        />
       </div>
 
       <JobTabs

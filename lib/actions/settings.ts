@@ -18,10 +18,16 @@ export async function updateFirm(_prev: ActionState, formData: FormData): Promis
     email: String(formData.get("email") || ""),
     website: String(formData.get("website") || ""),
   };
-  // The company's Planning Portal account — migration 0032. On a database
-  // that has not run it, save everything else rather than failing the form.
-  const portalEmail = String(formData.get("portal_email") || "").trim() || null;
-  const { error } = await supabase.from("firms").update({ ...fields, portal_email: portalEmail }).eq("id", profile.firm_id);
+  // Columns from later migrations (0032 Portal account, 0033 document
+  // reminders). On a database that has not run one of them, save
+  // everything else rather than failing the form.
+  const reminderDays = Math.min(90, Math.max(1, parseInt(String(formData.get("document_reminder_days") || "7"), 10) || 7));
+  const newer = {
+    portal_email: String(formData.get("portal_email") || "").trim() || null,
+    document_reminders_enabled: formData.get("document_reminders_enabled") === "on",
+    document_reminder_days: reminderDays,
+  };
+  const { error } = await supabase.from("firms").update({ ...fields, ...newer }).eq("id", profile.firm_id);
   if (error) {
     if (error.code !== "PGRST204" && error.code !== "42703") return { error: error.message };
     const { error: retryError } = await supabase.from("firms").update(fields).eq("id", profile.firm_id);
