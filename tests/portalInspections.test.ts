@@ -133,6 +133,14 @@ describe("the three calls that report one inspection", () => {
 // number as prose or loose JSON rather than a defined field, so the
 // extraction has to cope with every shape the spec hints at.
 describe("reading the inspection case number out of the Portal's answer", () => {
+  // The reply the live service actually sends, captured from the first
+  // accepted submission.
+  test("from the live service's real phrasing", async () => {
+    const { extractChildCaseId } = await import("@/lib/portal/client");
+    assert.equal(extractChildCaseId('{"statusCode":200,"message":"INSP-189801 Case has been created successfully"}'), "INSP-189801");
+    assert.equal(extractChildCaseId("INSP-189801 Case has been created successfully"), "INSP-189801");
+  });
+
   test("from the spec's own phrasing", async () => {
     const { extractChildCaseId } = await import("@/lib/portal/client");
     assert.equal(extractChildCaseId("CaseID--INS-2026-4471 created Sucessfully."), "INS-2026-4471");

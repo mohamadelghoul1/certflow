@@ -80,6 +80,14 @@ export function extractChildCaseId(responseBody: string, headers: Record<string,
 }
 
 function matchCaseId(text: string): string | null {
-  const match = /CaseID\s*[-–—:]+\s*([A-Za-z0-9/_-]+)/i.exec(text);
-  return match ? match[1] : null;
+  // The live service announces a creation as "INSP-189801 Case has been
+  // created successfully" — the number first. The specification's own
+  // example phrased it "CaseID--XXX created". Both are read, then any
+  // INSP-series token as the last resort.
+  const beforePhrase = /([A-Za-z]{2,10}-[\w/]+)\s+Case has been created/i.exec(text);
+  if (beforePhrase) return beforePhrase[1];
+  const specPhrase = /CaseID\s*[-–—:]+\s*([A-Za-z0-9/_-]+)/i.exec(text);
+  if (specPhrase) return specPhrase[1];
+  const inspSeries = /\b(INSP-[\w-]+)\b/.exec(text);
+  return inspSeries ? inspSeries[1] : null;
 }
