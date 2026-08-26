@@ -75,13 +75,16 @@ export async function sendInspectionToPortal(
     registrationNumber,
     updatedByEmail,
   }));
-  await log("InitiateInspection", initiate.ok, { status: initiate.status, response: initiate.body.slice(0, 2000) });
+  await log("InitiateInspection", initiate.ok, { status: initiate.status, response: initiate.body.slice(0, 2000), responseHeaders: initiate.headers });
   if (!initiate.ok) return { ok: false, error: portalErrorMessage("open the inspection case", initiate.status, initiate.body) };
 
-  const childCaseId = extractChildCaseId(initiate.body);
+  const childCaseId = extractChildCaseId(initiate.body, initiate.headers);
   if (!childCaseId) {
-    await log("InitiateInspection", false, { status: initiate.status, response: initiate.body.slice(0, 2000), reason: "no inspection case id in the response" });
-    return { ok: false, error: "The Portal accepted the request but its answer did not carry the new inspection case number. The full response is in the Audit page's activity log." };
+    await log("InitiateInspection", false, { status: initiate.status, response: initiate.body.slice(0, 2000), responseHeaders: initiate.headers, reason: "no inspection case id in the response" });
+    return {
+      ok: false,
+      error: `The Portal accepted the request but its answer did not carry the new inspection case number. It said: ${initiate.body.slice(0, 250) || "(empty response)"}`,
+    };
   }
 
   // 2. Record the visit.
