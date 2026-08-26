@@ -39,6 +39,7 @@ export function ReportToPortalButton({
 }) {
   const [open, setOpen] = useState(false);
   const [caseId, setCaseId] = useState(defaultCaseId);
+  const [portalEmail, setPortalEmail] = useState(summary.submittedBy);
   const [state, formAction, pending] = useActionState<ActionState, FormData>(reportInspectionToPortalLive, undefined);
   const [undoState, undoAction, undoing] = useActionState<ActionState, FormData>(unreportFromPortal, undefined);
 
@@ -103,11 +104,22 @@ export function ReportToPortalButton({
           <span className="text-placeholder">Attached:</span>{" "}
           {summary.signed ? "the signed inspection report (sent automatically — nothing to upload)" : "nothing yet — sign the report first"}
         </div>
-        {summary.submittedBy && (
-          <div>
-            <span className="text-placeholder">Submitted by:</span> {summary.submittedBy} <span className="text-placeholder">(your Portal login)</span>
-          </div>
-        )}
+
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-placeholder mb-1">Your NSW Planning Portal login email</label>
+        <input
+          name="portal_user_email"
+          type="email"
+          value={portalEmail}
+          onChange={(e) => setPortalEmail(e.target.value)}
+          placeholder="the email you sign into the Portal website with"
+          className="w-full sm:w-80 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
+        />
+        <p className="text-[11px] text-placeholder mt-1">
+          The Portal records the submission against this account, so it must be the exact email of your Portal login — not necessarily your CertFlow one.
+        </p>
       </div>
 
       <div>
@@ -128,7 +140,7 @@ export function ReportToPortalButton({
 
       <div className="flex items-center gap-2">
         <button
-          disabled={pending || !caseId.trim() || !summary.signed}
+          disabled={pending || !caseId.trim() || !portalEmail.trim() || !summary.signed}
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-40"
         >
           {pending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
