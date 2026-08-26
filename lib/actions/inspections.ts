@@ -394,7 +394,7 @@ export async function reportInspectionToPortalLive(_prev: ActionState, formData:
 
   const [{ data: job }, { data: inspection }] = await Promise.all([
     supabase.from("jobs").select("id, address").eq("id", jobId).eq("firm_id", profile.firm_id).single(),
-    supabase.from("inspections").select("id, title, date, outcome, report_pdf_path, report_signed_at, inspector_certifier_id, portal_reported").eq("id", inspectionId).eq("job_id", jobId).single(),
+    supabase.from("inspections").select("*").eq("id", inspectionId).eq("job_id", jobId).single(),
   ]);
   if (!job || !inspection) return { error: "Inspection not found." };
   if (inspection.portal_reported) return { error: "This inspection has already been reported to the Portal." };
@@ -425,7 +425,10 @@ export async function reportInspectionToPortalLive(_prev: ActionState, formData:
     inspectorName: inspector.name,
     registrationNumber: inspector.registration_no,
     updatedByEmail: portalEmail,
-    existingChildCaseId: String(formData.get("existing_child_case_id") || "").trim() || null,
+    // A case the Portal already opened resumes automatically: the number
+    // CertFlow remembered from an earlier attempt, or one typed into the
+    // panel's recovery box.
+    existingChildCaseId: String(formData.get("existing_child_case_id") || "").trim() || inspection.portal_child_case_id || null,
   });
   if (!outcome.ok) return { error: outcome.error };
 

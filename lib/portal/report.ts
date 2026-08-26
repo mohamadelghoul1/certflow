@@ -125,6 +125,13 @@ export async function sendInspectionToPortal(
     if (!initiate.ok) return { ok: false, error: portalErrorMessage("open the inspection case", initiate.status, initiate.body) };
 
     const extracted = extractChildCaseId(initiate.body, initiate.headers);
+    if (extracted) {
+      // Remembered the moment the Portal issues it, before anything else
+      // can fail: a retry then resumes this case automatically instead of
+      // opening a second one. A database without migration 0030 simply
+      // skips the note.
+      await supabase.from("inspections").update({ portal_child_case_id: extracted }).eq("id", inspection.id);
+    }
     if (!extracted) {
       await log("InitiateInspection", false, { status: initiate.status, response: initiate.body.slice(0, 2000), responseHeaders: initiate.headers, reason: "no inspection case id in the response" });
       return {
