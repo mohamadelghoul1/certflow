@@ -162,3 +162,39 @@ describe("reading the inspection case number out of the Portal's answer", () => 
     assert.equal(extractChildCaseId('{"status":"ok"}'), null);
   });
 });
+
+// The Portal refuses a visit record without at least one image, and not
+// every inspection has photographs. The generated stand-in must be a
+// real, readable image carrying the inspection's actual facts.
+describe("the generated inspection record image", () => {
+  test("is a real PNG with sensible dimensions", async () => {
+    const { buildInspectionSummaryImage } = await import("@/lib/portal/summaryImage");
+    const sharp = (await import("sharp")).default;
+    const bytes = await buildInspectionSummaryImage({
+      firmName: "Quality Private Certifiers",
+      address: "378 Scenic Drive San Remo",
+      inspectionTitle: "Piers & Footings",
+      date: "24 Aug 2026",
+      outcomeText: "Satisfactory (minor issues) subject to documents/conditions being provided",
+      inspectorName: "Mohamad El Ghoul",
+    });
+    const meta = await sharp(Buffer.from(bytes)).metadata();
+    assert.equal(meta.format, "png");
+    assert.equal(meta.width, 1200);
+    assert.equal(meta.height, 800);
+  });
+
+  test("copes with characters that would break the drawing", async () => {
+    const { buildInspectionSummaryImage } = await import("@/lib/portal/summaryImage");
+    const sharp = (await import("sharp")).default;
+    const bytes = await buildInspectionSummaryImage({
+      firmName: "Smith & Sons <Certifiers>",
+      address: 'Unit 1/5 "The Grove" O\'Brien St',
+      inspectionTitle: "Frame & Truss",
+      date: "24 Aug 2026",
+      outcomeText: "Satisfactory — no issues identified",
+      inspectorName: "D'Arcy O'Neill",
+    });
+    assert.equal((await sharp(Buffer.from(bytes)).metadata()).format, "png");
+  });
+});

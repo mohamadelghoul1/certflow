@@ -3,6 +3,9 @@ import { portalConfig } from "@/lib/portal/config";
 import { callPortal, extractChildCaseId } from "@/lib/portal/client";
 import { initiateInspectionBody, performInspectionBody, completeInspectionBody, portalDocument, PORTAL_DOC_TYPES, type PortalDocument } from "@/lib/portal/inspections";
 import { recordAuditEvent } from "@/lib/audit";
+import { buildInspectionSummaryImage } from "@/lib/portal/summaryImage";
+import { INSPECTION_OUTCOME_TEXT } from "@/lib/constants";
+import { formatISODate } from "@/lib/business";
 import type { Profile } from "@/types/db";
 
 // Reporting one CertFlow inspection to the NSW Planning Portal.
@@ -30,6 +33,7 @@ export async function sendInspectionToPortal(
     jobId: string;
     jobAddress: string | null;
     inspection: { id: string; title: string; date: string | null; outcome: string; report_pdf_path?: string | null };
+    firmName: string;
     inspectorName: string;
     registrationNumber: string;
     // The Portal requires the email of the registered Portal user making
@@ -45,7 +49,7 @@ export async function sendInspectionToPortal(
   const config = portalConfig();
   if (!config) return { ok: false, error: "The Planning Portal connection is not set up yet — see Settings → System check." };
 
-  const { caseId, jobId, jobAddress, inspection, inspectorName, registrationNumber, updatedByEmail, existingChildCaseId } = input;
+  const { caseId, jobId, jobAddress, inspection, firmName, inspectorName, registrationNumber, updatedByEmail, existingChildCaseId } = input;
 
   if (!inspection.date) return { ok: false, error: "The inspection has no date recorded." };
   if (!inspection.outcome || inspection.outcome === "pending") return { ok: false, error: "Record the inspection outcome before reporting it." };
@@ -87,6 +91,30 @@ export async function sendInspectionToPortal(
     if (url) {
       const name = photo.file_path.split("/").pop() || "photo.jpg";
       photoDocuments.push(portalDocument(name, url, PORTAL_DOC_TYPES.photos));
+    }
+  }
+
+  // The Portal refuses a visit record without at least one image, and an
+  // inspection without photos is common. CertFlow generates one — a card
+  // stating what the inspection was and how it ended — so the certifier
+  // never uploads anything by hand just to satisfy the field.
+  if (photoDocuments.length === 0) {
+    const image = await buildInspectionSummaryImage({
+      firmName,
+      address: jobAddress || "",
+      inspectionTitle: inspection.title,
+      date: formatISODate(inspection.date),
+      outcomeText: INSPECTION_OUTCOME_TEXT[inspection.outcome] || inspection.outcome,
+      inspectorName,
+    });
+    const imagePath = `${profile.firm_id}/${jobId}/inspections/${inspection.id}/portal-summary-${Date.now()}.png`;
+    const { error: uploadError } = await supabase.storage.from("certflow-files").upload(imagePath, image, { contentType: "image/png", upsert: false });
+    if (!uploadError) {
+      const url = await sign(imagePath);
+      if (url) photoDocuments.push(portalDocument("inspection-record.png", url, PORTAL_DOC_TYPES.photos));
+    }
+    if (photoDocuments.length === 0) {
+      return { ok: false, error: "The Portal requires an image on the inspection record and one could not be prepared. Add a photo to the inspection and try again." };
     }
   }
 

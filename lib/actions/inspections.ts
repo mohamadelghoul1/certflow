@@ -414,11 +414,14 @@ export async function reportInspectionToPortalLive(_prev: ActionState, formData:
   const portalEmail = String(formData.get("portal_user_email") || "").trim() || profile.email || "";
   if (!portalEmail) return { error: "Enter the email you sign into the Planning Portal with." };
 
+  const { data: firm } = await supabase.from("firms").select("name").eq("id", profile.firm_id).single();
+
   const outcome = await sendInspectionToPortal(supabase, profile, {
     caseId,
     jobId,
     jobAddress: job.address,
     inspection,
+    firmName: firm?.name || "",
     inspectorName: inspector.name,
     registrationNumber: inspector.registration_no,
     updatedByEmail: portalEmail,
