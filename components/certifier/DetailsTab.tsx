@@ -356,6 +356,10 @@ export function DetailsTab({
             </select>
             <input name="owner_phone" defaultValue={d.owner?.phone || ""} placeholder="Owner phone" className={inputCls} />
           </div>
+          <div>
+            <label className={labelCls}>Principal contractor / builder</label>
+            <input name="principalContractor" defaultValue={d.principalContractor || ""} placeholder="The builder carrying out the works" className={inputCls} />
+          </div>
         </Section>
 
         <Section title={job.pathway === "PC_OC" ? "Previously issued approval" : `${job.pathway} certificate details`}>

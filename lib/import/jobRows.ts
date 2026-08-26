@@ -75,7 +75,18 @@ export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []):
       return value;
     };
 
-    const address = need(cell("address"), "address");
+    // An export that carries no property address column carries the site
+    // in its street/suburb columns instead — which is the shape of BCS's
+    // own export. Composed rather than left blank, because a job with no
+    // address cannot be imported at all, and flagged because whether
+    // those columns hold the site or the applicant's postal address is
+    // the certifier's to confirm, not mine to assume.
+    const composedAddress = [[cell("applicantStreetNumber"), cell("applicantStreet")].filter(Boolean).join(" "), cell("applicantSuburb")]
+      .filter(Boolean)
+      .join(", ");
+    const address = cell("address") || composedAddress;
+    if (!address) warnings.push(`No ${FIELD_LABELS.address.toLowerCase()}`);
+    else if (!cell("address")) warnings.push("Address built from the street and suburb columns — check it is the site, not the applicant's postal address");
     const description = cell("description") || "Building works";
     if (!cell("description")) warnings.push("No scope of works — set to “Building works”");
 
@@ -166,6 +177,7 @@ export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []):
       // imported job a case number certain to be rejected, discovered one
       // by one at the moment each inspection was reported.
       inspectionPortalCase: cell("portalCase"),
+      principalContractor: cell("principalContractor"),
       certificateDetails: {
         lotSectionDp,
         planningPortalRef: "",

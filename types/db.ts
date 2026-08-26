@@ -176,6 +176,9 @@ export type JobDetails = {
   // series, sometimes the PCA appointment case. Recorded once so nobody
   // hunts for it at reporting time.
   inspectionPortalCase?: string;
+  // The builder carrying out the works, named on the occupation
+  // certificate and the one to call about a defect found on site.
+  principalContractor?: string;
   priorApproval?: {
     type?: "CDC" | "CC";
     number?: string;

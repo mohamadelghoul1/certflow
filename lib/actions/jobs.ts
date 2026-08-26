@@ -115,6 +115,7 @@ function extractJobDetails(formData: FormData, pathway: Pathway): JobDetails {
     },
     siteArea: numericText(formData.get("siteArea")),
     inspectionPortalCase: String(formData.get("inspectionPortalCase") || "").trim(),
+    principalContractor: String(formData.get("principalContractor") || "").trim(),
     certificateDetails: {
       lotSectionDp: String(formData.get("lotSectionDp") || ""),
       planningPortalRef: normalizePortalRef(String(formData.get("planningPortalRef") || ""), portalRefKindFor(pathway)),

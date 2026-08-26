@@ -294,3 +294,62 @@ describe("a paste with no heading row", () => {
     assert.equal(buildPreview(paste).inferred, false);
   });
 });
+
+// The headings BCS actually exports, verbatim. Two of them broke the
+// reading the first time it met them, which is why they are held here.
+describe("the export headings BCS actually produces", () => {
+  const headers = [
+    "Building Classification",
+    "Lot Number",
+    "Deposited Plan Number",
+    "Consent Authority Name",
+    "Cost of Project",
+    "Applicant Name",
+    "Owner Name",
+    "Principal Contractor Name",
+    "Street Number",
+    "Street",
+    "Suburb",
+    "State",
+    "Postcode",
+  ];
+  const row = ["1a, 10a", "766", "DP36608", "Canterbury-Bankstown Council", "$200,000.00", "Behram Aslam Chattha", "Behram Aslam Chattha", "ABC Builders Pty Ltd", "27", "Mundamatta Street", "Villawood", "NSW", "2163"];
+  const job = () => buildPreview(parsePaste([headers.join("\t"), row.join("\t")].join("\n"), looksLikeHeadings)!).jobs[0];
+
+  // "Deposited Plan Number" contains the letters of "site" — inside
+  // "depoSITEd" — and was read as the property address.
+  test("does not read the deposited plan as the property address", () => {
+    const matched = matchColumns(headers);
+    assert.equal(matched.plan, 2);
+    assert.notEqual(matched.address, 2);
+  });
+
+  test("recognises every heading in the export", () => {
+    const matched = matchColumns(headers);
+    const claimed = new Set(Object.values(matched));
+    const unread = headers.filter((_, i) => !claimed.has(i));
+    assert.deepEqual(unread, [], `these headings were not recognised: ${unread.join(", ")}`);
+  });
+
+  // This export carries no property address column at all, and a job
+  // without an address cannot be imported.
+  test("builds the address from the street and suburb columns, and says so", () => {
+    assert.equal(job().address, "27 Mundamatta Street, Villawood");
+    assert.ok(job().warnings.some((w) => /built from the street and suburb columns/i.test(w)));
+  });
+
+  test("carries the lot, plan, cost and builder", () => {
+    const details = job().details;
+    assert.equal(details.certificateDetails?.lotSectionDp, "766 / DP36608");
+    assert.equal(details.proposal?.estimatedCost, "200000");
+    assert.equal(details.principalContractor, "ABC Builders Pty Ltd");
+    assert.equal(details.council?.lga, "Canterbury-Bankstown Council");
+  });
+
+  // Nothing in this export is the open case inspections file against, so
+  // the gap has to be named rather than guessed at.
+  test("names the missing Portal case rather than inventing one", () => {
+    assert.equal(job().details.inspectionPortalCase, "");
+    assert.ok(job().warnings.some((w) => /portal case for reporting inspections/i.test(w)));
+  });
+});
