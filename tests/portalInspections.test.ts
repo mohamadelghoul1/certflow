@@ -235,3 +235,48 @@ describe("the document links handed to the Portal", () => {
     assert.ok(!url.includes("?"), "no query string for the Portal's validator to refuse");
   });
 });
+
+// The inbound endpoint ePlanning's gateway downloads from, guarded by
+// the Basic Auth credentials lodged at registration and a sealed DocID.
+describe("the registered inbound document endpoint", () => {
+  test("a DocID names exactly one file and survives tampering attempts", async () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "test-secret";
+    const { eplanningDocId, verifyEplanningDocId } = await import("@/lib/portal/files");
+    const id = eplanningDocId("firm/job/inspections/i1/report.pdf");
+    assert.equal(verifyEplanningDocId(id), "firm/job/inspections/i1/report.pdf");
+    assert.equal(verifyEplanningDocId(id.slice(0, -4) + "AAAA"), null);
+    assert.equal(verifyEplanningDocId("rubbish"), null);
+  });
+
+  test("Basic Auth admits only the lodged credentials", async () => {
+    process.env.EPLANNING_INBOUND_USERNAME = "user-uuid";
+    process.env.EPLANNING_INBOUND_PASSWORD = "pass-uuid";
+    const { eplanningAuthOk } = await import("@/lib/portal/files");
+    const good = "Basic " + Buffer.from("user-uuid:pass-uuid").toString("base64");
+    const bad = "Basic " + Buffer.from("user-uuid:wrong").toString("base64");
+    assert.equal(eplanningAuthOk(good), true);
+    assert.equal(eplanningAuthOk(bad), false);
+    assert.equal(eplanningAuthOk(null), false);
+    assert.equal(eplanningAuthOk("Bearer something"), false);
+  });
+
+  test("with no credentials configured, the door stays shut entirely", async () => {
+    const { eplanningAuthOk } = await import("@/lib/portal/files");
+    const u = process.env.EPLANNING_INBOUND_USERNAME;
+    const p = process.env.EPLANNING_INBOUND_PASSWORD;
+    delete process.env.EPLANNING_INBOUND_USERNAME;
+    delete process.env.EPLANNING_INBOUND_PASSWORD;
+    assert.equal(eplanningAuthOk("Basic " + Buffer.from(":").toString("base64")), false);
+    assert.equal(eplanningAuthOk("Basic " + Buffer.from("a:b").toString("base64")), false);
+    if (u) process.env.EPLANNING_INBOUND_USERNAME = u;
+    if (p) process.env.EPLANNING_INBOUND_PASSWORD = p;
+  });
+
+  test("the announced documentURL sits under the registered inbound base", async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = "https://certflow.example";
+    const { eplanningDocumentUrl } = await import("@/lib/portal/files");
+    const url = eplanningDocumentUrl("firm/job/x.pdf");
+    assert.ok(url.startsWith("https://certflow.example/api/eplanning/v1/office/Documents/"));
+    assert.ok(!url.includes("?"));
+  });
+});

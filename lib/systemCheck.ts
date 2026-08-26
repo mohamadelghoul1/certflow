@@ -156,5 +156,10 @@ export function runEnvChecks(): EnvCheck[] {
       detail: "Set once ePlanning finishes API onboarding — then inspections can be reported from CertFlow.",
       configured: portalConfigured(),
     },
+    {
+      label: "ePlanning inbound credentials",
+      detail: "The Basic Auth details lodged with ePlanning so their gateway can download documents from CertFlow.",
+      configured: !!(process.env.EPLANNING_INBOUND_USERNAME && process.env.EPLANNING_INBOUND_PASSWORD),
+    },
   ];
 }

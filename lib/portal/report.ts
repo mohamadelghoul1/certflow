@@ -4,7 +4,7 @@ import { callPortal, extractChildCaseId } from "@/lib/portal/client";
 import { initiateInspectionBody, performInspectionBody, completeInspectionBody, portalDocument, PORTAL_DOC_TYPES, type PortalDocument } from "@/lib/portal/inspections";
 import { recordAuditEvent } from "@/lib/audit";
 import { buildInspectionSummaryImage } from "@/lib/portal/summaryImage";
-import { portalFileUrl } from "@/lib/portal/files";
+import { eplanningDocumentUrl } from "@/lib/portal/files";
 import { INSPECTION_OUTCOME_TEXT } from "@/lib/constants";
 import { formatISODate } from "@/lib/business";
 import type { Profile } from "@/types/db";
@@ -67,13 +67,13 @@ export async function sendInspectionToPortal(
       severity: ok ? "info" : "error",
     });
 
-  // Documents travel as links the Portal downloads — CertFlow's own
-  // clean links, ending in a plain filename, because the Portal's
-  // document validation refused a storage link's long query string. The
-  // filenames are deliberately plain ASCII for the same reason.
+  // Documents are announced at CertFlow's registered inbound endpoint —
+  // ePlanning's gateway only downloads from the inbound URL lodged at
+  // registration, using the department's Get External Document contract,
+  // and refuses any other link without even fetching it.
   const reportDocuments: PortalDocument[] = [];
   if (inspection.report_pdf_path) {
-    reportDocuments.push(portalDocument("inspection-report.pdf", portalFileUrl(inspection.report_pdf_path, "inspection-report.pdf"), PORTAL_DOC_TYPES.report));
+    reportDocuments.push(portalDocument("inspection-report.pdf", eplanningDocumentUrl(inspection.report_pdf_path), PORTAL_DOC_TYPES.report));
   }
   if (reportDocuments.length === 0) {
     return { ok: false, error: "The signed inspection report could not be attached. Sign the report first — the Portal requires the document." };
@@ -96,7 +96,7 @@ export async function sendInspectionToPortal(
   const imagePath = `${profile.firm_id}/${jobId}/inspections/${inspection.id}/portal-summary-${Date.now()}.jpg`;
   const { error: uploadError } = await supabase.storage.from("certflow-files").upload(imagePath, image, { contentType: "image/jpeg", upsert: false });
   if (!uploadError) {
-    recordImages.push(portalDocument("inspection-record.jpg", portalFileUrl(imagePath, "inspection-record.jpg"), PORTAL_DOC_TYPES.photos));
+    recordImages.push(portalDocument("inspection-record.jpg", eplanningDocumentUrl(imagePath), PORTAL_DOC_TYPES.photos));
   }
   if (recordImages.length === 0) {
     return { ok: false, error: "The Portal requires an image on the inspection record and one could not be prepared. Try again, and tell your developer if it repeats." };
