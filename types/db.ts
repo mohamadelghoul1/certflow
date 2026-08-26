@@ -118,6 +118,32 @@ export type QuoteFeeLine = {
   sort_order: number;
 };
 
+export type Invoice = {
+  id: string;
+  firm_id: string;
+  job_id: string | null;
+  quote_id: string | null;
+  client_id: string | null;
+  invoice_number: string | null;
+  status: "draft" | "sent" | "paid" | "void";
+  issue_date: string;
+  due_date: string | null;
+  bill_to: string | null;
+  reference: string | null;
+  notes: string | null;
+  paid_date: string | null;
+  created_at: string;
+};
+
+export type InvoiceLine = {
+  id: string;
+  invoice_id: string;
+  description: string;
+  quantity: string;
+  amount: number;
+  sort_order: number;
+};
+
 export type JobDetails = {
   projectNumber?: string;
   zoning?: string;

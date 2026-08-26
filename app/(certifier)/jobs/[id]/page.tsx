@@ -8,7 +8,8 @@ import { SiteSensitivities } from "@/components/certifier/SiteSensitivities";
 import { DownloadButton } from "@/components/certifier/DownloadButton";
 import { BackUpJobButton } from "@/components/certifier/BackUpJobButton";
 import { DocumentReminderControls } from "@/components/certifier/DocumentReminderControls";
-import { FolderArchive } from "lucide-react";
+import { createInvoice } from "@/lib/actions/invoices";
+import { FolderArchive, ReceiptText } from "lucide-react";
 import { NeighbourNotificationPanel } from "@/components/certifier/NeighbourNotificationPanel";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { CertificatesPanel } from "@/components/certifier/CertificatesPanel";
@@ -135,6 +136,15 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
             <FolderArchive size={13} /> Download job archive
           </DownloadButton>
           <BackUpJobButton jobId={id} />
+          {/* Straight to a draft invoice carrying this job's address and
+              client — the route for projects that never had a quote,
+              which is every imported one. */}
+          <form action={createInvoice}>
+            <input type="hidden" name="job_id" value={id} />
+            <button className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary hover:underline">
+              <ReceiptText size={13} /> Create invoice
+            </button>
+          </form>
         </div>
         <div className="text-sm text-muted mt-1">{job.description}</div>
         <DocumentReminderControls

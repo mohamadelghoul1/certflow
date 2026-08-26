@@ -199,6 +199,13 @@ export const QUOTE_STATUS_META: Record<string, { label: string; style: string }>
   declined: { label: "Declined", style: "bg-red-50 text-red-700" },
 };
 
+export const INVOICE_STATUS_META: Record<string, { label: string; style: string }> = {
+  draft: { label: "Draft", style: "bg-slate-100 text-slate-600" },
+  sent: { label: "Awaiting payment", style: "bg-blue-50 text-blue-700" },
+  paid: { label: "Paid", style: "bg-emerald-50 text-emerald-700" },
+  void: { label: "Void", style: "bg-slate-100 text-slate-400 line-through" },
+};
+
 // Council directory — every council across Greater Sydney (33 LGAs, which
 // includes Wollondilly), plus Central Coast and Wollongong. Selecting one
 // auto-fills its address and contact details; anything not listed here

@@ -1,6 +1,7 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { countJob } from "@/lib/dashboardCounts";
+import { invoiceTotals, receivablesSummary, formatMoney } from "@/lib/invoices/invoiceLogic";
 import { unresolvedCount, daysUntil, calcCdcLapseDate, formatISODate, todayISO } from "@/lib/business";
 import { getAuditEvents, getIssuanceEvents } from "@/lib/reporting";
 import { excludingDeleted } from "@/lib/softDelete";
@@ -240,6 +241,24 @@ export default async function DashboardPage() {
   );
   const projectsStartedThisMonth = allJobs.filter((p) => p.created_at?.startsWith(monthPrefix)).length;
 
+  // What's owed, straight from the invoices. On a database still waiting
+  // on migration 0034 both queries return nothing and the strip stays off
+  // the page rather than erroring.
+  const [{ data: invoiceRows }, { data: invoiceLineRows }] = await Promise.all([
+    supabase.from("invoices").select("id, status, due_date").eq("firm_id", profile.firm_id),
+    supabase.from("invoice_lines").select("invoice_id, amount"),
+  ]);
+  const invoiceLinesById = new Map<string, { amount: number }[]>();
+  for (const line of invoiceLineRows || []) {
+    const group = invoiceLinesById.get(line.invoice_id) || [];
+    group.push({ amount: line.amount });
+    invoiceLinesById.set(line.invoice_id, group);
+  }
+  const receivables = receivablesSummary(
+    (invoiceRows || []).map((invoice) => ({ ...invoice, total: invoiceTotals(invoiceLinesById.get(invoice.id) || []).total })),
+    todayISO()
+  );
+
   const recentActivity = [...auditEvents].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).slice(0, 6);
   const firstName = (profile.full_name || profile.email || "there").split(/[\s@]/)[0];
 
@@ -274,6 +293,23 @@ export default async function DashboardPage() {
             its own row, so on a phone it takes the full width. */}
         <Tile icon={Inbox} label="Documents for review" value={documentsForReview} href="/jobs" className="col-span-2 md:col-span-1" />
       </div>
+
+      {receivables.outstanding > 0 && (
+        <Link
+          href="/invoices"
+          className={`card-lift mt-3 flex items-center justify-between gap-3 rounded-xl border bg-white px-4 py-3 shadow-sm ${receivables.overdueCount > 0 ? "border-error/40" : "border-line"}`}
+        >
+          <span className="text-sm text-muted">
+            <span className="font-bold text-heading">{formatMoney(receivables.outstanding)}</span> owed to you
+            {receivables.overdueCount > 0 && (
+              <span className="text-error font-semibold">
+                {" "}— {formatMoney(receivables.overdue)} overdue on {receivables.overdueCount} invoice{receivables.overdueCount === 1 ? "" : "s"}
+              </span>
+            )}
+          </span>
+          <span className="text-xs font-semibold text-secondary shrink-0">View invoices →</span>
+        </Link>
+      )}
 
       <div className="mt-6 grid lg:grid-cols-3 gap-5 items-start">
         <div className="lg:col-span-2 min-w-0 space-y-5">

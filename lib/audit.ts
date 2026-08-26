@@ -27,6 +27,8 @@ export type AuditAction =
   | "portal.inspection"
   | "email.failed"
   | "client.reminder"
+  | "invoice.sent"
+  | "invoice.paid"
   | "backup.failed";
 
 export type AuditSeverity = "info" | "warning" | "error";

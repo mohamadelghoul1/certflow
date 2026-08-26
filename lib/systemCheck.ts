@@ -129,6 +129,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Clients who still owe documents are chased by email, on a schedule set in Settings.",
       probe: hasColumn(supabase, "jobs", "last_document_reminder_at"),
     },
+    {
+      migration: "0034",
+      label: "Invoicing",
+      detail: "Tax invoices from quotes and projects, with what's owed on the dashboard.",
+      probe: hasTable(supabase, "invoices"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));

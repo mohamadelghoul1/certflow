@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { QUOTE_STATUS_META } from "@/lib/constants";
 import { setQuoteStatus, markQuotePaid, generateJobFromQuote } from "@/lib/actions/quotes";
+import { createInvoice } from "@/lib/actions/invoices";
 import { QuoteEditForm } from "@/components/certifier/QuoteEditForm";
 import { DeleteQuoteButton } from "@/components/certifier/DeleteQuoteButton";
 import { Check } from "lucide-react";
@@ -72,6 +73,12 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             <form action={generateJobFromQuote}>
               <input type="hidden" name="quote_id" value={id} />
               <button className="px-3.5 py-2 rounded-md bg-success text-white text-sm font-semibold hover:bg-success">Generate project from quote</button>
+            </form>
+          )}
+          {quote.status === "accepted" && (
+            <form action={createInvoice}>
+              <input type="hidden" name="quote_id" value={id} />
+              <button className="px-3.5 py-2 rounded-md border border-primary text-sm text-primary font-medium hover:bg-hover">Create invoice</button>
             </form>
           )}
           {quote.status !== "draft" && quote.payment_status !== "paid" && (
