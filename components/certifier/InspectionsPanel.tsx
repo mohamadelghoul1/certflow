@@ -233,7 +233,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
                 date: formatISODate(insp.date),
                 outcome: INSPECTION_OUTCOME_TEXT[insp.outcome] || insp.outcome,
                 signed: !!insp.report_signed_at,
-                submittedBy: submitterEmail,
+                submittedBy: certifiers.find((c) => c.id === insp.inspector_certifier_id)?.portal_email || submitterEmail,
               }}
             />
             <RemoveInspectionButton inspectionId={insp.id} jobId={jobId} portalReported={insp.portal_reported} />

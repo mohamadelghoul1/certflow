@@ -46,6 +46,9 @@ export type Certifier = {
   practice_email?: string | null;
   practice_website?: string | null;
   practice_logo_url?: string | null;
+  // The email this certifier signs into the NSW Planning Portal with.
+  // Added by migration 0031; absent until it has been run.
+  portal_email?: string | null;
 };
 
 export type ClientContact = {

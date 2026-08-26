@@ -269,6 +269,14 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
           <label className={labelCls}>Registration expiry</label>
           <DateField name="registration_expiry" defaultValue={certifier.registration_expiry || ""} className={inputCls} />
         </div>
+        <div className="sm:col-span-2">
+          <label className={labelCls}>NSW Planning Portal login email</label>
+          <input name="portal_email" type="email" defaultValue={certifier.portal_email || ""} placeholder="the email this certifier signs into the Portal with" className={inputCls} />
+          <p className="text-[11px] text-muted mt-1">
+            Inspections reported to the Portal go up under this account, and the Portal refuses an email it doesn&rsquo;t know. It&rsquo;s the Portal website login — not necessarily the
+            CertFlow one.
+          </p>
+        </div>
       </div>
 
       {/* A certifier who works as a contractor rather than an employee —

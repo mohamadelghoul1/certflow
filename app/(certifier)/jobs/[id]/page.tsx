@@ -194,7 +194,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
                     ? typedJob.details?.priorApproval?.portalRef || ""
                     : typedJob.details?.certificateDetails?.planningPortalRef || ""
                 }
-                submitterEmail={profile.email || ""}
+                submitterEmail={(certifiers || []).find((c) => c.id === profile.certifier_id)?.portal_email || profile.email || ""}
               />
           ),
           oc: ocChecklist ? (

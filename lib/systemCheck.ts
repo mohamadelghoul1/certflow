@@ -111,6 +111,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Keeps the Portal's own case number for each inspection reported through the API.",
       probe: hasColumn(supabase, "inspections", "portal_child_case_id"),
     },
+    {
+      migration: "0031",
+      label: "Certifier Portal login emails",
+      detail: "Each certifier's Planning Portal login, recorded once in Settings and offered on every report.",
+      probe: hasColumn(supabase, "certifiers", "portal_email"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));

@@ -66,10 +66,39 @@ export async function updateCertifier(_prev: ActionState, formData: FormData): P
       practice_phone: text("practice_phone"),
       practice_email: text("practice_email"),
       practice_website: text("practice_website"),
+      // The email this certifier signs into the NSW Planning Portal
+      // with — what API submissions go up under. Added by migration 0031.
+      portal_email: text("portal_email"),
     })
     .eq("id", id)
     .eq("firm_id", profile.firm_id);
-  if (error) return { error: error.message };
+  if (error) {
+    // A database that has not run migration 0031 has no portal_email
+    // column; save everything else rather than failing the whole form.
+    if (error.code === "PGRST204" || error.code === "42703") {
+      const { error: retryError } = await supabase
+        .from("certifiers")
+        .update({
+          name: String(formData.get("name") || ""),
+          registration_no: String(formData.get("registration_no") || ""),
+          registration_body: String(formData.get("registration_body") || ""),
+          pi_insurance_expiry: formData.get("pi_insurance_expiry") || null,
+          registration_expiry: formData.get("registration_expiry") || null,
+          practice_name: text("practice_name"),
+          practice_abn: text("practice_abn"),
+          practice_postal_address: text("practice_postal_address"),
+          practice_office_address: text("practice_office_address"),
+          practice_phone: text("practice_phone"),
+          practice_email: text("practice_email"),
+          practice_website: text("practice_website"),
+        })
+        .eq("id", id)
+        .eq("firm_id", profile.firm_id);
+      if (retryError) return { error: retryError.message };
+    } else {
+      return { error: error.message };
+    }
+  }
   revalidatePath("/settings");
   return undefined;
 }
