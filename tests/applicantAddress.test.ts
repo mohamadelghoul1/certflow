@@ -27,6 +27,11 @@ const base = {
   } as JobDetails,
 };
 
+const withOwner = (details: Partial<JobDetails>) => ({
+  ...base,
+  details: { ...base.details, ownerSameAsApplicant: false, owner: { name: "Jane Smith" }, ...details } as JobDetails,
+});
+
 describe("applicant address the same as the site", () => {
   test("without the box ticked, all four parts are still required", () => {
     const missing = missingJobFields(base);
@@ -76,5 +81,41 @@ describe("importing jobs that carry no applicant address", () => {
     const { jobs } = buildPreview({ headers: table.headers, rows: table.rows });
     assert.equal(jobs[0].details.applicantSameAsSite, false);
     assert.equal(jobs[0].details.applicantAddress?.suburb, "Bankstown");
+  });
+});
+
+describe("owner address the same as the site", () => {
+  test("a named owner with no address still needs one", () => {
+    const missing = missingJobFields(withOwner({ applicantSameAsSite: true }));
+    assert.deepEqual(missing, ["Owner street", "Owner suburb"]);
+  });
+
+  test("ticking it clears them", () => {
+    const missing = missingJobFields(withOwner({ applicantSameAsSite: true, ownerAddressSameAsSite: true }));
+    assert.deepEqual(missing, []);
+  });
+
+  // The tick is about the address only — an owner who is not the
+  // applicant must still be named.
+  test("does not excuse a missing owner name", () => {
+    const missing = missingJobFields(withOwner({ applicantSameAsSite: true, ownerAddressSameAsSite: true, owner: { name: "" } }));
+    assert.deepEqual(missing, ["Owner name"]);
+  });
+});
+
+describe("importing jobs that name an owner but give no owner address", () => {
+  test("takes the owner's address from the site", () => {
+    const table = parseTable("Property Address\tApplicant Name\tOwner Name\n21 Coquet Way, Green Valley NSW 2168\tBuild Co\tJane Smith")!;
+    const { jobs } = buildPreview({ headers: table.headers, rows: table.rows });
+    const d = jobs[0].details;
+    assert.equal(d.ownerSameAsApplicant, false);
+    assert.equal(d.ownerAddressSameAsSite, true);
+    assert.equal(d.owner?.address?.street, "Coquet Way");
+    assert.equal(d.owner?.address?.suburb, "Green Valley");
+    assert.equal(d.owner?.address?.postcode, "2168");
+    // The whole point: an imported job is no longer held up by address
+    // fields the export never carried.
+    const missing = missingJobFields({ ...base, address: jobs[0].address, details: d });
+    assert.deepEqual(missing.filter((field) => field.includes("street") || field.includes("suburb") || field.includes("postcode")), []);
   });
 });

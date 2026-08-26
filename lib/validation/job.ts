@@ -68,8 +68,12 @@ export function missingJobFields({ pathway, address, description, certifierId, d
   // whenever they aren't simply the applicant's.
   if (!d.ownerSameAsApplicant) {
     need(d.owner?.name, "Owner name");
-    need(d.owner?.address?.street, "Owner street");
-    need(d.owner?.address?.suburb, "Owner suburb");
+    // As with the applicant: an owner living at the site is recorded by
+    // saying so, not by typing the address a third time.
+    if (!d.ownerAddressSameAsSite) {
+      need(d.owner?.address?.street, "Owner street");
+      need(d.owner?.address?.suburb, "Owner suburb");
+    }
   }
 
   return missing;

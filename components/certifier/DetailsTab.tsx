@@ -29,7 +29,7 @@ import type { Job, ClientContact } from "@/types/db";
 import { DateField } from "@/components/DateField";
 import { portalRefPlaceholder, portalRefKindFor } from "@/lib/business";
 import { PriorApprovalFields } from "@/components/certifier/PriorApprovalFields";
-import { ApplicantAddressFields } from "@/components/certifier/ApplicantAddressFields";
+import { AddressSameAsSiteFields } from "@/components/certifier/AddressSameAsSiteFields";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -318,7 +318,7 @@ export function DetailsTab({
               <input name="contact_email" defaultValue={d.contact?.email || ""} className={inputCls} />
             </div>
           </div>
-          <ApplicantAddressFields defaults={d.applicantAddress} defaultSameAsSite={d.applicantSameAsSite} />
+          <AddressSameAsSiteFields label="Applicant address" prefix="applicantAddress" sameName="applicantSameAsSite" defaults={d.applicantAddress} defaultSameAsSite={d.applicantSameAsSite} />
         </Section>
 
         <Section title="Owner details">
@@ -330,18 +330,15 @@ export function DetailsTab({
             <label className={labelCls}>Owner name (if different)</label>
             <input name="owner_name" defaultValue={d.owner?.name || ""} placeholder="e.g. Jane Smith & John Smith" className={inputCls} />
           </div>
-          <div className="grid sm:grid-cols-5 gap-2">
-            <input name="owner_streetNumber" defaultValue={d.owner?.address?.streetNumber || ""} placeholder="No." className={inputCls} />
-            <input name="owner_street" defaultValue={d.owner?.address?.street || ""} placeholder="Street" className={`${inputCls} sm:col-span-2`} />
-            <input name="owner_suburb" defaultValue={d.owner?.address?.suburb || ""} placeholder="Suburb" className={inputCls} />
-            <input name="owner_postcode" defaultValue={d.owner?.address?.postcode || ""} placeholder="Postcode" className={inputCls} />
-          </div>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <select name="owner_state" defaultValue={d.owner?.address?.state || "NSW"} className={inputCls}>
-              {NSW_STATE.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
+          <AddressSameAsSiteFields
+            label="Owner address"
+            prefix="owner"
+            sameName="ownerAddressSameAsSite"
+            defaults={d.owner?.address}
+            defaultSameAsSite={d.ownerAddressSameAsSite}
+          />
+          <div>
+            <label className={labelCls}>Owner phone</label>
             <input name="owner_phone" defaultValue={d.owner?.phone || ""} placeholder="Owner phone" className={inputCls} />
           </div>
           <div>

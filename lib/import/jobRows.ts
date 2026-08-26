@@ -158,10 +158,15 @@ export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []):
       // Only set to false when an owner is actually named, so a job with
       // no owner column does not demand owner details it never had.
       ownerSameAsApplicant: !cell("ownerName"),
+      // No export seen so far carries an owner's postal address, and an
+      // owner named against a site is living at it until told otherwise
+      // — so the site address stands in, rather than leaving the job two
+      // fields short of an occupation certificate.
+      ownerAddressSameAsSite: !!address,
       owner: {
         name: cell("ownerName"),
         phone: "",
-        address: { streetNumber: "", street: "", suburb: "", state: "NSW", postcode: "" },
+        address: address ? splitAddress(address) : { streetNumber: "", street: "", suburb: "", state: "NSW", postcode: "" },
       },
       council: {
         lga: cell("lga"),

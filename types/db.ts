@@ -132,6 +132,9 @@ export type JobDetails = {
   // later corrected.
   applicantSameAsSite?: boolean;
   ownerSameAsApplicant?: boolean;
+  // The owner lives at the site: their address is taken from the
+  // property address on every save rather than recorded separately.
+  ownerAddressSameAsSite?: boolean;
   owner?: { name?: string; address?: Record<string, string>; phone?: string };
   council?: { lga?: string; address?: Record<string, string>; contact?: { phone?: string; email?: string } };
   proposal?: {

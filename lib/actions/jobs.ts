@@ -49,11 +49,13 @@ function numericText(value: FormDataEntryValue | null): string {
 // and edit). CDC's relevant instrument/part of code are computed from the
 // ticked SEPP code parts rather than typed in directly.
 function extractJobDetails(formData: FormData, pathway: Pathway): JobDetails {
-  // When the applicant's address is the site's, it is worked out from the
-  // property address rather than typed again — and worked out afresh on
-  // every save, so correcting the site address corrects both.
+  // Where the applicant's or the owner's address is the site's, it is
+  // worked out from the property address rather than typed again — and
+  // worked out afresh on every save, so correcting the site address
+  // corrects each of them with it.
   const applicantSameAsSite = formData.get("applicantSameAsSite") === "on";
-  const fromSite = applicantSameAsSite ? splitAddress(String(formData.get("address") || "")) : null;
+  const ownerAddressSameAsSite = formData.get("ownerAddressSameAsSite") === "on";
+  const fromSite = applicantSameAsSite || ownerAddressSameAsSite ? splitAddress(String(formData.get("address") || "")) : null;
   const codeParts = formData.getAll("codeParts").map(String);
   const relevantInstrument = pathway === "CDC" && codeParts.length > 0 ? epiForCodeParts(codeParts) : String(formData.get("relevantInstrument") || "");
   const relevantPartOfCode = pathway === "CDC" && codeParts.length > 0 ? codeParts.join(", ") : String(formData.get("relevantPartOfCode") || "");
@@ -73,7 +75,7 @@ function extractJobDetails(formData: FormData, pathway: Pathway): JobDetails {
       email: String(formData.get("contact_email") || ""),
     },
     applicantSameAsSite,
-    applicantAddress: fromSite || {
+    applicantAddress: (applicantSameAsSite && fromSite) || {
       streetNumber: String(formData.get("applicantAddress_streetNumber") || ""),
       street: String(formData.get("applicantAddress_street") || ""),
       suburb: String(formData.get("applicantAddress_suburb") || ""),
@@ -81,10 +83,11 @@ function extractJobDetails(formData: FormData, pathway: Pathway): JobDetails {
       postcode: String(formData.get("applicantAddress_postcode") || ""),
     },
     ownerSameAsApplicant: formData.get("ownerSameAsApplicant") === "on",
+    ownerAddressSameAsSite,
     owner: {
       name: String(formData.get("owner_name") || ""),
       phone: String(formData.get("owner_phone") || ""),
-      address: {
+      address: (ownerAddressSameAsSite && fromSite) || {
         streetNumber: String(formData.get("owner_streetNumber") || ""),
         street: String(formData.get("owner_street") || ""),
         suburb: String(formData.get("owner_suburb") || ""),

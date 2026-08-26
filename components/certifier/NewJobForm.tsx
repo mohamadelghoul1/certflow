@@ -19,7 +19,7 @@ import { AddressLookupField } from "@/components/certifier/AddressLookupField";
 import { DateField } from "@/components/DateField";
 import { portalRefPlaceholder, portalRefKindFor, pathwayServiceLabel, type Pathway } from "@/lib/business";
 import { PriorApprovalFields } from "@/components/certifier/PriorApprovalFields";
-import { ApplicantAddressFields } from "@/components/certifier/ApplicantAddressFields";
+import { AddressSameAsSiteFields } from "@/components/certifier/AddressSameAsSiteFields";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -268,7 +268,7 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
             <input type="email" name="contact_email" className={inputCls} />
           </div>
         </div>
-        <ApplicantAddressFields defaultSameAsSite required />
+        <AddressSameAsSiteFields label="Applicant address" prefix="applicantAddress" sameName="applicantSameAsSite" defaultSameAsSite required />
       </Section>
 
       <Section title="Owner details">
@@ -280,18 +280,9 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
           <label className={labelCls}>Owner name (if different)</label>
           <input name="owner_name" placeholder="e.g. Jane Smith & John Smith" className={inputCls} />
         </div>
-        <div className="grid sm:grid-cols-5 gap-2">
-          <input name="owner_streetNumber" placeholder="No." className={inputCls} />
-          <input name="owner_street" placeholder="Street" className={`${inputCls} sm:col-span-2`} />
-          <input name="owner_suburb" placeholder="Suburb" className={inputCls} />
-          <input name="owner_postcode" placeholder="Postcode" className={inputCls} />
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <select name="owner_state" defaultValue="NSW" className={inputCls}>
-            {NSW_STATE.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
+        <AddressSameAsSiteFields label="Owner address" prefix="owner" sameName="ownerAddressSameAsSite" defaultSameAsSite />
+        <div>
+          <label className={labelCls}>Owner phone</label>
           <input name="owner_phone" placeholder="Owner phone" className={inputCls} />
         </div>
       </Section>
