@@ -14,6 +14,8 @@ export type Firm = {
   email: string | null;
   website: string | null;
   logo_url: string | null;
+  // The company's Planning Portal account. Added by migration 0032.
+  portal_email?: string | null;
   // The firm's own stamp artwork, placed above the drawn stamp on
   // approved documents. Null keeps the drawn stamp on its own.
   stamp_url: string | null;

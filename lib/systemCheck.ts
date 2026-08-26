@@ -117,6 +117,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Each certifier's Planning Portal login, recorded once in Settings and offered on every report.",
       probe: hasColumn(supabase, "certifiers", "portal_email"),
     },
+    {
+      migration: "0032",
+      label: "Company Portal account",
+      detail: "The firm's own Planning Portal login, used for every report unless a certifier carries their own.",
+      probe: hasColumn(supabase, "firms", "portal_email"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));

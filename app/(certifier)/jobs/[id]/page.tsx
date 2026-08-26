@@ -81,6 +81,12 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
   // restored from, rather than a dead end.
   if (job.deleted_at) redirect("/jobs/deleted");
   const typedJob = job as Job;
+
+  // The company's Planning Portal account, for reporting inspections.
+  // Asked for on its own so a database without migration 0032 degrades to
+  // no default rather than failing the page.
+  const { data: firmRow } = await supabase.from("firms").select("portal_email").eq("id", profile.firm_id).single();
+  const firmPortalEmail = (firmRow as { portal_email?: string | null } | null)?.portal_email || "";
   const sharedClients = (sharedAccessRows || []).map((r) => r.clients).filter(Boolean) as unknown as { id: string; name: string; type: string }[];
 
   const libraries: Record<string, { id: string; title: string; description: string | null; category: string | null; template_file_path: string | null }[]> = { CDC: [], CC: [], NOC: [], OC: [] };
@@ -194,7 +200,9 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
                     ? typedJob.details?.priorApproval?.portalRef || ""
                     : typedJob.details?.certificateDetails?.planningPortalRef || ""
                 }
-                submitterEmail={(certifiers || []).find((c) => c.id === profile.certifier_id)?.portal_email || profile.email || ""}
+                submitterEmail={
+                  (certifiers || []).find((c) => c.id === profile.certifier_id)?.portal_email || firmPortalEmail || profile.email || ""
+                }
               />
           ),
           oc: ocChecklist ? (

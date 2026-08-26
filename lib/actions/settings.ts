@@ -9,19 +9,24 @@ import type { ActionState } from "@/lib/actions/auth";
 export async function updateFirm(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("firms")
-    .update({
-      name: String(formData.get("name") || ""),
-      abn: String(formData.get("abn") || ""),
-      postal_address: String(formData.get("postal_address") || ""),
-      office_address: String(formData.get("office_address") || ""),
-      phone: String(formData.get("phone") || ""),
-      email: String(formData.get("email") || ""),
-      website: String(formData.get("website") || ""),
-    })
-    .eq("id", profile.firm_id);
-  if (error) return { error: error.message };
+  const fields = {
+    name: String(formData.get("name") || ""),
+    abn: String(formData.get("abn") || ""),
+    postal_address: String(formData.get("postal_address") || ""),
+    office_address: String(formData.get("office_address") || ""),
+    phone: String(formData.get("phone") || ""),
+    email: String(formData.get("email") || ""),
+    website: String(formData.get("website") || ""),
+  };
+  // The company's Planning Portal account — migration 0032. On a database
+  // that has not run it, save everything else rather than failing the form.
+  const portalEmail = String(formData.get("portal_email") || "").trim() || null;
+  const { error } = await supabase.from("firms").update({ ...fields, portal_email: portalEmail }).eq("id", profile.firm_id);
+  if (error) {
+    if (error.code !== "PGRST204" && error.code !== "42703") return { error: error.message };
+    const { error: retryError } = await supabase.from("firms").update(fields).eq("id", profile.firm_id);
+    if (retryError) return { error: retryError.message };
+  }
   revalidatePath("/settings");
   return undefined;
 }

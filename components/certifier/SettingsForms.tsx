@@ -101,6 +101,14 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
           <label className={labelCls}>Website</label>
           <input name="website" defaultValue={firm?.website || ""} className={inputCls} />
         </div>
+        <div className="sm:col-span-2">
+          <label className={labelCls}>NSW Planning Portal account email</label>
+          <input name="portal_email" type="email" defaultValue={firm?.portal_email || ""} placeholder="the email the company signs into the Planning Portal with" className={inputCls} />
+          <p className="text-[11px] text-muted mt-1">
+            Inspections reported to the Portal go up under this account automatically. A certifier with their own Portal login can carry it on their own row below, which takes over for
+            their inspections.
+          </p>
+        </div>
       </div>
       {state?.error && <div className="text-sm text-error">{state.error}</div>}
       <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
