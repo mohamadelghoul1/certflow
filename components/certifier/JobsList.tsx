@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, Plus, AlertTriangle, Trash2 } from "lucide-react";
+import { Search, Plus, AlertTriangle, Trash2, Upload } from "lucide-react";
 
 type JobRow = {
   id: string;
@@ -150,11 +150,16 @@ export function JobsList({ jobs, certifiers, deletedCount = 0 }: { jobs: JobRow[
         </table>
       </div>
 
-      {deletedCount > 0 && (
-        <Link href="/jobs/deleted" className="mt-4 inline-flex items-center gap-1.5 text-xs text-placeholder hover:text-muted hover:underline">
-          <Trash2 size={13} /> {deletedCount} deleted {deletedCount === 1 ? "project" : "projects"}
+      <div className="mt-4 flex items-center gap-4">
+        <Link href="/jobs/import" className="inline-flex items-center gap-1.5 text-xs text-placeholder hover:text-muted hover:underline">
+          <Upload size={13} /> Import projects from another system
         </Link>
-      )}
+        {deletedCount > 0 && (
+          <Link href="/jobs/deleted" className="inline-flex items-center gap-1.5 text-xs text-placeholder hover:text-muted hover:underline">
+            <Trash2 size={13} /> {deletedCount} deleted {deletedCount === 1 ? "project" : "projects"}
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
