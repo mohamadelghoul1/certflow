@@ -119,3 +119,26 @@ describe("the three calls that report one inspection", () => {
     assertConforms(body, spec.requests.CompleteInspection, "CompleteInspection");
   });
 });
+
+// The Portal's answer to opening an inspection case carries the new case
+// number as prose or loose JSON rather than a defined field, so the
+// extraction has to cope with every shape the spec hints at.
+describe("reading the inspection case number out of the Portal's answer", () => {
+  test("from the spec's own phrasing", async () => {
+    const { extractChildCaseId } = await import("@/lib/portal/client");
+    assert.equal(extractChildCaseId("CaseID--INS-2026-4471 created Sucessfully."), "INS-2026-4471");
+  });
+
+  test("from JSON under the likely field names", async () => {
+    const { extractChildCaseId } = await import("@/lib/portal/client");
+    assert.equal(extractChildCaseId('{"childCaseID":"INS-9"}'), "INS-9");
+    assert.equal(extractChildCaseId('{"caseId":"INS-10"}'), "INS-10");
+    assert.equal(extractChildCaseId('{"description":"CaseID--INS-11 created Sucessfully."}'), "INS-11");
+  });
+
+  test("an answer with no case number in it says so rather than guessing", async () => {
+    const { extractChildCaseId } = await import("@/lib/portal/client");
+    assert.equal(extractChildCaseId("Accepted"), null);
+    assert.equal(extractChildCaseId('{"status":"ok"}'), null);
+  });
+});

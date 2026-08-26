@@ -10,8 +10,10 @@ import {
   updateInspectionReportText,
   setPhotoCaption,
   removePhoto,
-  reportToPortal,
 } from "@/lib/actions/inspections";
+import { ReportToPortalButton } from "@/components/certifier/ReportToPortalButton";
+import { portalConfigured } from "@/lib/portal/config";
+import { INSPECTION_OUTCOME_TEXT } from "@/lib/constants";
 import { notifyClientMessage } from "@/lib/actions/jobs";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { InspectionPhotoUpload } from "@/components/certifier/InspectionPhotoUpload";
@@ -29,11 +31,15 @@ export async function InspectionsPanel({
   firmId,
   inspections,
   certifiers,
+  portalCaseRef = "",
 }: {
   jobId: string;
   firmId: string;
   inspections: InspectionWithDefects[];
   certifiers: Certifier[];
+  // The job's Planning Portal reference, offered as the case number when
+  // reporting an inspection.
+  portalCaseRef?: string;
 }) {
   // Sorted here rather than in the query: a database where migration 0022
   // has not been run has no sort_order column at all, and ordering by a
@@ -46,7 +52,7 @@ export async function InspectionsPanel({
         jobId={jobId}
         rows={ordered.map((insp) => ({
           id: insp.id,
-          node: <InspectionRow insp={insp} jobId={jobId} firmId={firmId} certifiers={certifiers} />,
+          node: <InspectionRow insp={insp} jobId={jobId} firmId={firmId} certifiers={certifiers} portalCaseRef={portalCaseRef} />,
         }))}
       />
       <AddInspectionForm jobId={jobId} />
@@ -54,7 +60,7 @@ export async function InspectionsPanel({
   );
 }
 
-async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: InspectionWithDefects; jobId: string; firmId: string; certifiers: Certifier[] }) {
+async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef }: { insp: InspectionWithDefects; jobId: string; firmId: string; certifiers: Certifier[]; portalCaseRef: string }) {
   const reportUrl = await signedUrl(insp.report_file_path);
   const photos = insp.inspection_photos || [];
   const photoUrls = await Promise.all(photos.map((p) => signedUrl(p.file_path)));
@@ -210,13 +216,21 @@ async function InspectionRow({ insp, jobId, firmId, certifiers }: { insp: Inspec
                 </form>
               </>
             )}
-            <form action={reportToPortal}>
-              <input type="hidden" name="inspection_id" value={insp.id} />
-              <input type="hidden" name="job_id" value={jobId} />
-              <button disabled={insp.portal_reported} className="text-xs font-semibold text-muted hover:underline disabled:opacity-50 disabled:cursor-default">
-                {insp.portal_reported ? `Reported to Portal ${formatISODate(insp.portal_reported_date)}` : "Report to NSW Planning Portal"}
-              </button>
-            </form>
+            <ReportToPortalButton
+              inspectionId={insp.id}
+              jobId={jobId}
+              live={portalConfigured()}
+              defaultCaseId={portalCaseRef}
+              reported={insp.portal_reported}
+              reportedDate={insp.portal_reported_date}
+              sentByApi={!!insp.portal_child_case_id}
+              summary={{
+                title: insp.title,
+                date: formatISODate(insp.date),
+                outcome: INSPECTION_OUTCOME_TEXT[insp.outcome] || insp.outcome,
+                signed: !!insp.report_signed_at,
+              }}
+            />
             <RemoveInspectionButton inspectionId={insp.id} jobId={jobId} portalReported={insp.portal_reported} />
             </div>
         </InspectionCardShell>

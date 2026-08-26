@@ -24,6 +24,7 @@ export type AuditAction =
   | "inspection.signed"
   | "inspection.deleted"
   | "oc.generated"
+  | "portal.inspection"
   | "email.failed"
   | "backup.failed";
 

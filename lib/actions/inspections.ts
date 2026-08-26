@@ -10,6 +10,8 @@ import { inspectionDescriptionFor, MAX_INSPECTION_PHOTOS } from "@/lib/constants
 import { reorderedIds } from "@/lib/checklists";
 import { storeSignedInspectionReport } from "@/lib/certificates/storeInspectionReport";
 import { recordAuditEvent } from "@/lib/audit";
+import { sendInspectionToPortal } from "@/lib/portal/report";
+import { isUnknownColumn } from "@/lib/softDelete";
 
 export async function assignInspector(formData: FormData) {
   await requireProfile("certifier");
@@ -238,12 +240,6 @@ export async function addInspection(_prev: ActionState, formData: FormData): Pro
   return undefined;
 }
 
-// Postgres reports an unknown column as 42703; PostgREST rejects the
-// whole request first, with PGRST204.
-function isUnknownColumn(error: { code?: string | null }) {
-  return error.code === "42703" || error.code === "PGRST204";
-}
-
 async function nextInspectionOrder(supabase: SupabaseClient, jobId: string) {
   const { data } = await supabase.from("inspections").select("sort_order").eq("job_id", jobId).order("sort_order", { ascending: false }).limit(1);
   const highest = data?.[0]?.sort_order;
@@ -350,6 +346,9 @@ export async function removePhoto(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// The manual fallback: marks the inspection as reported without talking
+// to the Portal, for a firm that has not connected the API (or reported
+// this one by hand on the Portal website).
 export async function reportToPortal(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
@@ -357,4 +356,74 @@ export async function reportToPortal(formData: FormData) {
   const jobId = String(formData.get("job_id"));
   await supabase.from("inspections").update({ portal_reported: true, portal_reported_date: todayISO() }).eq("id", inspectionId);
   revalidatePath(`/jobs/${jobId}`);
+}
+
+// Undoes a "reported" mark that was made by hand — pressing the old
+// button marked the inspection without sending anything, and that mark
+// blocks the real submission. Only a hand-made mark can be cleared: an
+// inspection the API actually sent carries the Portal's own case number
+// and stays put.
+export async function unreportFromPortal(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const inspectionId = String(formData.get("inspection_id"));
+  const jobId = String(formData.get("job_id"));
+
+  const { data: inspection, error } = await supabase.from("inspections").select("id, portal_child_case_id").eq("id", inspectionId).single();
+  if (error && !isUnknownColumn(error)) return { error: error.message };
+  if (inspection && "portal_child_case_id" in inspection && inspection.portal_child_case_id) {
+    return { error: "This inspection was sent through the Portal API and its record cannot be unmarked." };
+  }
+
+  await supabase.from("inspections").update({ portal_reported: false, portal_reported_date: null }).eq("id", inspectionId);
+  revalidatePath(`/jobs/${jobId}`);
+  return undefined;
+}
+
+// The real thing: sends the inspection to the NSW Planning Portal over
+// the department's API — three calls, the signed report attached as a
+// link — and only marks it reported once the Portal has accepted all
+// three. Every request and response lands in the audit log either way.
+export async function reportInspectionToPortalLive(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const inspectionId = String(formData.get("inspection_id"));
+  const jobId = String(formData.get("job_id"));
+  const caseId = String(formData.get("portal_case_id") || "").trim();
+  if (!caseId) return { error: "Enter the Portal case number this inspection belongs to." };
+
+  const [{ data: job }, { data: inspection }] = await Promise.all([
+    supabase.from("jobs").select("id, address").eq("id", jobId).eq("firm_id", profile.firm_id).single(),
+    supabase.from("inspections").select("id, title, date, outcome, report_pdf_path, report_signed_at, inspector_certifier_id, portal_reported").eq("id", inspectionId).eq("job_id", jobId).single(),
+  ]);
+  if (!job || !inspection) return { error: "Inspection not found." };
+  if (inspection.portal_reported) return { error: "This inspection has already been reported to the Portal." };
+  if (!inspection.report_signed_at) return { error: "Sign the inspection report first — the Portal submission carries the signed report." };
+
+  const { data: inspector } = inspection.inspector_certifier_id
+    ? await supabase.from("certifiers").select("name, registration_no").eq("id", inspection.inspector_certifier_id).single()
+    : { data: null };
+  if (!inspector?.name || !inspector.registration_no) {
+    return { error: "Assign an inspector with a registration number to this inspection first — the Portal requires both." };
+  }
+
+  const outcome = await sendInspectionToPortal(supabase, profile, {
+    caseId,
+    jobId,
+    jobAddress: job.address,
+    inspection,
+    inspectorName: inspector.name,
+    registrationNumber: inspector.registration_no,
+  });
+  if (!outcome.ok) return { error: outcome.error };
+
+  // The Portal's own case number for this inspection, kept for the
+  // record. On a database that has not run migration 0030 the column is
+  // missing; the report still went, so fall back to marking it reported.
+  const reported = { portal_reported: true, portal_reported_date: todayISO() };
+  const { error: saveError } = await supabase.from("inspections").update({ ...reported, portal_child_case_id: outcome.childCaseId }).eq("id", inspectionId);
+  if (saveError && isUnknownColumn(saveError)) await supabase.from("inspections").update(reported).eq("id", inspectionId);
+
+  revalidatePath(`/jobs/${jobId}`);
+  return undefined;
 }

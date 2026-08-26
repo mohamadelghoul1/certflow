@@ -370,6 +370,9 @@ export type Inspection = {
   confirmed: boolean;
   portal_reported: boolean;
   portal_reported_date: string | null;
+  // The Portal's own case number for an inspection sent through the API.
+  // Added by migration 0030; absent until it has been run.
+  portal_child_case_id?: string | null;
   // Added by migration 0022; absent until it has been run.
   sort_order?: number;
 };

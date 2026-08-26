@@ -105,6 +105,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Two screens writing to the same project at once no longer lose each other's work.",
       probe: hasFunction(supabase, "merge_job_details", { p_job_id: "00000000-0000-0000-0000-000000000000", p_patch: {} }),
     },
+    {
+      migration: "0030",
+      label: "Portal inspection case numbers",
+      detail: "Keeps the Portal's own case number for each inspection reported through the API.",
+      probe: hasColumn(supabase, "inspections", "portal_child_case_id"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));
