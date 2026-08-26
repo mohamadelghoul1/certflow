@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { ensureFonts } from "@/lib/portal/fontsBoot";
 
 // The Portal refuses to record a visit without at least one "Inspection
 // images" document. CertFlow deliberately sends this generated card and
@@ -19,19 +20,20 @@ export async function buildInspectionSummaryImage(input: {
   outcomeText: string;
   inspectorName: string;
 }): Promise<Uint8Array> {
+  ensureFonts();
   const e = escapeXml;
   const svg = `<svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
   <rect width="1200" height="800" fill="#ffffff"/>
   <rect x="0" y="0" width="1200" height="8" fill="#1c3d5a"/>
-  <text x="80" y="120" font-family="Helvetica, Arial, sans-serif" font-size="30" fill="#64748b">${e(input.firmName)}</text>
-  <text x="80" y="200" font-family="Helvetica, Arial, sans-serif" font-size="52" font-weight="bold" fill="#0f172a">Inspection record</text>
-  <text x="80" y="300" font-family="Helvetica, Arial, sans-serif" font-size="34" fill="#334155">${e(input.inspectionTitle)}</text>
-  <text x="80" y="360" font-family="Helvetica, Arial, sans-serif" font-size="30" fill="#64748b">${e(input.address)}</text>
-  <text x="80" y="460" font-family="Helvetica, Arial, sans-serif" font-size="30" fill="#334155">Date of inspection: ${e(input.date)}</text>
-  <text x="80" y="515" font-family="Helvetica, Arial, sans-serif" font-size="30" fill="#334155">Carried out by: ${e(input.inspectorName)}</text>
-  <text x="80" y="570" font-family="Helvetica, Arial, sans-serif" font-size="30" fill="#334155">Result: ${e(input.outcomeText)}</text>
-  <text x="80" y="690" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#64748b">Refer to the attached signed inspection report for the full record.</text>
-  <text x="80" y="730" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#64748b">Site photographs, where taken, are retained on the certifier's file.</text>
+  <text x="80" y="120" font-family="DejaVu Sans, sans-serif" font-size="30" fill="#64748b">${e(input.firmName)}</text>
+  <text x="80" y="200" font-family="DejaVu Sans, sans-serif" font-size="52" font-weight="bold" fill="#0f172a">Inspection record</text>
+  <text x="80" y="300" font-family="DejaVu Sans, sans-serif" font-size="34" fill="#334155">${e(input.inspectionTitle)}</text>
+  <text x="80" y="360" font-family="DejaVu Sans, sans-serif" font-size="30" fill="#64748b">${e(input.address)}</text>
+  <text x="80" y="460" font-family="DejaVu Sans, sans-serif" font-size="30" fill="#334155">Date of inspection: ${e(input.date)}</text>
+  <text x="80" y="515" font-family="DejaVu Sans, sans-serif" font-size="30" fill="#334155">Carried out by: ${e(input.inspectorName)}</text>
+  <text x="80" y="570" font-family="DejaVu Sans, sans-serif" font-size="30" fill="#334155">Result: ${e(input.outcomeText)}</text>
+  <text x="80" y="690" font-family="DejaVu Sans, sans-serif" font-size="26" fill="#64748b">Refer to the attached signed inspection report for the full record.</text>
+  <text x="80" y="730" font-family="DejaVu Sans, sans-serif" font-size="26" fill="#64748b">Site photographs, where taken, are retained on the certifier's file.</text>
 </svg>`;
   // JPEG rather than PNG: the Portal's document validation is pickier
   // than its specification, and JPEG is the one image format nothing
