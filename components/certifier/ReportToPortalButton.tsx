@@ -35,7 +35,7 @@ export function ReportToPortalButton({
   // True when the Portal's own case number is on record — an API send.
   sentByApi: boolean;
   // What the panel shows is about to go: type, date, outcome.
-  summary: { title: string; date: string; outcome: string; signed: boolean };
+  summary: { title: string; date: string; outcome: string; signed: boolean; submittedBy: string };
 }) {
   const [open, setOpen] = useState(false);
   const [caseId, setCaseId] = useState(defaultCaseId);
@@ -103,6 +103,11 @@ export function ReportToPortalButton({
           <span className="text-placeholder">Attached:</span>{" "}
           {summary.signed ? "the signed inspection report (sent automatically — nothing to upload)" : "nothing yet — sign the report first"}
         </div>
+        {summary.submittedBy && (
+          <div>
+            <span className="text-placeholder">Submitted by:</span> {summary.submittedBy} <span className="text-placeholder">(your Portal login)</span>
+          </div>
+        )}
       </div>
 
       <div>

@@ -32,12 +32,15 @@ export async function sendInspectionToPortal(
     inspection: { id: string; title: string; date: string | null; outcome: string; report_pdf_path?: string | null };
     inspectorName: string;
     registrationNumber: string;
+    // The Portal requires the email of the registered Portal user making
+    // the submission — it rejected the call outright without it.
+    updatedByEmail: string;
   }
 ): Promise<PortalSendOutcome> {
   const config = portalConfig();
   if (!config) return { ok: false, error: "The Planning Portal connection is not set up yet — see Settings → System check." };
 
-  const { caseId, jobId, jobAddress, inspection, inspectorName, registrationNumber } = input;
+  const { caseId, jobId, jobAddress, inspection, inspectorName, registrationNumber, updatedByEmail } = input;
 
   if (!inspection.date) return { ok: false, error: "The inspection has no date recorded." };
   if (!inspection.outcome || inspection.outcome === "pending") return { ok: false, error: "Record the inspection outcome before reporting it." };
@@ -70,6 +73,7 @@ export async function sendInspectionToPortal(
     certflowTitle: inspection.title,
     scheduledDate: inspection.date,
     registrationNumber,
+    updatedByEmail,
   }));
   await log("InitiateInspection", initiate.ok, { status: initiate.status, response: initiate.body.slice(0, 2000) });
   if (!initiate.ok) return { ok: false, error: portalErrorMessage("open the inspection case", initiate.status, initiate.body) };
@@ -88,6 +92,7 @@ export async function sendInspectionToPortal(
     outcome: inspection.outcome,
     inspectorName,
     documents,
+    updatedByEmail,
   }));
   await log("PerformInspection", perform.ok, { childCaseId, status: perform.status, response: perform.body.slice(0, 2000) });
   if (!perform.ok) return { ok: false, error: portalErrorMessage("record the inspection", perform.status, perform.body) };
@@ -99,6 +104,7 @@ export async function sendInspectionToPortal(
     declarations: DECLARATION,
     inspectionResultDeclaration: CC_RESULT_DECLARATION,
     documents,
+    updatedByEmail,
   }));
   await log("CompleteInspection", complete.ok, { childCaseId, status: complete.status, response: complete.body.slice(0, 2000) });
   if (!complete.ok) return { ok: false, error: portalErrorMessage("complete the inspection", complete.status, complete.body) };

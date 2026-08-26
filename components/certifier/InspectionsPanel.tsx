@@ -32,6 +32,7 @@ export async function InspectionsPanel({
   inspections,
   certifiers,
   portalCaseRef = "",
+  submitterEmail = "",
 }: {
   jobId: string;
   firmId: string;
@@ -40,6 +41,9 @@ export async function InspectionsPanel({
   // The job's Planning Portal reference, offered as the case number when
   // reporting an inspection.
   portalCaseRef?: string;
+  // The signed-in certifier's email — shown in the Portal panel as the
+  // submitting user, because the Portal requires it on every call.
+  submitterEmail?: string;
 }) {
   // Sorted here rather than in the query: a database where migration 0022
   // has not been run has no sort_order column at all, and ordering by a
@@ -52,7 +56,7 @@ export async function InspectionsPanel({
         jobId={jobId}
         rows={ordered.map((insp) => ({
           id: insp.id,
-          node: <InspectionRow insp={insp} jobId={jobId} firmId={firmId} certifiers={certifiers} portalCaseRef={portalCaseRef} />,
+          node: <InspectionRow insp={insp} jobId={jobId} firmId={firmId} certifiers={certifiers} portalCaseRef={portalCaseRef} submitterEmail={submitterEmail} />,
         }))}
       />
       <AddInspectionForm jobId={jobId} />
@@ -60,7 +64,7 @@ export async function InspectionsPanel({
   );
 }
 
-async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef }: { insp: InspectionWithDefects; jobId: string; firmId: string; certifiers: Certifier[]; portalCaseRef: string }) {
+async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, submitterEmail }: { insp: InspectionWithDefects; jobId: string; firmId: string; certifiers: Certifier[]; portalCaseRef: string; submitterEmail: string }) {
   const reportUrl = await signedUrl(insp.report_file_path);
   const photos = insp.inspection_photos || [];
   const photoUrls = await Promise.all(photos.map((p) => signedUrl(p.file_path)));
@@ -229,6 +233,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef }:
                 date: formatISODate(insp.date),
                 outcome: INSPECTION_OUTCOME_TEXT[insp.outcome] || insp.outcome,
                 signed: !!insp.report_signed_at,
+                submittedBy: submitterEmail,
               }}
             />
             <RemoveInspectionButton inspectionId={insp.id} jobId={jobId} portalReported={insp.portal_reported} />

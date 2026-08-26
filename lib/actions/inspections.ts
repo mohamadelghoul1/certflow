@@ -407,6 +407,11 @@ export async function reportInspectionToPortalLive(_prev: ActionState, formData:
     return { error: "Assign an inspector with a registration number to this inspection first — the Portal requires both." };
   }
 
+  // The Portal requires the submitting user's registered email. The
+  // certifier signed into CertFlow is the one pressing the button, and
+  // their login email is their Portal login too.
+  if (!profile.email) return { error: "Your CertFlow account has no email address on it, and the Portal requires one." };
+
   const outcome = await sendInspectionToPortal(supabase, profile, {
     caseId,
     jobId,
@@ -414,6 +419,7 @@ export async function reportInspectionToPortalLive(_prev: ActionState, formData:
     inspection,
     inspectorName: inspector.name,
     registrationNumber: inspector.registration_no,
+    updatedByEmail: profile.email,
   });
   if (!outcome.ok) return { error: outcome.error };
 

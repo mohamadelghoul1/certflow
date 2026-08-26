@@ -82,9 +82,12 @@ describe("speaking the Portal's language", () => {
 
 describe("the three calls that report one inspection", () => {
   test("opening the inspection case conforms to the specification", () => {
-    const body = initiateInspectionBody({ certflowTitle: "Frame", scheduledDate: "2026-08-26", registrationNumber: "BDC2961" });
+    const body = initiateInspectionBody({ certflowTitle: "Frame", scheduledDate: "2026-08-26", registrationNumber: "BDC2961", updatedByEmail: "m@example.com" });
     assertConforms(body, spec.requests.InitiateInspection, "InitiateInspection");
     assert.deepEqual(body.inspectionType, ["Framework (prior to fixing floor, wall and ceiling linings)"]);
+    // The live Portal rejects a call without the submitting user's email,
+    // whatever the schema says about it being optional.
+    assert.equal(body.updatedByEmail, "m@example.com");
   });
 
   test("an Other inspection carries its CertFlow name in the description", () => {
@@ -102,6 +105,7 @@ describe("the three calls that report one inspection", () => {
       inspectorName: "Mohamad El Ghoul",
       comments: "Minor sealing gap at the shower hob to be rectified.",
       documents: [doc],
+      updatedByEmail: "m@example.com",
     });
     assertConforms(body, spec.requests.PerformInspection, "PerformInspection");
     assert.equal(body.inspectionResult, "Building has minor defects but is satisfactory");
@@ -115,6 +119,7 @@ describe("the three calls that report one inspection", () => {
       declarations: "I certify the inspection was carried out as recorded.",
       inspectionResultDeclaration: "The works inspected are satisfactory.",
       documents: [doc],
+      updatedByEmail: "m@example.com",
     });
     assertConforms(body, spec.requests.CompleteInspection, "CompleteInspection");
   });
