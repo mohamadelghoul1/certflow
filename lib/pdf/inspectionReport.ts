@@ -22,7 +22,7 @@ export async function buildInspectionReportPdf(
   data: InspectionReportData,
   images: PackageImages & { photos: ReportPhoto[] }
 ): Promise<Uint8Array> {
-  const { job, firm, inspection, inspector, d, applicantName, certRef, certNumbers, consentRefLines, introText, notes } = data;
+  const { job, firm, inspection, inspector, d, applicantName, certRef, certNumbers, certTypeLabel, consentRefLines, introText, notes } = data;
 
   const l = await Layout.create();
   const logo = images.logo ? await (images.logo.type === "png" ? l.doc.embedPng(images.logo.bytes) : l.doc.embedJpg(images.logo.bytes)) : null;
@@ -49,7 +49,7 @@ export async function buildInspectionReportPdf(
   l.heading("RELEVANT CONSENTS", { rule: true });
   row("Local Government Area:", d.council?.lga);
   if (consentRefLines.length) row("Development Applications (if applicable):", consentRefLines.join(", "));
-  row(`${job.pathway === "CDC" ? "Complying Development Certificate" : "Construction Certificate"} Number`, certNumbers);
+  row(`${certTypeLabel} Number`, certNumbers);
 
   l.heading("PROPOSAL", { rule: true });
   row("Address of Development:", job.address);

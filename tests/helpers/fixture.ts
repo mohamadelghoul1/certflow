@@ -163,6 +163,7 @@ export function inspectionReportFixture(overrides: Record<string, unknown> = {})
     applicantName: "Anh Cao",
     certRef: "CDC-26001/01",
     certNumbers: "CDC-26001/01",
+    certTypeLabel: "Complying Development Certificate",
     consentRefLines: [],
     introText: "We have attended the above property and completed an inspection.",
     notes: "",

@@ -36,6 +36,7 @@ export type InspectionReportData = {
   applicantName: string;
   certRef: string;
   certNumbers: string;
+  certTypeLabel: string;
   consentRefLines: string[];
   introText: string;
   notes: string;
@@ -85,7 +86,16 @@ export async function getInspectionReportData(jobId: string, inspectionId: strin
   const activeVersion = (versions || []).find((v) => v.version === job.pathway_version);
   const certRef = job.pathway_generated ? resolvePathwayCertRef(activeVersion?.cert_ref, job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version) : d.projectNumber || job.id.slice(0, 8).toUpperCase();
 
-  const certNumbers = (versions || []).map((v) => resolvePathwayCertRef(v.cert_ref, job.pathway, d.projectNumber || job.id.slice(0, 8), v.version)).join(", ");
+  // The certificate the inspection was carried out under. A CDC or CC job
+  // names its own certificate; a PC/OC job issues none, so it names the
+  // approval the other certifier issued — recorded on the Details tab —
+  // and the label follows that certificate's type, not the job's.
+  const prior = d.priorApproval;
+  const certNumbers =
+    job.pathway === "PC_OC"
+      ? prior?.number || ""
+      : (versions || []).map((v) => resolvePathwayCertRef(v.cert_ref, job.pathway, d.projectNumber || job.id.slice(0, 8), v.version)).join(", ");
+  const certTypeLabel = (job.pathway === "PC_OC" ? prior?.type || "CDC" : job.pathway) === "CDC" ? "Complying Development Certificate" : "Construction Certificate";
   const consentRefLines = (d.certificateDetails?.consentReferences || "")
     .split("\n")
     .map((l) => l.trim())
@@ -98,5 +108,5 @@ export async function getInspectionReportData(jobId: string, inspectionId: strin
     "We have attended the above property and completed an inspection. The areas inspected and the overall outcome of the inspection are listed below, together with any specific defects noted or documents required.";
   const notes = inspection.report_notes?.trim() || "";
 
-  return { job, firm: letterhead, inspection, inspector: inspector || null, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, consentRefLines, introText, notes };
+  return { job, firm: letterhead, inspection, inspector: inspector || null, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, certTypeLabel, consentRefLines, introText, notes };
 }

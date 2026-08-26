@@ -20,7 +20,7 @@ function rows(...items: (FieldRow | null)[]): FieldRow[] {
 }
 
 export async function buildInspectionReportDocx(data: InspectionReportData, images: { logo: ImageAsset | null; signature: ImageAsset | null; photos: (ImageAsset | null)[] }): Promise<Buffer> {
-  const { job, firm, inspection, inspector, d, applicantName, certRef, certNumbers, consentRefLines, introText, notes } = data;
+  const { job, firm, inspection, inspector, d, applicantName, certRef, certNumbers, certTypeLabel, consentRefLines, introText, notes } = data;
 
   const header = letterheadHeader(firm, images.logo);
   const footer = projectFooter(certRef, firm?.website);
@@ -38,7 +38,7 @@ export async function buildInspectionReportDocx(data: InspectionReportData, imag
       rows(
         { kind: "row", label: "Local Government Area:", value: d.council?.lga },
         consentRefLines.length ? { kind: "row", label: "Development Applications (if applicable):", children: consentRefLines.map((l) => p(l, { spacingAfter: 0 })) } : null,
-        { kind: "row", label: `${job.pathway === "CDC" ? "Complying Development Certificate" : "Construction Certificate"} Number`, value: certNumbers }
+        { kind: "row", label: `${certTypeLabel} Number`, value: certNumbers }
       )
     ),
 

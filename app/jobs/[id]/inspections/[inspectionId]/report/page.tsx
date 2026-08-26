@@ -59,7 +59,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
 
   const data = await getInspectionReportData(jobId, inspectionId, profile.firm_id);
   if (!data) notFound();
-  const { job, firm: firmData, inspection, inspector, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, consentRefLines, introText, notes } = data;
+  const { job, firm: firmData, inspection, inspector, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, certTypeLabel, consentRefLines, introText, notes } = data;
 
   // The results table is built from an array so a future report covering
   // several inspection areas in one visit just means feeding in more rows —
@@ -109,7 +109,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
             <tbody>
               <Row label="Local Government Area:" value={d.council?.lga} />
               <RowMultiline label="Development Applications (if applicable):" lines={consentRefLines} />
-              <Row label={`${job.pathway === "CDC" ? "Complying Development Certificate" : "Construction Certificate"} Number`} value={certNumbers} />
+              <Row label={`${certTypeLabel} Number`} value={certNumbers} />
             </tbody>
           </table>
 

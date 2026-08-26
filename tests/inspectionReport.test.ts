@@ -96,3 +96,32 @@ describe("the re-inspection column", () => {
     assert.ok(!text.includes("No re-inspection required, subject to"));
   });
 });
+
+// A PC/OC job issues no certificate of its own — the inspections are
+// carried out under the CDC or CC another certifier issued. The report's
+// consents section names that certificate, the way it names the job's own
+// on a CDC or CC job.
+describe("the consents section on a PC/OC job", () => {
+  const pcOc = {
+    job: { ...inspectionReportFixture().job, pathway: "PC_OC" },
+    certNumbers: "CDC-26091/01",
+    certTypeLabel: "Complying Development Certificate",
+  };
+
+  test("prints the original certificate's number under the Local Government Area", async () => {
+    for (const [format, text] of [
+      ["PDF", (await pdf(pcOc)).text],
+      ["Word", await docx(pcOc)],
+    ] as const) {
+      assert.ok(text.includes("Local Government Area:"), `${format} lost the LGA row`);
+      assert.ok(text.includes("Complying Development Certificate Number"), `${format} does not label the original certificate`);
+      assert.ok(text.includes("CDC-26091/01"), `${format} does not print the original certificate's number`);
+    }
+  });
+
+  test("labels it a Construction Certificate when that is what was issued", async () => {
+    const { text } = await pdf({ ...pcOc, certNumbers: "CFT-123456", certTypeLabel: "Construction Certificate" });
+    assert.ok(text.includes("Construction Certificate Number"));
+    assert.ok(text.includes("CFT-123456"));
+  });
+});
