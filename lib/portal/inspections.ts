@@ -83,9 +83,10 @@ export function initiateInspectionBody(input: { certflowTitle: string; scheduled
   const type = portalInspectionType(input.certflowTitle);
   return {
     ...(input.scheduledDate ? { dateOfInspection: input.scheduledDate } : {}),
-    // Required when the type is "Other Inspection" — it is the only place
-    // the Portal learns what the inspection actually was.
-    ...(type === PORTAL_INSPECTION_TYPES.other ? { description: input.certflowTitle } : {}),
+    // The specification asks for this only on "Other Inspection"; the
+    // live service demanded it on every type ("Description required"),
+    // so it always carries the inspection's CertFlow name.
+    description: input.certflowTitle,
     registrationNumber: input.registrationNumber,
     inspectionType: [type],
     ...(input.updatedByEmail ? { updatedByEmail: input.updatedByEmail } : {}),

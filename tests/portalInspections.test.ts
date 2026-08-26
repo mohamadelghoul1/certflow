@@ -90,10 +90,14 @@ describe("the three calls that report one inspection", () => {
     assert.equal(body.updatedByEmail, "m@example.com");
   });
 
-  test("an Other inspection carries its CertFlow name in the description", () => {
-    const body = initiateInspectionBody({ certflowTitle: "Pool Steel", registrationNumber: "BDC2961" });
-    assertConforms(body, spec.requests.InitiateInspection, "InitiateInspection");
-    assert.equal(body.description, "Pool Steel");
+  // The live Portal demands a description on every inspection type, not
+  // just "Other Inspection" as the written spec says.
+  test("every inspection carries its CertFlow name in the description", () => {
+    for (const title of ["Pool Steel", "Frame"]) {
+      const body = initiateInspectionBody({ certflowTitle: title, registrationNumber: "BDC2961" });
+      assertConforms(body, spec.requests.InitiateInspection, "InitiateInspection");
+      assert.equal(body.description, title);
+    }
   });
 
   test("recording the visit conforms, and carries the signed report as a link", () => {
