@@ -20,6 +20,8 @@ import { DateField } from "@/components/DateField";
 import { portalRefPlaceholder, portalRefKindFor, pathwayServiceLabel, type Pathway } from "@/lib/business";
 import { PriorApprovalFields } from "@/components/certifier/PriorApprovalFields";
 import { AddressSameAsSiteFields } from "@/components/certifier/AddressSameAsSiteFields";
+import { ContractorFields } from "@/components/certifier/ContractorFields";
+import type { Contractor } from "@/types/db";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -45,7 +47,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; name: string }[]; clients: { id: string; name: string; type: string }[] }) {
+export function NewJobForm({
+  certifiers,
+  clients,
+  contractors = [],
+}: {
+  certifiers: { id: string; name: string }[];
+  clients: { id: string; name: string; type: string }[];
+  contractors?: Contractor[];
+}) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createJob, undefined);
   const [types, setTypes] = useState<string[]>([]);
   const [customType, setCustomType] = useState("");
@@ -285,6 +295,9 @@ export function NewJobForm({ certifiers, clients }: { certifiers: { id: string; 
           <label className={labelCls}>Owner phone</label>
           <input name="owner_phone" placeholder="Owner phone" className={inputCls} />
         </div>
+        {/* Optional at creation — plenty of jobs arrive before a builder
+            is appointed; the same block on the Details tab fills it later. */}
+        <ContractorFields saved={contractors} />
       </Section>
 
       <Section title={pathway === "PC_OC" ? "Previously issued approval" : `${pathway} certificate details`}>

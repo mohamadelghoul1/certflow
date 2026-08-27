@@ -141,6 +141,18 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "The firm's bank details on every invoice, and card-payment links through Stripe.",
       probe: hasColumn(supabase, "invoices", "payment_details"),
     },
+    {
+      migration: "0036",
+      label: "Card surcharge",
+      detail: "The optional card-processing surcharge on invoices (auto-off from 1 October 2026).",
+      probe: hasColumn(supabase, "invoices", "card_surcharge"),
+    },
+    {
+      migration: "0037",
+      label: "Builders list",
+      detail: "Saved principal contractors, picked on any project instead of retyped.",
+      probe: hasTable(supabase, "contractors"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));

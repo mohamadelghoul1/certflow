@@ -16,7 +16,7 @@ import { CertificatesPanel } from "@/components/certifier/CertificatesPanel";
 import { OcPanel } from "@/components/certifier/OcPanel";
 import { InspectionsPanel } from "@/components/certifier/InspectionsPanel";
 import { JobTabs } from "@/components/certifier/JobTabs";
-import type { Job } from "@/types/db";
+import type { Contractor, Job } from "@/types/db";
 import { pathwayLabel, type Pathway } from "@/lib/business";
 
 function tabsFor(pathway: Pathway) {
@@ -88,6 +88,11 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
   // Asked for on its own so a database without migration 0032 degrades to
   // no default rather than failing the page.
   const { data: firmRow } = await supabase.from("firms").select("portal_email").eq("id", profile.firm_id).single();
+
+  // The firm's saved builders, for the Details tab's picker. A database
+  // without migration 0037 has no list yet — the picker simply stays off.
+  const { data: contractorRows } = await supabase.from("contractors").select("*").eq("firm_id", profile.firm_id).order("company");
+  const contractors = (contractorRows || []) as Contractor[];
   const firmPortalEmail = (firmRow as { portal_email?: string | null } | null)?.portal_email || "";
   const sharedClients = (sharedAccessRows || []).map((r) => r.clients).filter(Boolean) as unknown as { id: string; name: string; type: string }[];
 
@@ -183,7 +188,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               : false,
         }))}
         content={{
-          details: <DetailsTab job={typedJob} clients={clients || []} sharedClients={sharedClients} />,
+          details: <DetailsTab job={typedJob} clients={clients || []} sharedClients={sharedClients} contractors={contractors} />,
           pathway: pathwayChecklist ? (
             <div className="space-y-6">
               <CertificatesPanel

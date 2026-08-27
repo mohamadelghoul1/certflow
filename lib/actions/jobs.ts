@@ -126,7 +126,19 @@ function extractJobDetails(formData: FormData, pathway: Pathway): JobDetails {
     },
     siteArea: numericText(formData.get("siteArea")),
     inspectionPortalCase: String(formData.get("inspectionPortalCase") || "").trim(),
-    principalContractor: String(formData.get("principalContractor") || "").trim(),
+    // The builder in full; the one-line field is derived from it so every
+    // screen and register that predates the structure keeps reading true.
+    contractor: {
+      company: String(formData.get("contractor_company") || "").trim(),
+      name: String(formData.get("contractor_name") || "").trim(),
+      phone: String(formData.get("contractor_phone") || "").trim(),
+      email: String(formData.get("contractor_email") || "").trim(),
+      licenceNo: String(formData.get("contractor_licenceNo") || "").trim(),
+    },
+    principalContractor:
+      String(formData.get("contractor_company") || "").trim() ||
+      String(formData.get("contractor_name") || "").trim() ||
+      String(formData.get("principalContractor") || "").trim(),
     certificateDetails: {
       lotSectionDp: String(formData.get("lotSectionDp") || ""),
       planningPortalRef: normalizePortalRef(String(formData.get("planningPortalRef") || ""), portalRefKindFor(pathway)),
@@ -235,8 +247,42 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
     inspector_certifier_id: certifierId,
   }));
   await supabase.from("inspections").insert(inspections);
+  await saveContractorToDirectory(supabase, profile.firm_id, formData);
 
   redirect(`/jobs/${job.id}`);
+}
+
+// Puts a ticked builder on the firm's list (migration 0037). Matched by
+// licence number when one is given, else by company and name, so saving
+// the same builder twice updates their card instead of doubling it. A
+// database without the table simply keeps no list — the job itself has
+// already recorded the details either way.
+async function saveContractorToDirectory(supabase: SupabaseClient, firmId: string, formData: FormData) {
+  if (formData.get("contractor_save") !== "on") return;
+  const card = {
+    company: String(formData.get("contractor_company") || "").trim(),
+    name: String(formData.get("contractor_name") || "").trim(),
+    phone: String(formData.get("contractor_phone") || "").trim(),
+    email: String(formData.get("contractor_email") || "").trim(),
+    licence_no: String(formData.get("contractor_licenceNo") || "").trim(),
+  };
+  if (!card.company && !card.name) return;
+
+  const { data: existing, error } = await supabase.from("contractors").select("id, company, name, licence_no").eq("firm_id", firmId);
+  if (error) {
+    if (error.code !== "42P01" && error.code !== "PGRST205") console.error("builders list could not be read:", error.message);
+    return;
+  }
+  const match = (existing || []).find((c) =>
+    card.licence_no && c.licence_no
+      ? c.licence_no.toLowerCase() === card.licence_no.toLowerCase()
+      : c.company.toLowerCase() === card.company.toLowerCase() && c.name.toLowerCase() === card.name.toLowerCase()
+  );
+  const write = match
+    ? supabase.from("contractors").update(card).eq("id", match.id)
+    : supabase.from("contractors").insert({ ...card, firm_id: firmId });
+  const { error: writeError } = await write;
+  if (writeError) console.error("builder could not be saved to the list:", writeError.message);
 }
 
 export async function updateJobDetails(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -272,6 +318,7 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   const description = String(formData.get("description") || "");
 
   await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, patch);
+  await saveContractorToDirectory(supabase, profile.firm_id, formData);
   await supabase
     .from("jobs")
     .update({

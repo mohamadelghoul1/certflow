@@ -49,6 +49,14 @@ function portalRefOf(d: JobDetails | null): string {
   return d?.certificateDetails?.planningPortalRef?.trim() || d?.inspectionPortalCase?.trim() || d?.priorApproval?.portalRef?.trim() || "";
 }
 
+// "Company — Name (Lic. 12345C)", from whichever parts the job holds;
+// older jobs and imports carry only the one-line field.
+function contractorLine(d: JobDetails | null): string {
+  const c = d?.contractor;
+  const base = [c?.company, c?.name].filter(Boolean).join(" — ") || d?.principalContractor || "";
+  return c?.licenceNo && base ? `${base} (Lic. ${c.licenceNo})` : base;
+}
+
 function rowFromJob(job: JobRow, certifierName: string): Omit<RegisterRow, "date" | "certType" | "certNumber"> {
   const d = job.details;
   return {
@@ -61,7 +69,7 @@ function rowFromJob(job: JobRow, certifierName: string): Omit<RegisterRow, "date
     estimatedCost: d?.proposal?.estimatedCost || "",
     applicantName: applicantNameOf(d),
     ownerName: d?.ownerSameAsApplicant === false && d?.owner?.name?.trim() ? d.owner.name.trim() : applicantNameOf(d),
-    principalContractor: d?.principalContractor || "",
+    principalContractor: contractorLine(d),
     description: job.description || "",
   };
 }

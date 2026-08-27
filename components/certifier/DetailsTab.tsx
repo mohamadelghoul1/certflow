@@ -30,6 +30,8 @@ import { DateField } from "@/components/DateField";
 import { portalRefPlaceholder, portalRefKindFor } from "@/lib/business";
 import { PriorApprovalFields } from "@/components/certifier/PriorApprovalFields";
 import { AddressSameAsSiteFields } from "@/components/certifier/AddressSameAsSiteFields";
+import { ContractorFields } from "@/components/certifier/ContractorFields";
+import type { Contractor } from "@/types/db";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -140,10 +142,12 @@ export function DetailsTab({
   job,
   clients,
   sharedClients,
+  contractors = [],
 }: {
   job: Job;
   clients: ClientContact[];
   sharedClients: { id: string; name: string; type: string }[];
+  contractors?: Contractor[];
 }) {
   const d = job.details || {};
   const detailsFormId = `job-details-${job.id}`;
@@ -341,10 +345,16 @@ export function DetailsTab({
             <label className={labelCls}>Owner phone</label>
             <input name="owner_phone" defaultValue={d.owner?.phone || ""} placeholder="Owner phone" className={inputCls} />
           </div>
-          <div>
-            <label className={labelCls}>Principal contractor / builder</label>
-            <input name="principalContractor" defaultValue={d.principalContractor || ""} placeholder="The builder carrying out the works" className={inputCls} />
-          </div>
+          <ContractorFields
+            defaults={{
+              company: d.contractor?.company ?? d.principalContractor ?? "",
+              name: d.contractor?.name || "",
+              phone: d.contractor?.phone || "",
+              email: d.contractor?.email || "",
+              licenceNo: d.contractor?.licenceNo || "",
+            }}
+            saved={contractors}
+          />
         </Section>
 
         <Section title={job.pathway === "PC_OC" ? "Previously issued approval" : `${job.pathway} certificate details`}>

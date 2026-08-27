@@ -123,3 +123,22 @@ describe("merging a patch into a job's details", () => {
     });
   });
 });
+
+// The builder block: recorded in full, and the old one-line field kept
+// in step so the register and older screens keep reading true.
+describe("the contractor on the details patch", () => {
+  test("a saved contractor survives the merge with every part intact", () => {
+    const saved = save(null, {
+      contractor: { company: "Best Builds Pty Ltd", name: "Sam Builder", phone: "0400 000 000", email: "sam@bestbuilds.com.au", licenceNo: "12345C" },
+      principalContractor: "Best Builds Pty Ltd",
+    } as JobDetails);
+    assert.equal(saved.contractor?.licenceNo, "12345C");
+    assert.equal(saved.principalContractor, "Best Builds Pty Ltd");
+  });
+
+  test("an old job's one-line builder is not erased by a details save that doesn't mention it", () => {
+    const existing = { principalContractor: "Old Line Builder" } as JobDetails;
+    const saved = save(existing, fromForm);
+    assert.equal(saved.principalContractor, "Old Line Builder");
+  });
+});

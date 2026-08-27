@@ -124,6 +124,16 @@ export type QuoteFeeLine = {
   sort_order: number;
 };
 
+export type Contractor = {
+  id: string;
+  firm_id: string;
+  company: string;
+  name: string;
+  phone: string;
+  email: string;
+  licence_no: string;
+};
+
 export type Invoice = {
   id: string;
   firm_id: string;
@@ -229,7 +239,11 @@ export type JobDetails = {
   inspectionPortalCase?: string;
   // The builder carrying out the works, named on the occupation
   // certificate and the one to call about a defect found on site.
+  // The builder as one line — superseded by `contractor` below but kept
+  // read: older jobs and imports recorded only this.
   principalContractor?: string;
+  // The principal contractor in full (migration-less: lives in details).
+  contractor?: { company?: string; name?: string; phone?: string; email?: string; licenceNo?: string };
   priorApproval?: {
     type?: "CDC" | "CC";
     number?: string;
