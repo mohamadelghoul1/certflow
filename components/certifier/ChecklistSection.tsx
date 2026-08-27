@@ -155,6 +155,14 @@ async function ItemRow({
   const fileUrl = await signedUrl(item.file_path);
   // The blank form for this document, where the firm has attached one.
   const templateUrl = await signedUrl(item.template_library_item_id ? templatePaths[item.template_library_item_id] : null);
+  // When the newest document on the item arrived — the client's side
+  // shows the same date, so "when did we get this?" has one answer.
+  const lastSubmittedAt =
+    (item.checklist_item_files || [])
+      .filter((f) => f.is_current && f.file_path)
+      .map((f) => f.created_at)
+      .sort()
+      .pop() ?? null;
 
   return (
     <ItemStatusProvider itemId={item.id} jobId={jobId} status={item.status} amendments={item.amendments} includeInApproval={item.include_in_approval !== false}>
@@ -167,6 +175,7 @@ async function ItemRow({
             <div className="flex-1 min-w-0">
               <EditableChecklistItemHeader itemId={item.id} jobId={jobId} title={item.title} description={item.description || ""} version={item.version} statusDot={status.dot} />
               <DocumentMeta item={item} />
+              {lastSubmittedAt && <div className="text-xs text-muted mt-0.5">Submitted {formatISODate(lastSubmittedAt)}</div>}
               <div className="flex flex-wrap items-center gap-2">
                 <ItemStatusBadge />
                 {partOfApproval && <NotInApprovalBadge />}

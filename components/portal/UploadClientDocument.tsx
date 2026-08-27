@@ -70,8 +70,8 @@ export function UploadClientDocument({
           setDragOver(false);
           void handleFile(e.dataTransfer.files?.[0]);
         }}
-        className={`inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${
-          dragOver ? "px-2 py-1 rounded-md border border-dashed border-icon bg-info-bg text-secondary" : "text-primary hover:underline"
+        className={`inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer rounded-full px-3.5 py-1.5 border whitespace-nowrap ${
+          dragOver ? "border-dashed border-icon bg-info-bg text-secondary" : "border-primary/50 text-primary bg-white hover:bg-surface"
         }`}
       >
         <UploadCloud size={14} />

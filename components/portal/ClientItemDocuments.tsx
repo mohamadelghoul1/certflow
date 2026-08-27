@@ -27,26 +27,37 @@ export async function ClientItemDocuments({ item, jobId, firmId, canUpload }: { 
   const withUrls = await Promise.all(docs.map(async (doc) => ({ doc, url: await signedUrl(doc.filePath), versions: versionsOf(item, doc.documentNo) })));
 
   if (docs.length === 0) {
-    return <div className="mt-2">{canUpload && <UploadClientDocument itemId={item.id} pathPrefix={pathPrefix} hasFile={false} documentNo={1} />}</div>;
+    return (
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <span className="text-placeholder">Not yet uploaded</span>
+        {canUpload && <UploadClientDocument itemId={item.id} pathPrefix={pathPrefix} hasFile={false} documentNo={1} label="Upload" />}
+      </div>
+    );
   }
 
   return (
     <div className="mt-2 space-y-2">
+      {/* One row per document: what it is and when it was submitted on
+          the left, the action on the right — the layout of every
+          document register the trade already knows. */}
       {withUrls.map(({ doc, url, versions }, i) => (
-        <div key={doc.id} className="flex flex-wrap items-center gap-3 text-xs">
-          {docs.length > 1 && <span className="font-semibold text-heading">{i + 1}.</span>}
-          {url ? (
-            <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-secondary hover:underline">
-              <FileText size={12} /> {doc.label || "Open document"}
-            </a>
-          ) : (
-            <span className="text-placeholder">Not yet uploaded</span>
-          )}
-          {versions.length > 1 && (
-            <span className="inline-flex items-center gap-1 text-placeholder">
-              <History size={11} /> {versions.length} versions · latest {formatISODate(versions[0].created_at)}
-            </span>
-          )}
+        <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-3">
+            {docs.length > 1 && <span className="font-semibold text-heading">{i + 1}.</span>}
+            {url ? (
+              <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-secondary hover:underline">
+                <FileText size={12} /> {doc.label || "Open document"}
+              </a>
+            ) : (
+              <span className="text-placeholder">Not yet uploaded</span>
+            )}
+            {versions[0]?.created_at && <span className="text-placeholder">Submitted {formatISODate(versions[0].created_at)}</span>}
+            {versions.length > 1 && (
+              <span className="inline-flex items-center gap-1 text-placeholder">
+                <History size={11} /> {versions.length} versions
+              </span>
+            )}
+          </div>
           {canUpload && <UploadClientDocument itemId={item.id} pathPrefix={pathPrefix} hasFile documentNo={doc.documentNo} label="Upload a new version" />}
         </div>
       ))}
