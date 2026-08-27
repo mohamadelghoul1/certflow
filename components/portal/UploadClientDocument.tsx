@@ -70,11 +70,11 @@ export function UploadClientDocument({
           setDragOver(false);
           void handleFile(e.dataTransfer.files?.[0]);
         }}
-        className={`inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer rounded-full px-3.5 py-1.5 border whitespace-nowrap ${
+        className={`inline-flex items-center gap-2 text-sm font-semibold cursor-pointer rounded-full px-5 py-2 border whitespace-nowrap ${
           dragOver ? "border-dashed border-icon bg-info-bg text-secondary" : "border-primary/50 text-primary bg-white hover:bg-surface"
         }`}
       >
-        <UploadCloud size={14} />
+        <UploadCloud size={16} />
         {busy ? "Uploading…" : dragOver ? "Drop to upload" : label || (hasFile ? "Upload a new version" : "Upload document")}
         <input
           type="file"

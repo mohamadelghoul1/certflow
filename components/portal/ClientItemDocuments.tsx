@@ -37,12 +37,13 @@ export async function ClientItemDocuments({ item, jobId, firmId, canUpload }: { 
 
   return (
     <div className="mt-2 space-y-2">
-      {/* One row per document: what it is and when it was submitted on
-          the left, the action on the right — the layout of every
-          document register the trade already knows. */}
+      {/* One row per document: what it is on the left, when it was
+          submitted on the right — the layout of every document register
+          the trade already knows. Replacing a document happens by
+          dropping a file on the card, not through a button of its own. */}
       {withUrls.map(({ doc, url, versions }, i) => (
-        <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex flex-wrap items-center gap-3">
+        <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
             {docs.length > 1 && <span className="font-semibold text-heading">{i + 1}.</span>}
             {url ? (
               <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-secondary hover:underline">
@@ -51,20 +52,21 @@ export async function ClientItemDocuments({ item, jobId, firmId, canUpload }: { 
             ) : (
               <span className="text-placeholder">Not yet uploaded</span>
             )}
-            {versions[0]?.created_at && <span className="text-placeholder">Submitted {formatISODate(versions[0].created_at)}</span>}
             {versions.length > 1 && (
               <span className="inline-flex items-center gap-1 text-placeholder">
                 <History size={11} /> {versions.length} versions
               </span>
             )}
           </div>
-          {canUpload && <UploadClientDocument itemId={item.id} pathPrefix={pathPrefix} hasFile documentNo={doc.documentNo} label="Upload a new version" />}
+          {versions[0]?.created_at && <span className="text-sm font-medium text-muted">Submitted {formatISODate(versions[0].created_at)}</span>}
         </div>
       ))}
       {/* No document number, so this adds one alongside rather than
           replacing anything. */}
       {canUpload && docs.length < MAX_CLIENT_ITEM_DOCUMENTS && (
-        <UploadClientDocument itemId={item.id} pathPrefix={pathPrefix} hasFile={false} label="Add another document" />
+        <div className="flex justify-end">
+          <UploadClientDocument itemId={item.id} pathPrefix={pathPrefix} hasFile={false} label="Add another document" />
+        </div>
       )}
       {canUpload && docs.length >= MAX_CLIENT_ITEM_DOCUMENTS && (
         <div className="text-[11px] text-muted">
