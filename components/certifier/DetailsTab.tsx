@@ -243,7 +243,7 @@ export function DetailsTab({
           <div className="grid sm:grid-cols-3 gap-4">
             <div className="space-y-4">
               <div>
-                <label className={labelCls}>Project number</label>
+                <label className={labelCls}>Certifier project number</label>
                 <input name="projectNumber" defaultValue={d.projectNumber || ""} className={inputCls} />
               </div>
               <div>

@@ -222,7 +222,7 @@ export function NewJobForm({
       <Section title="Project configuration">
         <div className="grid sm:grid-cols-3 gap-4">
           <div>
-            <label className={labelCls}>Project number</label>
+            <label className={labelCls}>Certifier project number</label>
             <input name="projectNumber" placeholder="Auto number" className={inputCls} />
           </div>
           <div>
