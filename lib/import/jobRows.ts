@@ -118,17 +118,20 @@ export function buildPreview(paste: ParsedPaste, certifierNames: string[] = []):
     // them as one line.
     const lotAndPlan = [cell("lot"), cell("plan")].filter(Boolean).join(" / ");
 
-    const approvalNumber = need(cell("approvalNumber"), "approvalNumber");
-    const approvalType = approvalTypeFrom(cell("approvalType"), approvalNumber);
-
     // Which case inspections are filed against. A CFT or PCA number is a
     // case the Portal keeps open through construction, so it serves; a
     // CDC number is the application case, which closes on determination
-    // and then refuses inspections outright. Where an export gives only
-    // the latter, the gap is named rather than filled with a number
-    // certain to be rejected.
+    // and then refuses inspections outright — even when it arrives in a
+    // column labelled "Portal". Where an export gives only closed-series
+    // numbers, the gap is named rather than filled with one certain to
+    // be rejected.
     const openCase = (value: string) => /^(CFT|PCA)\b/i.test(value.trim());
-    const reportingCase = cell("portalCase") || [approvalNumber, cell("reference")].find(openCase) || "";
+    const portalCell = cell("portalCase");
+    // A certificate number that arrived under a Portal heading is still
+    // the certificate number — it stands in when no plainer column holds one.
+    const approvalNumber = need(cell("approvalNumber") || (portalCell && !openCase(portalCell) ? portalCell : ""), "approvalNumber");
+    const approvalType = approvalTypeFrom(cell("approvalType"), approvalNumber);
+    const reportingCase = [portalCell, approvalNumber, cell("reference")].find(openCase) || "";
     if (!reportingCase) {
       warnings.push("No Portal case for reporting inspections — add it on the project before reporting one");
     }

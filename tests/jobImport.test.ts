@@ -405,3 +405,43 @@ describe("assigning imported jobs to the right certifier", () => {
     assert.equal(buildPreview(paste).jobs[0].certifierName, "");
   });
 });
+
+// The headings BCS actually offered, verbatim — including the three
+// traps: a project-number heading that mentions the word "certifier", a
+// date spelt "Date of issuance", and a second address column.
+describe("the real BCS export headings", () => {
+  const paste = parsePaste(
+    [
+      "Project Number (certifier number not portal)\tSite address\tCertifier Name\tCertificate Number\tDate of issuance\tCertificate Type\tBuilding Classification\tLot Number\tDeposited Plan\tConsent Authority Name (local council)\tCost of Project\tApplicant Name\tOwner Name\tPrincipal Contractor Name\tStreet address",
+      "QP-1024\t21 Coquet Way, Green Valley NSW 2168\tMohamad El Ghoul\tCDC-26091/01\t2026-05-11\tCDC\tClass 1a\t9\tDP253031\tLiverpool\t450000\tBuild Co\tJane Smith\tBest Builds Pty Ltd\t21 Coquet Way",
+    ].join("\n"),
+    looksLikeHeadings
+  )!;
+
+  test("every column lands where it belongs", () => {
+    const { jobs, matched, unmatchedHeadings } = buildPreview(paste, ["Mohamad El Ghoul"]);
+    const job = jobs[0];
+    assert.equal(job.details.projectNumber, "QP-1024", "the certifier's own number, not 'issued by'");
+    assert.equal(job.certifierName, "Mohamad El Ghoul");
+    assert.equal(job.address, "21 Coquet Way, Green Valley NSW 2168");
+    assert.equal(job.details.priorApproval?.number, "CDC-26091/01");
+    assert.equal(job.details.priorApproval?.date, "2026-05-11", "Date of issuance is recognised");
+    assert.equal(job.details.priorApproval?.type, "CDC");
+    assert.equal(job.details.priorApproval?.issuedBy, "", "nothing masquerades as the issuing authority");
+    assert.deepEqual(job.details.proposal?.classifications, ["1a"]);
+    assert.equal(job.details.certificateDetails?.lotSectionDp, "9 / DP253031");
+    assert.equal(job.details.council?.lga, "Liverpool");
+    assert.equal(job.details.proposal?.estimatedCost, "450000");
+    assert.equal(job.details.contact?.nameOrCompany, "Build Co");
+    assert.equal(job.details.owner?.name, "Jane Smith");
+    assert.equal(job.details.principalContractor, "Best Builds Pty Ltd");
+    // The duplicate address column is left visibly unmatched, and the
+    // applicant/owner addresses come from the site as usual.
+    assert.equal(matched.applicantStreet, undefined);
+    assert.ok(unmatchedHeadings.includes("Street address"));
+    assert.equal(job.details.applicantSameAsSite, true);
+    assert.equal(job.details.ownerAddressSameAsSite, true);
+    // No CFT yet — the one warning this export genuinely earns.
+    assert.ok(job.warnings.some((w) => /portal case for reporting/i.test(w)));
+  });
+});

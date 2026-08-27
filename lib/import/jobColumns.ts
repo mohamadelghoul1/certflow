@@ -51,13 +51,13 @@ const NAMES: { field: JobField; label: string; names: string[] }[] = [
   { field: "ownerName", label: "Owner", names: ["owner", "ownername", "propertyowner", "landowner", "registeredowner"] },
   // No bare "site" here: it appears inside "depoSITEd plan number", and
   // a heading matched by accident is worse than one left unmatched.
-  { field: "address", label: "Property address", names: ["address", "siteaddress", "propertyaddress", "developmentaddress", "addressofdevelopment", "jobaddress", "projectaddress"] },
+  { field: "address", label: "Property address", names: ["address", "siteaddress", "streetaddress", "propertyaddress", "developmentaddress", "addressofdevelopment", "jobaddress", "projectaddress"] },
   { field: "description", label: "Scope of works", names: ["description", "scope", "scopeofworks", "scopeofwork", "works", "projectdescription", "developmentdescription", "proposal", "descriptionofworks"] },
   { field: "lotSectionDp", label: "Lot / Section / Plan", names: ["lotsectiondp", "lotdp", "lotsectionplan", "lot", "legaldescription", "lotanddp", "propertydescription"] },
   { field: "lga", label: "Council", names: ["lga", "council", "localgovernmentarea", "consentauthority", "councilname"] },
   { field: "approvalType", label: "Approval type", names: ["approvaltype", "certificatetype", "consenttype", "type", "pathway"] },
   { field: "approvalNumber", label: "CDC / CC number", names: ["cdcnumber", "ccnumber", "cdccc", "certificatenumber", "approvalnumber", "consentnumber", "cdc", "cc", "certificateno", "determinationnumber"] },
-  { field: "approvalDate", label: "Approval date", names: ["approvaldate", "determinationdate", "dateissued", "issuedate", "certificatedate", "datedetermined", "dateofdetermination"] },
+  { field: "approvalDate", label: "Approval date", names: ["approvaldate", "determinationdate", "dateissued", "issuedate", "certificatedate", "datedetermined", "dateofdetermination", "dateofissuance", "issuancedate", "dateofissue"] },
   { field: "approvalIssuedBy", label: "Approval issued by", names: ["issuedby", "approvalissuedby", "certifier", "certifyingauthority", "issuingauthority", "previouscertifier"] },
   { field: "portalCase", label: "Portal case", names: ["portalcase", "planningportalref", "portalref", "portalreference", "caseid", "casenumber", "cftnumber", "cft", "pca", "pcanumber", "eplanningref"] },
   { field: "projectNumber", label: "Project number", names: ["projectnumber", "jobnumber", "jobno", "projectno", "reference", "referencenumber", "ourref", "fileno", "filenumber"] },
@@ -107,11 +107,35 @@ export function matchColumns(headers: string[]): Partial<Record<JobField, number
     const exact = normalised.findIndex((heading, i) => !taken.has(i) && names.includes(heading));
     if (exact >= 0) claim(field, exact);
   }
-  for (const { field, names } of NAMES) {
-    if (found[field] !== undefined) continue;
-    const loose = normalised.findIndex((heading, i) => !taken.has(i) && heading.length > 2 && names.some((name) => heading.includes(name)));
-    if (loose >= 0) claim(field, loose);
-  }
+
+  // A second column whose heading is exactly one of a claimed field's
+  // names is that field's duplicate (an export with both "Site address"
+  // and "Street address", say) — left visibly unmatched, never handed to
+  // a different field's loose match to misread.
+  const duplicates = new Set<number>();
+  normalised.forEach((heading, i) => {
+    if (taken.has(i)) return;
+    for (const { field, names } of NAMES) {
+      if (found[field] !== undefined && names.includes(heading)) duplicates.add(i);
+    }
+  });
+
+  // Loose matches: the most specific name wins, not the first field in
+  // the list. "Project Number (certifier number not portal)" contains
+  // both "certifier" and "projectnumber" — the longer match is the
+  // heading's real subject.
+  const candidates: { field: JobField; index: number; length: number; order: number }[] = [];
+  NAMES.forEach(({ field, names }, order) => {
+    if (found[field] !== undefined) return;
+    normalised.forEach((heading, index) => {
+      if (taken.has(index) || duplicates.has(index) || heading.length <= 2) return;
+      for (const name of names) {
+        if (heading.includes(name)) candidates.push({ field, index, length: name.length, order });
+      }
+    });
+  });
+  candidates.sort((a, b) => b.length - a.length || a.order - b.order);
+  for (const candidate of candidates) claim(candidate.field, candidate.index);
 
   return found;
 }
