@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatISODate, stageComplete, resolveOcCertRef } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { markJobComplete, reopenJob, notifyClientMessage, sendOcToClient } from "@/lib/actions/jobs";
+import { NotifyClientButton } from "@/components/certifier/NotifyClientButton";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { IssueOcForm } from "@/components/certifier/IssueOcForm";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
@@ -125,12 +126,15 @@ async function OcRecordCard({ record, sequence, job, certifiers }: { record: OcR
           />
         )}
         {record.sent_to_client && (
-          <form action={notifyClientMessage}>
-            <input type="hidden" name="job_id" value={job.id} />
-            <input type="hidden" name="subject" value="Occupation Certificate issued" />
-            <input type="hidden" name="message" value={`Your ${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate has been issued and is now available to view in your portal.`} />
-            <button className="text-xs font-semibold text-secondary hover:underline">Notify client again</button>
-          </form>
+          <NotifyClientButton
+            action={notifyClientMessage}
+            label="Notify client again"
+            fields={{
+              job_id: job.id,
+              subject: "Occupation Certificate issued",
+              message: `Your ${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate has been issued and is now available to view in your portal.`,
+            }}
+          />
         )}
       </div>
     </div>

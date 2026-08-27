@@ -1,6 +1,7 @@
 import { formatISODate, stageComplete, resolvePathwayCertRef, portalRefKindFor } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { setVisiblePathwayVersion, startModification, uploadModificationApproval, uploadPathwayApproval, notifyClientMessage } from "@/lib/actions/jobs";
+import { NotifyClientButton } from "@/components/certifier/NotifyClientButton";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { buildStampPreview } from "@/lib/pdf/stampDetails";
@@ -140,12 +141,15 @@ export async function CertificatesPanel({
                 <SendToClientWhenSigned jobId={job.id} approvalUploaded={!!job.pathway_approval_uploaded} />
               )}
               {job.pathway_sent_to_client && (
-                <form action={notifyClientMessage}>
-                  <input type="hidden" name="job_id" value={job.id} />
-                  <input type="hidden" name="subject" value="Certificate issued" />
-                  <input type="hidden" name="message" value="Your certificate has been issued and is now available to view in your portal." />
-                  <button className="text-xs font-semibold text-secondary hover:underline">Notify client again</button>
-                </form>
+                <NotifyClientButton
+                  action={notifyClientMessage}
+                  label="Notify client again"
+                  fields={{
+                    job_id: job.id,
+                    subject: "Certificate issued",
+                    message: "Your certificate has been issued and is now available to view in your portal.",
+                  }}
+                />
               )}
             </div>
           )}
@@ -323,12 +327,15 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
               label={mod.approval_uploaded ? "Replace signed approval" : "Upload signed approval"}
             />
             {mod.approval_uploaded && (
-              <form action={notifyClientMessage}>
-                <input type="hidden" name="job_id" value={job.id} />
-                <input type="hidden" name="subject" value="Modified certificate issued" />
-                <input type="hidden" name="message" value="A modified certificate has been issued and is now available to view in your portal." />
-                <button className="text-xs font-semibold text-secondary hover:underline">Notify client</button>
-              </form>
+              <NotifyClientButton
+                action={notifyClientMessage}
+                label="Notify client"
+                fields={{
+                  job_id: job.id,
+                  subject: "Modified certificate issued",
+                  message: "A modified certificate has been issued and is now available to view in your portal.",
+                }}
+              />
             )}
           </div>
         )}

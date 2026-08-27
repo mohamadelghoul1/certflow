@@ -650,11 +650,15 @@ export async function addAmendment(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// What the "Notify client" buttons show after being pressed — the email
+// went, or the reason it didn't.
+export type NotifyState = { success?: string; error?: string } | undefined;
+
 // Manual, batched notification — one summary email per click, instead of
 // one email per approval/amendment. Mirrors the prototype's
 // buildJobUpdateMailto: "X of Y documents approved — Z items need your
 // attention", not a blow-by-blow log.
-export async function notifyClientOfChecklist(formData: FormData) {
+export async function notifyClientOfChecklist(_prev: NotifyState, formData: FormData): Promise<NotifyState> {
   await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
@@ -670,15 +674,17 @@ export async function notifyClientOfChecklist(formData: FormData) {
   let statusLine = total > 0 ? `${approved} of ${total} documents approved` : "No documents requested yet";
   if (openAmendments > 0) statusLine += ` — ${openAmendments} item${openAmendments === 1 ? "" : "s"} require your attention`;
 
-  await notifyJobClient(
+  const outcome = await notifyJobClient(
     supabase,
     jobId,
     `${label} — status update`,
     `<p>Here&rsquo;s the current status of the <strong>${label}</strong> checklist:</p><p style="padding:12px;background:#f0fdfa;border-radius:6px">${statusLine}</p>`
   );
+  if (!outcome.sent) return { error: outcome.reason || "The email could not be sent." };
 
   await supabase.from("jobs").update({ last_notified_at: new Date().toISOString() }).eq("id", jobId);
   revalidatePath(`/jobs/${jobId}`);
+  return { success: "Status update emailed to the client." };
 }
 
 // The same reminder the morning sweep sends, on demand — for the phone
@@ -734,16 +740,19 @@ export async function toggleDocumentReminders(formData: FormData) {
 // Generic one-off milestone notification — used by the manual "Notify
 // client" buttons next to a certificate/report once it's ready, instead
 // of firing automatically the moment it's uploaded/marked sent.
-export async function notifyClientMessage(formData: FormData) {
+export async function notifyClientMessage(_prev: NotifyState, formData: FormData): Promise<NotifyState> {
   await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const subject = String(formData.get("subject") || "Update on your project");
   const message = String(formData.get("message") || "");
 
-  await notifyJobClient(supabase, jobId, subject, `<p>${message}</p>`);
+  const outcome = await notifyJobClient(supabase, jobId, subject, `<p>${message}</p>`);
+  if (!outcome.sent) return { error: outcome.reason || "The email could not be sent." };
+
   await supabase.from("jobs").update({ last_notified_at: new Date().toISOString() }).eq("id", jobId);
   revalidatePath(`/jobs/${jobId}`);
+  return { success: "Email sent to the client." };
 }
 
 export async function resolveAmendment(formData: FormData) {

@@ -1,6 +1,7 @@
 import { displayStatus, formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { notifyClientOfChecklist } from "@/lib/actions/jobs";
+import { NotifyClientButton } from "@/components/certifier/NotifyClientButton";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
 import { RemovableRow } from "@/components/certifier/RemovableRow";
@@ -90,12 +91,7 @@ export async function ChecklistSection({
                 </div>
               </div>
             </div>
-            <form action={notifyClientOfChecklist} className="shrink-0">
-              <input type="hidden" name="job_id" value={jobId} />
-              <input type="hidden" name="checklist_id" value={checklistId} />
-              <input type="hidden" name="label" value={label} />
-              <button className="text-xs font-semibold text-secondary hover:underline whitespace-nowrap">Notify client of update</button>
-            </form>
+            <NotifyClientButton action={notifyClientOfChecklist} label="Notify client of update" fields={{ job_id: jobId, checklist_id: checklistId, label }} />
           </div>
           <div className="h-2 w-full bg-surface rounded-full overflow-hidden mt-4">
             <div className={`h-full rounded-full transition-all ${allComplete ? "bg-accent" : "bg-secondary"}`} style={{ width: `${percent}%` }} />

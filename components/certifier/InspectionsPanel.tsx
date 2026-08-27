@@ -15,6 +15,7 @@ import { ReportToPortalButton } from "@/components/certifier/ReportToPortalButto
 import { portalConfigured } from "@/lib/portal/config";
 import { INSPECTION_OUTCOME_TEXT } from "@/lib/constants";
 import { notifyClientMessage } from "@/lib/actions/jobs";
+import { NotifyClientButton } from "@/components/certifier/NotifyClientButton";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { InspectionPhotoUpload } from "@/components/certifier/InspectionPhotoUpload";
 import { DownloadButton } from "@/components/certifier/DownloadButton";
@@ -212,12 +213,15 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
             {insp.report_sent && (
               <>
                 <span className="text-[11px] text-success">Available {formatISODate(insp.report_sent_date)}</span>
-                <form action={notifyClientMessage}>
-                  <input type="hidden" name="job_id" value={jobId} />
-                  <input type="hidden" name="subject" value="Inspection report available" />
-                  <input type="hidden" name="message" value={`The report for your ${insp.title} inspection is now available in your portal.`} />
-                  <button className="text-xs font-semibold text-secondary hover:underline">Notify client</button>
-                </form>
+                <NotifyClientButton
+                  action={notifyClientMessage}
+                  label="Notify client"
+                  fields={{
+                    job_id: jobId,
+                    subject: "Inspection report available",
+                    message: `The report for your ${insp.title} inspection is now available in your portal.`,
+                  }}
+                />
               </>
             )}
             <ReportToPortalButton

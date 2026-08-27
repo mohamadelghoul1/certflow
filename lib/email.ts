@@ -60,13 +60,17 @@ async function recordEmailFailure(
   });
 }
 
+// What actually happened to a notification — so a button pressed by a
+// person can say so, instead of only the audit log knowing.
+export type NotifyOutcome = { sent: boolean; reason?: string };
+
 // Emails the client attached to a job, if there is one and they have an
 // email on file. Used from server actions right after a mutation that
 // should notify the client (document approved, amendment raised,
 // certificate/report released).
-export async function notifyJobClient(supabase: SupabaseClient, jobId: string, subject: string, bodyHtml: string) {
+export async function notifyJobClient(supabase: SupabaseClient, jobId: string, subject: string, bodyHtml: string): Promise<NotifyOutcome> {
   const { data: job } = await supabase.from("jobs").select("firm_id, address, client_id").eq("id", jobId).single();
-  if (!job?.client_id) return;
+  if (!job?.client_id) return { sent: false, reason: "This project has no client attached — add one on the Details tab." };
   const { data: client } = await supabase.from("clients").select("name, email").eq("id", job.client_id).single();
 
   if (!client?.email) {
@@ -77,7 +81,7 @@ export async function notifyJobClient(supabase: SupabaseClient, jobId: string, s
       subject,
       reason: "no email address on file",
     });
-    return;
+    return { sent: false, reason: "The client has no email address on file." };
   }
 
   const result = await sendEmail(
@@ -88,7 +92,10 @@ export async function notifyJobClient(supabase: SupabaseClient, jobId: string, s
 
   if (result.error) {
     await recordEmailFailure(supabase, jobId, { firmId: job.firm_id, jobAddress: job.address, recipient: client.email, subject, reason: result.error });
+    return { sent: false, reason: `The email could not be sent: ${result.error}` };
   }
+  if (result.skipped) return { sent: false, reason: "Email isn't switched on for this deployment yet." };
+  return { sent: true };
 }
 
 // Emails the certifier assigned to a job — used for the one event that
