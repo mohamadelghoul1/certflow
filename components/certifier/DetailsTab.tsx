@@ -345,6 +345,9 @@ export function DetailsTab({
             <label className={labelCls}>Owner phone</label>
             <input name="owner_phone" defaultValue={d.owner?.phone || ""} placeholder="Owner phone" className={inputCls} />
           </div>
+        </Section>
+
+        <Section title="Principal contractor / builder">
           <ContractorFields
             defaults={{
               company: d.contractor?.company ?? d.principalContractor ?? "",

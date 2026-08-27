@@ -4,7 +4,6 @@ import { useState } from "react";
 import type { Contractor } from "@/types/db";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
-const labelCls = "block text-xs font-semibold text-placeholder mb-1";
 
 // The principal contractor, in full — and the firm's builders list.
 //
@@ -31,8 +30,6 @@ export function ContractorFields({
 
   return (
     <div>
-      <label className={labelCls}>Principal contractor / builder</label>
-
       {saved.length > 0 && (
         <select
           value=""

@@ -295,8 +295,11 @@ export function NewJobForm({
           <label className={labelCls}>Owner phone</label>
           <input name="owner_phone" placeholder="Owner phone" className={inputCls} />
         </div>
-        {/* Optional at creation — plenty of jobs arrive before a builder
-            is appointed; the same block on the Details tab fills it later. */}
+      </Section>
+
+      {/* Optional at creation — plenty of jobs arrive before a builder
+          is appointed; the same block on the Details tab fills it later. */}
+      <Section title="Principal contractor / builder">
         <ContractorFields saved={contractors} />
       </Section>
 
