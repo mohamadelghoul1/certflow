@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Download, Paperclip, GripVertical } from "lucide-react";
-import { addLibraryItem, removeLibraryItem, reorderLibraryItems, copyLibraryItem, setLibraryTemplate, clearLibraryTemplate } from "@/lib/actions/library";
+import { addLibraryItem, removeLibraryItem, reorderLibraryItems, copyLibraryItem, updateLibraryItem, setLibraryTemplate, clearLibraryTemplate } from "@/lib/actions/library";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 
 type LibItem = {
@@ -39,6 +39,7 @@ export function DocumentLibrarySection({
   // the server's until the save lands, so nothing snaps back.
   const [dragId, setDragId] = useState<string | null>(null);
   const [orderIds, setOrderIds] = useState<string[] | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const grouped = active ? items.filter((i) => i.pathway === active) : [];
   // An item added after a drag isn't in the dragged order yet — it joins
@@ -129,12 +130,37 @@ export function DocumentLibrarySection({
                     >
                       <GripVertical size={15} />
                     </span>
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-primary">{item.title}</div>
-                      <div className="text-xs text-placeholder">{item.description}</div>
-                    </div>
+                    {editingId === item.id ? (
+                      <form
+                        action={async (fd) => {
+                          await updateLibraryItem(fd);
+                          setEditingId(null);
+                        }}
+                        className="flex-1 min-w-0 space-y-1.5"
+                      >
+                        <input type="hidden" name="id" value={item.id} />
+                        <input name="title" defaultValue={item.title} required className="w-full px-2 py-1.5 rounded-md border border-line text-sm font-semibold" />
+                        <textarea name="description" rows={2} defaultValue={item.description || ""} placeholder="Description (optional)" className="w-full px-2 py-1.5 rounded-md border border-line text-xs" />
+                        <div className="flex gap-2">
+                          <button className="px-3 py-1 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-700">Save</button>
+                          <button type="button" onClick={() => setEditingId(null)} className="px-2 py-1 text-xs text-placeholder hover:text-primary">
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-primary">{item.title}</div>
+                        <div className="text-xs text-placeholder">{item.description}</div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
+                    {editingId !== item.id && (
+                      <button onClick={() => setEditingId(item.id)} className="text-xs font-semibold text-secondary hover:underline">
+                        Edit
+                      </button>
+                    )}
                     {/* CDC and CC ask for largely the same documents, so
                         each side offers the other a copy. */}
                     {(active === "CDC" || active === "CC") && (

@@ -86,6 +86,24 @@ export async function copyLibraryItem(formData: FormData) {
   revalidatePath("/settings");
 }
 
+// Rewords a library item. Projects that already carry the item keep the
+// wording they were created with — a checklist copies the library at the
+// moment of creation — so editing here shapes future projects, not the
+// records of past ones.
+export async function updateLibraryItem(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const title = String(formData.get("title") || "").trim();
+  if (!title) return;
+  await supabase
+    .from("document_library_items")
+    .update({ title, description: String(formData.get("description") || "").trim() })
+    .eq("id", id)
+    .eq("firm_id", profile.firm_id);
+  revalidatePath("/settings");
+}
+
 export async function removeLibraryItem(formData: FormData) {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
