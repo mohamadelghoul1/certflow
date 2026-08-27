@@ -75,12 +75,9 @@ export async function sendPasswordReset(_prev: ResetState, formData: FormData): 
   const site = await siteUrl();
   const next = kind === "certifier" ? "/set-password" : "/portal/set-password";
   const admin = createAdminClient();
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: "recovery",
-    email,
-    options: { redirectTo: `${site}/auth/callback?next=${next}` },
-  });
-  if (error || !data?.properties?.action_link) return settled;
+  const { data, error } = await admin.auth.admin.generateLink({ type: "recovery", email });
+  if (error || !data?.properties?.hashed_token) return settled;
+  const link = `${site}/auth/confirm?token_hash=${data.properties.hashed_token}&type=recovery&next=${encodeURIComponent(next)}`;
 
   await sendEmail(
     email,
@@ -88,7 +85,7 @@ export async function sendPasswordReset(_prev: ResetState, formData: FormData): 
     [
       `<p>Hi,</p>`,
       `<p>Here's the link to set a new password for your CertFlow ${kind === "certifier" ? "certifier" : "client portal"} login:</p>`,
-      `<p><a href="${data.properties.action_link}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">Set a new password</a></p>`,
+      `<p><a href="${link}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">Set a new password</a></p>`,
       `<p>If you didn't ask for this, you can ignore this email — your password stays as it is.</p>`,
     ].join("")
   );

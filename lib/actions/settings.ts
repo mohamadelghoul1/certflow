@@ -287,17 +287,16 @@ export async function inviteClient(_prev: InviteState, formData: FormData): Prom
 
   const admin = createAdminClient();
   const site = await siteUrl();
-  const redirectTo = `${site}/auth/callback?next=/portal/set-password`;
 
   // A fresh contact gets an invite; one who already holds a login gets a
   // set-a-new-password link — re-inviting an existing user is the exact
   // call Supabase silently refuses.
   const { data: linkData, error } = await admin.auth.admin.generateLink(
     client.user_id
-      ? { type: "recovery", email: client.email, options: { redirectTo } }
-      : { type: "invite", email: client.email, options: { data: { firm_id: profile.firm_id, client_id: clientId }, redirectTo } }
+      ? { type: "recovery", email: client.email }
+      : { type: "invite", email: client.email, options: { data: { firm_id: profile.firm_id, client_id: clientId } } }
   );
-  if (error || !linkData?.properties?.action_link) {
+  if (error || !linkData?.properties?.hashed_token) {
     if (/already.*registered|already.*exists/i.test(error?.message || "")) {
       return {
         error: `${client.email} already has a CertFlow login. If that's your own certifier email, use a different address for the client — one login can't be both certifier and client.`,
@@ -306,13 +305,19 @@ export async function inviteClient(_prev: InviteState, formData: FormData): Prom
     return { error: error?.message || "The invite link could not be created." };
   }
 
+  // Straight to our own route with the one-time token — see
+  // app/auth/confirm/route.ts for why not Supabase's own link.
+  const link = `${site}/auth/confirm?token_hash=${linkData.properties.hashed_token}&type=${
+    client.user_id ? "recovery" : "invite"
+  }&next=${encodeURIComponent("/portal/set-password")}`;
+
   const result = await sendEmail(
     client.email,
     "Your CertFlow client portal access",
     [
       `<p>Hi ${client.name || "there"},</p>`,
       `<p>You've been given access to the client portal for your project with us. Set your password to get started:</p>`,
-      `<p><a href="${linkData.properties.action_link}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">${
+      `<p><a href="${link}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">${
         client.user_id ? "Set a new password" : "Set up my portal access"
       }</a></p>`,
       `<p>From the portal you can see your project's progress, upload requested documents, and download what we send you.</p>`,
