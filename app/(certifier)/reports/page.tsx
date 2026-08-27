@@ -1,12 +1,7 @@
-import { requireProfile } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
-import { getIssuanceEvents } from "@/lib/reporting";
-import { ReportsView } from "@/components/certifier/ReportsView";
+import { redirect } from "next/navigation";
 
-export default async function ReportsPage() {
-  const { profile } = await requireProfile("certifier");
-  const supabase = await createClient();
-  const events = await getIssuanceEvents(supabase, profile.firm_id);
-
-  return <ReportsView events={events.map((e) => ({ type: e.type, date: e.date.toISOString() }))} />;
+// Reports merged into the Audit page as its "Issuance report" screen;
+// the old address keeps working for anyone's bookmark.
+export default function ReportsPage() {
+  redirect("/audit?section=reports");
 }

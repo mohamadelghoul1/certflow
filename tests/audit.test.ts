@@ -81,3 +81,43 @@ describe("reading the log back", () => {
     assert.deepEqual(await getRecordedEvents(client, "firm-1"), []);
   });
 });
+
+// The issuance register: sworn to an insurer, so the CSV must survive
+// commas in addresses and the default period must be the financial year
+// the request means.
+import { registerCsv, financialYearStart, REGISTER_COLUMNS, type RegisterRow } from "@/lib/issuanceRegister";
+
+describe("issuance register", () => {
+  test("the default period is the current Australian financial year", () => {
+    assert.equal(financialYearStart("2026-08-27"), "2026-07-01");
+    assert.equal(financialYearStart("2026-06-30"), "2025-07-01");
+    assert.equal(financialYearStart("2026-07-01"), "2026-07-01");
+  });
+
+  test("a comma or quote in a field stays one Excel cell", () => {
+    const row = {
+      date: "2026-08-01",
+      certType: "CDC",
+      certNumber: "CDC-26091/01",
+      portalRef: "CFT-1007788",
+      address: "21 Coquet Way, Green Valley NSW 2168",
+      certifierName: 'Sam "SJ" Certifier',
+      classification: "Class 1a, 10a",
+      lotSectionDp: "9 / DP253031",
+      council: "Liverpool",
+      estimatedCost: "450000",
+      applicantName: "Build Co",
+      ownerName: "Jane Smith",
+      principalContractor: "Best Builds Pty Ltd",
+      description: "Construction of a two storey dwelling",
+    } satisfies RegisterRow;
+    const csv = registerCsv([row]);
+    const lines = csv.split("\r\n");
+    assert.equal(lines.length, 2);
+    assert.ok(lines[1].includes('"21 Coquet Way, Green Valley NSW 2168"'));
+    assert.ok(lines[1].includes('"Sam ""SJ"" Certifier"'));
+    // Every column the requirement names is present, in order.
+    assert.equal(REGISTER_COLUMNS.length, 14);
+    assert.ok(lines[0].startsWith("Date issued,Type,Certificate no.,Portal CDC/CFT no."));
+  });
+});

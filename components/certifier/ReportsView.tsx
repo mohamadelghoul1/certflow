@@ -32,8 +32,7 @@ export function ReportsView({ events }: { events: Event[] }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-primary">Issuance Report</h1>
+      <div className="flex items-center justify-end mb-4">
         <div className="flex gap-2">
           {(
             [

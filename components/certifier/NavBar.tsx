@@ -42,7 +42,6 @@ export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmN
           itemHrefBase="/quotes"
         />
         <NavLink href="/invoices">Invoices</NavLink>
-        <NavLink href="/reports">Reports</NavLink>
         <NavLink href="/audit">Audit</NavLink>
         <NavLink href="/settings">Settings</NavLink>
         </div>

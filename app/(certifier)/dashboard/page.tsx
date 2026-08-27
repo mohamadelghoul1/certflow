@@ -362,7 +362,7 @@ export default async function DashboardPage() {
               <QuickAction href="/quotes/new" icon={FilePlus} label="New quote" />
               <QuickAction href="/jobs" icon={Building2} label="All projects" />
               <QuickAction href="/settings" icon={UserPlus} label="Add client" />
-              <QuickAction href="/reports" icon={BarChart3} label="Reports" />
+              <QuickAction href="/audit?section=reports" icon={BarChart3} label="Reports" />
             </div>
           </Panel>
 

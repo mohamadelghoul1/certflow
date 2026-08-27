@@ -16,11 +16,8 @@ export function AuditView({ certifiers, events, log = [] }: { certifiers: Certif
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-primary mb-1">Certifier Audit</h1>
-      <p className="text-placeholder text-sm mb-6 max-w-2xl">
-        What each registered certifier has actually issued or carried out, across every project — derived from real issuance and inspection records, not a separate log.
-      </p>
-
+      {/* The page above carries the heading; this view starts straight
+          at the certifiers. */}
       <div className="space-y-4 max-w-3xl">
         {certifiers.map((c) => {
           const own = events.filter((e) => e.certifierId === c.id).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
