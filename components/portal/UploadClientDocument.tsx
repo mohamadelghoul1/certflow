@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { submitClientDocument } from "@/lib/actions/portal";
 import { UploadCloud } from "lucide-react";
 
 // Uploading a document against a checklist item.
@@ -38,8 +39,10 @@ export function UploadClientDocument({
       const path = `${pathPrefix}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
       const { error: uploadError } = await supabase.storage.from("certflow-files").upload(path, file);
       if (uploadError) throw uploadError;
-      const { error: rpcError } = await supabase.rpc("client_submit_document", { p_item_id: itemId, p_file_path: path, p_document_no: documentNo ?? null });
-      if (rpcError) throw rpcError;
+      // Recorded through a server action rather than straight into the
+      // database, so the certifier gets an email about the new document.
+      const { error: submitError } = await submitClientDocument({ itemId, filePath: path, documentNo: documentNo ?? null, fileName: file.name });
+      if (submitError) throw new Error(submitError);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
