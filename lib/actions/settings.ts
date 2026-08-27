@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { sendEmail, emailConfigured } from "@/lib/email";
+import { siteUrl } from "@/lib/siteUrl";
 import type { ActionState } from "@/lib/actions/auth";
 
 export type InviteState = { error?: string; success?: string } | undefined;
@@ -285,7 +286,7 @@ export async function inviteClient(_prev: InviteState, formData: FormData): Prom
   if (!emailConfigured()) return { error: "Email isn't switched on for this deployment (RESEND_API_KEY)." };
 
   const admin = createAdminClient();
-  const site = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const site = await siteUrl();
   const redirectTo = `${site}/auth/callback?next=/portal/set-password`;
 
   // A fresh contact gets an invite; one who already holds a login gets a

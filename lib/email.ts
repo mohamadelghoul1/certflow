@@ -4,7 +4,14 @@ import { recordAuditEvent } from "@/lib/audit";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM = process.env.RESEND_FROM_EMAIL || "CertFlow <onboarding@resend.dev>";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+// Falls back to the production URL Vercel supplies, so a missing or
+// stale setting cannot mail out a localhost link. See lib/siteUrl.ts —
+// emails are sent from scheduled runs too, where no request exists.
+const SITE_URL =
+  (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost") ? process.env.NEXT_PUBLIC_SITE_URL : "") ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "") ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
+  "http://localhost:3000";
 
 // Whether email is switched on at all. The rest of the app uses this to
 // say so plainly rather than letting a certifier believe a client was

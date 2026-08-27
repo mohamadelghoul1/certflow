@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { withinLimit, loginBucket, LOGIN_LIMIT } from "@/lib/rateLimit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, emailConfigured } from "@/lib/email";
+import { siteUrl } from "@/lib/siteUrl";
 
 const TOO_MANY = "Too many sign-in attempts for this email address. Wait a minute and try again.";
 
@@ -71,7 +72,7 @@ export async function sendPasswordReset(_prev: ResetState, formData: FormData): 
   const settled = { success: `If ${email} has an account, a reset link is on its way. Check your inbox and junk folder.` };
   if (!emailConfigured()) return { error: "Email isn't switched on for this deployment yet." };
 
-  const site = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const site = await siteUrl();
   const next = kind === "certifier" ? "/login" : "/portal/set-password";
   const admin = createAdminClient();
   const { data, error } = await admin.auth.admin.generateLink({
