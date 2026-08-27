@@ -59,6 +59,11 @@ describe("speaking the Portal's language", () => {
     assert.equal(portalInspectionType("Slab Steel"), "Foundation / footings (prior to pouring of concrete)");
     assert.equal(portalInspectionType("Frame"), "Framework (prior to fixing floor, wall and ceiling linings)");
     assert.equal(portalInspectionType("Waterproofing"), "Waterproofing of wet areas (prior to covering)");
+    // The renamed standard stages — and the old names existing jobs
+    // still carry — land on the same Portal values.
+    assert.equal(portalInspectionType("Piers"), "Foundation / footings (prior to pouring of concrete)");
+    assert.equal(portalInspectionType("Footings and Slab"), "Foundation / footings (prior to pouring of concrete)");
+    assert.equal(portalInspectionType("Wet Area Waterproofing"), "Waterproofing of wet areas (prior to covering)");
     assert.equal(portalInspectionType("Stormwater"), "Stormwater drainage (prior to covering)");
     assert.equal(portalInspectionType("Final"), "Finalisation of works (all works completed)");
   });

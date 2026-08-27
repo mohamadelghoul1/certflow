@@ -101,10 +101,10 @@ export const PRIOR_APPROVAL_DOCUMENTS = [
 // CC) and travels inside the approval, so listing it here too left every
 // job with an inspection that was already done.
 export const INSPECTION_LIBRARY = [
-  { title: "Piers & Footings", desc: "Inspection of piers and footings prior to pour." },
-  { title: "Slab Steel", desc: "Inspection of slab reinforcement prior to pour." },
+  { title: "Piers", desc: "Inspection of piers prior to pour." },
+  { title: "Footings and Slab", desc: "Inspection of footings and slab reinforcement prior to pour." },
   { title: "Frame", desc: "Inspection of structural frame prior to lock-up." },
-  { title: "Waterproofing", desc: "Inspection of wet area waterproofing." },
+  { title: "Wet Area Waterproofing", desc: "Inspection of wet area waterproofing." },
   { title: "Stormwater", desc: "Inspection of stormwater drainage installation." },
   { title: "Final", desc: "Final inspection prior to occupation." },
 ];
