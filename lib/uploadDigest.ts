@@ -86,7 +86,14 @@ export async function flushJobUploads(
 
   const { data: job } = await admin.from("jobs").select("address").eq("id", jobId).single();
   const { subject, html } = digestEmail(pending, job?.address ?? null);
-  await notifyJobCertifier(admin, jobId, subject, html);
+  const outcome = await notifyJobCertifier(admin, jobId, subject, html);
+
+  // Rows are only marked once the email actually went. Marking them on a
+  // failed send — no assigned certifier yet, say — both lost those
+  // uploads for good and shut the quiet window on the next quarter hour
+  // of uploads for nothing. Unsent rows stay pending and go with the
+  // next attempt; the failure itself is on the audit log.
+  if (!outcome.sent) return 0;
 
   await admin
     .from("portal_uploads")

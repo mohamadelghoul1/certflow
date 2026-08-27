@@ -54,6 +54,36 @@ describe("a client who cannot be emailed", () => {
 });
 
 describe("a certifier who cannot be emailed", () => {
+  // Unlike a job with no client, a job with no assigned certifier IS
+  // worth an entry: client uploads and bookings on it go nowhere until
+  // someone is assigned, and this is the only place that says so.
+  test("a project with no assigned certifier is recorded, and reported to the caller", async () => {
+    const { client, calls } = fakeSupabase((call) =>
+      call.table === "jobs" ? { data: { firm_id: "firm-1", address: "21 Coquet Way", assigned_certifier_id: null }, error: null } : { error: null }
+    );
+
+    const outcome = await notifyJobCertifier(client, "job-1", "Client uploaded a document", "<p>body</p>");
+
+    assert.equal(outcome.sent, false);
+    assert.match(String(outcome.reason), /no assigned certifier/);
+    const [event] = auditRows(calls);
+    assert.ok(event, "nothing was recorded at all");
+    assert.match(String(event.summary), /no assigned certifier/);
+  });
+
+  test("falls back to the certifier's portal email before giving up", async () => {
+    const { client, calls } = fakeSupabase((call) => {
+      if (call.table === "jobs") return { data: { firm_id: "firm-1", address: "21 Coquet Way", assigned_certifier_id: "cert-1" }, error: null };
+      if (call.table === "certifiers") return { data: { name: "Mohamad", user_id: null, portal_email: "mo@qpcertifiers.com.au" }, error: null };
+      return { error: null };
+    });
+
+    await notifyJobCertifier(client, "job-1", "Client uploaded a document", "<p>body</p>");
+    // No key configured in tests, so the send is skipped — but no
+    // failure is recorded: an address was found.
+    assert.deepEqual(auditRows(calls), []);
+  });
+
   test("is recorded the same way", async () => {
     const { client, calls } = fakeSupabase((call) => {
       if (call.table === "jobs") return { data: { firm_id: "firm-1", address: "21 Coquet Way", assigned_certifier_id: "cert-1" }, error: null };

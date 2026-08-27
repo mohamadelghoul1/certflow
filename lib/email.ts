@@ -98,33 +98,44 @@ export async function notifyJobClient(supabase: SupabaseClient, jobId: string, s
   return { sent: true };
 }
 
-// Emails the certifier assigned to a job — used for the one event that
-// flows the other direction: a client booking an inspection themselves.
-export async function notifyJobCertifier(supabase: SupabaseClient, jobId: string, subject: string, bodyHtml: string) {
+// Emails the certifier assigned to a job — the events that flow the
+// other direction: a client booking an inspection, a client sending
+// documents in. The address is found by trying everything the firm has
+// told us: the certifier's login email, then their Portal or practice
+// email, then the firm's own address. Every way this can fail to send
+// is written to the audit log — an early return that nobody hears about
+// is how these notifications went missing for days.
+export async function notifyJobCertifier(supabase: SupabaseClient, jobId: string, subject: string, bodyHtml: string): Promise<NotifyOutcome> {
   const { data: job } = await supabase.from("jobs").select("firm_id, address, assigned_certifier_id").eq("id", jobId).single();
-  if (!job?.assigned_certifier_id) return;
-  const { data: certifier } = await supabase.from("certifiers").select("name, user_id").eq("id", job.assigned_certifier_id).single();
-  if (!certifier?.user_id) return;
-  const { data: profile } = await supabase.from("profiles").select("email").eq("id", certifier.user_id).single();
+  if (!job) return { sent: false, reason: "Project not found." };
 
-  if (!profile?.email) {
-    await recordEmailFailure(supabase, jobId, {
-      firmId: job.firm_id,
-      jobAddress: job.address,
-      recipient: certifier.name || "the assigned certifier",
-      subject,
-      reason: "no email address on file",
-    });
-    return;
+  const fail = async (recipient: string, reason: string): Promise<NotifyOutcome> => {
+    await recordEmailFailure(supabase, jobId, { firmId: job.firm_id, jobAddress: job.address, recipient, subject, reason });
+    return { sent: false, reason };
+  };
+
+  if (!job.assigned_certifier_id) return fail("the assigned certifier", "the project has no assigned certifier (Details tab)");
+
+  const { data: certifier } = await supabase
+    .from("certifiers")
+    .select("name, user_id, portal_email, practice_email")
+    .eq("id", job.assigned_certifier_id)
+    .single();
+  const { data: profile } = certifier?.user_id ? await supabase.from("profiles").select("email").eq("id", certifier.user_id).single() : { data: null };
+  let email = profile?.email || certifier?.portal_email || certifier?.practice_email || null;
+  if (!email) {
+    const { data: firm } = await supabase.from("firms").select("email").eq("id", job.firm_id).single();
+    email = firm?.email || null;
   }
+  if (!email) return fail(certifier?.name || "the assigned certifier", "no email address on file for the assigned certifier or the firm");
 
   const result = await sendEmail(
-    profile.email,
+    email,
     subject,
-    `<p>Hi ${certifier.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to CertFlow to view the details: <a href="${SITE_URL}/login">${SITE_URL}/login</a></p>`
+    `<p>Hi ${certifier?.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to CertFlow to view the details: <a href="${SITE_URL}/login">${SITE_URL}/login</a></p>`
   );
 
-  if (result.error) {
-    await recordEmailFailure(supabase, jobId, { firmId: job.firm_id, jobAddress: job.address, recipient: profile.email, subject, reason: result.error });
-  }
+  if (result.error) return fail(email, result.error);
+  if (result.skipped) return { sent: false, reason: "Email isn't switched on for this deployment yet." };
+  return { sent: true };
 }
