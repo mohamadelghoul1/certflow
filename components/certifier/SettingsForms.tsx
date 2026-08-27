@@ -456,7 +456,20 @@ function InviteClientButton({ clientId, hasLogin }: { clientId: string; hasLogin
 
 export function ClientList({ clients }: { clients: ClientContact[] }) {
   const [adding, setAdding] = useState(false);
-  const [addState, addAction, addPending] = useActionState<ActionState, FormData>(addClient, undefined);
+  const [addSaving, setAddSaving] = useState(false);
+  const [addError, setAddError] = useState("");
+
+  // Adding closes the form on success and returns to the list — an open
+  // form with no signal reads as a hang. A rejected add stays open and
+  // says why.
+  async function add(fd: FormData) {
+    setAddSaving(true);
+    setAddError("");
+    const result = await addClient(undefined, fd);
+    setAddSaving(false);
+    if (result?.error) setAddError(result.error);
+    else setAdding(false);
+  }
 
   return (
     <div className="space-y-3">
@@ -466,7 +479,7 @@ export function ClientList({ clients }: { clients: ClientContact[] }) {
       {clients.length === 0 && <div className="text-sm text-placeholder">No clients yet — add one below, then assign them to a project.</div>}
 
       {adding ? (
-        <form action={addAction} className="border border-line rounded-md p-4 space-y-3 mt-3">
+        <form action={add} className="border border-line rounded-md p-4 space-y-3 mt-3">
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Name</label>
@@ -493,10 +506,10 @@ export function ClientList({ clients }: { clients: ClientContact[] }) {
               <input type="email" name="email" className={inputCls} />
             </div>
           </div>
-          {addState?.error && <div className="text-sm text-error">{addState.error}</div>}
+          {addError && <div className="text-sm text-error">{addError}</div>}
           <div className="flex gap-2">
-            <button disabled={addPending} className="px-3 py-1.5 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
-              {addPending ? "Adding…" : "Add client"}
+            <button disabled={addSaving} className="px-3 py-1.5 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
+              {addSaving ? "Adding…" : "Add client"}
             </button>
             <button type="button" onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-md text-sm text-muted hover:bg-hover">
               Cancel
@@ -514,7 +527,19 @@ export function ClientList({ clients }: { clients: ClientContact[] }) {
 
 function ClientRow({ client }: { client: ClientContact }) {
   const [editing, setEditing] = useState(false);
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(updateClient, undefined);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  // Saving closes the form and returns to the list; a rejected save
+  // stays open and says why.
+  async function save(fd: FormData) {
+    setSaving(true);
+    setError("");
+    const result = await updateClient(undefined, fd);
+    setSaving(false);
+    if (result?.error) setError(result.error);
+    else setEditing(false);
+  }
 
   if (!editing) {
     return (
@@ -542,7 +567,7 @@ function ClientRow({ client }: { client: ClientContact }) {
   }
 
   return (
-    <form action={formAction} className="border border-line rounded-md p-4 space-y-3">
+    <form action={save} className="border border-line rounded-md p-4 space-y-3">
       <input type="hidden" name="id" value={client.id} />
       <div className="grid sm:grid-cols-2 gap-3">
         <div>
@@ -570,10 +595,10 @@ function ClientRow({ client }: { client: ClientContact }) {
           <input type="email" name="email" defaultValue={client.email || ""} className={inputCls} />
         </div>
       </div>
-      {state?.error && <div className="text-sm text-error">{state.error}</div>}
+      {error && <div className="text-sm text-error">{error}</div>}
       <div className="flex gap-2">
-        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
-          {pending ? "Saving…" : "Save"}
+        <button disabled={saving} className="px-3 py-1.5 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
+          {saving ? "Saving…" : "Save"}
         </button>
         <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-sm text-muted hover:bg-hover">
           Cancel
