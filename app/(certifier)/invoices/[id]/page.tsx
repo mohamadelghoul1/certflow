@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { INVOICE_STATUS_META } from "@/lib/constants";
 import { todayISO } from "@/lib/business";
-import { setInvoiceStatus, deleteInvoice } from "@/lib/actions/invoices";
+import { setInvoiceStatus, deleteInvoice, toggleInvoiceReminders } from "@/lib/actions/invoices";
 import { InvoiceEditForm } from "@/components/certifier/InvoiceEditForm";
 import { EmailInvoiceButton } from "@/components/certifier/EmailInvoiceButton";
 import { CardPaymentButton } from "@/components/certifier/CardPaymentButton";
@@ -77,6 +77,27 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           )}
         </div>
       </div>
+
+      {invoice.status === "sent" && (
+        <div className="mb-3 flex items-center gap-3 text-xs text-muted flex-wrap">
+          {invoice.reminders_paused ? (
+            <span className="text-placeholder">Payment reminders paused for this invoice</span>
+          ) : (
+            <span>
+              {invoice.last_payment_reminder_at
+                ? `Client last reminded ${new Date(invoice.last_payment_reminder_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`
+                : "The client will be reminded automatically once this is overdue"}
+            </span>
+          )}
+          <form action={toggleInvoiceReminders}>
+            <input type="hidden" name="invoice_id" value={id} />
+            <input type="hidden" name="paused" value={invoice.reminders_paused ? "false" : "true"} />
+            <button className="text-placeholder hover:text-secondary hover:underline">
+              {invoice.reminders_paused ? "Resume reminders" : "Pause reminders for this invoice"}
+            </button>
+          </form>
+        </div>
+      )}
 
       {locked && invoice.status !== "void" && (
         <div className="mb-4 px-4 py-2 rounded-md bg-info-bg border border-line text-xs text-secondary">

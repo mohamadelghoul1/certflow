@@ -139,3 +139,39 @@ describe("card surcharge", () => {
     assert.equal(cardSurchargeFor(0, "2026-08-26"), null);
   });
 });
+
+// The overdue chaser: when it speaks, and what it says — a client who
+// paid by transfer yesterday must read an apology-ready sentence, not a
+// demand.
+import { paymentReminderDue, paymentReminderHtml } from "@/lib/invoiceReminders";
+
+describe("overdue payment reminders", () => {
+  const now = new Date("2026-08-27T21:00:00Z");
+
+  test("waits until a full day overdue, then chases", () => {
+    assert.equal(paymentReminderDue({ dueDate: "2026-08-27", everyDays: 7 }, now), false);
+    assert.equal(paymentReminderDue({ dueDate: "2026-08-26", everyDays: 7 }, now), true);
+    assert.equal(paymentReminderDue({ dueDate: null, everyDays: 7 }, now), false);
+  });
+
+  test("repeats on the firm's interval, not daily", () => {
+    assert.equal(paymentReminderDue({ dueDate: "2026-08-01", lastReminderAt: "2026-08-24T21:00:00Z", everyDays: 7 }, now), false);
+    assert.equal(paymentReminderDue({ dueDate: "2026-08-01", lastReminderAt: "2026-08-20T21:00:00Z", everyDays: 7 }, now), true);
+  });
+
+  test("the email names the amount, the due date, and the disregard line", () => {
+    const { subject, html } = paymentReminderHtml({
+      clientName: "Jane",
+      invoiceNumber: "INV-0007",
+      reference: "21 Coquet Way",
+      total: 2035.55,
+      dueDate: "2026-08-14",
+      paymentDetails: "BSB 000-000",
+      paymentLinkUrl: null,
+    });
+    assert.ok(subject.includes("INV-0007"));
+    assert.ok(html.includes("$2,035.55"));
+    assert.ok(html.includes("please disregard"));
+    assert.ok(html.includes("BSB 000-000"));
+  });
+});

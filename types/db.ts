@@ -25,6 +25,9 @@ export type Firm = {
   // migration 0036; the code stops honouring it on 1 October 2026, when
   // Australia's surcharge ban begins.
   card_surcharge_enabled?: boolean;
+  // Overdue-invoice chasing. Added by migration 0038.
+  invoice_reminders_enabled?: boolean;
+  invoice_reminder_days?: number;
   // The firm's own stamp artwork, placed above the drawn stamp on
   // approved documents. Null keeps the drawn stamp on its own.
   stamp_url: string | null;
@@ -155,6 +158,9 @@ export type Invoice = {
   // The extra the card link charges over the invoice total. Added by
   // migration 0036.
   card_surcharge?: number | null;
+  // Overdue chasing (migration 0038).
+  reminders_paused?: boolean;
+  last_payment_reminder_at?: string | null;
   paid_date: string | null;
   created_at: string;
 };

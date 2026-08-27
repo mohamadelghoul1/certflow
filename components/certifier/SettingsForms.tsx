@@ -180,6 +180,26 @@ export function PaymentSettingsForm({ firm }: { firm: Firm | null }) {
         cost — leave this off if Stripe has given you a cheaper negotiated rate. Australia bans card surcharges from 1 October 2026, and CertFlow stops adding it automatically from
         that date.
       </p>
+      <label className="flex items-center gap-2 text-sm text-muted pt-2 border-t border-line">
+        <input type="checkbox" name="invoice_reminders_enabled" defaultChecked={firm?.invoice_reminders_enabled !== false} className="accent-icon" />
+        Automatically remind clients about overdue invoices
+      </label>
+      <div className="flex items-center gap-2 text-sm text-muted">
+        Once overdue, remind every
+        <input
+          type="number"
+          name="invoice_reminder_days"
+          min={1}
+          max={90}
+          defaultValue={firm?.invoice_reminder_days || 7}
+          className="w-16 px-2 py-1 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
+        />
+        days until it&rsquo;s marked paid
+      </div>
+      <p className="text-[11px] text-muted">
+        Bank transfers aren&rsquo;t visible to CertFlow, so every reminder carries an &ldquo;if you&rsquo;ve already paid, please disregard&rdquo; line — and marking an invoice paid stops
+        its reminders immediately. Any single invoice can be paused from its own page.
+      </p>
       {state?.error && <div className="text-sm text-error">{state.error}</div>}
       <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
         {pending ? "Saving…" : "Save payment settings"}

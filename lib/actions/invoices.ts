@@ -232,6 +232,17 @@ export async function createCardPaymentLink(_prev: InvoiceEmailState, formData: 
   };
 }
 
+// An invoice that shouldn't be chased — a disputed one, a client on an
+// agreed payment plan. Per invoice and reversible.
+export async function toggleInvoiceReminders(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const invoiceId = String(formData.get("invoice_id"));
+  const paused = String(formData.get("paused")) === "true";
+  await supabase.from("invoices").update({ reminders_paused: paused }).eq("id", invoiceId).eq("firm_id", profile.firm_id);
+  revalidatePath(`/invoices/${invoiceId}`);
+}
+
 export type InvoiceEmailState = { error?: string; success?: string } | undefined;
 
 // Emails the invoice to its client and marks it sent. The email carries

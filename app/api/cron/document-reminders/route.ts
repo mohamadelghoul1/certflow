@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDocumentReminders } from "@/lib/documentReminders";
+import { runInvoiceReminders } from "@/lib/invoiceReminders";
 
 // The morning sweep, called by Vercel's scheduler (vercel.json) rather
 // than by anyone's click. Vercel proves it is the scheduler by sending
@@ -13,6 +14,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "unauthorised" }, { status: 401 });
   }
 
-  const summary = await runDocumentReminders(createAdminClient());
-  return NextResponse.json(summary);
+  // One morning visit runs both sweeps — documents owed, and invoices
+  // overdue — so the schedule stays a single entry.
+  const admin = createAdminClient();
+  const documents = await runDocumentReminders(admin);
+  const invoices = await runInvoiceReminders(admin);
+  return NextResponse.json({ documents, invoices });
 }

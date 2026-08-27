@@ -54,17 +54,22 @@ export async function updateFirmReminders(_prev: ActionState, formData: FormData
 export async function updateFirmPayments(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
+  const reminderDays = Math.min(90, Math.max(1, parseInt(String(formData.get("invoice_reminder_days") || "7"), 10) || 7));
   const details = { payment_details: String(formData.get("payment_details") || "").trim() || null };
   const surcharge = { card_surcharge_enabled: formData.get("card_surcharge_enabled") === "on" };
-  const { error } = await supabase.from("firms").update({ ...details, ...surcharge }).eq("id", profile.firm_id);
-  if (error) {
-    if (error.code !== "PGRST204" && error.code !== "42703") return { error: error.message };
-    // 0035 in but 0036 not: keep the bank details save working.
-    const { error: retryError } = await supabase.from("firms").update(details).eq("id", profile.firm_id);
-    if (retryError) {
-      if (retryError.code === "PGRST204" || retryError.code === "42703") return { error: "Run database updates 0035 and 0036 first (System check shows what's been run)." };
-      return { error: retryError.message };
-    }
+  const reminders = {
+    invoice_reminders_enabled: formData.get("invoice_reminders_enabled") === "on",
+    invoice_reminder_days: reminderDays,
+  };
+  // Newest columns first, shedding a migration's worth at a time, so a
+  // database mid-way through its updates still saves what it can hold.
+  const isUnknown = (code: string | null | undefined) => code === "PGRST204" || code === "42703";
+  const attempts = [{ ...details, ...surcharge, ...reminders }, { ...details, ...surcharge }, details];
+  for (const [index, fields] of attempts.entries()) {
+    const { error } = await supabase.from("firms").update(fields).eq("id", profile.firm_id);
+    if (!error) break;
+    if (!isUnknown(error.code)) return { error: error.message };
+    if (index === attempts.length - 1) return { error: "Run database updates 0035–0038 first (System check shows what's been run)." };
   }
   revalidatePath("/settings");
   return undefined;

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { NavLink } from "@/components/certifier/NavLink";
 import { signOut } from "@/lib/actions/auth";
 import { NavDropdown } from "@/components/certifier/NavDropdown";
+import { SearchEverywhere } from "@/components/certifier/SearchEverywhere";
 import { LogOut } from "lucide-react";
 
 type Item = { id: string; title: string; subtitle: string };
@@ -49,11 +50,13 @@ export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmN
           itemHrefBase="/quotes"
         />
         <NavLink href="/invoices">Invoices</NavLink>
+        <NavLink href="/compliance">Compliance</NavLink>
         <NavLink href="/audit">Audit</NavLink>
         <NavLink href="/settings">Settings</NavLink>
         </div>
       </div>
       <div className="flex items-center gap-3 shrink-0">
+        <SearchEverywhere />
         <span className="text-white/70 text-xs hidden sm:inline">{firmName}</span>
         <span
           title={userName}

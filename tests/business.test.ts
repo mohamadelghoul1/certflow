@@ -131,3 +131,17 @@ describe("when a stage counts as finished", () => {
     assert.equal(inspectionsCarriedOut(["passed", "passed_subject_to"]), true);
   });
 });
+
+// Compliance severity: the line between "overdue", "this week's work"
+// and "context" is what makes the page trustworthy.
+import { severityFor } from "@/lib/compliance";
+
+describe("compliance severity", () => {
+  const today = "2026-08-27";
+  test("past is overdue, this week is soon, later is upcoming", () => {
+    assert.equal(severityFor("2026-08-26", today), "overdue");
+    assert.equal(severityFor("2026-08-27", today), "soon");
+    assert.equal(severityFor("2026-09-03", today), "soon");
+    assert.equal(severityFor("2026-09-04", today), "upcoming");
+  });
+});
