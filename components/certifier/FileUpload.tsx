@@ -23,10 +23,10 @@ export function FileUpload({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [dragOver, setDragOver] = useState(false);
 
-  async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function handleFile(file: File | undefined | null) {
+    if (!file || busy) return;
     setBusy(true);
     setError("");
     onStart?.();
@@ -41,16 +41,41 @@ export function FileUpload({
       onFailed?.();
     } finally {
       setBusy(false);
-      e.target.value = "";
     }
   }
 
   return (
     <div>
-      <label className="inline-flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-hover cursor-pointer whitespace-nowrap">
+      {/* The button is also a drop target: a file dragged from the
+          desktop can be let go on it instead of hunted for in the
+          picker. The highlight answers "can I drop this here?" before
+          the finger leaves the mouse button. */}
+      <label
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          void handleFile(e.dataTransfer.files?.[0]);
+        }}
+        className={`inline-flex items-center gap-1.5 text-sm font-medium border rounded-full px-4 py-1.5 cursor-pointer whitespace-nowrap ${
+          dragOver ? "border-icon border-dashed bg-info-bg text-secondary" : "border-line text-muted hover:bg-hover"
+        }`}
+      >
         <UploadCloud size={14} />
-        {busy ? "Uploading…" : label}
-        <input type="file" className="hidden" onChange={handleChange} disabled={busy} />
+        {busy ? "Uploading…" : dragOver ? "Drop to upload" : label}
+        <input
+          type="file"
+          className="hidden"
+          onChange={(e) => {
+            void handleFile(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+          disabled={busy}
+        />
       </label>
       {error && <div className="text-xs text-error mt-1">{error}</div>}
     </div>
