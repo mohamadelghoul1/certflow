@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { flushJobUploads } from "@/lib/uploadDigest";
@@ -32,22 +33,35 @@ export async function submitClientDocument({
   });
   if (error) return { error: error.message };
 
+  // The notification is the certifier's concern, not the client's — so it
+  // runs after the response has already gone back and the client's screen
+  // has moved on, instead of holding the upload spinner for the lookups
+  // and the email send.
+  //
   // The admin client, because a client's session can't read the
   // certifier's contact details through RLS — same as inspection
   // bookings, the other client-initiated notification.
-  const admin = createAdminClient();
-  const { data: item } = await admin.from("checklist_items").select("title, checklist_id").eq("id", itemId).single();
-  const { data: checklist } = item
-    ? await admin.from("checklists").select("job_id").eq("id", item.checklist_id).single()
-    : { data: null };
-  const jobId = checklist?.job_id as string | undefined;
-  if (jobId) {
-    // Recorded, then batched: the first document of a burst emails the
-    // certifier straight away; anything more inside the quiet window
-    // rides along in the next summary instead of its own email.
-    await admin.from("portal_uploads").insert({ job_id: jobId, item_title: item?.title || null, file_name: fileName });
-    await flushJobUploads(admin, jobId, { requireSettled: false });
-  }
+  after(async () => {
+    try {
+      const admin = createAdminClient();
+      const { data: item } = await admin.from("checklist_items").select("title, checklist_id").eq("id", itemId).single();
+      const { data: checklist } = item
+        ? await admin.from("checklists").select("job_id").eq("id", item.checklist_id).single()
+        : { data: null };
+      const jobId = checklist?.job_id as string | undefined;
+      if (jobId) {
+        // Recorded, then batched: the first document of a burst emails the
+        // certifier straight away; anything more inside the quiet window
+        // rides along in the next summary instead of its own email.
+        await admin.from("portal_uploads").insert({ job_id: jobId, item_title: item?.title || null, file_name: fileName });
+        await flushJobUploads(admin, jobId, { requireSettled: false });
+      }
+    } catch (err) {
+      // A failed notification must not look like a failed upload — the
+      // document itself is already safely recorded by this point.
+      console.error("upload notification failed", err);
+    }
+  });
 
   return {};
 }
