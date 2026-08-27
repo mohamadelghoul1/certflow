@@ -457,6 +457,12 @@ export function DetailsTab({
               ))}
             </div>
           </div>
+          {/* Construction detail is a CDC/CC concern; a PC/OC job's OC
+              prints none of it, so none of it is asked for. Values a job
+              already holds (a BCS import's cost, say) stay recorded —
+              the save simply leaves fields it does not show untouched. */}
+          {job.pathway !== "PC_OC" && (
+            <>
           <div>
             <label className={labelCls}>Construction type</label>
             <select name="constructionType" defaultValue={d.proposal?.constructionType || "N/A"} className={inputCls}>
@@ -515,6 +521,8 @@ export function DetailsTab({
             <label className={labelCls}>Site area (m²)</label>
             <input type="text" inputMode="decimal" name="siteArea" defaultValue={d.siteArea || ""} placeholder="e.g. 1,234.5" className={inputCls} />
           </div>
+            </>
+          )}
         </Section>
 
         <Section title="Scope of works">

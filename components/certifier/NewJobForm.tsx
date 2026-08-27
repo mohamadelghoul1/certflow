@@ -396,6 +396,11 @@ export function NewJobForm({
             ))}
           </div>
         </div>
+        {/* Everything below describes construction the way a CDC or CC
+            prints it. A PC/OC job issues no such certificate, so none of
+            it is asked for — see the same guard on the Details tab. */}
+        {pathway !== "PC_OC" && (
+          <>
         <div>
           <label className={labelCls}>Construction type</label>
           <select name="constructionType" defaultValue="N/A" className={inputCls}>
@@ -450,14 +455,18 @@ export function NewJobForm({
             <input type="text" inputMode="decimal" name="floorAreaNew" placeholder="e.g. 123.4" className={inputCls} />
           </div>
         </div>
+          </>
+        )}
       </Section>
 
-      <Section title="Proposal site">
-        <div>
-          <label className={labelCls}>Total area of land (m²)</label>
-          <input type="text" inputMode="decimal" name="siteArea" placeholder="e.g. 1,234.5" className={inputCls} />
-        </div>
-      </Section>
+      {pathway !== "PC_OC" && (
+        <Section title="Proposal site">
+          <div>
+            <label className={labelCls}>Total area of land (m²)</label>
+            <input type="text" inputMode="decimal" name="siteArea" placeholder="e.g. 1,234.5" className={inputCls} />
+          </div>
+        </Section>
+      )}
 
       {state?.error && (
         <div className="flex items-start gap-2 text-sm text-error bg-error-bg border border-error/40 rounded-md px-4 py-3 mb-4">

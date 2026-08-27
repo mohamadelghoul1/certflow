@@ -142,3 +142,17 @@ describe("the contractor on the details patch", () => {
     assert.equal(saved.principalContractor, "Old Line Builder");
   });
 });
+
+// A PC/OC job shows no construction detail, so saving its Details form
+// must leave the values it already holds — an imported job's cost of
+// works among them — exactly as recorded.
+describe("a PC/OC details save and the hidden construction fields", () => {
+  test("keeps the imported cost and site area through a save that doesn't show them", () => {
+    const existing = { proposal: { classifications: ["1a"], estimatedCost: "450000" }, siteArea: "612" } as JobDetails;
+    // What extractJobDetails now produces for PC_OC: classifications only.
+    const saved = save(existing, { proposal: { classifications: ["1a", "10a"] } } as JobDetails);
+    assert.equal(saved.proposal?.estimatedCost, "450000");
+    assert.equal(saved.siteArea, "612");
+    assert.deepEqual(saved.proposal?.classifications, ["1a", "10a"]);
+  });
+});

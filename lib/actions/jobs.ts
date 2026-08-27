@@ -110,21 +110,28 @@ function extractJobDetails(formData: FormData, pathway: Pathway): JobDetails {
         email: String(formData.get("council_email") || ""),
       },
     },
+    // A PC/OC form shows none of the construction detail, so its save
+    // must not mention those fields either — the merge leaves what a
+    // job already holds (a BCS import's cost, say) exactly as recorded.
     proposal: {
       classifications: formData.getAll("classifications").map(String),
-      constructionType: String(formData.get("constructionType") || "N/A"),
-      dwellingsExisting: String(formData.get("dwellingsExisting") || ""),
-      dwellingsDemolished: String(formData.get("dwellingsDemolished") || ""),
-      dwellingsNew: String(formData.get("dwellingsNew") || ""),
-      estimatedCost: String(formData.get("estimatedCost") || ""),
-      storeysAbove: String(formData.get("storeysAbove") || ""),
-      storeysBelow: String(formData.get("storeysBelow") || ""),
-      storeysTotal: String(formData.get("storeysTotal") || ""),
-      effectiveHeight: String(formData.get("effectiveHeight") || ""),
-      floorAreaExisting: numericText(formData.get("floorAreaExisting")),
-      floorAreaNew: numericText(formData.get("floorAreaNew")),
+      ...(pathway === "PC_OC"
+        ? {}
+        : {
+            constructionType: String(formData.get("constructionType") || "N/A"),
+            dwellingsExisting: String(formData.get("dwellingsExisting") || ""),
+            dwellingsDemolished: String(formData.get("dwellingsDemolished") || ""),
+            dwellingsNew: String(formData.get("dwellingsNew") || ""),
+            estimatedCost: String(formData.get("estimatedCost") || ""),
+            storeysAbove: String(formData.get("storeysAbove") || ""),
+            storeysBelow: String(formData.get("storeysBelow") || ""),
+            storeysTotal: String(formData.get("storeysTotal") || ""),
+            effectiveHeight: String(formData.get("effectiveHeight") || ""),
+            floorAreaExisting: numericText(formData.get("floorAreaExisting")),
+            floorAreaNew: numericText(formData.get("floorAreaNew")),
+          }),
     },
-    siteArea: numericText(formData.get("siteArea")),
+    ...(pathway === "PC_OC" ? {} : { siteArea: numericText(formData.get("siteArea")) }),
     inspectionPortalCase: String(formData.get("inspectionPortalCase") || "").trim(),
     // The builder in full; the one-line field is derived from it so every
     // screen and register that predates the structure keeps reading true.
