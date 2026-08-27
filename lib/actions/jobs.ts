@@ -348,7 +348,10 @@ export async function removeChecklistItem(formData: FormData) {
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
-  await supabase.from("checklist_items").delete().eq("id", itemId);
+  // The row is already hidden on the certifier's screen — a delete that
+  // failed must say so, or the item quietly returns on the next visit.
+  const { error } = await supabase.from("checklist_items").delete().eq("id", itemId);
+  if (error) throw new Error(error.message);
   revalidatePath(`/jobs/${jobId}`);
 }
 

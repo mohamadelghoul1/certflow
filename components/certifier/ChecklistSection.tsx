@@ -3,6 +3,7 @@ import { signedUrl } from "@/lib/storage";
 import { notifyClientOfChecklist } from "@/lib/actions/jobs";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
+import { RemovableRow } from "@/components/certifier/RemovableRow";
 import { ItemStatusProvider, ItemCard, ItemStatusBadge, ItemStatusActions, ApprovalInclusionToggle, NotInApprovalBadge } from "@/components/certifier/ItemStatus";
 import { ChecklistOrderProvider, MoveButtons } from "@/components/certifier/ChecklistOrder";
 import { EditableChecklistItemHeader } from "@/components/certifier/EditableChecklistItemHeader";
@@ -108,7 +109,11 @@ export async function ChecklistSection({
             jobId={jobId}
             rows={items.map((item) => ({
               id: item.id,
-              node: <ItemRow item={item} jobId={jobId} firmId={firmId} stamp={stamp} templatePaths={templatePaths} partOfApproval={partOfApproval} />,
+              node: (
+                <RemovableRow>
+                  <ItemRow item={item} jobId={jobId} firmId={firmId} stamp={stamp} templatePaths={templatePaths} partOfApproval={partOfApproval} />
+                </RemovableRow>
+              ),
             }))}
           />
         </div>

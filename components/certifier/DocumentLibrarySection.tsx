@@ -136,6 +136,14 @@ export function DocumentLibrarySection({
                           await updateLibraryItem(fd);
                           setEditingId(null);
                         }}
+                        // Clicking anywhere else on the screen saves —
+                        // pressing Save is one way to leave the boxes,
+                        // not the only one. Cancel still walks away,
+                        // because it sits inside the form and so never
+                        // counts as leaving it.
+                        onBlur={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget as Node)) e.currentTarget.requestSubmit();
+                        }}
                         className="flex-1 min-w-0 space-y-1.5"
                       >
                         <input type="hidden" name="id" value={item.id} />
