@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Download } from "lucide-react";
+import { Download, AlertTriangle } from "lucide-react";
 import { StageTabs } from "@/components/portal/StageTabs";
 import { displayStatus, unresolvedCount, checklistProgress, formatISODate } from "@/lib/business";
 import { currentDocuments } from "@/lib/checklistDocuments";
@@ -229,13 +229,14 @@ async function StageSection({
           const status = displayStatus(item);
           const unresolved = item.amendments.filter((a) => !a.resolved);
           // The card wears the document's state: blue once submitted and
-          // waiting on the certifier, green once approved, an amber edge
-          // while requested changes wait on the client (white inside so
-          // the amber amendment notes on the card stay visible).
+          // waiting on the certifier, green once approved, fully amber
+          // while requested changes wait on the client — that one is the
+          // card asking the client to act, so it dresses as a warning.
+          const amendment = status.dot.includes("amber");
           const tone = status.dot.includes("emerald")
             ? "border-accent/40 bg-success-bg"
-            : status.dot.includes("amber")
-              ? "border-warning/60 bg-white"
+            : amendment
+              ? "border-warning bg-warning-bg"
               : status.dot.includes("blue")
                 ? "border-info/40 bg-info-bg"
                 : "border-line bg-white";
@@ -259,12 +260,18 @@ async function StageSection({
                 <span className="text-sm font-semibold text-primary">{item.title}</span>
               </div>
               <div className="text-xs text-placeholder mt-0.5">{item.description}</div>
-              <div className="text-sm mt-1 font-semibold text-muted">{status.label}</div>
+              <div className={`text-sm mt-1 font-semibold ${amendment ? "text-warning-text" : "text-muted"}`}>
+                {amendment && <AlertTriangle size={14} className="inline -mt-0.5 mr-1" />}
+                {status.label}
+              </div>
 
+              {/* On the amber card the notes go white with an amber edge,
+                  so each requested change reads as its own instruction
+                  rather than dissolving into the card's tint. */}
               {unresolved.length > 0 && (
                 <div className="mt-2 space-y-1.5">
                   {unresolved.map((a) => (
-                    <div key={a.id} className="text-xs bg-warning-bg text-warning-text rounded-md px-3 py-2">
+                    <div key={a.id} className="text-sm font-medium bg-white border-l-4 border-warning text-warning-text rounded-md px-3 py-2">
                       {a.text}
                     </div>
                   ))}
