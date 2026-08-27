@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { excludingDeleted } from "@/lib/softDelete";
 import { NavBar } from "@/components/certifier/NavBar";
 import { MobileTabBar } from "@/components/certifier/MobileTabBar";
+import { UploadAlerts } from "@/components/certifier/UploadAlerts";
 
 export default async function CertifierLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireProfile("certifier");
@@ -28,6 +29,7 @@ export default async function CertifierLayout({ children }: { children: React.Re
           card on a page isn't sitting underneath it. */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24 sm:pb-8">{children}</div>
       <MobileTabBar />
+      <UploadAlerts />
     </div>
   );
 }

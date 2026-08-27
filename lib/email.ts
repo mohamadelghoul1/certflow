@@ -116,13 +116,13 @@ export async function notifyJobCertifier(supabase: SupabaseClient, jobId: string
 
   if (!job.assigned_certifier_id) return fail("the assigned certifier", "the project has no assigned certifier (Details tab)");
 
-  const { data: certifier } = await supabase
-    .from("certifiers")
-    .select("name, user_id, portal_email, practice_email")
-    .eq("id", job.assigned_certifier_id)
-    .single();
+  // select("*") on purpose: naming the email column would fail the whole
+  // lookup on a database that hasn't run migration 0040 yet.
+  const { data: certifier } = await supabase.from("certifiers").select("*").eq("id", job.assigned_certifier_id).single();
   const { data: profile } = certifier?.user_id ? await supabase.from("profiles").select("email").eq("id", certifier.user_id).single() : { data: null };
-  let email = profile?.email || certifier?.portal_email || certifier?.practice_email || null;
+  // Their own stated notification address wins; the login and the other
+  // recorded addresses are the fallbacks.
+  let email = certifier?.email || profile?.email || certifier?.portal_email || certifier?.practice_email || null;
   if (!email) {
     const { data: firm } = await supabase.from("firms").select("email").eq("id", job.firm_id).single();
     email = firm?.email || null;

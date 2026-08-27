@@ -235,7 +235,10 @@ export function CertifierList({ certifiers, firmId, signatureUrls, practiceLogoU
               <label className={labelCls}>Registration body</label>
               <input name="registration_body" className={inputCls} />
             </div>
-            <div />
+            <div>
+              <label className={labelCls}>Email for notifications</label>
+              <input name="email" type="email" placeholder="where client uploads and bookings are sent" className={inputCls} />
+            </div>
             <div>
               <label className={labelCls}>PI insurance expiry</label>
               <DateField name="pi_insurance_expiry" className={inputCls} />
@@ -358,7 +361,10 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
           <label className={labelCls}>Registration body</label>
           <input name="registration_body" defaultValue={certifier.registration_body || ""} className={inputCls} />
         </div>
-        <div />
+        <div>
+          <label className={labelCls}>Email for notifications</label>
+          <input name="email" type="email" defaultValue={certifier.email || ""} placeholder="where client uploads and bookings are sent" className={inputCls} />
+        </div>
         <div>
           <label className={labelCls}>PI insurance expiry</label>
           <DateField name="pi_insurance_expiry" defaultValue={certifier.pi_insurance_expiry || ""} className={inputCls} />

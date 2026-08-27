@@ -82,15 +82,23 @@ export async function updateFirmPayments(_prev: ActionState, formData: FormData)
 export async function addCertifier(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
-  const { error } = await supabase.from("certifiers").insert({
+  const base = {
     firm_id: profile.firm_id,
     name: String(formData.get("name") || ""),
     registration_no: String(formData.get("registration_no") || ""),
     registration_body: String(formData.get("registration_body") || ""),
     pi_insurance_expiry: formData.get("pi_insurance_expiry") || null,
     registration_expiry: formData.get("registration_expiry") || null,
-  });
-  if (error) return { error: error.message };
+  };
+  const email = String(formData.get("email") || "").trim() || null;
+  const { error } = await supabase.from("certifiers").insert({ ...base, email });
+  if (error) {
+    // A database that hasn't run migration 0040 has no email column —
+    // save the certifier without it rather than failing the whole form.
+    if (error.code !== "PGRST204" && error.code !== "42703") return { error: error.message };
+    const { error: retryError } = await supabase.from("certifiers").insert(base);
+    if (retryError) return { error: retryError.message };
+  }
   revalidatePath("/settings");
   return undefined;
 }
@@ -122,6 +130,8 @@ export async function updateCertifier(_prev: ActionState, formData: FormData): P
       // The email this certifier signs into the NSW Planning Portal
       // with — what API submissions go up under. Added by migration 0031.
       portal_email: text("portal_email"),
+      // Where CertFlow's own notifications to them go. Added by 0040.
+      email: text("email"),
     })
     .eq("id", id)
     .eq("firm_id", profile.firm_id);

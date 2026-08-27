@@ -48,6 +48,9 @@ export type Certifier = {
   pi_insurance_expiry: string | null;
   registration_expiry: string | null;
   user_id: string | null;
+  // Where CertFlow's own notifications to this certifier go — client
+  // uploads, inspection bookings. Added by migration 0040.
+  email?: string | null;
   // A contract certifier's own practice, for inspections carried out by
   // someone working under their own registration rather than as an
   // employee. All optional and all added by migration 0025: blank means
