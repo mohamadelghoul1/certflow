@@ -10,7 +10,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const provider = providerFor(providerId);
   const credentials = provider ? credentialsFor(provider.id) : null;
-  if (!provider || !credentials) return NextResponse.redirect(new URL("/settings?backup=unavailable", request.url));
+  if (!provider || !credentials) return NextResponse.redirect(new URL("/settings?section=backup&backup=unavailable", request.url));
 
   // The state ties the callback back to the firm that started it, and is
   // checked on the way back in — without it, anyone could hand us a code

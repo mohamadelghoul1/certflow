@@ -9,7 +9,7 @@ import { accountLabel, exchangeCode, redirectUriFor } from "@/lib/backup/connect
 export async function GET(request: NextRequest, { params }: { params: Promise<{ provider: string }> }) {
   const { provider: providerId } = await params;
   const { profile, userId } = await requireProfile("certifier");
-  const settings = (outcome: string) => NextResponse.redirect(new URL(`/settings?backup=${outcome}`, request.url));
+  const settings = (outcome: string) => NextResponse.redirect(new URL(`/settings?section=backup&backup=${outcome}`, request.url));
 
   const provider = providerFor(providerId);
   if (!provider) return settings("unavailable");

@@ -3,6 +3,8 @@
 import { useActionState, useState } from "react";
 import {
   updateFirm,
+  updateFirmReminders,
+  updateFirmPayments,
   addCertifier,
   updateCertifier,
   removeCertifier,
@@ -109,49 +111,6 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
             their inspections.
           </p>
         </div>
-        <div className="sm:col-span-2 pt-1 border-t border-line">
-          <label className="flex items-center gap-2 text-sm text-muted mt-2">
-            <input type="checkbox" name="document_reminders_enabled" defaultChecked={firm?.document_reminders_enabled !== false} className="accent-icon" />
-            Automatically remind clients about outstanding documents
-          </label>
-          <div className="flex items-center gap-2 mt-2 text-sm text-muted">
-            Send a reminder every
-            <input
-              type="number"
-              name="document_reminder_days"
-              min={1}
-              max={90}
-              defaultValue={firm?.document_reminder_days || 7}
-              className="w-16 px-2 py-1 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
-            />
-            days while documents are outstanding
-          </div>
-          <p className="text-[11px] text-muted mt-1">
-            Only clients who still owe documents are emailed, listing exactly what&rsquo;s missing with a link to their portal. Any project can be paused individually from its own page.
-          </p>
-        </div>
-        <div className="sm:col-span-2 pt-1 border-t border-line">
-          <label className={`${labelCls} mt-2`}>Payment details (printed on every invoice)</label>
-          <textarea
-            name="payment_details"
-            rows={3}
-            defaultValue={firm?.payment_details || ""}
-            placeholder={"Account name: \u2026\nBSB: \u2026    Account number: \u2026\nPlease use the invoice number as the payment reference."}
-            className={inputCls}
-          />
-          <p className="text-[11px] text-muted mt-1">
-            Copied onto each new invoice automatically — an already-issued invoice keeps the details it went out with.
-          </p>
-          <label className="flex items-center gap-2 text-sm text-muted mt-4">
-            <input type="checkbox" name="card_surcharge_enabled" defaultChecked={firm?.card_surcharge_enabled === true} className="accent-icon" />
-            Add the card-processing cost as a surcharge when a client pays by card
-          </label>
-          <p className="text-[11px] text-muted mt-1">
-            The surcharge equals Stripe&rsquo;s standard fee (1.7% + 30&cent;), shown to the client before they pay; bank transfer stays surcharge-free. Only lawful at your actual card
-            cost — leave this off if Stripe has given you a cheaper negotiated rate. Australia bans card surcharges from 1 October 2026, and CertFlow stops adding it automatically
-            from that date.
-          </p>
-        </div>
       </div>
       {state?.error && <div className="text-sm text-error">{state.error}</div>}
       <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
@@ -159,6 +118,73 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
       </button>
       </form>
     </div>
+  );
+}
+
+// The chasing schedule, its own small form so it lives under its own
+// Settings heading rather than at the bottom of the firm's identity.
+export function ReminderSettingsForm({ firm }: { firm: Firm | null }) {
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(updateFirmReminders, undefined);
+  return (
+    <form action={formAction} className="space-y-3">
+      <label className="flex items-center gap-2 text-sm text-muted">
+        <input type="checkbox" name="document_reminders_enabled" defaultChecked={firm?.document_reminders_enabled !== false} className="accent-icon" />
+        Automatically remind clients about outstanding documents
+      </label>
+      <div className="flex items-center gap-2 text-sm text-muted">
+        Send a reminder every
+        <input
+          type="number"
+          name="document_reminder_days"
+          min={1}
+          max={90}
+          defaultValue={firm?.document_reminder_days || 7}
+          className="w-16 px-2 py-1 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
+        />
+        days while documents are outstanding
+      </div>
+      <p className="text-[11px] text-muted">
+        Only clients who still owe documents are emailed, listing exactly what&rsquo;s missing with a link to their portal. Any project can be paused individually from its own page.
+      </p>
+      {state?.error && <div className="text-sm text-error">{state.error}</div>}
+      <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
+        {pending ? "Saving…" : "Save reminder settings"}
+      </button>
+    </form>
+  );
+}
+
+// How the firm gets paid: the bank details every invoice prints, and
+// the optional card surcharge.
+export function PaymentSettingsForm({ firm }: { firm: Firm | null }) {
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(updateFirmPayments, undefined);
+  return (
+    <form action={formAction} className="space-y-3">
+      <div>
+        <label className={labelCls}>Payment details (printed on every invoice)</label>
+        <textarea
+          name="payment_details"
+          rows={3}
+          defaultValue={firm?.payment_details || ""}
+          placeholder={"Account name: \u2026\nBSB: \u2026    Account number: \u2026\nPlease use the invoice number as the payment reference."}
+          className={inputCls}
+        />
+        <p className="text-[11px] text-muted mt-1">Copied onto each new invoice automatically — an already-issued invoice keeps the details it went out with.</p>
+      </div>
+      <label className="flex items-center gap-2 text-sm text-muted">
+        <input type="checkbox" name="card_surcharge_enabled" defaultChecked={firm?.card_surcharge_enabled === true} className="accent-icon" />
+        Add the card-processing cost as a surcharge when a client pays by card
+      </label>
+      <p className="text-[11px] text-muted">
+        The surcharge equals Stripe&rsquo;s standard fee (1.7% + 30&cent;), shown to the client before they pay; bank transfer stays surcharge-free. Only lawful at your actual card
+        cost — leave this off if Stripe has given you a cheaper negotiated rate. Australia bans card surcharges from 1 October 2026, and CertFlow stops adding it automatically from
+        that date.
+      </p>
+      {state?.error && <div className="text-sm text-error">{state.error}</div>}
+      <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
+        {pending ? "Saving…" : "Save payment settings"}
+      </button>
+    </form>
   );
 }
 
