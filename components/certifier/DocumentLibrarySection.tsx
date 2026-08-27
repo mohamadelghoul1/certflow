@@ -95,11 +95,12 @@ export function DocumentLibrarySection({
 
       {active && (
         <>
-          <p className="text-[11px] text-placeholder mb-2">Drag a document up or down to change the order — it&rsquo;s saved as you drop it.</p>
+          <p className="text-[11px] text-placeholder mb-2">Drag a document up or down to change the order — on a phone, hold the grip beside its name. Saved as you drop it.</p>
           <div className="space-y-2 mb-3">
             {displayed.map((item) => (
               <div
                 key={item.id}
+                data-lib-id={item.id}
                 draggable
                 onDragStart={(e) => {
                   setDragId(item.id);
@@ -115,7 +116,19 @@ export function DocumentLibrarySection({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2 min-w-0">
-                    <GripVertical size={15} className="shrink-0 mt-0.5 text-placeholder" />
+                    <span
+                      className="shrink-0 mt-0.5 -m-1 p-1 touch-none text-placeholder"
+                      onTouchStart={() => setDragId(item.id)}
+                      onTouchMove={(e) => {
+                        const touch = e.touches[0];
+                        const over = document.elementFromPoint(touch.clientX, touch.clientY)?.closest("[data-lib-id]");
+                        const overId = over?.getAttribute("data-lib-id");
+                        if (overId) dragOver(overId);
+                      }}
+                      onTouchEnd={dragEnd}
+                    >
+                      <GripVertical size={15} />
+                    </span>
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-primary">{item.title}</div>
                       <div className="text-xs text-placeholder">{item.description}</div>
