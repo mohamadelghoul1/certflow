@@ -1,6 +1,9 @@
 "use server";
 
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { recordReviewEvent } from "@/lib/reviewDigest";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -445,10 +448,18 @@ export async function approveItem(formData: FormData) {
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
-  // No automatic email here on purpose — approvals/amendments happen too
-  // often to email on each one. Use the "Notify client of update" button
-  // on the checklist instead, which sends one batched summary.
   await supabase.from("checklist_items").update({ status: "approved", updated_at: new Date().toISOString() }).eq("id", itemId);
+  // The client hears automatically, but batched — approvals come in
+  // runs, so the first of a burst emails at once and the rest ride
+  // along in one summary (lib/reviewDigest.ts). Runs after the response
+  // so approving stays instant on screen.
+  after(async () => {
+    try {
+      await recordReviewEvent(createAdminClient(), { jobId, itemId, kind: "approved", note: null });
+    } catch (err) {
+      console.error("review notification failed", err);
+    }
+  });
   revalidatePath(`/jobs/${jobId}`);
 }
 
@@ -651,8 +662,15 @@ export async function addAmendment(formData: FormData) {
   const jobId = String(formData.get("job_id"));
   const text = String(formData.get("text") || "").trim();
   if (!text) return;
-  // No automatic email here on purpose — see note in approveItem above.
   await supabase.from("amendments").insert({ checklist_item_id: itemId, text });
+  // Batched the same way as approvals — see the note in approveItem.
+  after(async () => {
+    try {
+      await recordReviewEvent(createAdminClient(), { jobId, itemId, kind: "changes", note: text });
+    } catch (err) {
+      console.error("review notification failed", err);
+    }
+  });
   revalidatePath(`/jobs/${jobId}`);
 }
 
