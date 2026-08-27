@@ -3,6 +3,9 @@
 import { useActionState } from "react";
 import { setPasswordAndAcceptInvite, type ActionState } from "@/lib/actions/auth";
 
+// Deliberately outside the (app) route group: the portal layout demands a
+// finished client profile, but the person arriving here from an invite
+// link doesn't have one yet — submitting this form is what creates it.
 export default function SetPasswordPage() {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setPasswordAndAcceptInvite, undefined);
 
