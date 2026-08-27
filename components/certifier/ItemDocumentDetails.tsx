@@ -17,13 +17,17 @@ const fieldCls = "px-2 py-1.5 rounded border border-line text-xs";
 // Saves itself when a field loses focus, like the item's own details do —
 // a Save button is one press too many for five small boxes filled in one
 // after the other.
-export function ItemDocumentDetails({ doc, itemId, jobId, removable }: { doc: ItemDocument; itemId: string; jobId: string; removable: boolean }) {
+export function ItemDocumentDetails({ doc, itemId, itemTitle, jobId, removable }: { doc: ItemDocument; itemId: string; itemTitle?: string; jobId: string; removable: boolean }) {
   const today = todayISO();
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  // A blank label starts as the item's own title — that's what Schedule 1
+  // will call the document anyway, so the box shows the truth and the
+  // certifier amends it only when it should read differently.
+  const defaultLabel = doc.label || itemTitle || "";
   const lastSent = useRef<Record<string, string>>({
-    label: doc.label || "",
+    label: defaultLabel,
     prepared_by: doc.preparedBy || "",
     drawing_number: doc.drawingNumber || "",
     revision: doc.revision || "",
@@ -59,7 +63,7 @@ export function ItemDocumentDetails({ doc, itemId, jobId, removable }: { doc: It
     <form ref={formRef} className="grid sm:grid-cols-5 gap-2">
       <input type="hidden" name="file_id" value={doc.id} />
       <input type="hidden" name="job_id" value={jobId} />
-      <input name="label" defaultValue={doc.label} placeholder="Label (e.g. Ground floor)" onBlur={(e) => save("label", e.target.value)} className={fieldCls} />
+      <input name="label" defaultValue={defaultLabel} placeholder="Label (e.g. Ground floor)" onBlur={(e) => save("label", e.target.value)} className={fieldCls} />
       <input name="prepared_by" defaultValue={doc.preparedBy || ""} placeholder="Prepared by" onBlur={(e) => save("prepared_by", e.target.value)} className={fieldCls} />
       <input name="drawing_number" defaultValue={doc.drawingNumber || ""} placeholder="Reference number" onBlur={(e) => save("drawing_number", e.target.value)} className={fieldCls} />
       <input name="revision" defaultValue={doc.revision || ""} placeholder="Revision" onBlur={(e) => save("revision", e.target.value)} className={fieldCls} />

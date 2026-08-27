@@ -2,7 +2,6 @@ import { signedUrl } from "@/lib/storage";
 import { FileText, History } from "lucide-react";
 import { formatISODate } from "@/lib/business";
 import { currentDocuments, versionsOf } from "@/lib/checklistDocuments";
-import { MAX_CLIENT_ITEM_DOCUMENTS } from "@/lib/constants";
 import { UploadClientDocument } from "@/components/portal/UploadClientDocument";
 import type { ChecklistItem, ChecklistItemFile } from "@/types/db";
 
@@ -61,17 +60,13 @@ export async function ClientItemDocuments({ item, jobId, firmId, canUpload }: { 
           {versions[0]?.created_at && <span className="text-sm font-medium text-muted">Submitted {formatISODate(versions[0].created_at)}</span>}
         </div>
       ))}
-      {/* No document number, so this adds one alongside rather than
-          replacing anything. */}
-      {canUpload && docs.length < MAX_CLIENT_ITEM_DOCUMENTS && (
+      {/* One document per item from the client's side — a corrected copy
+          arrives as a new version of it, never as a second document
+          sitting beside the old one. Where an item genuinely needs two
+          documents, the certifier adds the second from their side. */}
+      {canUpload && docs.length === 1 && (
         <div className="flex justify-end">
-          <UploadClientDocument itemId={item.id} pathPrefix={pathPrefix} hasFile={false} label="Add another document" />
-        </div>
-      )}
-      {canUpload && docs.length >= MAX_CLIENT_ITEM_DOCUMENTS && (
-        <div className="text-[11px] text-muted">
-          You can send up to {MAX_CLIENT_ITEM_DOCUMENTS} documents for this item. To correct one, upload a new version of it above; if another document is
-          needed, your certifier can add it.
+          <UploadClientDocument itemId={item.id} pathPrefix={pathPrefix} hasFile documentNo={docs[0].documentNo} label="Upload updated document" />
         </div>
       )}
     </div>

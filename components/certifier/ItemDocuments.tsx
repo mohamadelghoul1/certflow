@@ -1,6 +1,7 @@
 import { signedUrl } from "@/lib/storage";
 import { FileText, History } from "lucide-react";
 import { formatISODate } from "@/lib/business";
+import { removeItemDocumentVersion } from "@/lib/actions/jobs";
 import { currentDocuments, versionsOf } from "@/lib/checklistDocuments";
 import { ItemDocumentDetails } from "@/components/certifier/ItemDocumentDetails";
 import { CertifierDocumentUpload } from "@/components/certifier/CertifierDocumentUpload";
@@ -37,18 +38,31 @@ export async function ItemDocuments({ item, jobId, firmId }: { item: ItemWithFil
                 </summary>
                 <ul className="mt-1.5 space-y-1 border-l-2 border-line pl-3">
                   {versions.map((v) => (
-                    <li key={v.id} className="text-placeholder">
-                      v{v.version} · {formatISODate(v.created_at)} · {v.uploaded_by_role === "client" ? "uploaded by the client" : "uploaded on the client’s behalf"}
+                    <li key={v.id} className="text-placeholder flex items-center gap-2">
+                      <span>
+                        v{v.version} · {formatISODate(v.created_at)} · {v.uploaded_by_role === "client" ? "uploaded by the client" : "uploaded on the client’s behalf"}
+                        {v.is_current ? " · in use" : ""}
+                      </span>
+                      {/* Superseded copies can go; the version in use is
+                          protected — removing it is what "Remove this
+                          document" does. */}
+                      {!v.is_current && (
+                        <form action={removeItemDocumentVersion}>
+                          <input type="hidden" name="file_id" value={v.id} />
+                          <input type="hidden" name="job_id" value={jobId} />
+                          <button className="text-error hover:underline">Delete</button>
+                        </form>
+                      )}
                     </li>
                   ))}
                 </ul>
               </details>
             )}
-            <CertifierDocumentUpload itemId={item.id} jobId={jobId} pathPrefix={pathPrefix} documentNo={doc.documentNo} label="Replace" />
+            <CertifierDocumentUpload itemId={item.id} jobId={jobId} pathPrefix={pathPrefix} documentNo={doc.documentNo} label="Upload new version" />
           </div>
           {/* Only offered once there is more than one: removing the only
               document is what "reopen" already does to the whole item. */}
-          <ItemDocumentDetails doc={doc} itemId={item.id} jobId={jobId} removable={docs.length > 1} />
+          <ItemDocumentDetails doc={doc} itemId={item.id} itemTitle={item.title} jobId={jobId} removable={docs.length > 1} />
         </div>
       ))}
       {/* "new" rather than a number, so this adds a document alongside

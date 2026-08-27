@@ -553,7 +553,12 @@ export async function removeItemDocument(formData: FormData) {
   const jobId = String(formData.get("job_id"));
   const documentNo = Number(formData.get("document_no")) || 1;
 
-  await supabase.from("checklist_item_files").delete().eq("checklist_item_id", itemId).eq("document_no", documentNo);
+  // .select() so a delete that touched no rows is caught — row security
+  // without a delete policy removes nothing and raises nothing, which is
+  // how this button did nothing for weeks without anyone knowing.
+  const { data: deleted, error } = await supabase.from("checklist_item_files").delete().eq("checklist_item_id", itemId).eq("document_no", documentNo).select("id");
+  if (error) throw new Error(error.message);
+  if (!deleted || deleted.length === 0) throw new Error("The document could not be removed. If this keeps happening, migration 0042 hasn't been run.");
 
   // The item's pointer follows the first document, so it has to move when
   // that document is the one that just went.
@@ -566,6 +571,24 @@ export async function removeItemDocument(formData: FormData) {
   const first = (remaining || [])[0];
   await supabase.from("checklist_items").update({ file_path: first?.file_path ?? null }).eq("id", itemId);
 
+  revalidatePath(`/jobs/${jobId}`);
+}
+
+// Deletes one superseded version of a document — the certifier tidying
+// history after a corrected copy arrived, keeping only the one that
+// counts. The current version is protected: removing it is what
+// "Remove this document" does, moving the item's pointer with it.
+export async function removeItemDocumentVersion(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const fileId = String(formData.get("file_id"));
+  const jobId = String(formData.get("job_id"));
+
+  const { data: row } = await supabase.from("checklist_item_files").select("is_current").eq("id", fileId).single();
+  if (!row || row.is_current) return;
+  const { data: deleted, error } = await supabase.from("checklist_item_files").delete().eq("id", fileId).select("id");
+  if (error) throw new Error(error.message);
+  if (!deleted || deleted.length === 0) throw new Error("The version could not be deleted. If this keeps happening, migration 0042 hasn't been run.");
   revalidatePath(`/jobs/${jobId}`);
 }
 
