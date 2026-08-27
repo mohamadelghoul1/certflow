@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { submitClientDocument } from "@/lib/actions/portal";
@@ -34,10 +34,14 @@ export function ItemDropCard({
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // "Uploading…" holds through the page refresh too — see the note in
+  // UploadClientDocument.
+  const [refreshing, startRefresh] = useTransition();
+  const working = busy || refreshing;
   const router = useRouter();
 
   async function handleFile(file: File | undefined | null) {
-    if (!file || busy) return;
+    if (!file || working) return;
     setBusy(true);
     setError("");
     try {
@@ -47,7 +51,7 @@ export function ItemDropCard({
       if (uploadError) throw uploadError;
       const { error: submitError } = await submitClientDocument({ itemId, filePath: path, documentNo, fileName: file.name });
       if (submitError) throw new Error(submitError);
-      router.refresh();
+      startRefresh(() => router.refresh());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
@@ -83,7 +87,7 @@ export function ItemDropCard({
           </span>
         </div>
       )}
-      {busy && <div className="text-xs text-secondary mt-2">Uploading…</div>}
+      {working && <div className="text-sm font-semibold text-secondary mt-2">Uploading…</div>}
       {error && <div className="text-xs text-error mt-2">{error}</div>}
     </div>
   );

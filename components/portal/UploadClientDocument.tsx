@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { submitClientDocument } from "@/lib/actions/portal";
@@ -28,10 +28,15 @@ export function UploadClientDocument({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  // "Uploading…" holds through the page refresh too — dropping it the
+  // moment the server had the file left a gap where the screen still
+  // showed the old state and the upload looked like it went nowhere.
+  const [refreshing, startRefresh] = useTransition();
+  const working = busy || refreshing;
   const router = useRouter();
 
   async function handleFile(file: File | undefined | null) {
-    if (!file || busy) return;
+    if (!file || working) return;
     setBusy(true);
     setError("");
     try {
@@ -43,7 +48,7 @@ export function UploadClientDocument({
       // database, so the certifier gets an email about the new document.
       const { error: submitError } = await submitClientDocument({ itemId, filePath: path, documentNo: documentNo ?? null, fileName: file.name });
       if (submitError) throw new Error(submitError);
-      router.refresh();
+      startRefresh(() => router.refresh());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
@@ -75,7 +80,7 @@ export function UploadClientDocument({
         }`}
       >
         <UploadCloud size={16} />
-        {busy ? "Uploading…" : dragOver ? "Drop to upload" : label || (hasFile ? "Upload a new version" : "Upload document")}
+        {working ? "Uploading…" : dragOver ? "Drop to upload" : label || (hasFile ? "Upload a new version" : "Upload document")}
         <input
           type="file"
           className="hidden"
@@ -83,7 +88,7 @@ export function UploadClientDocument({
             void handleFile(e.target.files?.[0]);
             e.target.value = "";
           }}
-          disabled={busy}
+          disabled={working}
         />
       </label>
       {error && <div className="text-xs text-error mt-1">{error}</div>}
