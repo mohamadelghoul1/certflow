@@ -27,6 +27,7 @@ export async function updateFirm(_prev: ActionState, formData: FormData): Promis
     document_reminders_enabled: formData.get("document_reminders_enabled") === "on",
     document_reminder_days: reminderDays,
     payment_details: String(formData.get("payment_details") || "").trim() || null,
+    card_surcharge_enabled: formData.get("card_surcharge_enabled") === "on",
   };
   const { error } = await supabase.from("firms").update({ ...fields, ...newer }).eq("id", profile.firm_id);
   if (error) {

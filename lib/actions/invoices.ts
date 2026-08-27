@@ -9,6 +9,7 @@ import { sendEmail, emailConfigured } from "@/lib/email";
 import { recordAuditEvent } from "@/lib/audit";
 import { invoiceTotals, invoiceNumberOf, nextInvoiceNumber, formatMoney } from "@/lib/invoices/invoiceLogic";
 import { stripeConfigured, createInvoicePaymentLink } from "@/lib/payments/stripe";
+import { cardSurchargeFor } from "@/lib/payments/surcharge";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Invoice, InvoiceLine } from "@/types/db";
 
@@ -188,9 +189,10 @@ export async function createCardPaymentLink(_prev: InvoiceEmailState, formData: 
   const invoiceId = String(formData.get("invoice_id"));
   if (!stripeConfigured()) return { error: "Card payments aren't connected yet (STRIPE_SECRET_KEY in Vercel)." };
 
-  const [{ data: invoice }, { data: lines }] = await Promise.all([
+  const [{ data: invoice }, { data: lines }, { data: firmRow }] = await Promise.all([
     supabase.from("invoices").select("*").eq("id", invoiceId).eq("firm_id", profile.firm_id).single(),
     supabase.from("invoice_lines").select("*").eq("invoice_id", invoiceId).order("sort_order"),
+    supabase.from("firms").select("card_surcharge_enabled").eq("id", profile.firm_id).maybeSingle(),
   ]);
   if (!invoice) return { error: "Invoice not found." };
   const typed = invoice as Invoice;
@@ -198,21 +200,36 @@ export async function createCardPaymentLink(_prev: InvoiceEmailState, formData: 
   const { total } = invoiceTotals((lines || []) as InvoiceLine[]);
   if (total <= 0) return { error: "Add the fees first — a payment link needs an amount." };
 
+  // The optional surcharge: only while the firm has switched it on, and
+  // never from 1 October 2026, when Australia's ban begins.
+  const wantsSurcharge = (firmRow as { card_surcharge_enabled?: boolean } | null)?.card_surcharge_enabled === true;
+  const surcharged = wantsSurcharge ? cardSurchargeFor(total, todayISO()) : null;
+  const chargeTotal = surcharged ? surcharged.grossTotal : total;
+
   const link = await createInvoicePaymentLink({
     invoiceId,
     invoiceNumber: invoiceNumberOf(typed),
-    reference: typed.reference,
-    totalIncGst: total,
+    reference: surcharged ? `${typed.reference || ""} (incl. ${formatMoney(surcharged.surcharge)} card surcharge)`.trim() : typed.reference,
+    totalIncGst: chargeTotal,
   });
   if ("error" in link) return { error: link.error };
 
   const { error } = await supabase
     .from("invoices")
-    .update({ stripe_payment_link_id: link.linkId, stripe_payment_link_url: link.url, updated_at: new Date().toISOString() })
+    .update({
+      stripe_payment_link_id: link.linkId,
+      stripe_payment_link_url: link.url,
+      card_surcharge: surcharged ? surcharged.surcharge : null,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", invoiceId);
   if (error) return { error: error.code === "PGRST204" || error.code === "42703" ? "Run database update 0035 first (Settings → System check)." : error.message };
   revalidatePath(`/invoices/${invoiceId}`);
-  return { success: "Card payment link created — it will be included when the invoice is emailed." };
+  return {
+    success: surcharged
+      ? `Card payment link created — card payments will total ${formatMoney(surcharged.grossTotal)} (${formatMoney(surcharged.surcharge)} surcharge).`
+      : "Card payment link created — it will be included when the invoice is emailed.",
+  };
 }
 
 export type InvoiceEmailState = { error?: string; success?: string } | undefined;
@@ -253,7 +270,11 @@ export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: F
     `<tr><td style="padding:6px 12px 6px 0;font-weight:bold">Total due</td><td style="padding:6px 0;text-align:right;font-weight:bold">${formatMoney(total)}</td></tr></table>`,
     typed.due_date ? `<p>Payment is due by <strong>${typed.due_date}</strong>.</p>` : "",
     typed.stripe_payment_link_url
-      ? `<p><a href="${typed.stripe_payment_link_url}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">Pay online by card</a></p>`
+      ? `<p><a href="${typed.stripe_payment_link_url}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">Pay online by card</a>${
+          typed.card_surcharge
+            ? `<br/><span style="font-size:12px;color:#64748b">Card payments carry a ${formatMoney(Number(typed.card_surcharge))} processing surcharge (total ${formatMoney(total + Number(typed.card_surcharge))}); paying by bank transfer avoids it.</span>`
+            : ""
+        }</p>`
       : "",
     typed.payment_details ? `<p style="padding:10px 12px;background:#f8fafc;border-radius:6px;white-space:pre-line">${escapeHtml(typed.payment_details)}</p>` : "",
     typed.notes ? `<p>${escapeHtml(typed.notes)}</p>` : "",

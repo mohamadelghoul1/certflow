@@ -142,6 +142,15 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
           <p className="text-[11px] text-muted mt-1">
             Copied onto each new invoice automatically — an already-issued invoice keeps the details it went out with.
           </p>
+          <label className="flex items-center gap-2 text-sm text-muted mt-4">
+            <input type="checkbox" name="card_surcharge_enabled" defaultChecked={firm?.card_surcharge_enabled === true} className="accent-icon" />
+            Add the card-processing cost as a surcharge when a client pays by card
+          </label>
+          <p className="text-[11px] text-muted mt-1">
+            The surcharge equals Stripe&rsquo;s standard fee (1.7% + 30&cent;), shown to the client before they pay; bank transfer stays surcharge-free. Only lawful at your actual card
+            cost — leave this off if Stripe has given you a cheaper negotiated rate. Australia bans card surcharges from 1 October 2026, and CertFlow stops adding it automatically
+            from that date.
+          </p>
         </div>
       </div>
       {state?.error && <div className="text-sm text-error">{state.error}</div>}

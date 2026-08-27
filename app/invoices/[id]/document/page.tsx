@@ -144,6 +144,12 @@ export default async function InvoiceDocumentPage({ params }: { params: Promise<
             {invoice.stripe_payment_link_url && (
               <div className={invoice.payment_details ? "mt-2" : ""}>
                 Pay online by card: <a href={invoice.stripe_payment_link_url} className="text-info underline break-all">{invoice.stripe_payment_link_url}</a>
+                {invoice.card_surcharge ? (
+                  <div className="text-xs text-muted mt-0.5">
+                    Card payments carry a {formatMoney(Number(invoice.card_surcharge))} processing surcharge (total {formatMoney(total + Number(invoice.card_surcharge))}); bank
+                    transfer avoids it.
+                  </div>
+                ) : null}
               </div>
             )}
           </div>

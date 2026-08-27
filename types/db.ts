@@ -21,6 +21,10 @@ export type Firm = {
   document_reminder_days?: number;
   // Bank details printed on invoices. Added by migration 0035.
   payment_details?: string | null;
+  // Pass the card-processing cost to clients who choose card. Added by
+  // migration 0036; the code stops honouring it on 1 October 2026, when
+  // Australia's surcharge ban begins.
+  card_surcharge_enabled?: boolean;
   // The firm's own stamp artwork, placed above the drawn stamp on
   // approved documents. Null keeps the drawn stamp on its own.
   stamp_url: string | null;
@@ -138,6 +142,9 @@ export type Invoice = {
   payment_details?: string | null;
   stripe_payment_link_id?: string | null;
   stripe_payment_link_url?: string | null;
+  // The extra the card link charges over the invoice total. Added by
+  // migration 0036.
+  card_surcharge?: number | null;
   paid_date: string | null;
   created_at: string;
 };

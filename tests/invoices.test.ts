@@ -106,3 +106,36 @@ describe("card payment plumbing", () => {
     assert.equal(verifyStripeSignature(payload, sign(payload, then), secret, then + 5 * 60), true);
   });
 });
+
+// The surcharge is the one number with a statute attached: never more
+// than the actual cost of acceptance, and never after the 1 October
+// 2026 ban.
+import { cardSurchargeFor, STRIPE_RATE, STRIPE_FIXED } from "@/lib/payments/surcharge";
+
+describe("card surcharge", () => {
+  test("nets the firm the invoice total, to within a cent under", () => {
+    const result = cardSurchargeFor(2035.55, "2026-08-26")!;
+    const stripeFee = result.grossTotal * STRIPE_RATE + STRIPE_FIXED;
+    const netted = result.grossTotal - stripeFee;
+    assert.ok(netted <= 2035.55 + 0.01 && netted >= 2035.55 - 0.02, `netted ${netted}`);
+  });
+
+  // Charging above cost is unlawful, so rounding always goes down.
+  test("never exceeds the actual cost of acceptance", () => {
+    for (const total of [50, 330, 1999.99, 2035.55, 12345.67]) {
+      const result = cardSurchargeFor(total, "2026-08-26")!;
+      const cost = result.grossTotal * STRIPE_RATE + STRIPE_FIXED;
+      assert.ok(result.surcharge <= cost + 1e-9, `surcharge ${result.surcharge} above cost ${cost} on ${total}`);
+    }
+  });
+
+  test("stops on the ban date, whatever Settings says", () => {
+    assert.notEqual(cardSurchargeFor(1000, "2026-09-30"), null);
+    assert.equal(cardSurchargeFor(1000, "2026-10-01"), null);
+    assert.equal(cardSurchargeFor(1000, "2027-01-01"), null);
+  });
+
+  test("nothing to surcharge on an empty invoice", () => {
+    assert.equal(cardSurchargeFor(0, "2026-08-26"), null);
+  });
+});
