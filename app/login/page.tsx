@@ -1,12 +1,22 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useSyncExternalStore } from "react";
 import { signInCertifier, type ActionState } from "@/lib/actions/auth";
 import Link from "next/link";
 import { ForgotPassword } from "@/components/ForgotPassword";
 
 export default function CertifierLoginPage() {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(signInCertifier, undefined);
+  // A one-time link that had already been used or had expired sends the
+  // visitor here; saying so beats a silent sign-in page. Read from the
+  // address itself — useSearchParams would force this page to render
+  // per-request for the sake of one flag, and the flag never changes
+  // while the page is open, so there is nothing to subscribe to.
+  const expired = useSyncExternalStore(
+    () => () => {},
+    () => new URLSearchParams(window.location.search).get("link") === "expired",
+    () => false
+  );
 
   return (
     <div className="min-h-screen bg-heading flex items-center justify-center px-6">
@@ -24,6 +34,11 @@ export default function CertifierLoginPage() {
             <label className="block text-xs font-semibold text-placeholder mb-1">Password</label>
             <input name="password" type="password" required className="w-full px-3 py-2 rounded-md bg-heading border border-white/10 text-white text-sm outline-none focus:ring-2 focus:ring-warning/50" />
           </div>
+          {expired && !state?.error && (
+            <div className="text-sm text-warning-text bg-warning-bg border border-warning/50 rounded-md px-3 py-2">
+              That link had already been used or has expired. Ask for a new one below.
+            </div>
+          )}
           {state?.error && <div className="text-sm text-error">{state.error}</div>}
           <button disabled={pending} className="w-full py-2.5 rounded-md bg-warning text-heading font-semibold text-sm hover:bg-warning disabled:opacity-60">
             {pending ? "Signing in…" : "Sign in"}
