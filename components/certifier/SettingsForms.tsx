@@ -269,7 +269,19 @@ export function CertifierList({ certifiers, firmId, signatureUrls, practiceLogoU
 
 function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { certifier: Certifier; firmId: string; signatureUrl?: string; practiceLogoUrl?: string }) {
   const [editing, setEditing] = useState(false);
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(updateCertifier, undefined);
+  // Saving closes the form — pressing Save and having the form simply
+  // sit there read as nothing happening. A failure keeps it open with
+  // the reason shown.
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  async function formAction(fd: FormData) {
+    setPending(true);
+    setError("");
+    const result = await updateCertifier(undefined, fd);
+    setPending(false);
+    if (result?.error) setError(result.error);
+    else setEditing(false);
+  }
 
   if (!editing) {
     return (
@@ -429,9 +441,9 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
         </div>
       </details>
 
-      {state?.error && <div className="text-sm text-error">{state.error}</div>}
+      {error && <div className="text-sm text-error">{error}</div>}
       <div className="flex gap-2">
-        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
+        <button disabled={pending} className="px-3 py-1.5 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
           {pending ? "Saving…" : "Save"}
         </button>
         <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-sm text-muted hover:bg-hover">
