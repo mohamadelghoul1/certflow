@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Download } from "lucide-react";
+import { Download, Lock } from "lucide-react";
 import { displayStatus, unresolvedCount, checklistProgress, formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { ClientItemDocuments } from "@/components/portal/ClientItemDocuments";
@@ -20,8 +20,15 @@ const OUTCOME_META: Record<string, { label: string; style: string }> = {
   passed_subject_to: { label: "Satisfactory (minor issues) subject to documents being provided", style: "bg-warning-bg text-warning-text" },
 };
 
-export default async function PortalJobPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PortalJobPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ stage?: string }>;
+}) {
   const { id } = await params;
+  const { stage: stageParam } = await searchParams;
   const { profile } = await requireProfile("client");
   const supabase = await createClient();
 
@@ -73,8 +80,29 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
     for (const row of withForms || []) formIds.add(row.id);
   }
 
+  const pathwayItems = (pathwayChecklist?.checklist_items as ItemWithAmendments[]) || [];
+  const nocItems = (nocChecklist?.checklist_items as ItemWithAmendments[]) || [];
+  const ocItems = (ocChecklist?.checklist_items as ItemWithAmendments[]) || [];
+
+  // The OC stage only opens once the Notice of Commencement is done —
+  // every NOC item approved. A job whose certifier hasn't put anything on
+  // the NOC checklist has nothing to complete, so it doesn't lock the OC.
+  const nocComplete = nocItems.length > 0 && nocItems.every((i) => i.status === "approved");
+  const ocLocked = nocItems.length > 0 && !nocComplete;
+
+  // A PC/OC-only job has no CDC or CC: its pathway checklist is the PC
+  // appointment paperwork, so the first tab says so.
+  const approvalLabel = job.pathway === "PC_OC" ? "PC Appointment" : pathwayLabel(job.pathway);
+  const stage = stageParam === "noc" || stageParam === "oc" ? stageParam : "approval";
+
+  const tabs: { key: string; label: string; done: boolean; locked?: boolean }[] = [
+    { key: "approval", label: approvalLabel, done: pathwayItems.length > 0 && pathwayItems.every((i) => i.status === "approved") },
+    { key: "noc", label: "PC — Notice of Commencement", done: nocComplete },
+    { key: "oc", label: "Occupation Certificate", done: (ocRecords || []).some((r) => r.sent_to_client), locked: ocLocked },
+  ];
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
         <Link href="/portal" className="text-xs text-placeholder hover:text-primary">
           ← All projects
@@ -85,57 +113,102 @@ export default async function PortalJobPage({ params }: { params: Promise<{ id: 
         </div>
       </div>
 
-      <StageSection
-        title={pathwayLabel(job.pathway)}
-        items={(pathwayChecklist?.checklist_items as ItemWithAmendments[]) || []}
-        jobId={id}
-        firmId={job.firm_id}
-        formIds={formIds}
-      />
+      <div className="flex flex-wrap gap-2">
+        {tabs.map((t) => (
+          <Link
+            key={t.key}
+            href={`/portal/jobs/${id}?stage=${t.key}`}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm font-semibold border ${
+              stage === t.key ? "bg-primary text-white border-primary" : "bg-white text-primary border-line hover:border-primary"
+            }`}
+          >
+            {t.locked && <Lock size={13} />}
+            {t.label}
+            {t.done && !t.locked && <span className={`w-2 h-2 rounded-full ${stage === t.key ? "bg-white" : "bg-success"}`} />}
+          </Link>
+        ))}
+      </div>
 
-      {job.pathway_sent_to_client && (
-        <div className="bg-white rounded-lg border border-line p-5">
-          <div className="font-bold text-primary mb-1">{pathwayLabel(job.pathway)} certificate issued</div>
-          <div className="text-xs text-placeholder mb-3">Issued {formatISODate(job.pathway_generated_date)}</div>
-          {/* The certifier's own uploaded copy wins when there is one — it's
-              the version they actually edited and signed off. Falling back to
-              the generated certificate means a released certificate is always
-              downloadable: previously, forgetting to upload left the client
-              with nothing but "not yet uploaded", even though the certificate
-              had been issued and sent. */}
-          {job.pathway_approval_uploaded && pathwayApprovalUrl ? (
-            <a href={pathwayApprovalUrl} target="_blank" rel="noreferrer" className="text-sm text-primary font-semibold hover:underline">
-              Download certificate
-            </a>
-          ) : (
-            <a href={`/api/portal/certificate/pathway/${job.id}/word`} className="text-sm text-primary font-semibold hover:underline">
-              Download certificate
-            </a>
+      {stage === "approval" && (
+        <div className="space-y-6">
+          <StageSection title={`${approvalLabel} — checklist`} items={pathwayItems} jobId={id} firmId={job.firm_id} formIds={formIds} />
+          {pathwayItems.length === 0 && !job.pathway_sent_to_client && <EmptyStage label={approvalLabel} />}
+
+          {job.pathway_sent_to_client && (
+            <div className="bg-white rounded-lg border border-line p-5">
+              <div className="font-bold text-primary mb-1">{pathwayLabel(job.pathway)} certificate issued</div>
+              <div className="text-xs text-placeholder mb-3">Issued {formatISODate(job.pathway_generated_date)}</div>
+              {/* The certifier's own uploaded copy wins when there is one — it's
+                  the version they actually edited and signed off. Falling back to
+                  the generated certificate means a released certificate is always
+                  downloadable: previously, forgetting to upload left the client
+                  with nothing but "not yet uploaded", even though the certificate
+                  had been issued and sent. */}
+              {job.pathway_approval_uploaded && pathwayApprovalUrl ? (
+                <a href={pathwayApprovalUrl} target="_blank" rel="noreferrer" className="text-sm text-primary font-semibold hover:underline">
+                  Download certificate
+                </a>
+              ) : (
+                <a href={`/api/portal/certificate/pathway/${job.id}/word`} className="text-sm text-primary font-semibold hover:underline">
+                  Download certificate
+                </a>
+              )}
+            </div>
           )}
+
+          {(modifications || []).map((m) => (
+            <StageSection
+              key={m.id}
+              title={`Modification${m.reason ? ` — ${m.reason}` : ""}`}
+              items={(modChecklists.get(m.id)?.checklist_items as ItemWithAmendments[]) || []}
+              jobId={id}
+              firmId={job.firm_id}
+              formIds={formIds}
+              footer={m.generated ? `Issued ${formatISODate(m.generated_date)}` : undefined}
+            />
+          ))}
         </div>
       )}
 
-      {(modifications || []).map((m) => (
-        <StageSection
-          key={m.id}
-          title={`Modification${m.reason ? ` — ${m.reason}` : ""}`}
-          items={(modChecklists.get(m.id)?.checklist_items as ItemWithAmendments[]) || []}
-          jobId={id}
-          firmId={job.firm_id}
-          formIds={formIds}
-          footer={m.generated ? `Issued ${formatISODate(m.generated_date)}` : undefined}
-        />
-      ))}
+      {stage === "noc" && (
+        <div className="space-y-6">
+          <StageSection title="Notice of Commencement (NOC) — checklist" items={nocItems} jobId={id} firmId={job.firm_id} formIds={formIds} />
+          {nocItems.length === 0 && <EmptyStage label="Notice of Commencement" />}
 
-      <StageSection title="Notice of Commencement (NOC)" items={(nocChecklist?.checklist_items as ItemWithAmendments[]) || []} jobId={id} firmId={job.firm_id} formIds={formIds} />
+          <InspectionsSection jobId={id} firmId={job.firm_id} pathwayGenerated={job.pathway_generated} inspections={(inspections as (Inspection & { defects: Defect[] })[]) || []} certifiers={certifiers || []} />
+        </div>
+      )}
 
-      <InspectionsSection jobId={id} firmId={job.firm_id} pathwayGenerated={job.pathway_generated} inspections={(inspections as (Inspection & { defects: Defect[] })[]) || []} certifiers={certifiers || []} />
+      {stage === "oc" &&
+        (ocLocked ? (
+          <div className="bg-white rounded-lg border border-line p-8 text-center">
+            <Lock className="mx-auto text-placeholder" size={28} />
+            <div className="font-bold text-primary mt-3">Occupation Certificate stage is locked</div>
+            <div className="text-sm text-muted mt-1 max-w-md mx-auto">
+              This stage opens once every item on the Notice of Commencement checklist has been approved ({checklistProgress(nocItems)} approved so far).
+            </div>
+            <Link href={`/portal/jobs/${id}?stage=noc`} className="inline-block mt-4 text-sm font-semibold text-primary hover:underline">
+              Go to the Notice of Commencement →
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <StageSection title="Occupation Certificate — checklist" items={ocItems} jobId={id} firmId={job.firm_id} formIds={formIds} />
+            {ocItems.length === 0 && (ocRecords || []).filter((r) => r.sent_to_client).length === 0 && <EmptyStage label="Occupation Certificate" />}
 
-      <StageSection title="Occupation Certificate — checklist" items={(ocChecklist?.checklist_items as ItemWithAmendments[]) || []} jobId={id} firmId={job.firm_id} formIds={formIds} />
-
-      <OcSection ocRecords={(ocRecords || []).filter((r) => r.sent_to_client)} />
+            <OcSection ocRecords={(ocRecords || []).filter((r) => r.sent_to_client)} />
+          </div>
+        ))}
 
       <div className="text-[11px] text-placeholder text-center">Signed in as {profile.email}</div>
+    </div>
+  );
+}
+
+function EmptyStage({ label }: { label: string }) {
+  return (
+    <div className="bg-white rounded-lg border border-line p-6 text-sm text-muted text-center">
+      Nothing is needed from you for the {label} stage yet — your certifier will add items here when they are.
     </div>
   );
 }
