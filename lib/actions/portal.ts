@@ -3,7 +3,8 @@
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { flushJobUploads } from "@/lib/uploadDigest";
+import { flushJobUploads, digestEmail } from "@/lib/uploadDigest";
+import { notifyJobCertifier } from "@/lib/email";
 
 // A client sending a document in from the portal. The file itself is
 // uploaded straight from their browser to storage; this records it
@@ -53,8 +54,19 @@ export async function submitClientDocument({
         // Recorded, then batched: the first document of a burst emails the
         // certifier straight away; anything more inside the quiet window
         // rides along in the next summary instead of its own email.
-        await admin.from("portal_uploads").insert({ job_id: jobId, item_title: item?.title || null, file_name: fileName });
-        await flushJobUploads(admin, jobId, { requireSettled: false });
+        const { error: recordError } = await admin
+          .from("portal_uploads")
+          .insert({ job_id: jobId, item_title: item?.title || null, file_name: fileName });
+        if (recordError) {
+          // The batching table isn't there (migration not run yet) or the
+          // insert failed some other way. Losing the batching is fine;
+          // losing the notification is not — email directly instead.
+          const { data: job } = await admin.from("jobs").select("address").eq("id", jobId).single();
+          const { subject, html } = digestEmail([{ item_title: item?.title || null, file_name: fileName }], job?.address ?? null);
+          await notifyJobCertifier(admin, jobId, subject, html);
+        } else {
+          await flushJobUploads(admin, jobId, { requireSettled: false });
+        }
       }
     } catch (err) {
       // A failed notification must not look like a failed upload — the
