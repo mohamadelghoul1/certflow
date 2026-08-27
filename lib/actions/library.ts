@@ -28,6 +28,28 @@ export async function addLibraryItem(formData: FormData) {
   revalidatePath("/settings");
 }
 
+// Writes the order the certifier dragged the documents into. The ids
+// come from the browser, so each write stays scoped to the firm — an id
+// that isn't theirs simply updates nothing.
+export async function reorderLibraryItems(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  let ids: string[] = [];
+  try {
+    ids = JSON.parse(String(formData.get("ids") || "[]"));
+  } catch {
+    return;
+  }
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 200) return;
+
+  await Promise.all(
+    ids.map((id, position) =>
+      supabase.from("document_library_items").update({ sort_order: position }).eq("id", String(id)).eq("firm_id", profile.firm_id)
+    )
+  );
+  revalidatePath("/settings");
+}
+
 export async function removeLibraryItem(formData: FormData) {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
