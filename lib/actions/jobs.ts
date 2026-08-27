@@ -321,6 +321,11 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
     : undefined;
 
   const clientId = formData.has("client_id") ? String(formData.get("client_id") || "") || null : undefined;
+  // Only written when the form carried the field — an older tab or a
+  // caller without the dropdown must not silently unassign anyone.
+  const assignedCertifierId = formData.has("assigned_certifier_id")
+    ? String(formData.get("assigned_certifier_id") || "") || null
+    : undefined;
   const address = String(formData.get("address") || "");
   const description = String(formData.get("description") || "");
 
@@ -333,6 +338,7 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
       description,
       ...(criticalStageInspections ? { critical_stage_inspections: criticalStageInspections } : {}),
       ...(clientId !== undefined ? { client_id: clientId } : {}),
+      ...(assignedCertifierId !== undefined ? { assigned_certifier_id: assignedCertifierId } : {}),
     })
     .eq("id", jobId)
     .eq("firm_id", profile.firm_id);

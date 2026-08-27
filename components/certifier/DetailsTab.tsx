@@ -25,7 +25,7 @@ import { AddressLookupField } from "@/components/certifier/AddressLookupField";
 import { CriticalStageInspections } from "@/components/certifier/CriticalStageInspections";
 import { DeleteJobButton } from "@/components/certifier/DeleteJobButton";
 import { useSelectTab } from "@/components/certifier/JobTabs";
-import type { Job, ClientContact } from "@/types/db";
+import type { Job, ClientContact, Certifier } from "@/types/db";
 import { DateField } from "@/components/DateField";
 import { portalRefPlaceholder, portalRefKindFor } from "@/lib/business";
 import { PriorApprovalFields } from "@/components/certifier/PriorApprovalFields";
@@ -143,11 +143,13 @@ export function DetailsTab({
   clients,
   sharedClients,
   contractors = [],
+  certifiers = [],
 }: {
   job: Job;
   clients: ClientContact[];
   sharedClients: { id: string; name: string; type: string }[];
   contractors?: Contractor[];
+  certifiers?: Certifier[];
 }) {
   const d = job.details || {};
   const detailsFormId = `job-details-${job.id}`;
@@ -287,6 +289,22 @@ export function DetailsTab({
             onZoningChange={setZoning}
             addressLabel="Development street address"
           />
+          {certifiers.length > 0 && (
+            <div className="mt-4 sm:w-80">
+              <label className={labelCls}>Assigned certifier</label>
+              <select name="assigned_certifier_id" defaultValue={job.assigned_certifier_id || ""} className={inputCls}>
+                <option value="">— Not assigned —</option>
+                {certifiers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-muted mt-1">
+                Signs this project&rsquo;s certificates and receives its notifications — client uploads, inspection bookings.
+              </p>
+            </div>
+          )}
         </Section>
 
         <Section title="Company / primary contact">

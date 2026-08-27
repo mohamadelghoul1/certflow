@@ -188,7 +188,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               : false,
         }))}
         content={{
-          details: <DetailsTab job={typedJob} clients={clients || []} sharedClients={sharedClients} contractors={contractors} />,
+          details: <DetailsTab job={typedJob} clients={clients || []} sharedClients={sharedClients} contractors={contractors} certifiers={certifiers || []} />,
           pathway: pathwayChecklist ? (
             <div className="space-y-6">
               <CertificatesPanel
