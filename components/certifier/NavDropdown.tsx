@@ -73,7 +73,11 @@ export function NavDropdown({
       <button
         ref={buttonRef}
         onClick={toggleOpen}
-        className={`flex items-center gap-1 py-4 px-3 text-sm font-medium whitespace-nowrap shrink-0 ${open ? "text-white" : "text-placeholder hover:text-white"}`}
+        // Dressed exactly like NavLink, so the menu reads as one row of
+        // equals rather than two kinds of item.
+        className={`flex items-center gap-1 py-4 px-3 text-sm font-medium whitespace-nowrap shrink-0 border-b-2 ${
+          open ? "text-white border-icon" : "text-white/80 border-transparent hover:text-white hover:border-icon"
+        }`}
       >
         {label}
         <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
