@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Download, Paperclip, GripVertical } from "lucide-react";
 import { addLibraryItem, removeLibraryItem, reorderLibraryItems, copyLibraryItem, updateLibraryItem, setLibraryTemplate, clearLibraryTemplate } from "@/lib/actions/library";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
@@ -40,6 +40,26 @@ export function DocumentLibrarySection({
   const [dragId, setDragId] = useState<string | null>(null);
   const [orderIds, setOrderIds] = useState<string[] | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const editFormRef = useRef<HTMLFormElement>(null);
+  // A press outside fires both the pointer watcher and the blur handler;
+  // one save, not two.
+  const editSubmittedRef = useRef(false);
+
+  // Any press outside the open edit boxes saves them — blur alone misses
+  // taps on empty space, which move no focus on a touch screen.
+  useEffect(() => {
+    if (!editingId) return;
+    editSubmittedRef.current = false;
+    function onPointerDown(e: PointerEvent) {
+      if (editSubmittedRef.current) return;
+      if (editFormRef.current && !editFormRef.current.contains(e.target as Node)) {
+        editSubmittedRef.current = true;
+        editFormRef.current.requestSubmit();
+      }
+    }
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [editingId]);
 
   const grouped = active ? items.filter((i) => i.pathway === active) : [];
   // An item added after a drag isn't in the dragged order yet — it joins
@@ -132,6 +152,7 @@ export function DocumentLibrarySection({
                     </span>
                     {editingId === item.id ? (
                       <form
+                        ref={editFormRef}
                         action={async (fd) => {
                           await updateLibraryItem(fd);
                           setEditingId(null);
@@ -142,7 +163,11 @@ export function DocumentLibrarySection({
                         // because it sits inside the form and so never
                         // counts as leaving it.
                         onBlur={(e) => {
-                          if (!e.currentTarget.contains(e.relatedTarget as Node)) e.currentTarget.requestSubmit();
+                          if (editSubmittedRef.current) return;
+                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                            editSubmittedRef.current = true;
+                            e.currentTarget.requestSubmit();
+                          }
                         }}
                         className="flex-1 min-w-0 space-y-1.5"
                       >

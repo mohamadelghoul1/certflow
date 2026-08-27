@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
 import { updateItemDetails } from "@/lib/actions/jobs";
 
@@ -24,8 +24,14 @@ export function EditableChecklistItemHeader({
   const [displayDescription, setDisplayDescription] = useState(description);
   const [draftTitle, setDraftTitle] = useState(title);
   const [draftDescription, setDraftDescription] = useState(description);
+  const formRef = useRef<HTMLFormElement>(null);
+  // A press outside fires both the pointer watcher and the blur handler;
+  // the item must be saved once, not twice.
+  const committedRef = useRef(false);
 
   function commit() {
+    if (committedRef.current) return;
+    committedRef.current = true;
     const trimmed = draftTitle.trim();
     setEditing(false);
     if (!trimmed) return;
@@ -45,6 +51,19 @@ export function EditableChecklistItemHeader({
     if (!e.currentTarget.contains(e.relatedTarget as Node)) commit();
   }
 
+  // Blur alone is not enough: on a touch screen, tapping empty space
+  // moves no focus and so blurs nothing. Watching the pointer itself —
+  // any press outside the boxes commits — makes "click anywhere to save"
+  // true on a phone as well as a desktop.
+  useEffect(() => {
+    if (!editing) return;
+    function onPointerDown(e: PointerEvent) {
+      if (formRef.current && !formRef.current.contains(e.target as Node)) commit();
+    }
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  });
+
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -57,6 +76,7 @@ export function EditableChecklistItemHeader({
               onClick={() => {
                 setDraftTitle(displayTitle);
                 setDraftDescription(displayDescription);
+                committedRef.current = false;
                 setEditing(true);
               }}
               aria-label="Edit document name/description"
@@ -73,6 +93,7 @@ export function EditableChecklistItemHeader({
 
       {editing && (
         <form
+          ref={formRef}
           onSubmit={(e) => {
             e.preventDefault();
             commit();
