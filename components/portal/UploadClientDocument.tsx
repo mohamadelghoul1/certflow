@@ -58,11 +58,15 @@ export function UploadClientDocument({
       <label
         onDragOver={(e) => {
           e.preventDefault();
+          // Stopped here so the surrounding ItemDropCard doesn't light up
+          // and catch the same drop — one file, one upload.
+          e.stopPropagation();
           setDragOver(true);
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => {
           e.preventDefault();
+          e.stopPropagation();
           setDragOver(false);
           void handleFile(e.dataTransfer.files?.[0]);
         }}

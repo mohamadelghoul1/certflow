@@ -7,6 +7,8 @@ import Link from "next/link";
 import { Download } from "lucide-react";
 import { StageTabs } from "@/components/portal/StageTabs";
 import { displayStatus, unresolvedCount, checklistProgress, formatISODate } from "@/lib/business";
+import { currentDocuments } from "@/lib/checklistDocuments";
+import { ItemDropCard } from "@/components/portal/ItemDropCard";
 import { signedUrl } from "@/lib/storage";
 import { ClientItemDocuments } from "@/components/portal/ClientItemDocuments";
 import { BookInspectionForm } from "@/components/portal/BookInspectionForm";
@@ -237,8 +239,21 @@ async function StageSection({
               : status.dot.includes("blue")
                 ? "border-info/40 bg-info-bg"
                 : "border-line bg-white";
+          // Where a file dropped on the whole card should land: the first
+          // document when none exists, a new version when there is exactly
+          // one, nowhere when there are two (the per-document buttons
+          // disambiguate; the card itself won't guess).
+          const docs = currentDocuments(item);
+          const dropNo = docs.length === 0 ? 1 : docs.length === 1 ? docs[0].documentNo : null;
           return (
-            <div key={item.id} className={`border rounded-md p-4 ${tone}`}>
+            <ItemDropCard
+              key={item.id}
+              itemId={item.id}
+              pathPrefix={`${firmId}/${jobId}/checklist/${item.id}`}
+              documentNo={dropNo}
+              enabled={item.status !== "approved" && dropNo !== null}
+              label={docs.length === 0 ? "Drop to upload" : "Drop to upload a new version"}
+              className={`border rounded-md p-4 ${tone}`}>
               <div className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${status.dot}`} />
                 <span className="text-sm font-semibold text-primary">{item.title}</span>
@@ -275,7 +290,7 @@ async function StageSection({
                   on it, each with its own history, so a client can check
                   what the certifier is holding before sending more. */}
               <ClientItemDocuments item={item} jobId={jobId} firmId={firmId} canUpload={item.status !== "approved"} />
-            </div>
+            </ItemDropCard>
           );
         })}
       </div>
