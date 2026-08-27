@@ -15,7 +15,7 @@ export default function ClientLoginPage() {
           <div className="font-serif text-4xl font-medium text-white">CertFlow</div>
           <div className="mt-2 text-[12px] tracking-[0.2em] uppercase text-icon-300">Client portal sign in</div>
         </div>
-        <form action={formAction} className="bg-white rounded-lg p-6 space-y-4 shadow-xl">
+        <form action={formAction} className="bg-white rounded-t-lg p-6 space-y-4 shadow-xl">
           <div>
             <label className="block text-xs font-semibold text-placeholder mb-1">Email</label>
             <input name="email" type="email" required className="w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon" />
@@ -28,8 +28,10 @@ export default function ClientLoginPage() {
           <button disabled={pending} className="w-full py-2.5 rounded-md bg-primary text-white font-semibold text-sm hover:bg-primary-700 disabled:opacity-60">
             {pending ? "Signing in…" : "Sign in"}
           </button>
-          <ForgotPassword kind="client" />
         </form>
+        <div className="bg-white rounded-b-lg px-6 pb-5 shadow-xl">
+          <ForgotPassword kind="client" />
+        </div>
         <div className="text-center mt-4">
           <Link href="/login" className="text-xs text-icon-300 hover:text-white">
             Certifier? Sign in here instead →

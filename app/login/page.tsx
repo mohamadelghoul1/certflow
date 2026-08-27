@@ -28,8 +28,10 @@ export default function CertifierLoginPage() {
           <button disabled={pending} className="w-full py-2.5 rounded-md bg-warning text-heading font-semibold text-sm hover:bg-warning disabled:opacity-60">
             {pending ? "Signing in…" : "Sign in"}
           </button>
-          <ForgotPassword kind="certifier" />
         </form>
+        <div className="bg-white rounded-b-lg px-6 pb-5 shadow-xl">
+          <ForgotPassword kind="certifier" />
+        </div>
         <div className="text-center mt-4">
           <Link href="/client-login" className="text-xs text-placeholder hover:text-warning">
             Client? Sign in here instead →
