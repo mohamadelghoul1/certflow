@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { signInCertifier, type ActionState } from "@/lib/actions/auth";
 import Link from "next/link";
+import { ForgotPassword } from "@/components/ForgotPassword";
 
 export default function CertifierLoginPage() {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(signInCertifier, undefined);
@@ -27,6 +28,7 @@ export default function CertifierLoginPage() {
           <button disabled={pending} className="w-full py-2.5 rounded-md bg-warning text-heading font-semibold text-sm hover:bg-warning disabled:opacity-60">
             {pending ? "Signing in…" : "Sign in"}
           </button>
+          <ForgotPassword kind="certifier" />
         </form>
         <div className="text-center mt-4">
           <Link href="/client-login" className="text-xs text-placeholder hover:text-warning">

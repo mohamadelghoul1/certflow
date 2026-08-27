@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { signInClient, type ActionState } from "@/lib/actions/auth";
 import Link from "next/link";
+import { ForgotPassword } from "@/components/ForgotPassword";
 
 export default function ClientLoginPage() {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(signInClient, undefined);
@@ -27,6 +28,7 @@ export default function ClientLoginPage() {
           <button disabled={pending} className="w-full py-2.5 rounded-md bg-primary text-white font-semibold text-sm hover:bg-primary-700 disabled:opacity-60">
             {pending ? "Signing in…" : "Sign in"}
           </button>
+          <ForgotPassword kind="client" />
         </form>
         <div className="text-center mt-4">
           <Link href="/login" className="text-xs text-icon-300 hover:text-white">
