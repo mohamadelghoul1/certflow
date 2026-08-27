@@ -23,6 +23,7 @@ import {
 } from "@/lib/actions/settings";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Firm, Certifier, ClientContact } from "@/types/db";
+import type { InviteState } from "@/lib/actions/settings";
 import { CLIENT_TYPES } from "@/lib/constants";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { DateField } from "@/components/DateField";
@@ -435,6 +436,24 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
   );
 }
 
+// The invite with its outcome shown — an email that never went out must
+// not look like one that did.
+function InviteClientButton({ clientId, hasLogin }: { clientId: string; hasLogin: boolean }) {
+  const [state, action, pending] = useActionState<InviteState, FormData>(inviteClient, undefined);
+  return (
+    <span className="inline-flex items-center gap-2">
+      <form action={action}>
+        <input type="hidden" name="client_id" value={clientId} />
+        <button disabled={pending} className="text-xs text-primary hover:underline disabled:opacity-50">
+          {pending ? "Sending…" : hasLogin ? "Resend invite" : "Invite to portal"}
+        </button>
+      </form>
+      {state?.error && <span className="text-xs text-error max-w-56">{state.error}</span>}
+      {state?.success && <span className="text-xs text-success">{state.success}</span>}
+    </span>
+  );
+}
+
 export function ClientList({ clients }: { clients: ClientContact[] }) {
   const [adding, setAdding] = useState(false);
   const [addState, addAction, addPending] = useActionState<ActionState, FormData>(addClient, undefined);
@@ -508,10 +527,7 @@ function ClientRow({ client }: { client: ClientContact }) {
         </div>
         <div className="flex items-center gap-3">
           {client.email && (
-            <form action={inviteClient}>
-              <input type="hidden" name="client_id" value={client.id} />
-              <button className="text-xs text-primary hover:underline">{client.user_id ? "Resend invite" : "Invite to portal"}</button>
-            </form>
+            <InviteClientButton clientId={client.id} hasLogin={!!client.user_id} />
           )}
           <button onClick={() => setEditing(true)} className="text-xs text-primary hover:underline">
             Edit

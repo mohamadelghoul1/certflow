@@ -4,7 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { sendEmail, emailConfigured } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth";
+
+export type InviteState = { error?: string; success?: string } | undefined;
 
 export async function updateFirm(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
@@ -267,19 +270,55 @@ export async function removeClient(formData: FormData) {
   revalidatePath("/settings");
 }
 
-export async function inviteClient(formData: FormData) {
+// Invites used to ride Supabase's built-in mailer, which is capped at a
+// couple of emails an hour and swallows its failures — an invite that
+// never arrived looked exactly like one that did. The link is now
+// minted directly and sent through the same email service as everything
+// else, and every outcome is said out loud.
+export async function inviteClient(_prev: InviteState, formData: FormData): Promise<InviteState> {
   const { profile } = await requireProfile("certifier");
   const clientId = String(formData.get("client_id"));
 
   const supabase = await createClient();
-  const { data: client } = await supabase.from("clients").select("email").eq("id", clientId).eq("firm_id", profile.firm_id).single();
-  if (!client?.email) return;
+  const { data: client } = await supabase.from("clients").select("name, email, user_id").eq("id", clientId).eq("firm_id", profile.firm_id).single();
+  if (!client?.email) return { error: "This contact has no email address — add one first." };
+  if (!emailConfigured()) return { error: "Email isn't switched on for this deployment (RESEND_API_KEY)." };
 
   const admin = createAdminClient();
   const site = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  await admin.auth.admin.inviteUserByEmail(client.email, {
-    data: { firm_id: profile.firm_id, client_id: clientId },
-    redirectTo: `${site}/auth/callback?next=/portal/set-password`,
-  });
+  const redirectTo = `${site}/auth/callback?next=/portal/set-password`;
+
+  // A fresh contact gets an invite; one who already holds a login gets a
+  // set-a-new-password link — re-inviting an existing user is the exact
+  // call Supabase silently refuses.
+  const { data: linkData, error } = await admin.auth.admin.generateLink(
+    client.user_id
+      ? { type: "recovery", email: client.email, options: { redirectTo } }
+      : { type: "invite", email: client.email, options: { data: { firm_id: profile.firm_id, client_id: clientId }, redirectTo } }
+  );
+  if (error || !linkData?.properties?.action_link) {
+    if (/already.*registered|already.*exists/i.test(error?.message || "")) {
+      return {
+        error: `${client.email} already has a CertFlow login. If that's your own certifier email, use a different address for the client — one login can't be both certifier and client.`,
+      };
+    }
+    return { error: error?.message || "The invite link could not be created." };
+  }
+
+  const result = await sendEmail(
+    client.email,
+    "Your CertFlow client portal access",
+    [
+      `<p>Hi ${client.name || "there"},</p>`,
+      `<p>You've been given access to the client portal for your project with us. Set your password to get started:</p>`,
+      `<p><a href="${linkData.properties.action_link}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">${
+        client.user_id ? "Set a new password" : "Set up my portal access"
+      }</a></p>`,
+      `<p>From the portal you can see your project's progress, upload requested documents, and download what we send you.</p>`,
+    ].join("")
+  );
+  if (!result.sent) return { error: result.error || "The email could not be sent." };
+
   revalidatePath("/settings");
+  return { success: `Invite emailed to ${client.email}.` };
 }
