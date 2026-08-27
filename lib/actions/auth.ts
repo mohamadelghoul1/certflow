@@ -73,7 +73,7 @@ export async function sendPasswordReset(_prev: ResetState, formData: FormData): 
   if (!emailConfigured()) return { error: "Email isn't switched on for this deployment yet." };
 
   const site = await siteUrl();
-  const next = kind === "certifier" ? "/login" : "/portal/set-password";
+  const next = kind === "certifier" ? "/set-password" : "/portal/set-password";
   const admin = createAdminClient();
   const { data, error } = await admin.auth.admin.generateLink({
     type: "recovery",
@@ -99,6 +99,24 @@ export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/");
+}
+
+// A certifier setting a new password after following a reset link. The
+// client's version accepts an invite on the way through; a certifier
+// has no invite to accept, so this is the plain half.
+export async function setCertifierPassword(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const password = String(formData.get("password") || "");
+  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "That link has expired. Ask for a new one from the sign-in page." };
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: error.message };
+  redirect("/dashboard");
 }
 
 export async function setPasswordAndAcceptInvite(_prev: ActionState, formData: FormData): Promise<ActionState> {
