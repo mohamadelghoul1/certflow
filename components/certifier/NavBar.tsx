@@ -31,6 +31,13 @@ export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmN
           createLabel="New project"
           itemHrefBase="/jobs"
           itemHrefSuffix="?tab=pathway"
+          extraLinks={[
+            { href: "/jobs?pathway=CDC", label: "CDC projects" },
+            { href: "/jobs?pathway=CC", label: "CC projects" },
+            { href: "/jobs?pathway=PC_OC", label: "PC / OC projects" },
+            { href: "/jobs?issued=issued", label: "Issued certificates" },
+            { href: "/jobs?issued=not-issued", label: "Not issued yet" },
+          ]}
         />
         <NavDropdown
           label="Quotes"

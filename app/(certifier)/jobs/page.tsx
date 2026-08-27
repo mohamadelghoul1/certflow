@@ -2,14 +2,15 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { excludingDeleted } from "@/lib/softDelete";
 import { JobsList } from "@/components/certifier/JobsList";
-import { stageComplete, checklistProgress, unresolvedCount, inspectionsComplete, inspectionProgress, issuesCertificate, pathwayLabel } from "@/lib/business";
+import { stageComplete, checklistProgress, unresolvedCount, inspectionsComplete, inspectionProgress, issuesCertificate, pathwayLabel, formatISODate } from "@/lib/business";
 import type { Job } from "@/types/db";
 
 type ChecklistItemRow = { status: "requested" | "submitted" | "approved"; amendments: { resolved: boolean }[] };
 type ChecklistRow = { kind: string; checklist_items: ChecklistItemRow[] };
 type JobQueryRow = Job & { checklists: ChecklistRow[]; inspections: { outcome: string }[]; oc_records: { id: string }[] };
 
-export default async function JobsListPage() {
+export default async function JobsListPage({ searchParams }: { searchParams: Promise<{ pathway?: string; issued?: string }> }) {
+  const params = await searchParams;
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const [{ data: rawJobs }, { data: certifiers }] = await Promise.all([
@@ -17,7 +18,7 @@ export default async function JobsListPage() {
       const query = supabase
         .from("jobs")
         .select(
-          "id, address, description, pathway, status, assigned_certifier_id, details, pathway_generated, checklists(kind, checklist_items(status, amendments(resolved))), inspections(outcome), oc_records(id)"
+          "id, address, description, pathway, status, assigned_certifier_id, details, pathway_generated, pathway_generated_date, checklists(kind, checklist_items(status, amendments(resolved))), inspections(outcome), oc_records(id)"
         )
         .eq("firm_id", profile.firm_id);
       return (live ? query.is("deleted_at", null) : query).order("created_at", { ascending: false });
@@ -61,7 +62,12 @@ export default async function JobsListPage() {
       status: j.status,
       needsAttention,
       certifierId: j.assigned_certifier_id,
+      pathway: j.pathway,
       pathwayLabel: pathwayLabel(j.pathway),
+      // The certificate itself, issued — shown and filtered on directly,
+      // apart from the checklist's own progress.
+      certIssued: issuesCertificate(j.pathway) && !!j.pathway_generated,
+      certIssuedDate: issuesCertificate(j.pathway) && j.pathway_generated ? formatISODate(j.pathway_generated_date || "") : "",
       pathwayDone: pathwayChecklistDone && pathwayIssued,
       pathwayToIssue: pathwayChecklistDone && !pathwayIssued,
       pathwayProgress: checklistProgress(pathwayItems),
@@ -78,7 +84,7 @@ export default async function JobsListPage() {
   return (
     <div>
       <h1 className="text-xl font-bold text-primary mb-6">Projects</h1>
-      <JobsList jobs={jobs} certifiers={certifiers || []} deletedCount={deletedCount || 0} />
+      <JobsList key={`${params.pathway || ""}-${params.issued || ""}`} jobs={jobs} certifiers={certifiers || []} deletedCount={deletedCount || 0} initialPathway={params.pathway || ""} initialIssued={params.issued || ""} />
     </div>
   );
 }

@@ -12,7 +12,11 @@ type JobRow = {
   status: string;
   needsAttention: boolean;
   certifierId: string | null;
+  pathway: string;
   pathwayLabel: string;
+  // The CDC/CC itself, issued — independent of the checklist's state.
+  certIssued: boolean;
+  certIssuedDate: string;
   pathwayDone: boolean;
   // Every document approved, but the certificate not issued yet.
   pathwayToIssue: boolean;
@@ -48,9 +52,25 @@ function StagePill({ label, done, toIssue, progress }: { label: string; done: bo
   );
 }
 
-export function JobsList({ jobs, certifiers, deletedCount = 0 }: { jobs: JobRow[]; certifiers: { id: string; name: string }[]; deletedCount?: number }) {
+export function JobsList({
+  jobs,
+  certifiers,
+  deletedCount = 0,
+  initialPathway = "",
+  initialIssued = "",
+}: {
+  jobs: JobRow[];
+  certifiers: { id: string; name: string }[];
+  deletedCount?: number;
+  initialPathway?: string;
+  initialIssued?: string;
+}) {
   const [query, setQuery] = useState("");
   const [certifierFilter, setCertifierFilter] = useState("");
+  // Seeded from the address bar so the Projects menu can link straight
+  // to "all CDC projects" or "issued certificates".
+  const [pathwayFilter, setPathwayFilter] = useState(initialPathway);
+  const [issuedFilter, setIssuedFilter] = useState(initialIssued);
 
   const filtered = jobs.filter((j) => {
     if (query) {
@@ -58,6 +78,9 @@ export function JobsList({ jobs, certifiers, deletedCount = 0 }: { jobs: JobRow[
       if (!haystack.includes(query.toLowerCase())) return false;
     }
     if (certifierFilter && j.certifierId !== certifierFilter) return false;
+    if (pathwayFilter && j.pathway !== pathwayFilter) return false;
+    if (issuedFilter === "issued" && !j.certIssued) return false;
+    if (issuedFilter === "not-issued" && j.certIssued) return false;
     return true;
   });
 
@@ -74,6 +97,25 @@ export function JobsList({ jobs, certifiers, deletedCount = 0 }: { jobs: JobRow[
           />
         </div>
         <select
+          value={pathwayFilter}
+          onChange={(e) => setPathwayFilter(e.target.value)}
+          className="px-3 py-2 rounded-md border border-line bg-white text-sm text-muted outline-none focus:ring-2 focus:ring-icon"
+        >
+          <option value="">Service: All</option>
+          <option value="CDC">CDC</option>
+          <option value="CC">CC</option>
+          <option value="PC_OC">PC / OC only</option>
+        </select>
+        <select
+          value={issuedFilter}
+          onChange={(e) => setIssuedFilter(e.target.value)}
+          className="px-3 py-2 rounded-md border border-line bg-white text-sm text-muted outline-none focus:ring-2 focus:ring-icon"
+        >
+          <option value="">Certificate: Any</option>
+          <option value="issued">Issued</option>
+          <option value="not-issued">Not issued yet</option>
+        </select>
+        <select
           value={certifierFilter}
           onChange={(e) => setCertifierFilter(e.target.value)}
           className="px-3 py-2 rounded-md border border-line bg-white text-sm text-muted outline-none focus:ring-2 focus:ring-icon"
@@ -85,11 +127,13 @@ export function JobsList({ jobs, certifiers, deletedCount = 0 }: { jobs: JobRow[
             </option>
           ))}
         </select>
-        {(query || certifierFilter) && (
+        {(query || certifierFilter || pathwayFilter || issuedFilter) && (
           <button
             onClick={() => {
               setQuery("");
               setCertifierFilter("");
+              setPathwayFilter("");
+              setIssuedFilter("");
             }}
             className="text-sm text-placeholder hover:text-muted hover:underline"
           >
@@ -121,6 +165,11 @@ export function JobsList({ jobs, certifiers, deletedCount = 0 }: { jobs: JobRow[
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-semibold text-primary">{j.address}</span>
                         {j.status === "complete" && <span className="px-2 py-0.5 rounded bg-success text-white text-[11px] font-semibold">Completed</span>}
+                        {j.certIssued && (
+                          <span className="px-2 py-0.5 rounded bg-success-bg text-success text-[11px] font-semibold">
+                            {j.pathwayLabel} issued{j.certIssuedDate ? ` ${j.certIssuedDate}` : ""}
+                          </span>
+                        )}
                         {j.needsAttention && (
                           <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-warning-bg text-warning-text text-[11px] font-semibold">
                             <AlertTriangle size={11} /> Amendment needed
@@ -142,7 +191,7 @@ export function JobsList({ jobs, certifiers, deletedCount = 0 }: { jobs: JobRow[
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={2} className="px-5 py-10 text-center text-placeholder">
-                  {query || certifierFilter ? "No projects match your search." : 'No projects yet. Click "New project" to create your first one.'}
+                  {query || certifierFilter || pathwayFilter || issuedFilter ? "No projects match your search." : 'No projects yet. Click "New project" to create your first one.'}
                 </td>
               </tr>
             )}

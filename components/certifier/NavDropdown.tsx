@@ -16,6 +16,7 @@ export function NavDropdown({
   createLabel,
   itemHrefBase,
   itemHrefSuffix = "",
+  extraLinks = [],
 }: {
   label: string;
   items: Item[];
@@ -25,6 +26,8 @@ export function NavDropdown({
   createLabel: string;
   itemHrefBase: string;
   itemHrefSuffix?: string;
+  // Ready-made filtered views, listed under "view all".
+  extraLinks?: { href: string; label: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
@@ -103,6 +106,11 @@ export function NavDropdown({
             <Link href={viewAllHref} onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm font-semibold text-secondary hover:bg-hover border-t border-line">
               {viewAllLabel} →
             </Link>
+            {extraLinks.map((link) => (
+              <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className="block px-4 py-2 text-sm text-muted hover:bg-hover hover:text-primary border-t border-line">
+                {link.label}
+              </Link>
+            ))}
           </div>,
           document.body
         )}
