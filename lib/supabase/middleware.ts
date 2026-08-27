@@ -30,7 +30,10 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthRoute = path.startsWith("/login") || path.startsWith("/client-login");
   const isClientRoute = path.startsWith("/portal");
-  const isPublicRoute = path === "/" || isAuthRoute;
+  // /auth/* is where emailed links land: the visitor has no session yet —
+  // the link's one-time token IS their proof, and the route verifies it
+  // itself. Bouncing them to the sign-in page here would eat the link.
+  const isPublicRoute = path === "/" || isAuthRoute || path.startsWith("/auth/");
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
