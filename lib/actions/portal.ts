@@ -2,11 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { notifyJobCertifier } from "@/lib/email";
-
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
+import { flushJobUploads } from "@/lib/uploadDigest";
 
 // A client sending a document in from the portal. The file itself is
 // uploaded straight from their browser to storage; this records it
@@ -46,12 +42,11 @@ export async function submitClientDocument({
     : { data: null };
   const jobId = checklist?.job_id as string | undefined;
   if (jobId) {
-    await notifyJobCertifier(
-      admin,
-      jobId,
-      "Client uploaded a document",
-      `<p>Your client has uploaded <strong>${escapeHtml(fileName)}</strong> against <strong>${escapeHtml(item?.title || "a checklist item")}</strong>. It's ready for your review.</p>`
-    );
+    // Recorded, then batched: the first document of a burst emails the
+    // certifier straight away; anything more inside the quiet window
+    // rides along in the next summary instead of its own email.
+    await admin.from("portal_uploads").insert({ job_id: jobId, item_title: item?.title || null, file_name: fileName });
+    await flushJobUploads(admin, jobId, { requireSettled: false });
   }
 
   return {};

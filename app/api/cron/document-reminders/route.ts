@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDocumentReminders } from "@/lib/documentReminders";
 import { runInvoiceReminders } from "@/lib/invoiceReminders";
+import { runUploadDigests } from "@/lib/uploadDigest";
 
 // The morning sweep, called by Vercel's scheduler (vercel.json) rather
 // than by anyone's click. Vercel proves it is the scheduler by sending
@@ -19,5 +20,8 @@ export async function GET(request: NextRequest) {
   const admin = createAdminClient();
   const documents = await runDocumentReminders(admin);
   const invoices = await runInvoiceReminders(admin);
-  return NextResponse.json({ documents, invoices });
+  // Also mops up client uploads still waiting on a summary email — the
+  // tail of a burst nothing else came along to flush.
+  const uploads = await runUploadDigests(admin);
+  return NextResponse.json({ documents, invoices, uploads });
 }
