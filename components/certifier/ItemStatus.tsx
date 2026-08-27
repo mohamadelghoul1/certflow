@@ -108,16 +108,25 @@ export function ItemStatusProvider({
   );
 }
 
-// The item's card wrapper, tinted green once approved. Reading each badge
-// individually was the only way to tell approved from not; a whole-card
+// The item's card wrapper, coloured by where the document actually is:
+// blue while a submitted document waits on the certifier, green once
+// approved, an amber border while requested changes wait on the client.
+// Reading each badge individually was the only way to tell; a whole-card
 // cue makes it obvious while scanning a long checklist, and it flips
 // instantly with the optimistic status like the badge and buttons do.
 export function ItemCard({ children }: { children: React.ReactNode }) {
-  const { status } = useItemStatus();
-  const approved = status === "approved";
-  return (
-    <div className={`card-lift rounded-xl border shadow-sm p-6 ${approved ? "border-accent/40 bg-success-bg" : "border-line bg-white"}`}>{children}</div>
-  );
+  const { status, amendments } = useItemStatus();
+  const unresolved = unresolvedCount({ status, amendments });
+  const tone =
+    status === "approved"
+      ? "border-accent/40 bg-success-bg"
+      : unresolved > 0
+        ? // White inside, so the amber amendment chips on the card stay visible.
+          "border-warning/60 bg-white"
+        : status === "submitted"
+          ? "border-info/40 bg-info-bg"
+          : "border-line bg-white";
+  return <div className={`card-lift rounded-xl border shadow-sm p-6 ${tone}`}>{children}</div>;
 }
 
 export function ItemStatusBadge() {

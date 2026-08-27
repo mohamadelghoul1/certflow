@@ -226,8 +226,19 @@ async function StageSection({
         {items.map((item) => {
           const status = displayStatus(item);
           const unresolved = item.amendments.filter((a) => !a.resolved);
+          // The card wears the document's state: blue once submitted and
+          // waiting on the certifier, green once approved, an amber edge
+          // while requested changes wait on the client (white inside so
+          // the amber amendment notes on the card stay visible).
+          const tone = status.dot.includes("emerald")
+            ? "border-accent/40 bg-success-bg"
+            : status.dot.includes("amber")
+              ? "border-warning/60 bg-white"
+              : status.dot.includes("blue")
+                ? "border-info/40 bg-info-bg"
+                : "border-line bg-white";
           return (
-            <div key={item.id} className="border border-line rounded-md p-4">
+            <div key={item.id} className={`border rounded-md p-4 ${tone}`}>
               <div className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${status.dot}`} />
                 <span className="text-sm font-semibold text-primary">{item.title}</span>
