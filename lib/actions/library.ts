@@ -50,6 +50,42 @@ export async function reorderLibraryItems(formData: FormData) {
   revalidatePath("/settings");
 }
 
+// Copies an item across the CDC/CC divide — the two ask for largely the
+// same documents, and typing "Architectural Plans" twice is how the two
+// lists drift apart. The blank form travels with it (both rows point at
+// the same stored file, so replacing it on one side is deliberate, not
+// automatic). An item whose title the other side already has is left
+// alone: the copy button can be pressed twice without doubling the list.
+export async function copyLibraryItem(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const target = String(formData.get("target"));
+  if (!["CDC", "CC"].includes(target)) return;
+
+  const { data: item } = await supabase.from("document_library_items").select("*").eq("id", id).eq("firm_id", profile.firm_id).single();
+  if (!item || item.pathway === target) return;
+
+  const { data: existing } = await supabase
+    .from("document_library_items")
+    .select("id, title")
+    .eq("firm_id", profile.firm_id)
+    .eq("pathway", target);
+  if ((existing || []).some((row) => row.title.trim().toLowerCase() === item.title.trim().toLowerCase())) return;
+
+  await supabase.from("document_library_items").insert({
+    firm_id: profile.firm_id,
+    pathway: target,
+    title: item.title,
+    description: item.description,
+    category: item.category,
+    sort_order: (existing || []).length,
+    template_file_path: item.template_file_path,
+    template_file_name: item.template_file_name,
+  });
+  revalidatePath("/settings");
+}
+
 export async function removeLibraryItem(formData: FormData) {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Download, Paperclip, GripVertical } from "lucide-react";
-import { addLibraryItem, removeLibraryItem, reorderLibraryItems, setLibraryTemplate, clearLibraryTemplate } from "@/lib/actions/library";
+import { addLibraryItem, removeLibraryItem, reorderLibraryItems, copyLibraryItem, setLibraryTemplate, clearLibraryTemplate } from "@/lib/actions/library";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 
 type LibItem = {
@@ -134,10 +134,23 @@ export function DocumentLibrarySection({
                       <div className="text-xs text-placeholder">{item.description}</div>
                     </div>
                   </div>
-                  <form action={removeLibraryItem}>
-                    <input type="hidden" name="id" value={item.id} />
-                    <button className="text-xs text-error hover:underline shrink-0">Remove</button>
-                  </form>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {/* CDC and CC ask for largely the same documents, so
+                        each side offers the other a copy. */}
+                    {(active === "CDC" || active === "CC") && (
+                      <form action={copyLibraryItem}>
+                        <input type="hidden" name="id" value={item.id} />
+                        <input type="hidden" name="target" value={active === "CDC" ? "CC" : "CDC"} />
+                        <button className="text-xs font-semibold text-secondary hover:underline whitespace-nowrap">
+                          Copy to {active === "CDC" ? "CC" : "CDC"}
+                        </button>
+                      </form>
+                    )}
+                    <form action={removeLibraryItem}>
+                      <input type="hidden" name="id" value={item.id} />
+                      <button className="text-xs text-error hover:underline">Remove</button>
+                    </form>
+                  </div>
                 </div>
 
                 <div className="mt-2 pt-2 border-t border-line flex flex-wrap items-center gap-3">
