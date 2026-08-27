@@ -106,12 +106,27 @@ export function InvoiceEditForm({
         ))}
         {lines.length === 0 && <div className="py-3 text-sm text-placeholder">No fee lines yet — add the first below.</div>}
 
+        {/* The description carries the sentence, so it gets the row; the
+            amount is a number and gets number-sized. Neither uses the
+            shared w-full input style, which made the two fight over the
+            row and squeezed the description to a stub. */}
         {!locked && (
           <form action={addInvoiceLine} className="flex gap-2 mt-3">
             <input type="hidden" name="invoice_id" value={invoice.id} />
-            <input name="description" placeholder="e.g. CDC assessment and determination" className={`${inputCls} flex-1`} />
-            <input name="amount" type="number" step="0.01" min="0" placeholder="Amount ex GST" className={`${inputCls} w-40`} />
-            <button className="px-3.5 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">Add</button>
+            <input
+              name="description"
+              placeholder="e.g. CDC assessment and determination"
+              className="min-w-0 flex-1 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
+            />
+            <input
+              name="amount"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="$ ex GST"
+              className="w-28 shrink-0 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
+            />
+            <button className="shrink-0 px-3.5 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">Add</button>
           </form>
         )}
 
