@@ -259,7 +259,7 @@ async function StageSection({
                 <span className="text-sm font-semibold text-primary">{item.title}</span>
               </div>
               <div className="text-xs text-placeholder mt-0.5">{item.description}</div>
-              <div className="text-xs mt-1 font-medium text-muted">{status.label}</div>
+              <div className="text-sm mt-1 font-semibold text-muted">{status.label}</div>
 
               {unresolved.length > 0 && (
                 <div className="mt-2 space-y-1.5">
