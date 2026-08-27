@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Download, Lock } from "lucide-react";
+import { Download } from "lucide-react";
+import { StageTabs } from "@/components/portal/StageTabs";
 import { displayStatus, unresolvedCount, checklistProgress, formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { ClientItemDocuments } from "@/components/portal/ClientItemDocuments";
@@ -101,35 +102,7 @@ export default async function PortalJobPage({
     { key: "oc", label: "Occupation Certificate", done: (ocRecords || []).some((r) => r.sent_to_client), locked: ocLocked },
   ];
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <Link href="/portal" className="text-xs text-placeholder hover:text-primary">
-          ← All projects
-        </Link>
-        <h1 className="text-xl font-bold text-primary mt-1">{job.address}</h1>
-        <div className="text-sm text-placeholder">
-          {pathwayLabel(job.pathway)} · {job.description}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <Link
-            key={t.key}
-            href={`/portal/jobs/${id}?stage=${t.key}`}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm font-semibold border ${
-              stage === t.key ? "bg-primary text-white border-primary" : "bg-white text-primary border-line hover:border-primary"
-            }`}
-          >
-            {t.locked && <Lock size={13} />}
-            {t.label}
-            {t.done && !t.locked && <span className={`w-2 h-2 rounded-full ${stage === t.key ? "bg-white" : "bg-success"}`} />}
-          </Link>
-        ))}
-      </div>
-
-      {stage === "approval" && (
+  const approvalPanel = (
         <div className="space-y-6">
           <StageSection title={`${approvalLabel} — checklist`} items={pathwayItems} jobId={id} firmId={job.firm_id} formIds={formIds} />
           {pathwayItems.length === 0 && !job.pathway_sent_to_client && <EmptyStage label={approvalLabel} />}
@@ -168,37 +141,48 @@ export default async function PortalJobPage({
             />
           ))}
         </div>
-      )}
+  );
 
-      {stage === "noc" && (
+  const nocPanel = (
         <div className="space-y-6">
           <StageSection title="Notice of Commencement (NOC) — checklist" items={nocItems} jobId={id} firmId={job.firm_id} formIds={formIds} />
           {nocItems.length === 0 && <EmptyStage label="Notice of Commencement" />}
 
           <InspectionsSection jobId={id} firmId={job.firm_id} pathwayGenerated={job.pathway_generated} inspections={(inspections as (Inspection & { defects: Defect[] })[]) || []} certifiers={certifiers || []} />
         </div>
-      )}
+  );
 
-      {stage === "oc" &&
-        (ocLocked ? (
-          <div className="bg-white rounded-lg border border-line p-8 text-center">
-            <Lock className="mx-auto text-placeholder" size={28} />
-            <div className="font-bold text-primary mt-3">Occupation Certificate stage is locked</div>
-            <div className="text-sm text-muted mt-1 max-w-md mx-auto">
-              This stage opens once every item on the Notice of Commencement checklist has been approved ({checklistProgress(nocItems)} approved so far).
-            </div>
-            <Link href={`/portal/jobs/${id}?stage=noc`} className="inline-block mt-4 text-sm font-semibold text-primary hover:underline">
-              Go to the Notice of Commencement →
-            </Link>
-          </div>
-        ) : (
+  // Not rendered at all while locked — the lock panel lives in StageTabs.
+  const ocPanel = ocLocked ? null : (
           <div className="space-y-6">
             <StageSection title="Occupation Certificate — checklist" items={ocItems} jobId={id} firmId={job.firm_id} formIds={formIds} />
             {ocItems.length === 0 && (ocRecords || []).filter((r) => r.sent_to_client).length === 0 && <EmptyStage label="Occupation Certificate" />}
 
             <OcSection ocRecords={(ocRecords || []).filter((r) => r.sent_to_client)} />
           </div>
-        ))}
+  );
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <Link href="/portal" className="text-xs text-placeholder hover:text-primary">
+          ← All projects
+        </Link>
+        <h1 className="text-xl font-bold text-primary mt-1">{job.address}</h1>
+        <div className="text-sm text-placeholder">
+          {pathwayLabel(job.pathway)} · {job.description}
+        </div>
+      </div>
+
+      <StageTabs
+        tabs={tabs}
+        initialStage={stage}
+        ocLocked={ocLocked}
+        nocProgress={checklistProgress(nocItems)}
+        approval={approvalPanel}
+        noc={nocPanel}
+        oc={ocPanel}
+      />
 
       <div className="text-[11px] text-placeholder text-center">Signed in as {profile.email}</div>
     </div>
