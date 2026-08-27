@@ -25,7 +25,7 @@ export default function CertifierLoginPage() {
           <div className="font-serif text-4xl font-medium text-warning">CertFlow</div>
           <div className="mt-2 text-[12px] tracking-[0.2em] uppercase text-placeholder">Certifier sign in</div>
         </div>
-        <form action={formAction} className="bg-heading border border-warning/30 rounded-lg p-6 space-y-4">
+        <form action={formAction} className="bg-heading border border-warning/30 border-b-0 rounded-t-lg p-6 space-y-4">
           <div>
             <label className="block text-xs font-semibold text-placeholder mb-1">Email</label>
             <input name="email" type="email" required className="w-full px-3 py-2 rounded-md bg-heading border border-white/10 text-white text-sm outline-none focus:ring-2 focus:ring-warning/50" />
@@ -44,7 +44,7 @@ export default function CertifierLoginPage() {
             {pending ? "Signing in…" : "Sign in"}
           </button>
         </form>
-        <div className="bg-white rounded-b-lg px-6 pb-5 shadow-xl">
+        <div className="bg-heading border border-warning/30 border-t-0 rounded-b-lg px-6 pb-5">
           <ForgotPassword kind="certifier" />
         </div>
         <div className="text-center mt-4">
