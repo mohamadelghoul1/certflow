@@ -11,7 +11,9 @@ export const config = {
   // api/eplanning serve the NSW Planning Portal's downloader (sealed
   // token in the link / Basic Auth), api/cron is Vercel's scheduler
   // (CRON_SECRET header), api/stripe is Stripe's webhook (signed
-  // payload). Redirecting any of them to the login page would silently
-  // break the feature behind it.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/portal-files/|api/eplanning/|api/cron/|api/stripe/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // payload), and sign/ is an owner following an emailed agreement link
+  // — the token in it is their authorisation, and they have no login to
+  // send them to. Redirecting any of them to the login page would
+  // silently break the feature behind it.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/portal-files/|api/eplanning/|api/cron/|api/stripe/|sign/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

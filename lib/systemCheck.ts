@@ -178,6 +178,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: hasTable(supabase, "review_events"),
     },
     {
+      migration: "0044",
+      label: "Signed engagement agreements",
+      detail: "Owners sign the agreement online, from an emailed link, with no login needed.",
+      probe: hasTable(supabase, "engagement_agreements"),
+    },
+    {
       migration: "0043",
       label: "Storage report",
       detail: "Shows what each project is holding, in Settings → Storage.",

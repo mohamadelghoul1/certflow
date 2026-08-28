@@ -1,0 +1,195 @@
+"use client";
+
+import { useActionState, useState } from "react";
+import { FileUpload } from "@/components/certifier/FileUpload";
+import { createAgreement, sendAgreement, removeAgreement, type AgreementState } from "@/lib/actions/agreements";
+import { agreementProgress, progressLabel, type Signatory } from "@/lib/agreements";
+import { formatISODate } from "@/lib/business";
+import { FileText, Send, CheckCircle2, Clock, Trash2, Plus } from "lucide-react";
+
+type Agreement = {
+  id: string;
+  file_name: string | null;
+  sent_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  signatories: Signatory[];
+};
+
+const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
+const labelCls = "block text-xs font-semibold text-placeholder mb-1";
+
+// The engagement agreement, from upload to fully signed.
+//
+// The document is whatever the firm already uses — CertFlow doesn't
+// write the contract, it sends it out and captures the signatures. Each
+// signatory gets their own private link and needs no login: an owner is
+// usually not the person using the client portal.
+export function AgreementPanel({ jobId, firmId, agreement, documentUrl }: { jobId: string; firmId: string; agreement: Agreement | null; documentUrl: string | null }) {
+  if (agreement) return <ExistingAgreement jobId={jobId} agreement={agreement} documentUrl={documentUrl} />;
+  return <NewAgreement jobId={jobId} firmId={firmId} />;
+}
+
+function NewAgreement({ jobId, firmId }: { jobId: string; firmId: string }) {
+  const [state, formAction, pending] = useActionState<AgreementState, FormData>(createAgreement, undefined);
+  const [filePath, setFilePath] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [parties, setParties] = useState([{ id: 1 }]);
+
+  return (
+    <div className="rounded-xl border border-line bg-white shadow-sm p-6">
+      <div className="font-bold text-primary">Engagement agreement</div>
+      <p className="text-sm text-muted mt-1 mb-5">
+        Upload the agreement you use, then name everyone who has to sign it. Each is emailed their own signing link — they don&rsquo;t need a CertFlow
+        login — and the agreement is complete once all of them have signed.
+      </p>
+
+      <form action={formAction} className="space-y-5">
+        <input type="hidden" name="job_id" value={jobId} />
+        <input type="hidden" name="file_path" value={filePath} />
+        <input type="hidden" name="file_name" value={fileName} />
+
+        <div>
+          <div className={labelCls}>The agreement document</div>
+          {filePath ? (
+            <div className="flex items-center gap-2 text-sm text-accent">
+              <CheckCircle2 size={15} /> {fileName || "Uploaded"}
+              <button type="button" onClick={() => { setFilePath(""); setFileName(""); }} className="text-xs text-muted hover:underline ml-2">
+                Change
+              </button>
+            </div>
+          ) : (
+            <FileUpload
+              pathPrefix={`${firmId}/${jobId}/agreements`}
+              label="Upload the agreement (PDF)"
+              onUploaded={(path) => {
+                setFilePath(path);
+                setFileName(decodeURIComponent(path.split("/").pop() || "").replace(/^\d+-/, ""));
+              }}
+            />
+          )}
+        </div>
+
+        <div>
+          <div className={labelCls}>Who has to sign</div>
+          <div className="space-y-2">
+            {parties.map((p, i) => (
+              <div key={p.id} className="grid sm:grid-cols-[1.2fr_1.4fr_0.8fr_auto] gap-2">
+                <input name="signatory_name" placeholder="Full name" className={inputCls} />
+                <input name="signatory_email" type="email" placeholder="Email address" className={inputCls} />
+                <input name="signatory_role" placeholder="Owner" defaultValue={i === 0 ? "Owner" : ""} className={inputCls} />
+                {parties.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setParties((prev) => prev.filter((x) => x.id !== p.id))}
+                    className="text-xs text-error hover:underline px-2"
+                  >
+                    Remove
+                  </button>
+                ) : (
+                  <span />
+                )}
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setParties((prev) => [...prev, { id: Date.now() }])}
+            className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          >
+            <Plus size={14} /> Add another signatory
+          </button>
+          <p className="text-[11px] text-muted mt-2">Joint owners each sign separately. Add the applicant or builder too if they are party to the agreement.</p>
+        </div>
+
+        {state?.error && <div className="text-sm text-error">{state.error}</div>}
+        <button disabled={pending || !filePath} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-50">
+          {pending ? "Saving…" : "Prepare agreement"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function ExistingAgreement({ jobId, agreement, documentUrl }: { jobId: string; agreement: Agreement; documentUrl: string | null }) {
+  const [state, formAction, pending] = useActionState<AgreementState, FormData>(sendAgreement, undefined);
+  const progress = agreementProgress(agreement.signatories);
+
+  return (
+    <div className="rounded-xl border border-line bg-white shadow-sm p-6 space-y-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="font-bold text-primary">Engagement agreement</div>
+          <div className={`text-sm font-semibold mt-0.5 ${progress.complete ? "text-accent" : "text-muted"}`}>{progressLabel(progress)}</div>
+        </div>
+        {progress.complete && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success-bg text-accent text-xs font-semibold shrink-0">
+            <CheckCircle2 size={13} /> Complete
+          </span>
+        )}
+      </div>
+
+      {documentUrl && (
+        <a href={documentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-semibold text-secondary hover:underline">
+          <FileText size={15} /> {agreement.file_name || "Open the agreement"}
+        </a>
+      )}
+
+      <div className="rounded-lg border border-line overflow-hidden">
+        {agreement.signatories.map((s) => (
+          <div key={s.id} className="px-4 py-3 border-b border-line last:border-b-0 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-heading">
+                {s.name}
+                {s.role ? <span className="font-normal text-placeholder"> · {s.role}</span> : null}
+              </div>
+              <div className="text-xs text-placeholder truncate">{s.email}</div>
+              {s.signed_at && s.signed_name && s.signed_name !== s.name && (
+                <div className="text-[11px] text-muted mt-0.5">Signed as &ldquo;{s.signed_name}&rdquo;</div>
+              )}
+            </div>
+            {s.signed_at ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent shrink-0">
+                <CheckCircle2 size={13} /> Signed {formatISODate(s.signed_at.slice(0, 10))}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-xs text-muted shrink-0">
+                <Clock size={13} /> {s.sent_at ? `Sent ${formatISODate(s.sent_at.slice(0, 10))}` : "Not sent yet"}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        {!progress.complete && (
+          <form action={formAction}>
+            <input type="hidden" name="agreement_id" value={agreement.id} />
+            <input type="hidden" name="job_id" value={jobId} />
+            <button disabled={pending} className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
+              <Send size={14} /> {pending ? "Sending…" : agreement.sent_at ? "Send a reminder" : "Send for signature"}
+            </button>
+          </form>
+        )}
+        {progress.complete && (
+          <a href={`/agreements/${agreement.id}/record`} className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-line text-sm font-semibold text-primary hover:bg-hover">
+            <FileText size={14} /> Certificate of signing
+          </a>
+        )}
+        <form action={removeAgreement} className="ml-auto">
+          <input type="hidden" name="agreement_id" value={agreement.id} />
+          <input type="hidden" name="job_id" value={jobId} />
+          <button className="inline-flex items-center gap-1.5 text-xs text-error hover:underline">
+            <Trash2 size={12} /> Remove and start again
+          </button>
+        </form>
+      </div>
+
+      {state?.error && <div className="text-sm text-error">{state.error}</div>}
+      {state?.success && <div className="text-sm text-success">{state.success}</div>}
+      {!progress.complete && (
+        <p className="text-[11px] text-muted">Sending again only emails the people who haven&rsquo;t signed yet, so it doubles as the chaser.</p>
+      )}
+    </div>
+  );
+}
