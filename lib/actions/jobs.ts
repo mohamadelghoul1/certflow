@@ -1670,6 +1670,23 @@ export async function removeCriticalStageInspection(formData: FormData) {
 // separating paragraphs; clearing it returns the letter to the standard
 // wording. Every surface — on-screen, the PDF approved set and the Word
 // export — reads the same override through pathwayData.
+// One block of wording on a generated document. Kept in the job's own
+// details under docOverrides, keyed by the block, so a new editable
+// block on a letter or a certificate needs no schema change. An empty
+// value clears the override and the standard wording returns.
+export async function updateDocText(formData: FormData) {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const key = String(formData.get("key") || "").trim();
+  const text = String(formData.get("text") || "").trim();
+  if (!key) return;
+
+  await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { docOverrides: { [key]: text } } as JobDetails);
+  revalidatePath(`/certificate/pathway/${jobId}`);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
 export async function updateLetterBody(formData: FormData) {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();

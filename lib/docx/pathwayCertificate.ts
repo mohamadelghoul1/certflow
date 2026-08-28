@@ -51,7 +51,15 @@ export function projectFooter(projRef: string, website: string | null | undefine
 }
 
 export async function buildPathwayCertificateDocx(data: PathwayCertificateData, images: { logo: ImageAsset | null; signature: ImageAsset | null }): Promise<Buffer> {
-  const { job, firm, issuedBy, conditions, allItems, selectedInspections, lapseDate, ref, projRef, isCdc, pathwayFull, d, cd, issuedDate, applicantName, applicantPhone, ownerName, ownerAddress, ownerPhone, councilBody, applicantBody, requiredDocsList } = data;
+  const { job, firm, issuedBy, conditions, allItems, selectedInspections, lapseDate, ref, projRef, isCdc, pathwayFull, d, cd, issuedDate, applicantName, applicantPhone, ownerName, ownerAddress, ownerPhone, councilBody, applicantBody, requiredDocsList, applicantSalutation, councilSalutation, applicantIntro, applicantRequirementsIntro, applicantClosing, docOverrides } = data;
+  // A field the certifier corrected on the certificate itself wins over
+  // the generated value, so the Word copy says what the screen says.
+  const ov = (key: string, value?: string | null) => (docOverrides || {})[`cert.${key}`] ?? value;
+  const salutationApplicant = applicantSalutation || "Dear Sir/Madam,";
+  const salutationCouncil = councilSalutation || "Dear Sir/Madam,";
+  const introApplicant = applicantIntro || `Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`;
+  const closingApplicant = applicantClosing || "Yours sincerely,";
+
 
   const header = letterheadHeader(firm, images.logo);
   const footer = projectFooter(projRef, firm?.website);
@@ -62,7 +70,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
   push(
     splitRow(`Our reference: ${projRef}`, issuedDate, { size: LETTER_BODY_SIZE }),
     ...addressBlock(["The General Manager", d.council?.lga || "Council", ...formatAddressLines(d.council?.address)], { size: LETTER_BODY_SIZE }),
-    p("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
+    p(salutationCouncil, { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
     // The subject and its references, set the way the certificate sets its
     // own title and fields: a ruled heading, then right-aligned labels
     // against their values. Run on as bold-lead paragraphs they were three
@@ -94,18 +102,18 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     pageBreak(),
     splitRow(`Our reference: ${projRef}`, issuedDate, { size: LETTER_BODY_SIZE }),
     ...addressBlock([applicantName, ...formatAddressLines(d.applicantAddress)], { size: LETTER_BODY_SIZE }),
-    p("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
+    p(salutationApplicant, { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
     ...documentTitle(`RE: ${job.address || ""}`, { uppercase: true }),
     fieldTable([{ kind: "row", label: `${pathwayFull} No.:`, value: ref }], { labelPct: LETTER_LABEL_PCT, size: LETTER_BODY_SIZE }),
     p("", { size: 10, spacingAfter: 0 }),
-    p(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true, size: LETTER_BODY_SIZE, lineSpacing: LETTER_LINE_SPACING }),
+    p(introApplicant, { bold: true, size: LETTER_BODY_SIZE, lineSpacing: LETTER_LINE_SPACING }),
     ...applicantBody.map((para) => p(para, { size: LETTER_BODY_SIZE, justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING })),
     calloutBox([
       p("Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:", { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
       ...requiredDocsList.map((item) => bullet(item, { size: LETTER_BODY_SIZE })),
     ]),
     signatureRule(),
-    p("Yours sincerely,", { size: LETTER_BODY_SIZE, spacingBefore: 120 }),
+    p(closingApplicant, { size: LETTER_BODY_SIZE, spacingBefore: 120 }),
     ...signatureBlock(images.signature),
     ...signatory({ size: LETTER_BODY_SIZE, nameSize: LETTER_SIGNATURE_NAME_SIZE }, issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
   );
@@ -131,20 +139,20 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     ),
     fieldTable([
       { kind: "heading", text: "APPLICANT DETAILS" },
-      { kind: "row", label: "Applicant:", value: applicantName },
-      { kind: "row", label: "Address:", value: formatAddress(d.applicantAddress) },
-      { kind: "row", label: "Phone:", value: applicantPhone },
+      { kind: "row", label: "Applicant:", value: ov("applicant", applicantName) },
+      { kind: "row", label: "Address:", value: ov("applicantAddress", formatAddress(d.applicantAddress)) },
+      { kind: "row", label: "Phone:", value: ov("applicantPhone", applicantPhone) },
       { kind: "heading", text: "OWNER DETAILS" },
-      { kind: "row", label: isCdc ? "Owner" : "Owner:", value: ownerName },
-      { kind: "row", label: "Address:", value: ownerAddress },
-      { kind: "row", label: "Phone:", value: ownerPhone },
+      { kind: "row", label: isCdc ? "Owner" : "Owner:", value: ov("owner", ownerName) },
+      { kind: "row", label: "Address:", value: ov("ownerAddress", ownerAddress) },
+      { kind: "row", label: "Phone:", value: ov("ownerPhone", ownerPhone) },
       ...(isCdc
         ? ([
             { kind: "heading", text: `${pathwayFull.toUpperCase()} DETAILS` },
             { kind: "row", label: "NSW Planning Portal Ref Number:", value: cd.planningPortalRef },
             { kind: "row", label: "Local Government Area:", value: d.council?.lga },
-            { kind: "row", label: "Relevant Environmental Planning Instrument", value: cd.relevantInstrument },
-            { kind: "row", label: "Relevant Part of Code", value: cd.relevantPartOfCode },
+            { kind: "row", label: "Relevant Environmental Planning Instrument", value: ov("epi", cd.relevantInstrument) },
+            { kind: "row", label: "Relevant Part of Code", value: ov("partOfCode", cd.relevantPartOfCode) },
             { kind: "row", label: "Date of Determination:", value: formatISODate(cd.determinationDate) },
             { kind: "row", label: "Date of Lapse:", value: /^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate },
           ] as const)
@@ -158,28 +166,34 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
             { kind: "row", label: "Date of Issue of Construction Certificate:", value: issuedDate },
           ] as const)),
       { kind: "heading", text: "PROPOSAL" },
-      { kind: "row", label: "Address of Development:", value: job.address },
-      { kind: "row", label: isCdc ? "Lot/Section/DP:" : "Lot/ DP:", value: cd.lotSectionDp },
-      ...(isCdc ? ([{ kind: "row", label: "Land Use Zone:", value: d.zoning }] as const) : []),
-      { kind: "row", label: isCdc ? "BCA Classification/s:" : "BCA Classification:", value: formatClassifications(d.proposal?.classifications) },
-      { kind: "row", label: "BCA/NCC Version:", value: formatBcaVersion(d.bcaVersion, d.bcaVolumes) },
-      { kind: "row", label: "Description of Building Works:", value: job.description },
-      { kind: "row", label: isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)", value: formatCurrency(d.proposal?.estimatedCost) },
-      { kind: "row", label: isCdc ? "Attachments" : "Attachments:", value: "Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon" },
+      { kind: "row", label: "Address of Development:", value: ov("devAddress", job.address) },
+      { kind: "row", label: isCdc ? "Lot/Section/DP:" : "Lot/ DP:", value: ov("lotDp", cd.lotSectionDp) },
+      ...(isCdc ? ([{ kind: "row", label: "Land Use Zone:", value: ov("zone", d.zoning) }] as const) : []),
+      { kind: "row", label: isCdc ? "BCA Classification/s:" : "BCA Classification:", value: ov("bcaClass", formatClassifications(d.proposal?.classifications)) },
+      { kind: "row", label: "BCA/NCC Version:", value: ov("bcaVersion", formatBcaVersion(d.bcaVersion, d.bcaVolumes)) },
+      { kind: "row", label: "Description of Building Works:", value: ov("description", job.description) },
+      { kind: "row", label: isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)", value: ov("value", formatCurrency(d.proposal?.estimatedCost)) },
+      { kind: "row", label: isCdc ? "Attachments" : "Attachments:", value: ov("attachments", "Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon") },
       ...(isCdc
         ? ([
             {
               kind: "row",
               label: "Conditions:",
-              children: [
-                p("Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying Development) Codes 2008 & State Environmental Planning Policy (Housing) 2021", { spacingAfter: 30 }),
-                p("Any monetary contribution fee’s and/or any other Council fee’s/bonds that are required by council MUST be paid prior to commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from Council and a copy of such approval provided to the PC prior to the works commencing.", { spacingAfter: conditions.length ? 30 : 0 }),
-                ...conditions.map((c) => bullet(c.text)),
-              ],
+              children: (docOverrides || {})["cert.conditions"]
+                ? (docOverrides || {})["cert.conditions"]
+                    .split("\n\n")
+                    .map((para) => para.trim())
+                    .filter(Boolean)
+                    .map((para) => p(para, { spacingAfter: 30 }))
+                : [
+                    p("Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying Development) Codes 2008 & State Environmental Planning Policy (Housing) 2021", { spacingAfter: 30 }),
+                    p("Any monetary contribution fee’s and/or any other Council fee’s/bonds that are required by council MUST be paid prior to commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from Council and a copy of such approval provided to the PC prior to the works commencing.", { spacingAfter: conditions.length ? 30 : 0 }),
+                    ...conditions.map((c) => bullet(c.text)),
+                  ],
             },
           ] as const)
         : []),
-      { kind: "row", label: isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", value: "See attached Notice" },
+      { kind: "row", label: isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", value: ov("inspections", "See attached Notice") },
     ]),
     // Who the certificate is issued by, on the same page as what it
     // covers — dropping the project-reference subtitle freed the room. Its
@@ -190,9 +204,9 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     fieldTable(
       [
         { kind: "heading", text: "REGISTERED CERTIFIER" },
-        { kind: "row", label: "Registered Certifier:", value: issuedBy?.name },
-        { kind: "row", label: "Registration Body:", value: issuedBy?.registration_body },
-        { kind: "row", label: "Registration No:", value: issuedBy?.registration_no },
+        { kind: "row", label: "Registered Certifier:", value: ov("certifierName", issuedBy?.name) },
+        { kind: "row", label: "Registration Body:", value: ov("registrationBody", issuedBy?.registration_body) },
+        { kind: "row", label: "Registration No:", value: ov("registrationNo", issuedBy?.registration_no) },
       ],
       { keepTogether: true }
     ),

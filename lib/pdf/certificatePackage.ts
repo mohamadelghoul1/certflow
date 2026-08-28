@@ -50,6 +50,12 @@ export async function buildCertificatePackagePdf(
     councilBody,
     applicantBody,
     requiredDocsList,
+    docOverrides,
+    applicantSalutation,
+    councilSalutation,
+    applicantIntro,
+    applicantRequirementsIntro,
+    applicantClosing,
   } = data;
 
   const l = await Layout.create();
@@ -80,7 +86,7 @@ export async function buildCertificatePackagePdf(
   l.newPage();
   splitLine(`Our reference: ${projRef}`, issuedDate);
   l.addressBlock(["The General Manager", d.council?.lga || "Council", ...formatAddressLines(d.council?.address)], { size: LETTER_BODY_SIZE });
-  l.text("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
+  l.text(councilSalutation || "Dear Sir/Madam,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
   // The subject and its references, set the way the certificate sets its
   // own title and fields — a ruled heading, then right-aligned labels
   // against their values.
@@ -107,17 +113,17 @@ export async function buildCertificatePackagePdf(
   l.pageBreak();
   splitLine(`Our reference: ${projRef}`, issuedDate);
   l.addressBlock([applicantName || "", ...formatAddressLines(d.applicantAddress)], { size: LETTER_BODY_SIZE });
-  l.text("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
+  l.text(applicantSalutation || "Dear Sir/Madam,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
   l.documentTitle(`RE: ${(job.address || "").toUpperCase()}`);
   l.fieldRow(`${pathwayFull} No.:`, ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
   l.gap(4);
-  l.text(`Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true, size: LETTER_BODY_SIZE, letter: true, gapAfter: 3 });
+  l.text(applicantIntro || `Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true, size: LETTER_BODY_SIZE, letter: true, gapAfter: 3 });
   applicantBody.forEach((line) => l.text(line, { size: LETTER_BODY_SIZE, justify: true, letter: true, gapAfter: LETTER_PARA_AFTER }));
   if (requiredDocsList.length) {
-    l.callout("Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:", requiredDocsList, { size: LETTER_BODY_SIZE });
+    l.callout(applicantRequirementsIntro || "Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:", requiredDocsList, { size: LETTER_BODY_SIZE });
   }
   l.signatureRule();
-  l.text("Yours sincerely,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
+  l.text(applicantClosing || "Yours sincerely,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
   await signature();
   l.signatory(issuedBy?.name || "—", [`Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`], { size: LETTER_BODY_SIZE, nameSize: LETTER_SIGNATURE_NAME_SIZE });
 
@@ -143,22 +149,26 @@ export async function buildCertificatePackagePdf(
   // different headings, a different title block, conditions set as a
   // full-width section rather than a row — which is why the same job came
   // out as a different document depending on which button was pressed.
+  // A field the certifier corrected on the certificate itself wins over
+  // the generated value, so the approved set says what the screen says.
+  const ov = (key: string, value?: string | null) => (docOverrides || {})[`cert.${key}`] ?? value ?? "";
+
   l.heading("APPLICANT DETAILS", { rule: true, gapBefore: 6 });
-  l.fieldRow("Applicant:", applicantName || "");
-  l.fieldRow("Address:", formatAddress(d.applicantAddress) || "");
-  l.fieldRow("Phone:", applicantPhone || "");
+  l.fieldRow("Applicant:", ov("applicant", applicantName));
+  l.fieldRow("Address:", ov("applicantAddress", formatAddress(d.applicantAddress)));
+  l.fieldRow("Phone:", ov("applicantPhone", applicantPhone));
 
   l.heading("OWNER DETAILS", { rule: true, gapBefore: 6 });
-  l.fieldRow(isCdc ? "Owner" : "Owner:", ownerName || "");
-  l.fieldRow("Address:", ownerAddress || "");
-  l.fieldRow("Phone:", ownerPhone || "");
+  l.fieldRow(isCdc ? "Owner" : "Owner:", ov("owner", ownerName));
+  l.fieldRow("Address:", ov("ownerAddress", ownerAddress));
+  l.fieldRow("Phone:", ov("ownerPhone", ownerPhone));
 
   if (isCdc) {
     l.heading(`${pathwayFull.toUpperCase()} DETAILS`, { rule: true, gapBefore: 6 });
     l.fieldRow("NSW Planning Portal Ref Number:", cd.planningPortalRef || "");
     l.fieldRow("Local Government Area:", d.council?.lga || "");
-    l.fieldRow("Relevant Environmental Planning Instrument", cd.relevantInstrument || "");
-    l.fieldRow("Relevant Part of Code", cd.relevantPartOfCode || "");
+    l.fieldRow("Relevant Environmental Planning Instrument", ov("epi", cd.relevantInstrument));
+    l.fieldRow("Relevant Part of Code", ov("partOfCode", cd.relevantPartOfCode));
     l.fieldRow("Date of Determination:", formatISODate(cd.determinationDate));
     l.fieldRow("Date of Lapse:", /^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate);
   } else {
@@ -172,14 +182,14 @@ export async function buildCertificatePackagePdf(
   }
 
   l.heading("PROPOSAL", { rule: true, gapBefore: 6 });
-  l.fieldRow("Address of Development:", job.address || "");
-  l.fieldRow(isCdc ? "Lot/Section/DP:" : "Lot/ DP:", cd.lotSectionDp || "");
-  if (isCdc) l.fieldRow("Land Use Zone:", d.zoning || "");
-  l.fieldRow(isCdc ? "BCA Classification/s:" : "BCA Classification:", formatClassifications(d.proposal?.classifications));
-  l.fieldRow("BCA/NCC Version:", formatBcaVersion(d.bcaVersion, d.bcaVolumes));
-  l.fieldRow("Description of Building Works:", job.description || "");
-  l.fieldRow(isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)", formatCurrency(d.proposal?.estimatedCost) || "");
-  l.fieldRow(isCdc ? "Attachments" : "Attachments:", "Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon");
+  l.fieldRow("Address of Development:", ov("devAddress", job.address));
+  l.fieldRow(isCdc ? "Lot/Section/DP:" : "Lot/ DP:", ov("lotDp", cd.lotSectionDp));
+  if (isCdc) l.fieldRow("Land Use Zone:", ov("zone", d.zoning));
+  l.fieldRow(isCdc ? "BCA Classification/s:" : "BCA Classification:", ov("bcaClass", formatClassifications(d.proposal?.classifications)));
+  l.fieldRow("BCA/NCC Version:", ov("bcaVersion", formatBcaVersion(d.bcaVersion, d.bcaVolumes)));
+  l.fieldRow("Description of Building Works:", ov("description", job.description));
+  l.fieldRow(isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)", ov("value", formatCurrency(d.proposal?.estimatedCost)));
+  l.fieldRow(isCdc ? "Attachments" : "Attachments:", ov("attachments", "Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon"));
 
   if (isCdc) {
     // Conditions is a row of the same table, not a section of its own —
@@ -188,17 +198,17 @@ export async function buildCertificatePackagePdf(
     const labelWidth = l.contentWidth * 0.28;
     const valueX = MARGIN + labelWidth + 8;
     const valueWidth = l.contentWidth - labelWidth - 8;
-    l.fieldRow(
-      "Conditions:",
-      "Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying Development) Codes 2008 & State Environmental Planning Policy (Housing) 2021"
-    );
-    l.text(
-      "Any monetary contribution fee’s and/or any other Council fee’s/bonds that are required by council MUST be paid prior to commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from Council and a copy of such approval provided to the PC prior to the works commencing.",
-      { x: valueX, width: valueWidth, justify: true, gapAfter: 3 }
-    );
-    conditions.forEach((c) => l.text(`\u2022  ${c.text}`, { x: valueX + 6, width: valueWidth - 6, gapAfter: 2 }));
+    const conditionParas = (docOverrides || {})["cert.conditions"]
+      ? (docOverrides || {})["cert.conditions"].split("\n\n").map((para) => para.trim()).filter(Boolean)
+      : [
+          "Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying Development) Codes 2008 & State Environmental Planning Policy (Housing) 2021",
+          "Any monetary contribution fee’s and/or any other Council fee’s/bonds that are required by council MUST be paid prior to commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from Council and a copy of such approval provided to the PC prior to the works commencing.",
+          ...conditions.map((c) => c.text),
+        ];
+    l.fieldRow("Conditions:", conditionParas[0] || "");
+    conditionParas.slice(1).forEach((para) => l.text(para, { x: valueX, width: valueWidth, justify: true, gapAfter: 3 }));
   }
-  l.fieldRow(isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", "See attached Notice");
+  l.fieldRow(isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", ov("inspections", "See attached Notice"));
 
   // Who the certificate is issued by, on the same page as what it covers —
   // dropping the project-reference subtitle freed the room. The
@@ -211,9 +221,9 @@ export async function buildCertificatePackagePdf(
   // 8) to make the room.
   l.ensure(71);
   l.heading("REGISTERED CERTIFIER", { rule: true, gapBefore: 0 });
-  l.fieldRow("Registered Certifier:", issuedBy?.name || "");
-  l.fieldRow("Registration Body:", issuedBy?.registration_body || "");
-  l.fieldRow("Registration No:", issuedBy?.registration_no || "");
+  l.fieldRow("Registered Certifier:", ov("certifierName", issuedBy?.name));
+  l.fieldRow("Registration Body:", ov("registrationBody", issuedBy?.registration_body));
+  l.fieldRow("Registration No:", ov("registrationNo", issuedBy?.registration_no));
   l.pageBreak();
   l.text(
     isCdc

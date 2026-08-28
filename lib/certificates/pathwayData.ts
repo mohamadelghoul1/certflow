@@ -73,6 +73,13 @@ export type PathwayCertificateData = {
   councilBody: string[];
   applicantBody: string[];
   requiredDocsList: string[];
+  // Per-job wording overrides, and the letter lines with them applied.
+  docOverrides: Record<string, string>;
+  applicantSalutation: string;
+  councilSalutation: string;
+  applicantIntro: string;
+  applicantRequirementsIntro: string;
+  applicantClosing: string;
 };
 
 // Single source of truth for the CDC/CC certificate package's content —
@@ -173,9 +180,26 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
         `Should you need to discuss any issues, please do not hesitate to contact the undersigned on the above numbers.`,
       ];
 
-  const requiredDocsList = isCdc
+  // Wording this job overrides, resolved once here so the screen, the
+  // Word export and the approved-set PDF cannot disagree about what the
+  // letter says.
+  const docOverrides = (d.docOverrides || {}) as Record<string, string>;
+  const applicantSalutation = docOverrides["applicant.salutation"] || "Dear Sir/Madam,";
+  const councilSalutation = docOverrides["council.salutation"] || "Dear Sir/Madam,";
+  const applicantIntro =
+    docOverrides["applicant.intro"] || `Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`;
+  const applicantRequirementsIntro =
+    docOverrides["applicant.requirementsIntro"] ||
+    "Please note that to accept the Notice of Appointment of Principal Certifier and Commencement of Building Work, you must provide:";
+  const applicantClosing = docOverrides["applicant.closing"] || "Yours sincerely,";
+
+  const standardRequiredDocs = isCdc
     ? ["Receipt of the Council Contribution Fee.", "Receipt of the Council Bond.", "Builder’s Home Building Compensation Fund (HBCF Certificate) or Owner Builder Permit.", "Erosion and Sediment Controls to be implemented on site.", "Lodge the Principal Certifier Appointment to us through the NSW Planning Portal."]
     : ["Erosion and Sediment Controls to be installed on site.", "Builder’s Home Warranty Certificate (HBCF) or Owner Builder Permit.", "Lodge the Principal Certifier Appointment to us through the NSW Planning Portal."];
+
+  const requiredDocsList = docOverrides["applicant.requirements"]
+    ? docOverrides["applicant.requirements"].split("\n").map((line) => line.trim()).filter(Boolean)
+    : standardRequiredDocs;
 
   return {
     job,
@@ -204,5 +228,11 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
     councilBody,
     applicantBody,
     requiredDocsList,
+    docOverrides,
+    applicantSalutation,
+    councilSalutation,
+    applicantIntro,
+    applicantRequirementsIntro,
+    applicantClosing,
   };
 }

@@ -178,6 +178,11 @@ export type InvoiceLine = {
 };
 
 export type JobDetails = {
+  // Wording on the generated documents that this job overrides. Keyed by
+  // the block being replaced ("applicantIntro", "applicantRequirements"
+  // and so on) so a new editable block needs no schema change; an absent
+  // key means the standard wording is used.
+  docOverrides?: Record<string, string>;
   projectNumber?: string;
   zoning?: string;
   // Constraints on the land — bushfire prone, flood planning area,
