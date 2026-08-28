@@ -93,6 +93,10 @@ export type TableOpts = {
   headerFill?: RGB;
   zebra?: boolean;
   centerColumns?: number[];
+  // Columns whose cells sit against their right edge — money, which is
+  // read by comparing the last digit of one row with the last digit of
+  // the next.
+  rightColumns?: number[];
   rowHeight?: number;
 };
 
@@ -297,6 +301,7 @@ export class Layout {
     const lead = size * LINE_FACTOR;
     const widths = widthsPct.map((pct) => (this.contentWidth * pct) / 100);
     const centered = new Set(opts.centerColumns ?? []);
+    const righted = new Set(opts.rightColumns ?? []);
     const minHeight = opts.rowHeight ?? ROW_HEIGHT;
 
     const drawRow = (cells: string[], bold: boolean, fill: RGB | null) => {
@@ -311,7 +316,7 @@ export class Layout {
         this.page.drawRectangle({ x, y: top - height, width: widths[i], height, borderColor: GRID_LINE, borderWidth: bold ? 0.5 : 0.25 });
         lines.forEach((line, li) => {
           const w = this.font(bold).widthOfTextAtSize(line, size);
-          const cellX = centered.has(i) ? x + (widths[i] - w) / 2 : x + CELL_PAD;
+          const cellX = centered.has(i) ? x + (widths[i] - w) / 2 : righted.has(i) ? x + widths[i] - CELL_PAD - w : x + CELL_PAD;
           this.page.drawText(line, { x: cellX, y: top - CELL_PAD - lead + 3 - li * lead, size, font: this.font(bold), color: INK });
         });
         x += widths[i];

@@ -13,6 +13,8 @@ import { cardSurchargeFor } from "@/lib/payments/surcharge";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Invoice, InvoiceLine } from "@/types/db";
 import { escapeHtml } from "@/lib/html";
+import { buildInvoiceFile } from "@/lib/invoices/invoiceDocument";
+import { siteUrl } from "@/lib/siteUrl";
 
 // Due in 14 days unless the certifier says otherwise — the trade
 // standard, and always visible and editable on the draft before it goes.
@@ -273,6 +275,7 @@ export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: F
     .map((l) => `<tr><td style="padding:6px 12px 6px 0">${escapeHtml(l.description)}</td><td style="padding:6px 0;text-align:right">${formatMoney(Number(l.amount) || 0)}</td></tr>`)
     .join("");
 
+  const portal = await siteUrl();
   const html = [
     `<p>Hi ${escapeHtml(client.name || "there")},</p>`,
     `<p>Please find our invoice <strong>${escapeHtml(number)}</strong>${typed.reference ? ` for <strong>${escapeHtml(typed.reference)}</strong>` : ""} below.</p>`,
@@ -290,10 +293,21 @@ export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: F
       : "",
     typed.payment_details ? `<p style="padding:10px 12px;background:#f8fafc;border-radius:6px;white-space:pre-line">${escapeHtml(typed.payment_details)}</p>` : "",
     typed.notes ? `<p>${escapeHtml(typed.notes)}</p>` : "",
+    `<p>A PDF copy is attached. You can also view, download and pay this invoice at any time in your client portal: <a href="${portal}/portal">${portal}/portal</a>.</p>`,
     `<p>Kind regards,<br/>${escapeHtml(firm?.name || "")}</p>`,
   ].join("");
 
-  const result = await sendEmail(client.email, `Invoice ${number}${typed.reference ? ` — ${typed.reference}` : ""}`, html);
+  // The invoice travels as a PDF as well as in the body, so the client
+  // can file it or forward it to their accountant without logging in
+  // anywhere. A failure to build it never costs them the email — it is
+  // reported instead, and the wording below says which one went.
+  const file = await buildInvoiceFile(invoiceId, supabase);
+  const result = await sendEmail(
+    client.email,
+    `Invoice ${number}${typed.reference ? ` — ${typed.reference}` : ""}`,
+    html,
+    file ? [{ filename: file.fileName, content: Buffer.from(file.bytes) }] : undefined
+  );
   if (!result.sent) return { error: result.error || "The email could not be sent." };
 
   await supabase.from("invoices").update({ status: "sent", updated_at: new Date().toISOString() }).eq("id", invoiceId).eq("status", "draft");
@@ -308,6 +322,6 @@ export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: F
   });
   revalidatePath(`/invoices/${invoiceId}`);
   revalidatePath("/invoices");
-  return { success: `Invoice emailed to ${client.email}.` };
+  return { success: file ? `Invoice emailed to ${client.email} with the PDF attached.` : `Invoice emailed to ${client.email}, but the PDF could not be built to attach.` };
 }
 

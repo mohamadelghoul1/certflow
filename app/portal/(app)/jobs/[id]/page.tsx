@@ -6,10 +6,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Download, AlertTriangle, FileDown } from "lucide-react";
 import { StageTabs } from "@/components/portal/StageTabs";
-import { displayStatus, unresolvedCount, checklistProgress, formatISODate } from "@/lib/business";
+import { displayStatus, unresolvedCount, checklistProgress, formatISODate, todayISO } from "@/lib/business";
 import { currentDocuments } from "@/lib/checklistDocuments";
 import { ItemDropCard } from "@/components/portal/ItemDropCard";
 import { certificatesDownloadable, accessClosedNotice } from "@/lib/portalAccess";
+import { clientPortalInvoices } from "@/lib/invoices/portalInvoices";
+import { PortalInvoices } from "@/components/portal/PortalInvoices";
 import { signedUrl } from "@/lib/storage";
 import { ClientItemDocuments } from "@/components/portal/ClientItemDocuments";
 import { BookInspectionForm } from "@/components/portal/BookInspectionForm";
@@ -60,6 +62,11 @@ export default async function PortalJobPage({
   const modChecklists = new Map((checklists || []).filter((c) => c.kind === "modification").map((c) => [c.modification_id, c]));
 
   const pathwayApprovalUrl = await signedUrl(job.pathway_approval_file_path);
+
+  // This project's invoices, for the client actually billed. Read with
+  // the admin client because invoices are the firm's records and client
+  // RLS grants nothing on them — see lib/invoices/portalInvoices.
+  const invoices = profile.client_id ? await clientPortalInvoices(createAdminClient(), profile.client_id, todayISO(), id) : [];
 
   // Which of this project's documents the firm has a blank form for.
   // Checklist items link to a library item whether or not a form has been
@@ -204,6 +211,8 @@ export default async function PortalJobPage({
         noc={nocPanel}
         oc={ocPanel}
       />
+
+      <PortalInvoices invoices={invoices} title="Invoices for this project" />
 
       <div className="text-[11px] text-placeholder text-center">Signed in as {profile.email}</div>
     </div>

@@ -42,6 +42,11 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <Link href={`/invoices/${id}/document`} className="px-3.5 py-2 rounded-md border border-line text-sm text-primary font-medium hover:bg-hover">
             View invoice
           </Link>
+          {/* The same PDF the client is emailed and can download from
+              their portal, so all three are one document. */}
+          <a href={`/api/invoices/${id}/pdf`} className="px-3.5 py-2 rounded-md border border-line text-sm text-primary font-medium hover:bg-hover">
+            Download PDF
+          </a>
           {stripeConfigured() && invoice.status !== "paid" && invoice.status !== "void" && (
             <CardPaymentButton invoiceId={id} existingUrl={invoice.stripe_payment_link_url || null} />
           )}

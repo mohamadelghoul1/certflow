@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendEmail } from "@/lib/email";
+import { buildInvoiceFile } from "@/lib/invoices/invoiceDocument";
 import { recordAuditEvent } from "@/lib/audit";
 import { invoiceTotals, invoiceNumberOf, formatMoney } from "@/lib/invoices/invoiceLogic";
 import { formatISODate } from "@/lib/business";
@@ -51,6 +52,7 @@ export function paymentReminderHtml(opts: {
       ? `<p><a href="${opts.paymentLinkUrl}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">Pay online by card</a></p>`
       : "",
     opts.paymentDetails ? `<p style="padding:10px 12px;background:#f8fafc;border-radius:6px;white-space:pre-line">${escape(opts.paymentDetails)}</p>` : "",
+    `<p>A PDF copy of the invoice is attached, and it is also in your client portal, where you can pay it online.</p>`,
     `<p>If you&rsquo;ve already paid, please disregard this — bank transfers can take a day or two to be matched up on our side.</p>`,
   ];
   return { subject: `Payment reminder — Invoice ${opts.invoiceNumber}`, html: parts.join("") };
@@ -109,7 +111,10 @@ export async function runInvoiceReminders(admin: SupabaseClient, now: Date = new
       paymentDetails: typed.payment_details || null,
       paymentLinkUrl: typed.stripe_payment_link_url || null,
     });
-    const result = await sendEmail(typed.clients.email, subject, html);
+    // The same PDF the invoice went out with, so a chase is a complete
+    // second copy rather than a nudge with nothing in it.
+    const file = await buildInvoiceFile(typed.id, admin);
+    const result = await sendEmail(typed.clients.email, subject, html, file ? [{ filename: file.fileName, content: Buffer.from(file.bytes) }] : undefined);
     // The clock moves either way: a bad address becomes a weekly note in
     // the audit log, not a daily one.
     await admin.from("invoices").update({ last_payment_reminder_at: now.toISOString() }).eq("id", typed.id);

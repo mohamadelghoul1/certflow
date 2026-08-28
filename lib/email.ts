@@ -22,16 +22,21 @@ export function emailConfigured(): boolean {
 
 export type SendResult = { sent: boolean; skipped?: "not-configured"; error?: string };
 
+// A file to travel with the email. The invoice PDF is the one that
+// matters: a client should be able to file the invoice from their inbox
+// without logging in to anything.
+export type EmailAttachment = { filename: string; content: Buffer };
+
 // Sending can fail two different ways and only one of them throws: a
 // network problem raises, but a rejected key, an unverified sending
 // domain or a bad address comes back as an ordinary response with an
 // error on it. That second kind used to pass straight through this
 // function as a success, which is how an email nobody received could
 // look exactly like one that arrived.
-export async function sendEmail(to: string, subject: string, html: string): Promise<SendResult> {
+export async function sendEmail(to: string, subject: string, html: string, attachments?: EmailAttachment[]): Promise<SendResult> {
   if (!resend) return { sent: false, skipped: "not-configured" };
   try {
-    const { error } = await resend.emails.send({ from: FROM, to, subject, html });
+    const { error } = await resend.emails.send({ from: FROM, to, subject, html, ...(attachments?.length ? { attachments } : {}) });
     if (error) return { sent: false, error: error.message || String(error) };
     return { sent: true };
   } catch (err) {

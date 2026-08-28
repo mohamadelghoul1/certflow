@@ -54,9 +54,15 @@ export function letterheadHeader(firm: Letterhead | null, logo: PDFImage | null)
 }
 
 export function projectFooter(projRef: string, website?: string | null) {
+  return documentFooter(`Project No.: ${projRef}`, website);
+}
+
+// The same footer, for a document that isn't about a project number —
+// an invoice carries its own number instead.
+export function documentFooter(reference: string, website?: string | null) {
   return (layout: Layout) => {
     const site = (website || "").trim();
-    const label = site ? `Project No.: ${projRef}  ·  ${site}` : `Project No.: ${projRef}`;
+    const label = site ? `${reference}  ·  ${site}` : reference;
     const y = MARGIN_BOTTOM - 12;
     layout.page.drawLine({ start: { x: MARGIN, y: y + 12 }, end: { x: A4[0] - MARGIN, y: y + 12 }, thickness: 0.5, color: LINE });
     const w = layout.regular.widthOfTextAtSize(label, SMALL_SIZE);

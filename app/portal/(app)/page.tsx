@@ -1,8 +1,11 @@
-import { pathwayLabel, type Pathway } from "@/lib/business";
+import { pathwayLabel, todayISO, type Pathway } from "@/lib/business";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { excludingDeleted } from "@/lib/softDelete";
 import Link from "next/link";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { clientPortalInvoices } from "@/lib/invoices/portalInvoices";
+import { PortalInvoices } from "@/components/portal/PortalInvoices";
 
 export default async function PortalHomePage() {
   const { profile } = await requireProfile("client");
@@ -25,8 +28,12 @@ export default async function PortalHomePage() {
   const sharedJobs = ((shared || []) as unknown as { jobs: PortalJob | null }[]).map((s) => s.jobs).filter((j): j is PortalJob => !!j && !j.deleted_at);
   const jobs = [...((direct || []) as unknown as PortalJob[]), ...sharedJobs];
 
+  // Every invoice this client has been issued, including any raised
+  // from a quote before there was a project to hang it on.
+  const invoices = profile.client_id ? await clientPortalInvoices(createAdminClient(), profile.client_id, todayISO()) : [];
+
   return (
-    <div>
+    <div className="space-y-6">
       <h1 className="text-xl font-bold text-primary mb-6">Your projects</h1>
       <div className="bg-white rounded-lg border border-line overflow-hidden">
         {jobs.map((j) => (
@@ -44,6 +51,8 @@ export default async function PortalHomePage() {
         ))}
         {jobs.length === 0 && <div className="px-5 py-8 text-center text-sm text-placeholder">No projects linked to your account yet.</div>}
       </div>
+
+      <PortalInvoices invoices={invoices} />
     </div>
   );
 }
