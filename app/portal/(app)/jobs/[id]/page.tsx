@@ -202,6 +202,12 @@ export default async function PortalJobPage({
         </Link>
       </div>
 
+      {/* Directly under the header, beside the Checklist PDF button
+          rather than at the foot of the page: an unpaid invoice is
+          something the client is being asked to act on, and asking for
+          it below three checklists is asking quietly. */}
+      <PortalInvoices invoices={invoices} title="Invoices for this project" />
+
       <StageTabs
         tabs={tabs}
         initialStage={stage}
@@ -211,8 +217,6 @@ export default async function PortalJobPage({
         noc={nocPanel}
         oc={ocPanel}
       />
-
-      <PortalInvoices invoices={invoices} title="Invoices for this project" />
 
       <div className="text-[11px] text-placeholder text-center">Signed in as {profile.email}</div>
     </div>
