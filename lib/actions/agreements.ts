@@ -176,7 +176,12 @@ export async function removeAgreement(formData: FormData) {
   const supabase = await createClient();
   const agreementId = String(formData.get("agreement_id"));
   const jobId = String(formData.get("job_id"));
-  await supabase.from("engagement_agreements").delete().eq("id", agreementId).eq("firm_id", profile.firm_id);
+  // .select() so a delete that removed nothing is caught rather than
+  // reported as success — the panel has already hidden it by the time
+  // this runs, and it needs to know to put it back.
+  const { data, error } = await supabase.from("engagement_agreements").delete().eq("id", agreementId).eq("firm_id", profile.firm_id).select("id");
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) throw new Error("That agreement could not be found to remove.");
   revalidatePath(`/jobs/${jobId}`);
 }
 

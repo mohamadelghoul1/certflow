@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { FileUpload } from "@/components/certifier/FileUpload";
 import { createAgreement, sendAgreement, removeAgreement, type AgreementState } from "@/lib/actions/agreements";
 import { agreementProgress, progressLabel, type Signatory } from "@/lib/agreements";
@@ -40,11 +40,35 @@ export function AgreementPanel({
   documentUrl: string | null;
   signedUrl: string | null;
 }) {
-  if (agreement) return <ExistingAgreement jobId={jobId} agreement={agreement} documentUrl={documentUrl} signedUrl={signedUrl} />;
-  return <NewAgreement jobId={jobId} firmId={firmId} />;
+  // Removing flips straight back to the empty form and lets the delete
+  // finish behind it — pressing Remove and watching the signed agreement
+  // sit there while the whole job page re-renders read as nothing having
+  // happened. If the delete fails the panel comes back with the reason.
+  const [removed, setRemoved] = useState(false);
+  const [removeError, setRemoveError] = useState("");
+
+  if (agreement && !removed) {
+    return (
+      <ExistingAgreement
+        jobId={jobId}
+        agreement={agreement}
+        documentUrl={documentUrl}
+        signedUrl={signedUrl}
+        onRemoved={() => {
+          setRemoveError("");
+          setRemoved(true);
+        }}
+        onRemoveFailed={(message) => {
+          setRemoved(false);
+          setRemoveError(message);
+        }}
+      />
+    );
+  }
+  return <NewAgreement jobId={jobId} firmId={firmId} notice={removeError} />;
 }
 
-function NewAgreement({ jobId, firmId }: { jobId: string; firmId: string }) {
+function NewAgreement({ jobId, firmId, notice }: { jobId: string; firmId: string; notice?: string }) {
   const [state, formAction, pending] = useActionState<AgreementState, FormData>(createAgreement, undefined);
   const [filePath, setFilePath] = useState("");
   const [fileName, setFileName] = useState("");
@@ -53,6 +77,7 @@ function NewAgreement({ jobId, firmId }: { jobId: string; firmId: string }) {
   return (
     <div className="rounded-xl border border-line bg-white shadow-sm p-6">
       <div className="font-bold text-primary">Engagement agreement</div>
+      {notice && <div className="text-sm text-error mt-2">{notice}</div>}
       <p className="text-sm text-muted mt-1 mb-5">
         Upload the agreement you use, then name everyone who has to sign it. Each is emailed their own signing link — they don&rsquo;t need a CertFlow
         login — and the agreement is complete once all of them have signed.
@@ -125,9 +150,40 @@ function NewAgreement({ jobId, firmId }: { jobId: string; firmId: string }) {
   );
 }
 
-function ExistingAgreement({ jobId, agreement, documentUrl, signedUrl }: { jobId: string; agreement: Agreement; documentUrl: string | null; signedUrl: string | null }) {
+function ExistingAgreement({
+  jobId,
+  agreement,
+  documentUrl,
+  signedUrl,
+  onRemoved,
+  onRemoveFailed,
+}: {
+  jobId: string;
+  agreement: Agreement;
+  documentUrl: string | null;
+  signedUrl: string | null;
+  onRemoved: () => void;
+  onRemoveFailed: (message: string) => void;
+}) {
   const [state, formAction, pending] = useActionState<AgreementState, FormData>(sendAgreement, undefined);
+  const [, startRemove] = useTransition();
+  const [confirming, setConfirming] = useState(false);
   const progress = agreementProgress(agreement.signatories);
+
+  function remove() {
+    // Gone from the screen at once; the delete finishes behind it.
+    onRemoved();
+    startRemove(async () => {
+      try {
+        const fd = new FormData();
+        fd.set("agreement_id", agreement.id);
+        fd.set("job_id", jobId);
+        await removeAgreement(fd);
+      } catch {
+        onRemoveFailed("That agreement could not be removed. It is still there — please try again.");
+      }
+    });
+  }
 
   return (
     <div className="rounded-xl border border-line bg-white shadow-sm p-6 space-y-5">
@@ -222,13 +278,29 @@ function ExistingAgreement({ jobId, agreement, documentUrl, signedUrl }: { jobId
             <FileText size={14} /> Signing record
           </a>
         )}
-        <form action={removeAgreement} className="ml-auto">
-          <input type="hidden" name="agreement_id" value={agreement.id} />
-          <input type="hidden" name="job_id" value={jobId} />
-          <button className="inline-flex items-center gap-1.5 text-xs text-error hover:underline">
-            <Trash2 size={12} /> Remove and start again
-          </button>
-        </form>
+        {/* A signed agreement is a record of something that happened, so
+            that one asks first. An unsigned one goes on the press. */}
+        <div className="ml-auto">
+          {confirming ? (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-error">Delete this signed agreement?</span>
+              <button type="button" onClick={remove} className="text-xs font-semibold text-error hover:underline">
+                Yes, remove it
+              </button>
+              <button type="button" onClick={() => setConfirming(false)} className="text-xs text-muted hover:underline">
+                Keep it
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => (progress.signed > 0 ? setConfirming(true) : remove())}
+              className="inline-flex items-center gap-1.5 text-xs text-error hover:underline"
+            >
+              <Trash2 size={12} /> Remove and start again
+            </button>
+          )}
+        </div>
       </div>
 
       {state?.error && <div className="text-sm text-error">{state.error}</div>}
