@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Pencil, RotateCcw } from "lucide-react";
 import { updateDocText } from "@/lib/actions/jobs";
+import { useCommitOnOutsidePress } from "@/lib/useCommitOnOutsidePress";
 
 // Any block of wording on a generated document, made editable in place.
 //
@@ -39,11 +40,13 @@ export function EditableDocText({
   const [draft, setDraft] = useState(value);
   const [, startTransition] = useTransition();
   // What is on screen while the save travels, so editing never flickers
-  // back to the old wording.
-  const [shown, setShown] = useState(value);
+  // back to the old wording. null means "whatever the server last sent",
+  // which is what a reset needs — the standard wording only exists there.
+  const [shown, setShown] = useState<string | null>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
 
   function save(text: string) {
-    setShown(text);
+    setShown(text || null);
     setEditing(false);
     startTransition(async () => {
       const fd = new FormData();
@@ -54,9 +57,13 @@ export function EditableDocText({
     });
   }
 
+  // Pressing anywhere else on the page keeps the edit rather than
+  // discarding it — the Save button stays for anyone who looks for one.
+  const markHandled = useCommitOnOutsidePress(boxRef, editing, () => save(draft));
+
   if (editing) {
     return (
-      <div className="print:hidden">
+      <div ref={boxRef} className="print:hidden">
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -65,17 +72,17 @@ export function EditableDocText({
           className="w-full px-3 py-2 rounded-md border border-icon text-sm font-sans outline-none focus:ring-2 focus:ring-icon"
         />
         <div className="text-[11px] text-placeholder mt-1">
-          {as === "lines" ? "One item per line." : as === "paragraphs" ? "Leave an empty line between paragraphs." : "A single line of text."}
+          {as === "lines" ? "One item per line." : as === "paragraphs" ? "Leave an empty line between paragraphs." : "A single line of text."} Press anywhere outside to save.
         </div>
         <div className="flex gap-2 mt-2">
-          <button type="button" onClick={() => save(draft)} className="px-3 py-1.5 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-700">
+          <button type="button" onPointerDown={markHandled} onClick={() => save(draft)} className="px-3 py-1.5 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-700">
             Save
           </button>
-          <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-xs text-placeholder hover:bg-hover">
+          <button type="button" onPointerDown={markHandled} onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-xs text-placeholder hover:bg-hover">
             Cancel
           </button>
           {overridden && (
-            <button type="button" onClick={() => save("")} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs text-placeholder hover:bg-hover">
+            <button type="button" onPointerDown={markHandled} onClick={() => save("")} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs text-placeholder hover:bg-hover">
               <RotateCcw size={11} /> Reset to standard wording
             </button>
           )}
@@ -84,7 +91,7 @@ export function EditableDocText({
     );
   }
 
-  const text = shown;
+  const text = shown ?? value;
 
   return (
     <div className="group relative">
