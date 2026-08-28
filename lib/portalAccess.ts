@@ -49,3 +49,22 @@ export function accessClosedNotice(records: OcLike[]): string {
   const on = closes ? formatISODate(closes.toISOString().slice(0, 10)) : "";
   return `This project is complete and its certificates were available to download here until ${on}. Please contact us if you need a further copy.`;
 }
+
+// Whether the client may book an inspection yet.
+//
+// Building work does not start on the day the certificate is issued; it
+// starts once the Notice of Commencement has been given, and that waits
+// on the documents the NOC checklist asks for. A client booking a slab
+// inspection while the insurance certificate is still outstanding is
+// booking a visit to a site nobody may lawfully be working on.
+//
+// A job whose certifier has put nothing on the NOC checklist has nothing
+// to complete, so it blocks nothing — the same rule that decides whether
+// the Occupation Certificate stage is locked.
+//
+// The database enforces this too (migration 0048). This is the same
+// judgement, made early enough to explain itself on screen rather than
+// as an error after the client has chosen a date.
+export function inspectionBookingOpen(nocItems: { status: string }[]): boolean {
+  return nocItems.length === 0 || nocItems.every((item) => item.status === "approved");
+}

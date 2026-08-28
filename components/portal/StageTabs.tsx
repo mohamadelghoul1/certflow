@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Lock, Check } from "lucide-react";
 
-// The three stage panels arrive fully rendered from the server; switching
+// Every stage panel arrives fully rendered from the server; switching
 // between them is just showing a different one, so it happens in the
 // browser instantly instead of asking the server to rebuild the page.
 export function StageTabs({
@@ -11,9 +11,7 @@ export function StageTabs({
   initialStage,
   ocLocked,
   nocProgress,
-  approval,
-  noc,
-  oc,
+  panels,
 }: {
   tabs: { key: string; label: string; done: boolean; locked?: boolean }[];
   initialStage: string;
@@ -21,9 +19,9 @@ export function StageTabs({
   // e.g. "2/5" — shown in the locked panel so the client can see how close
   // the Notice of Commencement is to opening the OC stage.
   nocProgress: string | null;
-  approval: ReactNode;
-  noc: ReactNode;
-  oc: ReactNode;
+  // One rendered panel per tab, keyed by the tab's key. Every one arrives
+  // fully rendered, which is what makes switching instant.
+  panels: Record<string, ReactNode>;
 }) {
   const [stage, setStage] = useState(initialStage);
 
@@ -75,8 +73,7 @@ export function StageTabs({
         })}
       </div>
 
-      {stage === "approval" && approval}
-      {stage === "noc" && noc}
+      {stage !== "oc" && panels[stage]}
       {stage === "oc" &&
         (ocLocked ? (
           <div className="bg-white rounded-lg border border-line p-8 text-center">
@@ -91,7 +88,7 @@ export function StageTabs({
             </button>
           </div>
         ) : (
-          oc
+          panels.oc
         ))}
     </>
   );

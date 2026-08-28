@@ -9,7 +9,7 @@ import { StageTabs } from "@/components/portal/StageTabs";
 import { displayStatus, unresolvedCount, checklistProgress, formatISODate, todayISO } from "@/lib/business";
 import { currentDocuments } from "@/lib/checklistDocuments";
 import { ItemDropCard } from "@/components/portal/ItemDropCard";
-import { certificatesDownloadable, accessClosedNotice } from "@/lib/portalAccess";
+import { certificatesDownloadable, accessClosedNotice, inspectionBookingOpen } from "@/lib/portalAccess";
 import { clientPortalInvoices } from "@/lib/invoices/portalInvoices";
 import { PortalInvoices } from "@/components/portal/PortalInvoices";
 import { signedUrl } from "@/lib/storage";
@@ -110,13 +110,22 @@ export default async function PortalJobPage({
   // A PC/OC-only job has no CDC or CC: its pathway checklist is the PC
   // appointment paperwork, so the first tab says so.
   const approvalLabel = job.pathway === "PC_OC" ? "PC Appointment" : pathwayLabel(job.pathway);
-  const stage = stageParam === "noc" || stageParam === "oc" ? stageParam : "approval";
+  const stage = stageParam === "noc" || stageParam === "oc" || stageParam === "inspections" ? stageParam : "approval";
+
+  // Inspections can only be booked once the Notice of Commencement
+  // checklist is complete: building work does not start on the day the
+  // certificate is issued, it starts once the Notice has been given.
+  // Refused by the database too — see migration 0048.
+  const jobInspections = (inspections as (Inspection & { defects: Defect[] })[]) || [];
+  const bookingOpen = inspectionBookingOpen(nocItems);
 
   const tabs: { key: string; label: string; done: boolean; locked?: boolean }[] = [
     // Green once there is nothing left for the client to do here: every
     // document approved, or the certificate already in their hands.
     { key: "approval", label: approvalLabel, done: !!job.pathway_sent_to_client || (pathwayItems.length > 0 && pathwayItems.every((i) => i.status === "approved")) },
     { key: "noc", label: "PC — Notice of Commencement", done: nocComplete },
+    // Done once every inspection has an outcome — nothing left to attend.
+    { key: "inspections", label: "Inspections", done: jobInspections.length > 0 && jobInspections.every((i) => i.outcome !== "pending") },
     { key: "oc", label: "Occupation Certificate", done: (ocRecords || []).some((r) => r.sent_to_client), locked: ocLocked },
   ];
 
@@ -167,9 +176,18 @@ export default async function PortalJobPage({
         <div className="space-y-6">
           <StageSection title="Notice of Commencement (NOC) — checklist" items={nocItems} jobId={id} firmId={job.firm_id} formIds={formIds} />
           {nocItems.length === 0 && <EmptyStage label="Notice of Commencement" />}
-
-          <InspectionsSection jobId={id} firmId={job.firm_id} pathwayGenerated={job.pathway_generated} inspections={(inspections as (Inspection & { defects: Defect[] })[]) || []} certifiers={certifiers || []} />
         </div>
+  );
+
+  const inspectionsPanel = (
+        <InspectionsSection
+          jobId={id}
+          pathwayGenerated={job.pathway_generated}
+          inspections={jobInspections}
+          certifiers={certifiers || []}
+          bookingOpen={bookingOpen}
+          nocProgress={checklistProgress(nocItems)}
+        />
   );
 
   // Not rendered at all while locked — the lock panel lives in StageTabs.
@@ -215,9 +233,7 @@ export default async function PortalJobPage({
         initialStage={stage}
         ocLocked={ocLocked}
         nocProgress={checklistProgress(nocItems)}
-        approval={approvalPanel}
-        noc={nocPanel}
-        oc={ocPanel}
+        panels={{ approval: approvalPanel, noc: nocPanel, inspections: inspectionsPanel, oc: ocPanel }}
       />
 
       <div className="text-[11px] text-placeholder text-center">Signed in as {profile.email}</div>
@@ -347,39 +363,75 @@ async function StageSection({
 
 async function InspectionsSection({
   jobId,
-  firmId,
   pathwayGenerated,
   inspections,
   certifiers,
+  bookingOpen,
+  nocProgress,
 }: {
   jobId: string;
-  firmId: string;
   pathwayGenerated: boolean;
   inspections: (Inspection & { defects: Defect[] })[];
   certifiers: Certifier[];
+  // Booking waits on the Notice of Commencement — see migration 0048.
+  bookingOpen: boolean;
+  nocProgress: string | null;
 }) {
-  if (!pathwayGenerated) return null;
-  void firmId;
+  if (!pathwayGenerated) {
+    return (
+      <div className="bg-white rounded-lg border border-line p-6 text-sm text-muted text-center">
+        Inspections are listed here once your certificate has been issued.
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-lg border border-line">
-      <div className="px-5 py-3 border-b border-line font-bold text-primary">Inspections</div>
-      <div className="p-5 space-y-3">
-        {inspections.map((insp) => {
-          const meta = OUTCOME_META[insp.outcome];
-          const inspector = certifiers.find((c) => c.id === insp.inspector_certifier_id);
-          return (
-            <InspectionCard key={insp.id} insp={insp} jobId={jobId} meta={meta} inspectorName={inspector?.name} />
-          );
-        })}
+    <div className="space-y-6">
+      {/* Said once, at the top, rather than repeated under every
+          inspection: the reason no dates can be chosen yet. */}
+      {!bookingOpen && (
+        <div className="bg-warning-bg border border-warning rounded-lg px-5 py-4">
+          <div className="text-sm font-semibold text-warning-text">Booking opens once the Notice of Commencement is complete</div>
+          <div className="text-sm text-warning-text mt-1">
+            Building work cannot start until the Notice of Commencement of Work has been issued, so inspections cannot be booked until then. Provide the
+            outstanding documents on the <strong>PC — Notice of Commencement</strong> tab
+            {nocProgress ? ` (${nocProgress} approved so far)` : ""} and booking opens here automatically.
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-lg border border-line">
+        <div className="px-5 py-3 border-b border-line font-bold text-primary">Inspections</div>
+        <div className="p-5 space-y-3">
+          {inspections.map((insp) => {
+            const meta = OUTCOME_META[insp.outcome];
+            const inspector = certifiers.find((c) => c.id === insp.inspector_certifier_id);
+            return <InspectionCard key={insp.id} insp={insp} jobId={jobId} meta={meta} inspectorName={inspector?.name} bookingOpen={bookingOpen} />;
+          })}
+          {inspections.length === 0 && (
+            <div className="py-6 text-center text-sm text-muted">Your certifier hasn&rsquo;t scheduled any inspections for this project yet.</div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-async function InspectionCard({ insp, jobId, meta, inspectorName }: { insp: Inspection & { defects: Defect[] }; jobId: string; meta: { label: string; style: string }; inspectorName?: string }) {
+async function InspectionCard({
+  insp,
+  jobId,
+  meta,
+  inspectorName,
+  bookingOpen,
+}: {
+  insp: Inspection & { defects: Defect[] };
+  jobId: string;
+  meta: { label: string; style: string };
+  inspectorName?: string;
+  bookingOpen: boolean;
+}) {
   const reportUrl = await signedUrl(insp.report_file_path);
-  const canBook = insp.outcome === "pending";
+  const canBook = insp.outcome === "pending" && bookingOpen;
 
   return (
     <div className="border border-line rounded-md p-4">

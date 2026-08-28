@@ -201,6 +201,15 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Records anything that breaks and emails you the first time, on Audit → Faults.",
       probe: hasTable(supabase, "error_events"),
     },
+    {
+      migration: "0048",
+      label: "Inspection booking waits for the NOC",
+      detail: "Stops a client booking an inspection until the Notice of Commencement checklist is complete.",
+      // The rule itself sits inside a function that has existed since the
+      // beginning, so what is probed is the helper this migration adds
+      // alongside it — the one thing that is only there once it has run.
+      probe: hasFunction(supabase, "noc_checklist_outstanding", { p_job_id: null }),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));

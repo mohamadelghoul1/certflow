@@ -1,6 +1,6 @@
-import { test } from "node:test";
+import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { certificatesDownloadable, accessClosesAt, wholeOcIssuedAt, CERTIFICATE_ACCESS_DAYS } from "@/lib/portalAccess";
+import { certificatesDownloadable, accessClosesAt, wholeOcIssuedAt, inspectionBookingOpen, CERTIFICATE_ACCESS_DAYS } from "@/lib/portalAccess";
 
 const whole = (date: string) => ({ type: "whole" as const, generated_date: date });
 const partial = (date: string) => ({ type: "partial" as const, generated_date: date });
@@ -39,4 +39,26 @@ test("re-issuing a whole certificate cannot extend the window", () => {
 test("a whole certificate with no issue date falls back to when it was created", () => {
   const records = [{ type: "whole" as const, generated_date: null, created_at: "2026-08-01T00:00:00Z" }];
   assert.equal(certificatesDownloadable(records, daysAfter("2026-08-01", 30)), false);
+});
+
+// An inspection booked before the Notice of Commencement is a visit to a
+// site nobody may lawfully be working on. The database refuses it too
+// (migration 0048); this is the same judgement made early enough to
+// explain itself on screen.
+describe("when a client may book an inspection", () => {
+  test("not while any Notice of Commencement item is outstanding", () => {
+    assert.equal(inspectionBookingOpen([{ status: "approved" }, { status: "submitted" }]), false);
+    assert.equal(inspectionBookingOpen([{ status: "pending" }]), false);
+    assert.equal(inspectionBookingOpen([{ status: "approved" }, { status: "changes_requested" }]), false);
+  });
+
+  test("once every item has been approved", () => {
+    assert.equal(inspectionBookingOpen([{ status: "approved" }, { status: "approved" }]), true);
+  });
+
+  // A certifier who has put nothing on the NOC checklist has asked for
+  // nothing, so there is nothing to wait for.
+  test("a job with no Notice of Commencement checklist is not held up by one", () => {
+    assert.equal(inspectionBookingOpen([]), true);
+  });
 });
