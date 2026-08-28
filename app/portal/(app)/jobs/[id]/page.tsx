@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Download, AlertTriangle } from "lucide-react";
+import { Download, AlertTriangle, FileDown } from "lucide-react";
 import { StageTabs } from "@/components/portal/StageTabs";
 import { displayStatus, unresolvedCount, checklistProgress, formatISODate } from "@/lib/business";
 import { currentDocuments } from "@/lib/checklistDocuments";
@@ -166,14 +166,24 @@ export default async function PortalJobPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href="/portal" className="text-xs text-placeholder hover:text-primary">
-          ← All projects
-        </Link>
-        <h1 className="text-xl font-bold text-primary mt-1">{job.address}</h1>
-        <div className="text-sm text-placeholder">
-          {pathwayLabel(job.pathway)} · {job.description}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <Link href="/portal" className="text-xs text-placeholder hover:text-primary">
+            ← All projects
+          </Link>
+          <h1 className="text-xl font-bold text-primary mt-1">{job.address}</h1>
+          <div className="text-sm text-placeholder">
+            {pathwayLabel(job.pathway)} · {job.description}
+          </div>
         </div>
+        {/* The whole checklist as a document to keep or forward — the
+            page it opens carries its own Save as PDF. */}
+        <Link
+          href={`/portal/jobs/${id}/checklist`}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-primary/50 text-primary bg-white text-sm font-semibold hover:bg-surface shrink-0"
+        >
+          <FileDown size={16} /> Checklist PDF
+        </Link>
       </div>
 
       <StageTabs
