@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { flushJobUploads, digestEmail } from "@/lib/uploadDigest";
 import { notifyJobCertifier } from "@/lib/email";
+import { currentDocuments } from "@/lib/checklistDocuments";
 
 // A client sending a document in from the portal. The file itself is
 // uploaded straight from their browser to storage; this records it
@@ -23,6 +24,24 @@ export async function submitClientDocument({
   fileName: string;
 }): Promise<{ error?: string }> {
   const supabase = await createClient();
+
+  // One document per item: once it's sent, the item is closed to the
+  // client until the certifier asks for something more. Enforced here as
+  // well as in the portal's buttons, so a tab left open from before the
+  // document was sent can't slip a second one in behind it.
+  const { data: item } = await supabase
+    .from("checklist_items")
+    .select("status, file_path, amendments(resolved), checklist_item_files(*)")
+    .eq("id", itemId)
+    .single();
+  if (item) {
+    const alreadySent = currentDocuments(item).length > 0;
+    const changesRequested = ((item.amendments as { resolved: boolean }[] | null) || []).some((a) => !a.resolved);
+    if (item.status === "approved") return { error: "This document has been approved — your certifier can replace it if it needs to change." };
+    if (alreadySent && !changesRequested) {
+      return { error: "This document is with your certifier for review. You'll be able to send another once they ask for changes." };
+    }
+  }
 
   // Runs as the signed-in client, and the function itself refuses any
   // item that isn't on one of their own jobs — so reaching the

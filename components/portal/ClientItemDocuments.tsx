@@ -7,19 +7,18 @@ import type { ChecklistItem, ChecklistItemFile } from "@/types/db";
 
 type ItemWithFiles = ChecklistItem & { checklist_item_files?: ChecklistItemFile[] | null };
 
-// The documents sent for one checklist item.
+// The document sent for one checklist item.
 //
-// Usually one, but some items are satisfied by two — two structural
-// certificates for a single certification, a report and its addendum —
-// and both belong in the approval. Each can be replaced on its own, so
-// sending a corrected version of the second doesn't disturb the first.
+// One per item from the client's side, and the item closes once it's
+// sent: the certifier is reviewing it, and a second file arriving
+// beside the first only raises the question of which one counts. A
+// requested change reopens it — the corrected copy goes up as a new
+// version of the same document, keeping the history in one line. Where
+// a job genuinely needs two documents under one item, the certifier
+// adds the second from their side.
 //
-// Two is as far as a client can go. A third document is nearly always a
-// new version of one already sent, and every extra one lands in the
-// approval; where a job genuinely needs more, the certifier adds it. The
-// database refuses a third either way — this only decides what is
-// offered, so the limit reads as a limit rather than as an error after
-// the file has already gone up.
+// `canUpload` carries that decision from the page, which knows the
+// item's status and whether any requested change is outstanding.
 export async function ClientItemDocuments({ item, jobId, firmId, canUpload }: { item: ItemWithFiles; jobId: string; firmId: string; canUpload: boolean }) {
   const docs = currentDocuments(item);
   const pathPrefix = `${firmId}/${jobId}/checklist/${item.id}`;

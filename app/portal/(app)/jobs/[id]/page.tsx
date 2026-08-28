@@ -246,13 +246,18 @@ async function StageSection({
           // disambiguate; the card itself won't guess).
           const docs = currentDocuments(item);
           const dropNo = docs.length === 0 ? 1 : docs.length === 1 ? docs[0].documentNo : null;
+          // One upload, then the item locks: a submitted document waits
+          // for the certifier, and only a requested change (an unresolved
+          // amendment) reopens uploading — as a new version of the same
+          // document. Approval locks it for good.
+          const canUpload = item.status !== "approved" && (docs.length === 0 || unresolved.length > 0);
           return (
             <ItemDropCard
               key={item.id}
               itemId={item.id}
               pathPrefix={`${firmId}/${jobId}/checklist/${item.id}`}
               documentNo={dropNo}
-              enabled={item.status !== "approved" && dropNo !== null}
+              enabled={canUpload && dropNo !== null}
               label={docs.length === 0 ? "Drop to upload" : "Drop to upload a new version"}
               className={`border rounded-md p-4 ${tone}`}>
               <div className="flex items-center gap-2">
@@ -296,7 +301,7 @@ async function StageSection({
               {/* What has already been sent for this item — every document
                   on it, each with its own history, so a client can check
                   what the certifier is holding before sending more. */}
-              <ClientItemDocuments item={item} jobId={jobId} firmId={firmId} canUpload={item.status !== "approved"} />
+              <ClientItemDocuments item={item} jobId={jobId} firmId={firmId} canUpload={canUpload} />
             </ItemDropCard>
           );
         })}
