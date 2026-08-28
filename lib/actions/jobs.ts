@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordReviewEvent } from "@/lib/reviewDigest";
+import { pruneSupersededVersions } from "@/lib/documentPruning";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -460,6 +461,10 @@ export async function approveItem(formData: FormData) {
     } catch (err) {
       console.error("review notification failed", err);
     }
+    // The Notice of Commencement issues no certificate of its own, so
+    // the moment its last item is approved is the point the stage is
+    // finished — the same point that opens the OC stage to the client.
+    await pruneNocIfComplete(jobId, itemId);
   });
   revalidatePath(`/jobs/${jobId}`);
 }
@@ -1024,8 +1029,43 @@ export async function issuePathwayCertificate(_prev: ActionState, formData: Form
   // Date of determination = the date this (or the latest re-issued)
   // certificate is generated — no separate manual entry needed.
   await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { certificateDetails: { determinationDate: generatedDate } });
+
+  // The approval is out; the drafts that led to it are dead weight.
+  after(() => pruneAfterIssue({ jobId, kind: "pathway", firmId: profile.firm_id }));
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
+}
+
+async function pruneNocIfComplete(jobId: string, itemId: string) {
+  try {
+    const admin = createAdminClient();
+    const { data: item } = await admin.from("checklist_items").select("checklist_id").eq("id", itemId).single();
+    if (!item) return;
+    const { data: checklist } = await admin.from("checklists").select("id, kind").eq("id", item.checklist_id).single();
+    if (checklist?.kind !== "noc") return;
+
+    const { data: siblings } = await admin.from("checklist_items").select("status").eq("checklist_id", checklist.id);
+    if (!siblings || siblings.length === 0 || !siblings.every((i) => i.status === "approved")) return;
+
+    const { data: job } = await admin.from("jobs").select("firm_id, address").eq("id", jobId).single();
+    await pruneSupersededVersions(admin, { jobId, kind: "noc", firmId: job?.firm_id ?? null, jobAddress: job?.address ?? null });
+  } catch (err) {
+    console.error("could not clear superseded versions", err);
+  }
+}
+
+// Superseded copies go once a stage's certificate is issued — see
+// lib/documentPruning. Always after the response: the certifier is
+// waiting on the certificate, not on housekeeping, and a failure here
+// must never fail the issuing.
+async function pruneAfterIssue({ jobId, kind, firmId }: { jobId: string; kind: "pathway" | "noc" | "oc"; firmId: string | null }) {
+  try {
+    const admin = createAdminClient();
+    const { data: job } = await admin.from("jobs").select("address").eq("id", jobId).single();
+    await pruneSupersededVersions(admin, { jobId, kind, firmId, jobAddress: job?.address ?? null });
+  } catch (err) {
+    console.error("could not clear superseded versions", err);
+  }
 }
 
 // Separate from issuing: generating the certificate package no longer signs
@@ -1279,6 +1319,9 @@ export async function issueOc(_prev: ActionState, formData: FormData): Promise<A
 
   const { error } = await supabase.from("oc_records").insert({ job_id: jobId, type, description, generated_date: todayISO(), issued_by: certifierId, portal_ref: portalRef });
   if (error) return { error: error.message };
+
+  const { data: ocJob } = await supabase.from("jobs").select("firm_id").eq("id", jobId).single();
+  after(() => pruneAfterIssue({ jobId, kind: "oc", firmId: ocJob?.firm_id ?? null }));
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
 }

@@ -177,6 +177,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Emails the client when their documents are approved or need changes.",
       probe: hasTable(supabase, "review_events"),
     },
+    {
+      migration: "0043",
+      label: "Storage report",
+      detail: "Shows what each project is holding, in Settings → Storage.",
+      probe: hasFunction(supabase, "firm_storage_usage", {}),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));

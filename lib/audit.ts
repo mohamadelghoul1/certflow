@@ -30,7 +30,8 @@ export type AuditAction =
   | "invoice.sent"
   | "invoice.paid"
   | "invoice.reminder"
-  | "backup.failed";
+  | "backup.failed"
+  | "documents.pruned";
 
 export type AuditSeverity = "info" | "warning" | "error";
 

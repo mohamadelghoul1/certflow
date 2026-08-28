@@ -6,9 +6,11 @@ import { getBackupStatus } from "@/lib/actions/backup";
 import { DocumentLibrarySection } from "@/components/certifier/DocumentLibrarySection";
 import { signedUrl } from "@/lib/storage";
 import { runSystemChecks, runEnvChecks, runNotificationChecks } from "@/lib/systemCheck";
+import { getStorageUsage } from "@/lib/storageUsage";
+import { StorageSection } from "@/components/certifier/StorageSection";
 import { SystemCheckSection } from "@/components/certifier/SystemCheckSection";
 import Link from "next/link";
-import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, Activity, type LucideIcon } from "lucide-react";
+import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, Activity, type LucideIcon, HardDrive } from "lucide-react";
 
 // Settings, one section at a time. Everything used to sit on one long
 // page; finding the certifier list meant scrolling past the firm form
@@ -24,6 +26,7 @@ const SECTIONS: { key: string; label: string; icon: LucideIcon; blurb: string }[
   { key: "clients", label: "Clients & portal access", icon: KeyRound, blurb: "Contacts and their portal logins" },
   { key: "library", label: "Document library", icon: Library, blurb: "What each checklist asks for" },
   { key: "backup", label: "Cloud backup", icon: CloudUpload, blurb: "Copies in your own Dropbox or OneDrive" },
+  { key: "storage", label: "Storage", icon: HardDrive, blurb: "What each project is holding" },
   { key: "system", label: "System check", icon: Activity, blurb: "Database updates and connected services" },
 ];
 
@@ -73,6 +76,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       })
     );
     content = <DocumentLibrarySection items={libraryItems || []} firmId={profile.firm_id} templateUrls={templateUrls} />;
+  } else if (active.key === "storage") {
+    content = <StorageSection usage={await getStorageUsage(supabase, profile.firm_id)} />;
   } else if (active.key === "backup") {
     const backup = await getBackupStatus(profile.firm_id);
     content = <CloudBackupSection configured={backup.configured} connections={backup.connections} />;
