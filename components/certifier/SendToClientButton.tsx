@@ -33,6 +33,10 @@ export function SendToClientButton({
           {pending ? "Sending…" : "Send to client"}
         </button>
       </form>
+      {/* The reason a disabled button is disabled, in plain sight rather
+          than in a tooltip nobody hovers — pressing a greyed-out button
+          and getting nothing is how this step gets missed. */}
+      {disabled && disabledReason && <span className="text-xs text-muted">{disabledReason}</span>}
       {state?.error && <span className="text-xs text-error">{state.error}</span>}
     </div>
   );

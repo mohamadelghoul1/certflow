@@ -425,22 +425,6 @@ export type PathwayCertificateVersion = {
   created_at: string;
 };
 
-// A copy of an issued approval that the client sent in — the council's
-// stamped return, the Planning Portal's endorsed version, a scan of the
-// signed original. Deliberately kept apart from the firm's own issued
-// file: a client can add a copy, never replace what was issued.
-// Added by migration 0046.
-export type ClientApprovalCopy = {
-  id: string;
-  job_id: string;
-  kind: "pathway" | "oc";
-  oc_record_id: string | null;
-  file_path: string;
-  file_name: string | null;
-  uploaded_by: string | null;
-  created_at: string;
-};
-
 export type OcRecord = {
   cert_ref: string | null;
   // The NSW Planning Portal reference this certificate was lodged under

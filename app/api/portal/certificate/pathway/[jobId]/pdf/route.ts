@@ -1,0 +1,48 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { requireProfile } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getPathwayCertificateData } from "@/lib/certificates/pathwayData";
+import { buildCertificatePackagePdf } from "@/lib/pdf/certificatePackage";
+import { fetchStampImage } from "@/lib/pdf/stamp";
+import { certificatesDownloadable } from "@/lib/portalAccess";
+import { attachmentHeader, jobDocumentName } from "@/lib/downloadName";
+
+// The client's own copy of the CDC/CC, as a PDF.
+//
+// A PDF rather than the Word file next door: a certificate handed to the
+// person it was issued to should be a finished document, not an editable
+// one. The Word export stays where it belongs — with the certifier, for
+// editing before the certificate goes out.
+//
+// Authorisation is the same three steps as that route: a signed-in
+// client, the job read through their own RLS session, and the
+// certificate released to them. Only then does the admin client
+// assemble the document, because the firm's letterhead and the
+// certifier's signature sit outside what client RLS grants.
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
+  const { jobId } = await params;
+  await requireProfile("client");
+
+  const supabase = await createClient();
+  const { data: job } = await supabase.from("jobs").select("id, firm_id, pathway_sent_to_client").eq("id", jobId).single();
+  if (!job || !job.pathway_sent_to_client) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  const { data: ocRecords } = await supabase.from("oc_records").select("type, generated_date, created_at").eq("job_id", jobId);
+  if (!certificatesDownloadable(ocRecords || [])) return NextResponse.json({ error: "the download window for this project has closed" }, { status: 410 });
+
+  const admin = createAdminClient();
+  const data = await getPathwayCertificateData(jobId, job.firm_id, admin);
+  if (!data) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  const [logo, signature] = await Promise.all([fetchStampImage(data.logoUrl), fetchStampImage(data.signatureUrl)]);
+  const bytes = await buildCertificatePackagePdf(data, { logo, signature });
+
+  return new NextResponse(new Uint8Array(bytes), {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": attachmentHeader(jobDocumentName(data.ref, data.job.address || "", "Certificate", "pdf")),
+      "Cache-Control": "no-store",
+    },
+  });
+}

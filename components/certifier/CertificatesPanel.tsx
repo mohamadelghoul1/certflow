@@ -1,7 +1,6 @@
 import { formatISODate, stageComplete, resolvePathwayCertRef, portalRefKindFor } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { setVisiblePathwayVersion, startModification, uploadModificationApproval, uploadPathwayApproval, notifyClientMessage } from "@/lib/actions/jobs";
-import { ClientApprovalCopies } from "@/components/certifier/ClientApprovalCopies";
 import { NotifyClientButton } from "@/components/certifier/NotifyClientButton";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
@@ -154,10 +153,6 @@ export async function CertificatesPanel({
               )}
             </div>
           )}
-
-          {/* Anything the client has sent back: the copy council stamped
-              and returned, the version endorsed on the Planning Portal. */}
-          {job.pathway_generated && <ClientApprovalCopies jobId={job.id} kind="pathway" />}
 
           {versions.length > 0 && (
             <div className="mt-4 pt-4 border-t border-line space-y-3">

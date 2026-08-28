@@ -195,12 +195,6 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Lets you choose where on the contract the signatures are printed.",
       probe: hasColumn(supabase, "engagement_agreements", "signature_page"),
     },
-    {
-      migration: "0046",
-      label: "Client's copy of an issued certificate",
-      detail: "Lets a client send back the stamped or endorsed copy they hold, filed beside your own.",
-      probe: hasTable(supabase, "client_approval_copies"),
-    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));
