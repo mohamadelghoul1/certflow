@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Download, AlertTriangle, FileDown } from "lucide-react";
 import { StageTabs } from "@/components/portal/StageTabs";
-import { displayStatus, unresolvedCount, checklistProgress, formatISODate, todayISO } from "@/lib/business";
+import { displayStatus, unresolvedCount, checklistProgress, formatISODate, todayISO, BOOKING_RULE_NOTE } from "@/lib/business";
 import { currentDocuments } from "@/lib/checklistDocuments";
 import { ItemDropCard } from "@/components/portal/ItemDropCard";
 import { certificatesDownloadable, accessClosedNotice, inspectionBookingOpen } from "@/lib/portalAccess";
@@ -458,7 +458,7 @@ async function InspectionCard({
       {canBook && (
         <div className="mt-3">
           <BookInspectionForm inspectionId={insp.id} jobId={jobId} />
-          <div className="text-[11px] text-placeholder mt-1">Weekend dates aren&apos;t available — we&apos;ll suggest the next working day automatically.</div>
+          <div className="text-[11px] text-placeholder mt-1">{BOOKING_RULE_NOTE}</div>
         </div>
       )}
       {insp.booked_by_client && !insp.confirmed && <div className="text-xs text-warning-text mt-2">Awaiting confirmation from your certifier.</div>}

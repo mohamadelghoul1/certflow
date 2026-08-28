@@ -149,52 +149,99 @@ export function daysUntil(isoDate?: string | null) {
 }
 
 // ---------------------------------------------------------------------------
-// Inspection booking rules (Build Brief §15). The Postgres functions
-// earliest_bookable_inspection_date / client_book_inspection in the
-// migration are the source of truth enforced server-side; these mirror the
-// same rules client-side purely so the UI can suggest a valid date before
-// the server call, and show the "why" to the client immediately.
+// Inspection booking rules.
+//
+// The Postgres functions earliest_bookable_inspection_date and
+// client_book_inspection are the source of truth, enforced server-side.
+// These mirror the same rules in the browser purely so the form can
+// suggest a valid date before the server is asked, and explain why.
+//
+// The two copies must agree exactly. A suggestion the database then
+// refuses is worse than no suggestion at all — the client picks a day,
+// presses the button, and is told no by something they cannot see.
+//
+// Everything below works in Sydney time, whatever the clock on the
+// visitor's own device says. A builder checking the portal from
+// overseas is still booking a tradesman's morning in New South Wales.
 // ---------------------------------------------------------------------------
 
-function pushOffWeekend(date: Date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  if (day === 6) d.setDate(d.getDate() + 3);
-  else if (day === 0) d.setDate(d.getDate() + 2);
-  return d;
+const SUNDAY = 0;
+const FRIDAY = 5;
+const SATURDAY = 6;
+
+// Ask before 1pm and tomorrow is available; ask after it and the
+// earliest is the day after. Half a working day is the least notice an
+// inspector can be given.
+const BOOKING_CUTOFF_HOUR = 13;
+
+// Today's date and hour where the work is, not where the browser is.
+function sydneyNow(now: Date): { date: string; hour: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Australia/Sydney",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value || "00";
+  return { date: `${get("year")}-${get("month")}-${get("day")}`, hour: Number(get("hour")) };
 }
-export function earliestBookableInspectionDate(now = new Date()) {
-  const nowDay = now.getDay();
-  if (nowDay === 6 || nowDay === 0) {
-    const d = new Date(now);
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + (nowDay === 6 ? 3 : 2));
-    return d;
-  }
-  const leadDays = now.getHours() >= 14 ? 2 : 1;
-  const d = new Date(now);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + leadDays);
-  return pushOffWeekend(d);
+
+// Calendar arithmetic done in UTC on a plain date, so a daylight-saving
+// changeover cannot turn "tomorrow" into today at 23:00.
+function addDays(isoDate: string, days: number): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
-function toISODateOnly(date: Date) {
-  return date.toISOString().slice(0, 10);
+
+export function dayOfWeek(isoDate: string): number {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
-export function isValidInspectionBookingDate(isoDateStr: string, now = new Date()) {
+
+// A date landing on a weekend moves to the Tuesday, never the Monday —
+// the same rule that sends a Friday enquiry to Tuesday, for the same
+// reason: a Monday inspection would have to be arranged over a weekend
+// nobody is working.
+function pushOffWeekend(isoDate: string): string {
+  const day = dayOfWeek(isoDate);
+  if (day === SATURDAY) return addDays(isoDate, 3);
+  if (day === SUNDAY) return addDays(isoDate, 2);
+  return isoDate;
+}
+
+// The earliest day an inspection can be booked for, as a plain date.
+export function earliestBookableInspectionDate(now = new Date()): string {
+  const { date, hour } = sydneyNow(now);
+  const today = dayOfWeek(date);
+
+  // Friday and the weekend all point at the same Tuesday.
+  if (today === FRIDAY) return addDays(date, 4);
+  if (today === SATURDAY) return addDays(date, 3);
+  if (today === SUNDAY) return addDays(date, 2);
+
+  return pushOffWeekend(addDays(date, hour >= BOOKING_CUTOFF_HOUR ? 2 : 1));
+}
+
+export function isValidInspectionBookingDate(isoDateStr: string, now = new Date()): boolean {
   if (!isoDateStr) return false;
-  const picked = new Date(isoDateStr + "T00:00:00");
-  const day = picked.getDay();
-  if (day === 0 || day === 6) return false;
-  const earliest = earliestBookableInspectionDate(now);
-  return picked >= earliest;
+  const day = dayOfWeek(isoDateStr);
+  if (day === SATURDAY || day === SUNDAY) return false;
+  return isoDateStr >= earliestBookableInspectionDate(now);
 }
-export function suggestedInspectionBookingDate(isoDateStr: string, now = new Date()) {
+
+// The date to put in the field: what was asked for if it is allowed, and
+// the earliest that is otherwise.
+export function suggestedInspectionBookingDate(isoDateStr: string, now = new Date()): string {
   const earliest = earliestBookableInspectionDate(now);
-  if (!isoDateStr) return toISODateOnly(earliest);
-  const picked = new Date(isoDateStr + "T00:00:00");
-  const adjusted = pushOffWeekend(picked < earliest ? earliest : picked);
-  return toISODateOnly(adjusted);
+  if (!isoDateStr) return earliest;
+  return pushOffWeekend(isoDateStr < earliest ? earliest : isoDateStr);
 }
+
+// The rule in one sentence, for the person choosing a date.
+export const BOOKING_RULE_NOTE =
+  "Ask before 1pm and the earliest is tomorrow; after 1pm it is the day after. Anything asked on a Friday or over the weekend is booked for the Tuesday.";
 
 // What the firm was engaged to do. The first two produce a certificate of
 // our own and then carry the job through as Principal Certifier; the

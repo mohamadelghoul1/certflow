@@ -15,7 +15,12 @@ function findCheck(checks: { label: string; applied: boolean }[], label: string)
 
 describe("checking which database updates have been run", () => {
   test("reports everything applied against an up-to-date database", async () => {
-    const { client } = fakeSupabase(() => ({ data: [], error: null }));
+    // One check asks a function for its answer rather than only whether
+    // it exists, so an up-to-date database has to give that answer: a
+    // Friday enquiry comes back as the Tuesday.
+    const { client } = fakeSupabase((call: Call) =>
+      call.rpc === "earliest_bookable_inspection_date" ? { data: "2026-09-01", error: null } : { data: [], error: null }
+    );
     const checks = await runSystemChecks(client);
 
     assert.ok(checks.length > 0);

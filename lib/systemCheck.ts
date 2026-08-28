@@ -39,6 +39,17 @@ async function hasFunction(supabase: SupabaseClient, name: string, args: Record<
   return !MISSING_FUNCTION.includes(error?.code || "");
 }
 
+// Whether the booking rule has been updated, asked by putting a Friday
+// to it: under the old rule a Friday morning enquiry came back as the
+// Monday, under the new one it is the Tuesday. Nothing else about the
+// function changes shape, so this is the only way to tell.
+async function fridayBooksTuesday(supabase: SupabaseClient): Promise<boolean> {
+  // A Friday at 9am Sydney time. The answer should be the Tuesday after.
+  const { data, error } = await supabase.rpc("earliest_bookable_inspection_date", { p_now: "2026-08-28T09:00:00+10:00" });
+  if (error) return false;
+  return String(data).slice(0, 10) === "2026-09-01";
+}
+
 export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemCheck[]> {
   const checks: { migration: string; label: string; detail: string; probe: Promise<boolean> }[] = [
     {
@@ -209,6 +220,15 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       // beginning, so what is probed is the helper this migration adds
       // alongside it — the one thing that is only there once it has run.
       probe: hasFunction(supabase, "noc_checklist_outstanding", { p_job_id: null }),
+    },
+    {
+      migration: "0049",
+      label: "Inspection notice period",
+      detail: "Before 1pm books tomorrow, after 1pm the day after, and Friday or the weekend books the Tuesday.",
+      // The function has existed since the beginning, so what is asked
+      // here is whether it answers the way this migration makes it: a
+      // Friday enquiry has to come back as the following Tuesday.
+      probe: fridayBooksTuesday(supabase),
     },
   ];
 
