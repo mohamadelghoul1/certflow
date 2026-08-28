@@ -96,3 +96,90 @@ export async function submitClientDocument({
 
   return {};
 }
+
+// The client's own copy of an issued certificate, sent in from the
+// portal.
+//
+// It is filed beside the certificate, never over it: what the firm
+// issued stays exactly as issued, and this sits next to it as "the copy
+// the applicant has". The certifier is told the same way they are told
+// about any other document a client sends in, so a copy that arrives on
+// a Friday afternoon is not waiting to be noticed on Monday.
+export async function submitApprovalCopy({
+  jobId,
+  kind,
+  ocRecordId,
+  filePath,
+  fileName,
+  label,
+}: {
+  jobId: string;
+  kind: "pathway" | "oc";
+  ocRecordId: string | null;
+  filePath: string;
+  fileName: string;
+  // What to call it in the certifier's alert — "the CDC certificate",
+  // "the Whole Occupation Certificate".
+  label: string;
+}): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Please sign in again and try that once more." };
+
+  // Row security does the deciding: the insert only succeeds on a job
+  // this client can see, and only for an OC record on that same job.
+  const { error } = await supabase.from("client_approval_copies").insert({
+    job_id: jobId,
+    kind,
+    oc_record_id: ocRecordId,
+    file_path: filePath,
+    file_name: fileName,
+    uploaded_by: user.id,
+  });
+  if (error) {
+    if (missingTable(error)) return { error: "This isn't switched on yet — let your certifier know so they can finish setting it up." };
+    return { error: error.message };
+  }
+
+  after(async () => {
+    try {
+      const admin = createAdminClient();
+      const title = `Copy of ${label}`;
+      const { error: recordError } = await admin.from("portal_uploads").insert({ job_id: jobId, item_title: title, file_name: fileName });
+      if (recordError) {
+        const { data: job } = await admin.from("jobs").select("address").eq("id", jobId).single();
+        const { subject, html } = digestEmail([{ item_title: title, file_name: fileName }], job?.address ?? null);
+        await notifyJobCertifier(admin, jobId, subject, html);
+      } else {
+        await flushJobUploads(admin, jobId, { requireSettled: false });
+      }
+    } catch (err) {
+      console.error("approval copy notification failed", err);
+    }
+  });
+
+  return {};
+}
+
+// Taking back a copy sent by mistake — the ordinary error here is the
+// wrong file, not a change of heart. Row security allows only the person
+// who uploaded it; the stored file is then removed with the admin
+// client, because clients can write to storage but not delete from it.
+export async function removeApprovalCopy({ id }: { id: string }): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("client_approval_copies").delete().eq("id", id).select("file_path");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "That copy has already been removed." };
+
+  const paths = data.map((row) => row.file_path).filter(Boolean);
+  if (paths.length > 0) await createAdminClient().storage.from("certflow-files").remove(paths);
+  return {};
+}
+
+// A database that hasn't had migration 0046 run yet, said in the four
+// ways PostgREST says it.
+function missingTable(error: { code?: string | null }): boolean {
+  return error.code === "42P01" || error.code === "PGRST205" || error.code === "PGRST204" || error.code === "42703";
+}

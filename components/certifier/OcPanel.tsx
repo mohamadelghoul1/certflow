@@ -8,6 +8,7 @@ import { IssueOcForm } from "@/components/certifier/IssueOcForm";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import { Download } from "lucide-react";
 import { EditableCertRef } from "@/components/certifier/EditableCertRef";
+import { ClientApprovalCopies } from "@/components/certifier/ClientApprovalCopies";
 import type { Job, Certifier, OcRecord, ChecklistItem, Amendment } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
@@ -144,6 +145,7 @@ async function OcRecordCard({ record, sequence, job, certifiers }: { record: OcR
           />
         )}
       </div>
+      <ClientApprovalCopies jobId={job.id} kind="oc" ocRecordId={record.id} />
     </div>
   );
 }

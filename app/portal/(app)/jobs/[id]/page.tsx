@@ -15,7 +15,9 @@ import { PortalInvoices } from "@/components/portal/PortalInvoices";
 import { signedUrl } from "@/lib/storage";
 import { ClientItemDocuments } from "@/components/portal/ClientItemDocuments";
 import { BookInspectionForm } from "@/components/portal/BookInspectionForm";
-import type { ChecklistItem, Amendment, ChecklistItemFile, Certifier, Inspection, Defect, OcRecord } from "@/types/db";
+import type { ChecklistItem, Amendment, ChecklistItemFile, Certifier, Inspection, Defect, OcRecord, ClientApprovalCopy } from "@/types/db";
+import { ApprovalCopyUpload, type ApprovalCopy } from "@/components/portal/ApprovalCopyUpload";
+import { approvalCopiesFor } from "@/lib/approvalCopies";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[]; checklist_item_files?: ChecklistItemFile[] | null };
 
@@ -62,6 +64,23 @@ export default async function PortalJobPage({
   const modChecklists = new Map((checklists || []).filter((c) => c.kind === "modification").map((c) => [c.modification_id, c]));
 
   const pathwayApprovalUrl = await signedUrl(job.pathway_approval_file_path);
+
+  // Copies of the issued certificates that the client has already sent
+  // in, read once for the whole page and split between the certificates
+  // below. A database without migration 0046 returns an error rather
+  // than rows, which simply means no copies — never a broken page.
+  const { data: copyRows } = await supabase.from("client_approval_copies").select("*").eq("job_id", id).order("created_at");
+  const allCopies = (copyRows || []) as ClientApprovalCopy[];
+  const copyUrls = new Map<string, string | null>(
+    await Promise.all(allCopies.map(async (c) => [c.id, await signedUrl(c.file_path)] as [string, string | null]))
+  );
+  const copiesFor = (kind: "pathway" | "oc", ocRecordId?: string | null): ApprovalCopy[] =>
+    approvalCopiesFor(allCopies, kind, ocRecordId).map((c) => ({
+      id: c.id,
+      fileName: c.file_name || "Copy of the certificate",
+      sentOn: formatISODate(c.created_at.slice(0, 10)),
+      url: copyUrls.get(c.id) ?? null,
+    }));
 
   // This project's invoices, for the client actually billed. Read with
   // the admin client because invoices are the firm's records and client
@@ -144,6 +163,18 @@ export default async function PortalJobPage({
                   Download certificate
                 </a>
               )}
+              {/* The copy the owner ends up holding — stamped by council,
+                  endorsed on the Planning Portal — filed beside the
+                  certifier's own rather than emailed around. */}
+              {canDownloadCertificates && (
+                <ApprovalCopyUpload
+                  jobId={job.id}
+                  firmId={job.firm_id}
+                  kind="pathway"
+                  label={`the ${pathwayLabel(job.pathway)} certificate`}
+                  copies={copiesFor("pathway")}
+                />
+              )}
             </div>
           )}
 
@@ -176,7 +207,13 @@ export default async function PortalJobPage({
             <StageSection title="Occupation Certificate — checklist" items={ocItems} jobId={id} firmId={job.firm_id} formIds={formIds} />
             {ocItems.length === 0 && (ocRecords || []).filter((r) => r.sent_to_client).length === 0 && <EmptyStage label="Occupation Certificate" />}
 
-            <OcSection ocRecords={(ocRecords || []).filter((r) => r.sent_to_client)} canDownload={canDownloadCertificates} closedNotice={closedNotice} />
+            <OcSection
+              ocRecords={(ocRecords || []).filter((r) => r.sent_to_client)}
+              canDownload={canDownloadCertificates}
+              closedNotice={closedNotice}
+              firmId={job.firm_id}
+              copiesFor={copiesFor}
+            />
           </div>
   );
 
@@ -418,7 +455,19 @@ async function InspectionCard({ insp, jobId, meta, inspectorName }: { insp: Insp
   );
 }
 
-async function OcSection({ ocRecords, canDownload, closedNotice }: { ocRecords: OcRecord[]; canDownload: boolean; closedNotice: string }) {
+async function OcSection({
+  ocRecords,
+  canDownload,
+  closedNotice,
+  firmId,
+  copiesFor,
+}: {
+  ocRecords: OcRecord[];
+  canDownload: boolean;
+  closedNotice: string;
+  firmId: string;
+  copiesFor: (kind: "pathway" | "oc", ocRecordId?: string | null) => ApprovalCopy[];
+}) {
   if (ocRecords.length === 0) return null;
   return (
     <div className="bg-white rounded-lg border border-line">
@@ -426,14 +475,14 @@ async function OcSection({ ocRecords, canDownload, closedNotice }: { ocRecords: 
       <div className="p-5 space-y-3">
         {!canDownload && <div className="text-sm text-muted">{closedNotice}</div>}
         {ocRecords.map((r) => (
-          <OcRecordCard key={r.id} record={r} canDownload={canDownload} />
+          <OcRecordCard key={r.id} record={r} canDownload={canDownload} firmId={firmId} copies={copiesFor("oc", r.id)} />
         ))}
       </div>
     </div>
   );
 }
 
-async function OcRecordCard({ record, canDownload }: { record: OcRecord; canDownload: boolean }) {
+async function OcRecordCard({ record, canDownload, firmId, copies }: { record: OcRecord; canDownload: boolean; firmId: string; copies: ApprovalCopy[] }) {
   const url = await signedUrl(record.approval_file_path);
   return (
     <div className="border border-line rounded-md p-4">
@@ -458,6 +507,16 @@ async function OcRecordCard({ record, canDownload }: { record: OcRecord; canDown
             Download full set (with inspection reports)
           </a>
         </div>
+      )}
+      {canDownload && (
+        <ApprovalCopyUpload
+          jobId={record.job_id}
+          firmId={firmId}
+          kind="oc"
+          ocRecordId={record.id}
+          label={`the ${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate`}
+          copies={copies}
+        />
       )}
     </div>
   );
