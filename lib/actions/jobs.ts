@@ -12,6 +12,7 @@ import { PRIOR_APPROVAL_DOCUMENTS, INSPECTION_LIBRARY, defaultCriticalStageInspe
 import { todayISO, normalizePortalRef, portalRefKindFor, type PortalRefKind, type Pathway } from "@/lib/business";
 import { splitAddress } from "@/lib/address";
 import { notifyJobClient } from "@/lib/email";
+import { certificateIssuedEmail } from "@/lib/certificateIssuedEmail";
 import { outstandingSections, outstandingCount, reminderEmailHtml } from "@/lib/documentReminders";
 import type { ActionState } from "@/lib/actions/auth";
 import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
@@ -1136,7 +1137,26 @@ export async function sendPathwayCertificateToClient(_prev: ActionState, formDat
   const { error: jobError } = await supabase.from("jobs").update({ pathway_sent_to_client: true, pathway_sent_to_client_date: sentDate }).eq("id", jobId);
   if (jobError) return { error: jobError.message };
 
-  await notifyJobClient(supabase, jobId, `${job.pathway} issued`, `<p>Your ${job.pathway} has been issued and is now available to view in your portal.</p>`);
+  // The certificate is not permission to start building — the Notice of
+  // Commencement is, and that waits on the client. So the email names
+  // what is still outstanding on the NOC checklist rather than leaving
+  // "issued" to be read as "go ahead".
+  const [{ data: nocChecklist }, { data: firm }] = await Promise.all([
+    supabase.from("checklists").select("id, checklist_items(title, status, sort_order)").eq("job_id", jobId).eq("kind", "noc").maybeSingle(),
+    supabase.from("firms").select("name").eq("id", profile.firm_id).maybeSingle(),
+  ]);
+  const outstanding = (((nocChecklist?.checklist_items as { title: string; status: string; sort_order: number }[] | null) || [])
+    .filter((i) => i.status !== "approved")
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((i) => i.title));
+
+  const { subject, html } = certificateIssuedEmail({
+    pathway: job.pathway as Pathway,
+    address: job.address,
+    firmName: (firm as { name?: string } | null)?.name || null,
+    outstanding,
+  });
+  await notifyJobClient(supabase, jobId, subject, html);
 
   await recordAuditEvent(supabase, {
     firmId: profile.firm_id,
