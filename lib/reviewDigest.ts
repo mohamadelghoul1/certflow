@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { notifyJobClient } from "@/lib/email";
 import { quietWindowOpen, burstSettled } from "@/lib/uploadDigest";
+import { escapeHtml } from "@/lib/html";
 
 // Summary emails to the client about their documents being reviewed —
 // approved, or changes requested. The mirror of lib/uploadDigest.ts,
@@ -11,9 +12,6 @@ import { quietWindowOpen, burstSettled } from "@/lib/uploadDigest";
 
 export type ReviewEvent = { item_title: string | null; kind: "approved" | "changes"; note: string | null };
 
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
 
 export function reviewEmail(events: ReviewEvent[], address: string | null): { subject: string; html: string } {
   const approved = events.filter((e) => e.kind === "approved");

@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { notifyJobClient } from "@/lib/email";
 import { recordAuditEvent } from "@/lib/audit";
 import { pathwayLabel, type Pathway } from "@/lib/business";
+import { escapeHtml } from "@/lib/html";
 
 // Writing the "still waiting on your documents" email so nobody has to.
 //
@@ -89,9 +90,6 @@ export function reminderEmailHtml(sections: ReminderSection[]): string {
   return parts.join("");
 }
 
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
 
 type FirmSettings = { enabled: boolean; everyDays: number };
 

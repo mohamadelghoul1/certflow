@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { notifyJobCertifier } from "@/lib/email";
+import { escapeHtml } from "@/lib/html";
 
 // Summary emails for documents clients send in from the portal.
 //
@@ -30,9 +31,6 @@ export function burstSettled(newestUploadedAt: string, now: Date = new Date()): 
   return now.getTime() - new Date(newestUploadedAt).getTime() >= quietMs;
 }
 
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
 
 export type UploadMention = { item_title: string | null; file_name: string | null };
 

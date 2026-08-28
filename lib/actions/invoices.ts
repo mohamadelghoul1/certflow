@@ -12,6 +12,7 @@ import { stripeConfigured, createInvoicePaymentLink } from "@/lib/payments/strip
 import { cardSurchargeFor } from "@/lib/payments/surcharge";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Invoice, InvoiceLine } from "@/types/db";
+import { escapeHtml } from "@/lib/html";
 
 // Due in 14 days unless the certifier says otherwise — the trade
 // standard, and always visible and editable on the draft before it goes.
@@ -310,6 +311,3 @@ export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: F
   return { success: `Invoice emailed to ${client.email}.` };
 }
 
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}

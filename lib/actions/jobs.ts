@@ -21,6 +21,7 @@ import { recordAuditEvent } from "@/lib/audit";
 import { isUnknownColumn } from "@/lib/softDelete";
 import type { JobDetails, CriticalStageInspection } from "@/types/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { escapeHtml } from "@/lib/html";
 
 // Not exported — a plain helper, not a server action — even though this
 // file is "use server". Reads the firm's own editable document library
@@ -714,20 +715,44 @@ export async function notifyClientOfChecklist(_prev: NotifyState, formData: Form
   const checklistId = String(formData.get("checklist_id"));
   const label = String(formData.get("label") || "your project");
 
-  const { data: items } = await supabase.from("checklist_items").select("status, amendments(resolved)").eq("checklist_id", checklistId);
+  const [{ data: items }, { data: job }] = await Promise.all([
+    supabase.from("checklist_items").select("status, amendments(resolved)").eq("checklist_id", checklistId),
+    supabase.from("jobs").select("address").eq("id", jobId).single(),
+  ]);
 
   const total = items?.length || 0;
   const approved = (items || []).filter((i) => i.status === "approved").length;
   const openAmendments = (items || []).reduce((sum, i) => sum + (i.amendments || []).filter((a: { resolved: boolean }) => !a.resolved).length, 0);
+  const outstanding = total - approved;
 
   let statusLine = total > 0 ? `${approved} of ${total} documents approved` : "No documents requested yet";
   if (openAmendments > 0) statusLine += ` — ${openAmendments} item${openAmendments === 1 ? "" : "s"} require your attention`;
 
+  // The address carries the subject line: a client with three projects
+  // running should be able to tell which one an update is about without
+  // opening it.
+  const address = job?.address || "";
+  const site = address ? ` — ${escapeHtml(address)}` : "";
+  const forSite = address ? ` for <strong>${escapeHtml(address)}</strong>` : "";
+
+  // What to do next, which depends on what is actually outstanding: a
+  // request to upload documents reads badly when nothing is owed.
+  const nextStep =
+    openAmendments > 0
+      ? `<p>Please review the items marked as requiring changes in your portal — the details are noted against each document — and upload the revised documents at your earliest convenience.</p>`
+      : outstanding > 0
+        ? `<p>Please upload the outstanding documents through your client portal at your earliest convenience so that we can continue the assessment of your application.</p>`
+        : `<p>No further documents are required from you at this stage. We will be in touch as the assessment progresses.</p>`;
+
   const outcome = await notifyJobClient(
     supabase,
     jobId,
-    `${label} — status update`,
-    `<p>Here&rsquo;s the current status of the <strong>${label}</strong> checklist:</p><p style="padding:12px;background:#f0fdfa;border-radius:6px">${statusLine}</p>`
+    `${label} checklist update${site}`,
+    [
+      `<p>Here&rsquo;s the current status of the <strong>${escapeHtml(label)}</strong> checklist${forSite}:</p>`,
+      `<p style="padding:12px;background:#f0fdfa;border-radius:6px">${statusLine}</p>`,
+      nextStep,
+    ].join("")
   );
   if (!outcome.sent) return { error: outcome.reason || "The email could not be sent." };
 
