@@ -35,11 +35,19 @@ export default async function PortalChecklistDocumentPage({ params }: { params: 
     ((checklists || []).find((c) => c.kind === kind && (modificationId ? c.modification_id === modificationId : true))?.checklist_items as ItemWithAmendments[]) || [];
 
   const approvalLabel = job.pathway === "PC_OC" ? "PC Appointment" : pathwayLabel(job.pathway);
+
+  // The document shows what the client can actually act on, so a stage
+  // still locked in the portal is left out of it entirely rather than
+  // printed as work that can't be started — the same rule the portal's
+  // Occupation Certificate tab follows.
+  const nocItems = itemsOf("noc");
+  const ocLocked = nocItems.length > 0 && !nocItems.every((i) => i.status === "approved");
+
   const sections = [
     { title: `${approvalLabel} — documents`, items: itemsOf("pathway") },
     ...(modifications || []).map((m) => ({ title: `Modification${m.reason ? ` — ${m.reason}` : ""}`, items: itemsOf("modification", m.id) })),
-    { title: "Notice of Commencement (NOC)", items: itemsOf("noc") },
-    { title: "Occupation Certificate", items: itemsOf("oc") },
+    { title: "Notice of Commencement (NOC)", items: nocItems },
+    ...(ocLocked ? [] : [{ title: "Occupation Certificate", items: itemsOf("oc") }]),
   ].filter((s) => s.items.length > 0);
 
   const all = sections.flatMap((s) => s.items);
