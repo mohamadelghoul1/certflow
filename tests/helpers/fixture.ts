@@ -3,6 +3,7 @@ import { preInspectionRows, type PreInspectionData } from "@/lib/certificates/pr
 import { epiForCodeParts } from "@/lib/constants";
 import type { NeighbourLetterData } from "@/lib/certificates/neighbourLetterData";
 import type { InspectionReportData } from "@/lib/certificates/inspectionReportData";
+import type { OcCertificateData } from "@/lib/certificates/ocData";
 import type { Firm, Certifier } from "@/types/db";
 
 // One job, complete enough to generate every document from. Overrides let
@@ -169,4 +170,54 @@ export function inspectionReportFixture(overrides: Record<string, unknown> = {})
     notes: "",
     ...overrides,
   } as unknown as InspectionReportData;
+}
+
+// One issued Occupation Certificate, complete enough to generate its
+// package from. Overrides let a test vary only what it cares about — a
+// partial OC, a job with a development consent behind it.
+export function ocCertificateFixture(overrides: Record<string, unknown> = {}): OcCertificateData {
+  return {
+    job: {
+      id: "job-1",
+      address: "21 Coquet Way Green Valley",
+      description: "Construction of a detached secondary dwelling",
+      pathway: "CDC",
+      details: {},
+    },
+    firm: neighbourFirm,
+    record: {
+      id: "oc-1",
+      job_id: "job-1",
+      type: "whole",
+      description: null,
+      generated_date: "2026-08-24",
+      signed_at: "2026-08-24T00:00:00Z",
+      approval_uploaded: false,
+      approval_file_path: null,
+    },
+    issuedBy: { name: "Mohamad El Ghoul", registration_no: "BDC2961", registration_body: "Building Commission NSW", signature_url: null },
+    approvedItems: [
+      { id: "1", title: "Structural engineer's certificate", status: "approved", revision: "B", document_date: "2026-08-10", prepared_by: "Studio North", drawing_number: "SE-01" },
+      { id: "2", title: "Waterproofing certificate", status: "approved", revision: null, document_date: null, prepared_by: "Aqua Seal", drawing_number: null },
+    ],
+    signatureUrl: null,
+    uploadedApprovalUrl: null,
+    logoUrl: null,
+    ref: "OC-26001/01",
+    projRef: "OC-26001",
+    typeLabel: "Whole Occupation Certificate",
+    consentRef: "CDC-26001/01",
+    consentLabel: "CDC",
+    daNumber: "",
+    daDate: "",
+    d: {
+      council: { lga: "Liverpool City Council", address: { streetNumber: "50", street: "Scott Street", suburb: "Liverpool", state: "NSW", postcode: "2170" } },
+      applicantAddress: { streetNumber: "21", street: "Coquet Way", suburb: "Green Valley", state: "NSW", postcode: "2168" },
+      certificateDetails: { lotSectionDp: "9 / DP253031" },
+      proposal: { classifications: ["Class 1a — Single dwelling"] },
+    },
+    issuedDate: "24 Aug 2026",
+    applicantName: "Anh Cao",
+    ...overrides,
+  } as unknown as OcCertificateData;
 }

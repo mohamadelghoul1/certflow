@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { signedUrl } from "@/lib/storage";
 import { resolvePathwayCertRef } from "@/lib/business";
 import { letterheadFor, type Letterhead } from "@/lib/letterhead";
@@ -46,8 +47,11 @@ export type InspectionReportData = {
 // both the on-screen page
 // (app/jobs/[jobId]/inspections/[inspectionId]/report/page.tsx) and the
 // real .docx export (lib/docx/inspectionReport.ts).
-export async function getInspectionReportData(jobId: string, inspectionId: string, firmId: string): Promise<InspectionReportData | null> {
-  const supabase = await createClient();
+// `client` overrides the request-scoped RLS client, for the portal's own
+// download of the Occupation Certificate set — see the portal
+// certificate routes for why.
+export async function getInspectionReportData(jobId: string, inspectionId: string, firmId: string, client?: SupabaseClient): Promise<InspectionReportData | null> {
+  const supabase = client ?? (await createClient());
 
   const { data: rawJob } = await supabase.from("jobs").select("*").eq("id", jobId).eq("firm_id", firmId).single();
   if (!rawJob) return null;
@@ -76,9 +80,9 @@ export async function getInspectionReportData(jobId: string, inspectionId: strin
   const { letterhead, logoUrl: letterheadLogo } = letterheadFor(inspector, (firm || null) as Firm | null);
 
   const [signatureUrl, logoUrl, photoUrls] = await Promise.all([
-    inspection.report_signed_at && inspector?.signature_url ? signedUrl(inspector.signature_url) : null,
-    letterheadLogo ? signedUrl(letterheadLogo) : null,
-    Promise.all(inspection.inspection_photos.map((p) => signedUrl(p.file_path))),
+    inspection.report_signed_at && inspector?.signature_url ? signedUrl(inspector.signature_url, 3600, client) : null,
+    letterheadLogo ? signedUrl(letterheadLogo, 3600, client) : null,
+    Promise.all(inspection.inspection_photos.map((p) => signedUrl(p.file_path, 3600, client))),
   ]);
 
   const d = job.details || {};

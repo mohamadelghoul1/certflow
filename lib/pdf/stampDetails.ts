@@ -39,7 +39,7 @@ export async function buildStampDetails(supabase: SupabaseClient, job: Job, prof
     certifierName: certifier?.name || "",
     registrationNo: certifier?.registration_no || "",
     date: formatISODate(job.pathway_signed_at || todayISO()),
-    image: await fetchStampImage(await signedUrl(firm?.stamp_url)),
+    image: await fetchStampImage(await signedUrl(firm?.stamp_url, 3600, supabase)),
   };
 }
 

@@ -93,3 +93,23 @@ export async function signedUrl(path: string | null | undefined, expiresIn = 360
     setTimeout(() => void flush(batcher), 0);
   });
 }
+
+// A stored file's bytes, for a document being assembled server-side —
+// the approved set, the Occupation Certificate set, a signed report
+// going into a bundle. Returns null rather than throwing: a document
+// that cannot be read is named on the set's closing page, which is more
+// use than a failed download.
+export async function fetchStoredFile(
+  path: string | null | undefined,
+  client?: SupabaseClient
+): Promise<{ bytes: Uint8Array; contentType: string | null } | null> {
+  const url = await signedUrl(path, 3600, client);
+  if (!url) return null;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return { bytes: new Uint8Array(await res.arrayBuffer()), contentType: res.headers.get("content-type") };
+  } catch {
+    return null;
+  }
+}

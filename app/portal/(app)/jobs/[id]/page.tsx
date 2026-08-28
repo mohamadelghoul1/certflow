@@ -441,14 +441,23 @@ async function OcRecordCard({ record, canDownload }: { record: OcRecord; canDown
         {record.type === "whole" ? "Whole OC" : "Partial OC"} {record.description ? `— ${record.description}` : ""}
       </div>
       <div className="text-xs text-placeholder">Issued {formatISODate(record.generated_date)}</div>
-      {!canDownload ? null : record.approval_uploaded && url ? (
-        <a href={url} target="_blank" rel="noreferrer" className="inline-block mt-2 text-xs text-primary font-semibold hover:underline">
-          Download certificate
-        </a>
-      ) : (
-        <a href={`/api/portal/certificate/oc/${record.job_id}/${record.id}/word`} className="inline-block mt-2 text-xs text-primary font-semibold hover:underline">
-          Download certificate
-        </a>
+      {!canDownload ? null : (
+        <div className="mt-2 flex items-center gap-4 flex-wrap">
+          {record.approval_uploaded && url ? (
+            <a href={url} target="_blank" rel="noreferrer" className="text-xs text-primary font-semibold hover:underline">
+              Download certificate
+            </a>
+          ) : (
+            <a href={`/api/portal/certificate/oc/${record.job_id}/${record.id}/word`} className="text-xs text-primary font-semibold hover:underline">
+              Download certificate
+            </a>
+          )}
+          {/* The whole thing as one PDF: the certificate, the documents
+              it relied on, and every inspection report behind them. */}
+          <a href={`/api/portal/certificate/oc/${record.job_id}/${record.id}/set`} className="text-xs text-primary font-semibold hover:underline">
+            Download full set (with inspection reports)
+          </a>
+        </div>
       )}
     </div>
   );

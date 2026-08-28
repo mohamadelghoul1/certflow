@@ -112,6 +112,13 @@ async function OcRecordCard({ record, sequence, job, certifiers }: { record: OcR
         <a href={`/api/certificate/oc/${job.id}/${record.id}/word`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
           <Download size={12} /> Download Word
         </a>
+        {/* The whole certificate as one PDF: the letters and certificate,
+            the documents the OC checklist required, then every inspection
+            report from the job behind them — what actually gets handed
+            over, rather than a folder of separate downloads. */}
+        <a href={`/api/certificate/oc/${job.id}/${record.id}/set`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+          <Download size={12} /> Download OC set (PDF)
+        </a>
         {approvalUrl && (
           <a href={approvalUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">
             View uploaded copy

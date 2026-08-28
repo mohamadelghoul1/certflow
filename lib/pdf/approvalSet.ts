@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { signedUrl } from "@/lib/storage";
+import { fetchStoredFile } from "@/lib/storage";
 import { resolvePathwayCertRef, formatISODate, todayISO } from "@/lib/business";
 import { buildApprovalBundle, type BundleDocument } from "@/lib/pdf/bundle";
 import { jobDocumentName } from "@/lib/downloadName";
@@ -20,18 +20,6 @@ import type { Job, Firm, Certifier, ChecklistItem, Profile } from "@/types/db";
 // needs the same thing — the certificate as it was issued is the most
 // important record a firm keeps, and an archive without it is not an
 // archive.
-
-async function fetchBytes(path: string | null | undefined): Promise<{ bytes: Uint8Array; contentType: string | null } | null> {
-  const url = await signedUrl(path);
-  if (!url) return null;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return { bytes: new Uint8Array(await res.arrayBuffer()), contentType: res.headers.get("content-type") };
-  } catch {
-    return null;
-  }
-}
 
 // The letterhead logo and the certifier's signature, ready to embed.
 async function fetchPdfImage(url: string | null) {
@@ -79,7 +67,7 @@ export async function buildApprovalSet(jobId: string, profile: Profile): Promise
 
   // Fetched in parallel — a full set can be a dozen files, and doing them
   // one after another is what makes a download like this feel broken.
-  const files = await Promise.all(entries.map((e) => fetchBytes(e.doc?.filePath ?? e.item.file_path)));
+  const files = await Promise.all(entries.map((e) => fetchStoredFile(e.doc?.filePath ?? e.item.file_path)));
 
   const documents: BundleDocument[] = entries.map(({ item, doc, total }, idx) => ({
     title: doc ? documentTitle(item.title, doc, total) : item.title,
@@ -102,7 +90,7 @@ export async function buildApprovalSet(jobId: string, profile: Profile): Promise
   // letter, certificate, inspections notice and Schedule 1 — is generated
   // as a PDF so the set is complete either way. The Word export is
   // untouched: that one is for editing, this one is for handing over.
-  const uploaded = job.pathway_approval_uploaded ? await fetchBytes(job.pathway_approval_file_path) : null;
+  const uploaded = job.pathway_approval_uploaded ? await fetchStoredFile(job.pathway_approval_file_path) : null;
   let approval = uploaded;
   let approvalLabel = "Signed approval (uploaded)";
 
