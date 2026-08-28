@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Lock } from "lucide-react";
+import { Lock, Check } from "lucide-react";
 
 // The three stage panels arrive fully rendered from the server; switching
 // between them is just showing a different one, so it happens in the
@@ -35,21 +35,44 @@ export function StageTabs({
 
   return (
     <>
+      {/* A stage the client has nothing left to do on goes green and
+          wears a tick, whether or not it is the one being looked at — so
+          progress through the job reads off the row itself rather than
+          having to be opened one tab at a time. */}
       <div className="flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => show(t.key)}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm font-semibold border ${
-              stage === t.key ? "bg-primary text-white border-primary" : "bg-white text-primary border-line hover:border-primary"
-            }`}
-          >
-            {t.locked && <Lock size={13} />}
-            {t.label}
-            {t.done && !t.locked && <span className={`w-2 h-2 rounded-full ${stage === t.key ? "bg-white" : "bg-success"}`} />}
-          </button>
-        ))}
+        {tabs.map((t) => {
+          const selected = stage === t.key;
+          const done = t.done && !t.locked;
+          const tone = done
+            ? selected
+              ? "bg-success text-white border-success"
+              : "bg-success-bg text-success border-success/40 hover:border-success"
+            : selected
+              ? "bg-primary text-white border-primary"
+              : t.locked
+                ? "bg-surface text-placeholder border-line border-dashed hover:border-placeholder"
+                : "bg-white text-primary border-line hover:border-primary";
+
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => show(t.key)}
+              aria-current={selected ? "true" : undefined}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${tone}`}
+            >
+              {t.locked && <Lock size={13} />}
+              {/* The tick sits in its own circle so it reads as a stamp on
+                  the stage rather than a bullet beside its name. */}
+              {done && (
+                <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full ${selected ? "bg-white/25" : "bg-success"}`}>
+                  <Check size={11} strokeWidth={3} className="text-white" />
+                </span>
+              )}
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
       {stage === "approval" && approval}

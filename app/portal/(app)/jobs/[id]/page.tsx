@@ -113,7 +113,9 @@ export default async function PortalJobPage({
   const stage = stageParam === "noc" || stageParam === "oc" ? stageParam : "approval";
 
   const tabs: { key: string; label: string; done: boolean; locked?: boolean }[] = [
-    { key: "approval", label: approvalLabel, done: pathwayItems.length > 0 && pathwayItems.every((i) => i.status === "approved") },
+    // Green once there is nothing left for the client to do here: every
+    // document approved, or the certificate already in their hands.
+    { key: "approval", label: approvalLabel, done: !!job.pathway_sent_to_client || (pathwayItems.length > 0 && pathwayItems.every((i) => i.status === "approved")) },
     { key: "noc", label: "PC — Notice of Commencement", done: nocComplete },
     { key: "oc", label: "Occupation Certificate", done: (ocRecords || []).some((r) => r.sent_to_client), locked: ocLocked },
   ];
