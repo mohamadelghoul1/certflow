@@ -200,14 +200,16 @@ export function dayOfWeek(isoDate: string): number {
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
-// A date landing on a weekend moves to the Tuesday, never the Monday —
-// the same rule that sends a Friday enquiry to Tuesday, for the same
-// reason: a Monday inspection would have to be arranged over a weekend
-// nobody is working.
+// A date landing on a weekend moves to the Monday.
+//
+// Not the Tuesday: the reason a Friday or weekend enquiry waits until
+// Tuesday is that it would otherwise be arranged over a weekend nobody
+// is working. A Thursday afternoon request has all of Friday for that,
+// so its Saturday becomes the Monday.
 function pushOffWeekend(isoDate: string): string {
   const day = dayOfWeek(isoDate);
-  if (day === SATURDAY) return addDays(isoDate, 3);
-  if (day === SUNDAY) return addDays(isoDate, 2);
+  if (day === SATURDAY) return addDays(isoDate, 2);
+  if (day === SUNDAY) return addDays(isoDate, 1);
   return isoDate;
 }
 

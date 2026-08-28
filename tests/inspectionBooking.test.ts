@@ -32,8 +32,11 @@ describe("how much notice an inspection needs", () => {
     assert.equal(earliestBookableInspectionDate(at("2026-08-30T20:00:00+10:00")), "2026-09-01", "Sunday");
   });
 
-  test("a Thursday afternoon lands on Tuesday, not Saturday", () => {
-    assert.equal(earliestBookableInspectionDate(at("2026-08-27T14:00:00+10:00")), "2026-09-01");
+  // Not the Tuesday: a Thursday afternoon request has all of Friday to
+  // be arranged, which is what the Friday and weekend rule is waiting
+  // for.
+  test("a Thursday afternoon lands on Monday, not Saturday", () => {
+    assert.equal(earliestBookableInspectionDate(at("2026-08-27T14:00:00+10:00")), "2026-08-31");
   });
 
   test("a Thursday morning is still Friday", () => {
@@ -78,9 +81,9 @@ describe("checking and suggesting a date", () => {
     assert.equal(suggestedInspectionBookingDate("2026-09-10", monday9am), "2026-09-10");
   });
 
-  test("a weekend chosen by hand moves to the Tuesday", () => {
-    assert.equal(suggestedInspectionBookingDate("2026-08-29", monday9am), "2026-09-01", "Saturday");
-    assert.equal(suggestedInspectionBookingDate("2026-08-30", monday9am), "2026-09-01", "Sunday");
+  test("a weekend chosen by hand moves to the Monday", () => {
+    assert.equal(suggestedInspectionBookingDate("2026-08-29", monday9am), "2026-08-31", "Saturday");
+    assert.equal(suggestedInspectionBookingDate("2026-08-30", monday9am), "2026-08-31", "Sunday");
   });
 });
 
@@ -95,7 +98,7 @@ describe("the answers the database gives for the same moments", () => {
   const cases: [string, string][] = [
     ["2026-08-24T09:00:00+10:00", "2026-08-25"],
     ["2026-08-24T13:00:00+10:00", "2026-08-26"],
-    ["2026-08-27T14:00:00+10:00", "2026-09-01"],
+    ["2026-08-27T14:00:00+10:00", "2026-08-31"],
     ["2026-08-28T09:00:00+10:00", "2026-09-01"],
     ["2026-08-29T11:00:00+10:00", "2026-09-01"],
     ["2026-08-30T20:00:00+10:00", "2026-09-01"],

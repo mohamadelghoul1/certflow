@@ -18,9 +18,13 @@ describe("checking which database updates have been run", () => {
     // One check asks a function for its answer rather than only whether
     // it exists, so an up-to-date database has to give that answer: a
     // Friday enquiry comes back as the Tuesday.
-    const { client } = fakeSupabase((call: Call) =>
-      call.rpc === "earliest_bookable_inspection_date" ? { data: "2026-09-01", error: null } : { data: [], error: null }
-    );
+    const { client } = fakeSupabase((call: Call) => {
+      if (call.rpc !== "earliest_bookable_inspection_date") return { data: [], error: null };
+      // Answer as an up-to-date database would: the Friday enquiry comes
+      // back as the Tuesday, the Thursday afternoon one as the Monday.
+      const asked = String((call.steps[0]?.args?.[0] as { p_now?: string } | undefined)?.p_now || "");
+      return { data: asked.startsWith("2026-08-28") ? "2026-09-01" : "2026-08-31", error: null };
+    });
     const checks = await runSystemChecks(client);
 
     assert.ok(checks.length > 0);
