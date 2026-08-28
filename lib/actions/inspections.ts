@@ -10,6 +10,9 @@ import { inspectionDescriptionFor, MAX_INSPECTION_PHOTOS } from "@/lib/constants
 import { reorderedIds } from "@/lib/checklists";
 import { storeSignedInspectionReport } from "@/lib/certificates/storeInspectionReport";
 import { recordAuditEvent } from "@/lib/audit";
+import { notifyJobClient } from "@/lib/email";
+import { inspectionReportPdf } from "@/lib/pdf/inspectionReportFile";
+import { inspectionReportEmail } from "@/lib/inspectionReportEmail";
 import { sendInspectionToPortal } from "@/lib/portal/report";
 import { isUnknownColumn } from "@/lib/softDelete";
 
@@ -110,13 +113,53 @@ export async function removeDefect(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
-export async function sendReport(formData: FormData) {
-  await requireProfile("certifier");
+// Sending the signed report to the client.
+//
+// This step existed as a flag nobody ever set: the report was signed,
+// filed, and then sat there. A client learned what was found on their
+// own site by asking. It now goes out as an email with the report
+// attached, and appears in their portal — which is the whole point of
+// signing it before leaving.
+export async function sendReport(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
+
+  const { data: inspection } = await supabase.from("inspections").select("title, outcome, date, report_signed_at").eq("id", inspectionId).single();
+  if (!inspection) return { error: "Could not find this inspection." };
+  if (!inspection.report_signed_at) return { error: "Sign the report before sending it." };
+
+  const { data: job } = await supabase.from("jobs").select("address").eq("id", jobId).single();
+  const { subject, html } = inspectionReportEmail({
+    title: inspection.title,
+    outcome: inspection.outcome,
+    date: inspection.date,
+    address: job?.address || null,
+  });
+
+  // The report itself travels with the email. A client who has to log in
+  // to find out whether their slab passed will ring instead.
+  const file = await inspectionReportPdf(jobId, inspectionId, profile.firm_id);
+  const outcome = await notifyJobClient(supabase, jobId, subject, html, file ? [{ filename: file.fileName, content: Buffer.from(file.bytes) }] : undefined);
+
   await supabase.from("inspections").update({ report_sent: true, report_sent_date: todayISO() }).eq("id", inspectionId);
+  await recordAuditEvent(supabase, {
+    firmId: profile.firm_id,
+    action: "inspection.signed",
+    summary: outcome.sent ? `Sent the ${inspection.title} inspection report to the client` : `Marked the ${inspection.title} inspection report sent, but the email did not go`,
+    jobId,
+    jobAddress: job?.address || null,
+    actor: profile,
+    detail: { inspectionId, emailed: outcome.sent },
+    severity: outcome.sent ? "info" : "error",
+  });
+
   revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/site/${inspectionId}`);
+  // Marked sent either way — the client can still see it in the portal —
+  // but the certifier is told plainly when no email went.
+  return outcome.sent ? undefined : { error: outcome.reason || "Marked as sent, but the email could not be delivered." };
 }
 
 export async function uploadInspectionReport(formData: FormData) {

@@ -9,7 +9,7 @@ import Link from "next/link";
 import { DashboardSearch } from "@/components/certifier/DashboardSearch";
 import { TaskBoard } from "@/components/certifier/TaskBoard";
 import { ProjectsDonut } from "@/components/certifier/ProjectsDonut";
-import { AlertTriangle, Building2, CalendarCheck, ClipboardCheck, Activity, CalendarClock, ShieldCheck, Inbox, Zap, Plus, FilePlus, UserPlus, BarChart3, PieChart } from "lucide-react";
+import { AlertTriangle, Building2, CalendarCheck, ClipboardCheck, Activity, CalendarClock, ShieldCheck, Inbox, Zap, Plus, FilePlus, UserPlus, BarChart3, PieChart, HardHat } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { TaskList, ManualTask } from "@/types/db";
 
@@ -358,6 +358,7 @@ export default async function DashboardPage() {
 
           <Panel title="Quick actions" icon={Zap}>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 p-3">
+              <QuickAction href="/site" icon={HardHat} label="On site" />
               <QuickAction href="/jobs/new" icon={Plus} label="New project" />
               <QuickAction href="/quotes/new" icon={FilePlus} label="New quote" />
               <QuickAction href="/jobs" icon={Building2} label="All projects" />

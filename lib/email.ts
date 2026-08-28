@@ -73,7 +73,16 @@ export type NotifyOutcome = { sent: boolean; reason?: string };
 // email on file. Used from server actions right after a mutation that
 // should notify the client (document approved, amendment raised,
 // certificate/report released).
-export async function notifyJobClient(supabase: SupabaseClient, jobId: string, subject: string, bodyHtml: string): Promise<NotifyOutcome> {
+export async function notifyJobClient(
+  supabase: SupabaseClient,
+  jobId: string,
+  subject: string,
+  bodyHtml: string,
+  // Anything that should travel with the message — an inspection report,
+  // so the client does not have to log in to learn whether their slab
+  // passed.
+  attachments?: EmailAttachment[]
+): Promise<NotifyOutcome> {
   const { data: job } = await supabase.from("jobs").select("firm_id, address, client_id").eq("id", jobId).single();
   if (!job?.client_id) return { sent: false, reason: "This project has no client attached — add one on the Details tab." };
   const { data: client } = await supabase.from("clients").select("name, email").eq("id", job.client_id).single();
@@ -92,7 +101,8 @@ export async function notifyJobClient(supabase: SupabaseClient, jobId: string, s
   const result = await sendEmail(
     client.email,
     subject,
-    `<p>Hi ${client.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to your CertFlow portal to view the details: <a href="${SITE_URL}/client-login">${SITE_URL}/client-login</a></p>`
+    `<p>Hi ${client.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to your CertFlow portal to view the details: <a href="${SITE_URL}/client-login">${SITE_URL}/client-login</a></p>`,
+    attachments
   );
 
   if (result.error) {

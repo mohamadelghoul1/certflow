@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Building2, FileText, BarChart3, Settings } from "lucide-react";
+import { Home, Building2, HardHat, BarChart3, Settings } from "lucide-react";
 
 // A phone-sized way around the app. The top bar's dropdowns are built for
 // a cursor and are awkward on a small screen, so on phones the main
@@ -11,7 +11,9 @@ import { Home, Building2, FileText, BarChart3, Settings } from "lucide-react";
 const TABS = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/jobs", label: "Projects", icon: Building2 },
-  { href: "/quotes", label: "Quotes", icon: FileText },
+  // On site earns its place on a phone more than Quotes does: this bar
+  // is what an inspector taps standing on a slab.
+  { href: "/site", label: "On site", icon: HardHat },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

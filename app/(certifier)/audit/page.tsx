@@ -7,7 +7,9 @@ import { ReportsView } from "@/components/certifier/ReportsView";
 import { getIssuanceRegister, financialYearStart, REGISTER_COLUMNS } from "@/lib/issuanceRegister";
 import { todayISO, formatISODate } from "@/lib/business";
 import Link from "next/link";
-import { ClipboardList, BookMarked, BarChart3, Download, Printer, ShieldAlert, type LucideIcon } from "lucide-react";
+import { ClipboardList, BookMarked, BarChart3, Download, Printer, ShieldAlert, Gauge, type LucideIcon } from "lucide-react";
+import { PerformanceView } from "@/components/certifier/PerformanceView";
+import { getTurnaround, getConversion } from "@/lib/performance";
 import { FaultsView } from "@/components/certifier/FaultsView";
 import { getFaults } from "@/lib/faults";
 
@@ -21,6 +23,7 @@ const SECTIONS: { key: string; label: string; icon: LucideIcon; blurb: string }[
   { key: "activity", label: "Certifier activity", icon: ClipboardList, blurb: "Everything each certifier has done, and the change log" },
   { key: "register", label: "Issuance register", icon: BookMarked, blurb: "Every CDC, CC and OC issued in a chosen period" },
   { key: "reports", label: "Issuance report", icon: BarChart3, blurb: "How many of each certificate, by month and year" },
+  { key: "performance", label: "Turnaround & quotes", icon: Gauge, blurb: "How long certificates take, and how much quoted work is won" },
   { key: "faults", label: "Faults", icon: ShieldAlert, blurb: "Anything that broke, whether or not anyone reported it" },
 ];
 
@@ -39,6 +42,30 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
       supabase.from("certifiers").select("id, name, registration_no, registration_body").eq("firm_id", profile.firm_id).order("name"),
     ]);
     content = <AuditView certifiers={certifiers || []} events={events} log={log} />;
+  } else if (active.key === "performance") {
+    // The same financial-year default the register uses, so the two
+    // screens are talking about the same period unless told otherwise.
+    const from = params.from || financialYearStart(todayISO());
+    const to = params.to || todayISO();
+    const [turnaround, conversion] = await Promise.all([getTurnaround(supabase, profile.firm_id, from, to), getConversion(supabase, profile.firm_id, from, to)]);
+
+    content = (
+      <div>
+        <form method="get" action="/audit" className="flex items-end gap-3 flex-wrap mb-6">
+          <input type="hidden" name="section" value="performance" />
+          <div>
+            <label className="block text-xs font-semibold text-placeholder mb-1">From</label>
+            <input type="date" name="from" defaultValue={from} className="px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-placeholder mb-1">To</label>
+            <input type="date" name="to" defaultValue={to} className="px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon" />
+          </div>
+          <button className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">Show period</button>
+        </form>
+        <PerformanceView turnaround={turnaround} conversion={conversion} period={`between ${formatISODate(from)} and ${formatISODate(to)}`} />
+      </div>
+    );
   } else if (active.key === "faults") {
     const { faults, ready } = await getFaults(supabase);
     content = <FaultsView faults={faults} ready={ready} />;

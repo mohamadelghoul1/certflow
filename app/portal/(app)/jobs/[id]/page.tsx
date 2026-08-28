@@ -430,7 +430,11 @@ async function InspectionCard({
   inspectorName?: string;
   bookingOpen: boolean;
 }) {
-  const reportUrl = await signedUrl(insp.report_file_path);
+  // The signed report the certifier produced on site comes first; an
+  // uploaded file is the fallback for a report done outside CertFlow.
+  // Reading only the uploaded path is why a report signed in the app
+  // never appeared here at all.
+  const reportUrl = await signedUrl(insp.report_pdf_path || insp.report_file_path);
   const canBook = insp.outcome === "pending" && bookingOpen;
 
   return (
