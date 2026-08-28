@@ -4,6 +4,7 @@ import { formatISODate } from "@/lib/business";
 import { removeItemDocumentVersion } from "@/lib/actions/jobs";
 import { currentDocuments, versionsOf } from "@/lib/checklistDocuments";
 import { ItemDocumentDetails } from "@/components/certifier/ItemDocumentDetails";
+import { ItemMetaDetails } from "@/components/certifier/ItemMetaDetails";
 import { CertifierDocumentUpload } from "@/components/certifier/CertifierDocumentUpload";
 import type { ChecklistItem, ChecklistItemFile } from "@/types/db";
 
@@ -65,9 +66,14 @@ export async function ItemDocuments({ item, jobId, firmId }: { item: ItemWithFil
           <ItemDocumentDetails doc={doc} itemId={item.id} itemTitle={item.title} jobId={jobId} removable={docs.length > 1} />
         </div>
       ))}
+      {/* An item with nothing uploaded still opens onto the same detail
+          fields — kept on the item, travelling onto the document when it
+          arrives. Without this the panel opened onto nothing and looked
+          broken. */}
+      {docs.length === 0 && <ItemMetaDetails item={item} jobId={jobId} />}
       {/* "new" rather than a number, so this adds a document alongside
           rather than replacing one. */}
-      <CertifierDocumentUpload itemId={item.id} jobId={jobId} pathPrefix={pathPrefix} documentNo="new" label="Add another document" />
+      <CertifierDocumentUpload itemId={item.id} jobId={jobId} pathPrefix={pathPrefix} documentNo="new" label={docs.length === 0 ? "Upload a document" : "Add another document"} />
     </div>
   );
 }

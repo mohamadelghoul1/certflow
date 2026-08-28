@@ -19,7 +19,7 @@ const fieldCls = "px-2 py-1.5 rounded border border-line text-xs";
 // after the other.
 export function ItemDocumentDetails({ doc, itemId, itemTitle, jobId, removable }: { doc: ItemDocument; itemId: string; itemTitle?: string; jobId: string; removable: boolean }) {
   const today = todayISO();
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   // A blank label starts as the item's own title — that's what Schedule 1
@@ -41,11 +41,14 @@ export function ItemDocumentDetails({ doc, itemId, itemTitle, jobId, removable }
     const form = formRef.current;
     if (!form) return;
     const fd = new FormData(form);
+    // Confirmed on the spot; the write itself finishes in the
+    // background. Waiting for the server before saying Saved made five
+    // quick fields feel like wading.
+    setSaved(true);
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    savedTimer.current = setTimeout(() => setSaved(false), 2000);
     startTransition(async () => {
       await updateItemDocument(fd);
-      setSaved(true);
-      if (savedTimer.current) clearTimeout(savedTimer.current);
-      savedTimer.current = setTimeout(() => setSaved(false), 2000);
     });
   }
 
@@ -81,8 +84,7 @@ export function ItemDocumentDetails({ doc, itemId, itemTitle, jobId, removable }
         className={fieldCls}
       />
       <div className="sm:col-span-5 flex items-center gap-3 text-[11px] h-4">
-        {pending && <span className="text-muted">Saving…</span>}
-        {!pending && saved && <span className="text-accent font-medium">Saved ✓</span>}
+        {saved && <span className="text-accent font-medium">Saved ✓</span>}
         {removable && (
           <button type="button" onClick={remove} className="ml-auto text-error hover:underline">
             Remove this document

@@ -539,8 +539,10 @@ export async function updateItemDocument(formData: FormData) {
     })
     .eq("id", fileId);
   if (error) console.error("could not save the document's details:", error.message);
-
-  revalidatePath(`/jobs/${jobId}`);
+  // No revalidatePath on purpose: nothing else on the page renders these
+  // per-document fields, and re-streaming the whole job for every blurred
+  // box is what made filling five of them in a row feel like wading.
+  void jobId;
 }
 
 // Drops one document from an item, with every version of it. The item
