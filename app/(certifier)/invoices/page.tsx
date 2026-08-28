@@ -4,6 +4,8 @@ import { createInvoice } from "@/lib/actions/invoices";
 import { invoiceTotals, invoiceNumberOf, receivablesSummary, formatMoney, isOverdue } from "@/lib/invoices/invoiceLogic";
 import { INVOICE_STATUS_META } from "@/lib/constants";
 import { todayISO, formatISODate } from "@/lib/business";
+import { financialYearStart } from "@/lib/issuanceRegister";
+import { Download } from "lucide-react";
 import Link from "next/link";
 import type { Invoice, InvoiceLine } from "@/types/db";
 
@@ -100,6 +102,45 @@ export default async function InvoicesPage() {
             No invoices yet. Create one here, or from an accepted quote&rsquo;s page.
           </div>
         )}
+      </div>
+
+      {/* An ordinary GET form rather than a button that builds a URL in
+          the browser: the period and the two Xero settings live in the
+          address, so the download works the same on a phone with a
+          flaky connection as on a desktop. */}
+      <div className="mt-8 bg-white rounded-lg border border-line p-5">
+        <div className="font-bold text-primary">Send to your accountant</div>
+        <p className="text-xs text-muted mt-1 max-w-xl">
+          Every issued and paid invoice in the period, as a file Xero imports directly (Business → Invoices → Import). Drafts and voided invoices are left
+          out. Fees export excluding GST, which Xero adds from the tax type below.
+        </p>
+
+        <form method="get" action="/api/reports/invoices-xero" className="flex items-end gap-3 flex-wrap mt-4">
+          <div>
+            <label className="block text-xs font-semibold text-placeholder mb-1">From</label>
+            <input type="date" name="from" defaultValue={financialYearStart(today)} className="px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-placeholder mb-1">To</label>
+            <input type="date" name="to" defaultValue={today} className="px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-placeholder mb-1">Account code</label>
+            <input name="account" defaultValue="200" className="w-24 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-placeholder mb-1">Tax type</label>
+            <input name="tax" defaultValue="OUTPUT" className="w-36 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon" />
+          </div>
+          <button className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
+            <Download size={15} /> Download for Xero
+          </button>
+        </form>
+
+        <p className="text-[11px] text-placeholder mt-3 max-w-xl">
+          The defaults are Xero&rsquo;s own Australian ones — <strong>200</strong> is Sales, <strong>OUTPUT</strong> is GST on Income. If your chart of
+          accounts differs, ask your accountant once and use their codes from then on. Import one invoice first to check where it lands.
+        </p>
       </div>
     </div>
   );
