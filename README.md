@@ -216,3 +216,18 @@ Either pair can be left out — a provider with no keys simply isn't
 offered. Each firm then connects its own account under Settings → Cloud
 backup, and the tokens are stored per firm in a table with row level
 security and no policies, so only the server can read them.
+
+### Where fault alerts go (optional)
+
+Anything that breaks is recorded and shown on **Audit → Faults**, and the
+first time each distinct fault happens, one email goes out. By default
+that email goes to the firm's own address (Settings → Firm). To send it
+somewhere else — the person who maintains the software, rather than the
+office inbox — add:
+
+```
+ERROR_ALERT_EMAIL=
+```
+
+Worth setting: a failure that happens before anyone has signed in belongs
+to no firm, so this address is the only one it can reach.

@@ -7,7 +7,9 @@ import { ReportsView } from "@/components/certifier/ReportsView";
 import { getIssuanceRegister, financialYearStart, REGISTER_COLUMNS } from "@/lib/issuanceRegister";
 import { todayISO, formatISODate } from "@/lib/business";
 import Link from "next/link";
-import { ClipboardList, BookMarked, BarChart3, Download, Printer, type LucideIcon } from "lucide-react";
+import { ClipboardList, BookMarked, BarChart3, Download, Printer, ShieldAlert, type LucideIcon } from "lucide-react";
+import { FaultsView } from "@/components/certifier/FaultsView";
+import { getFaults } from "@/lib/faults";
 
 // The audit area, split the same way Settings is: a menu of screens
 // rather than one long page. Certifier activity keeps its existing view;
@@ -19,6 +21,7 @@ const SECTIONS: { key: string; label: string; icon: LucideIcon; blurb: string }[
   { key: "activity", label: "Certifier activity", icon: ClipboardList, blurb: "Everything each certifier has done, and the change log" },
   { key: "register", label: "Issuance register", icon: BookMarked, blurb: "Every CDC, CC and OC issued in a chosen period" },
   { key: "reports", label: "Issuance report", icon: BarChart3, blurb: "How many of each certificate, by month and year" },
+  { key: "faults", label: "Faults", icon: ShieldAlert, blurb: "Anything that broke, whether or not anyone reported it" },
 ];
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<{ section?: string; from?: string; to?: string }> }) {
@@ -36,6 +39,9 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
       supabase.from("certifiers").select("id, name, registration_no, registration_body").eq("firm_id", profile.firm_id).order("name"),
     ]);
     content = <AuditView certifiers={certifiers || []} events={events} log={log} />;
+  } else if (active.key === "faults") {
+    const { faults, ready } = await getFaults(supabase);
+    content = <FaultsView faults={faults} ready={ready} />;
   } else if (active.key === "reports") {
     const events = await getIssuanceEvents(supabase, profile.firm_id);
     content = <ReportsView events={events.map((e) => ({ type: e.type, date: e.date.toISOString() }))} />;

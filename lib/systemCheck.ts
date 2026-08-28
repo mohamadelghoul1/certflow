@@ -195,6 +195,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Lets you choose where on the contract the signatures are printed.",
       probe: hasColumn(supabase, "engagement_agreements", "signature_page"),
     },
+    {
+      migration: "0047",
+      label: "Fault log",
+      detail: "Records anything that breaks and emails you the first time, on Audit → Faults.",
+      probe: hasTable(supabase, "error_events"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));
