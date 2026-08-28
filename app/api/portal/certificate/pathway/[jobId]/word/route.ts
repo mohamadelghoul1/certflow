@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getPathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { fetchImageAsset } from "@/lib/docx/fetchImageAsset";
 import { buildPathwayCertificateDocx } from "@/lib/docx/pathwayCertificate";
+import { certificatesDownloadable } from "@/lib/portalAccess";
 
 // The client's own copy of the CDC/CC certificate.
 //
@@ -29,6 +30,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const supabase = await createClient();
   const { data: job } = await supabase.from("jobs").select("id, firm_id, pathway_sent_to_client").eq("id", jobId).single();
   if (!job || !job.pathway_sent_to_client) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  // The portal closes on a finished job — see lib/portalAccess. Checked
+  // here as well as on the page, because a link kept from a fortnight
+  // ago would otherwise still work.
+  const { data: ocRecords } = await supabase.from("oc_records").select("type, generated_date, created_at").eq("job_id", jobId);
+  if (!certificatesDownloadable(ocRecords || [])) return NextResponse.json({ error: "the download window for this project has closed" }, { status: 410 });
 
   const admin = createAdminClient();
   const data = await getPathwayCertificateData(jobId, job.firm_id, admin);

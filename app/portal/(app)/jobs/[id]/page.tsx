@@ -9,6 +9,7 @@ import { StageTabs } from "@/components/portal/StageTabs";
 import { displayStatus, unresolvedCount, checklistProgress, formatISODate } from "@/lib/business";
 import { currentDocuments } from "@/lib/checklistDocuments";
 import { ItemDropCard } from "@/components/portal/ItemDropCard";
+import { certificatesDownloadable, accessClosedNotice } from "@/lib/portalAccess";
 import { signedUrl } from "@/lib/storage";
 import { ClientItemDocuments } from "@/components/portal/ClientItemDocuments";
 import { BookInspectionForm } from "@/components/portal/BookInspectionForm";
@@ -83,6 +84,12 @@ export default async function PortalJobPage({
     for (const row of withForms || []) formIds.add(row.id);
   }
 
+  // Certificates stay downloadable here for three weeks after the whole
+  // OC is issued; after that the portal stops being a document library
+  // and a further copy is asked for. See lib/portalAccess.
+  const canDownloadCertificates = certificatesDownloadable(ocRecords || []);
+  const closedNotice = accessClosedNotice(ocRecords || []);
+
   const pathwayItems = (pathwayChecklist?.checklist_items as ItemWithAmendments[]) || [];
   const nocItems = (nocChecklist?.checklist_items as ItemWithAmendments[]) || [];
   const ocItems = (ocChecklist?.checklist_items as ItemWithAmendments[]) || [];
@@ -119,7 +126,9 @@ export default async function PortalJobPage({
                   downloadable: previously, forgetting to upload left the client
                   with nothing but "not yet uploaded", even though the certificate
                   had been issued and sent. */}
-              {job.pathway_approval_uploaded && pathwayApprovalUrl ? (
+              {!canDownloadCertificates ? (
+                <div className="text-sm text-muted">{closedNotice}</div>
+              ) : job.pathway_approval_uploaded && pathwayApprovalUrl ? (
                 <a href={pathwayApprovalUrl} target="_blank" rel="noreferrer" className="text-sm text-primary font-semibold hover:underline">
                   Download certificate
                 </a>
@@ -160,7 +169,7 @@ export default async function PortalJobPage({
             <StageSection title="Occupation Certificate — checklist" items={ocItems} jobId={id} firmId={job.firm_id} formIds={formIds} />
             {ocItems.length === 0 && (ocRecords || []).filter((r) => r.sent_to_client).length === 0 && <EmptyStage label="Occupation Certificate" />}
 
-            <OcSection ocRecords={(ocRecords || []).filter((r) => r.sent_to_client)} />
+            <OcSection ocRecords={(ocRecords || []).filter((r) => r.sent_to_client)} canDownload={canDownloadCertificates} closedNotice={closedNotice} />
           </div>
   );
 
@@ -396,21 +405,22 @@ async function InspectionCard({ insp, jobId, meta, inspectorName }: { insp: Insp
   );
 }
 
-async function OcSection({ ocRecords }: { ocRecords: OcRecord[] }) {
+async function OcSection({ ocRecords, canDownload, closedNotice }: { ocRecords: OcRecord[]; canDownload: boolean; closedNotice: string }) {
   if (ocRecords.length === 0) return null;
   return (
     <div className="bg-white rounded-lg border border-line">
       <div className="px-5 py-3 border-b border-line font-bold text-primary">Occupation Certificates</div>
       <div className="p-5 space-y-3">
+        {!canDownload && <div className="text-sm text-muted">{closedNotice}</div>}
         {ocRecords.map((r) => (
-          <OcRecordCard key={r.id} record={r} />
+          <OcRecordCard key={r.id} record={r} canDownload={canDownload} />
         ))}
       </div>
     </div>
   );
 }
 
-async function OcRecordCard({ record }: { record: OcRecord }) {
+async function OcRecordCard({ record, canDownload }: { record: OcRecord; canDownload: boolean }) {
   const url = await signedUrl(record.approval_file_path);
   return (
     <div className="border border-line rounded-md p-4">
@@ -418,7 +428,7 @@ async function OcRecordCard({ record }: { record: OcRecord }) {
         {record.type === "whole" ? "Whole OC" : "Partial OC"} {record.description ? `— ${record.description}` : ""}
       </div>
       <div className="text-xs text-placeholder">Issued {formatISODate(record.generated_date)}</div>
-      {record.approval_uploaded && url ? (
+      {!canDownload ? null : record.approval_uploaded && url ? (
         <a href={url} target="_blank" rel="noreferrer" className="inline-block mt-2 text-xs text-primary font-semibold hover:underline">
           Download certificate
         </a>
