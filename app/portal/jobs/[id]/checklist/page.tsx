@@ -55,7 +55,9 @@ export default async function PortalChecklistDocumentPage({ params }: { params: 
 
   return (
     <div className="min-h-screen bg-surface print:bg-white">
-      <style>{`@page { size: A4 portrait; margin: 14mm; }`}</style>
+      <style>{`@page { size: A4 portrait; margin: 14mm; }
+          /* Column headings repeat when a stage runs over a page. */
+          @media print { thead { display: table-header-group } }`}</style>
       <div className="max-w-3xl mx-auto py-6 px-4 print:hidden flex items-center justify-between flex-wrap gap-2">
         <Link href={`/portal/jobs/${id}`} className="text-sm text-placeholder hover:text-primary">
           ← Back to the project
@@ -88,8 +90,8 @@ export default async function PortalChecklistDocumentPage({ params }: { params: 
         </div>
 
         {sections.map((section) => (
-          <div key={section.title} className="mb-6 break-inside-avoid">
-            <div className="flex items-baseline justify-between border-b border-line pb-1 mb-2">
+          <div key={section.title} className="mb-6">
+            <div className="flex items-baseline justify-between border-b border-line pb-1 mb-2 break-after-avoid">
               <div className="text-sm font-bold">{section.title}</div>
               <div className="text-[11px] text-muted">{checklistProgress(section.items)} approved</div>
             </div>
