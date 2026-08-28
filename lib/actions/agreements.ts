@@ -9,6 +9,7 @@ import { sendEmail, emailConfigured } from "@/lib/email";
 import { siteUrl } from "@/lib/siteUrl";
 import { escapeHtml } from "@/lib/html";
 import { newSignatureToken, nameMatches, agreementProgress, type Signatory } from "@/lib/agreements";
+import { buildSignedAgreement } from "@/lib/pdf/signedAgreement";
 import { recordAuditEvent } from "@/lib/audit";
 import { withinLimit, loginBucket, LOGIN_LIMIT } from "@/lib/rateLimit";
 
@@ -101,6 +102,75 @@ export async function sendAgreement(_prev: AgreementState, formData: FormData): 
   return { success: `Sent to ${outstanding.length} ${outstanding.length === 1 ? "person" : "people"}.` };
 }
 
+// The executed contract: the firm's own document with every signature
+// drawn into the execution block, and the signing record appended.
+// Built once, when the last signature lands, and stored beside the
+// original — the original is never altered.
+async function buildAndStoreSignedCopy(admin: ReturnType<typeof createAdminClient>, agreementId: string) {
+  try {
+    const { data: agreement } = await admin
+      .from("engagement_agreements")
+      .select("id, job_id, firm_id, file_path, file_name, signature_page, signature_x, signature_y, signature_width, engagement_signatories(name, role, email, signed_name, signed_at, signature_image, signed_ip)")
+      .eq("id", agreementId)
+      .single();
+    if (!agreement) return;
+
+    const { data: file } = await admin.storage.from("certflow-files").download(agreement.file_path as string);
+    if (!file) return;
+
+    type Row = { name: string; role: string | null; email: string; signed_name: string | null; signed_at: string | null; signature_image: string | null; signed_ip: string | null };
+    const parties = ((agreement.engagement_signatories as Row[]) || []).map((p) => ({
+      name: p.name,
+      role: p.role,
+      email: p.email,
+      signedName: p.signed_name,
+      signedAt: p.signed_at,
+      signatureImage: p.signature_image,
+      signedIp: p.signed_ip,
+    }));
+
+    const placement =
+      agreement.signature_page && agreement.signature_x != null && agreement.signature_y != null
+        ? {
+            page: Number(agreement.signature_page),
+            x: Number(agreement.signature_x),
+            y: Number(agreement.signature_y),
+            width: Number(agreement.signature_width ?? 0.25),
+          }
+        : null;
+
+    const merged = await buildSignedAgreement(new Uint8Array(await file.arrayBuffer()), parties, placement);
+    const path = `${agreement.firm_id}/${agreement.job_id}/agreements/signed-${Date.now()}.pdf`;
+    const { error } = await admin.storage.from("certflow-files").upload(path, merged, { contentType: "application/pdf" });
+    if (error) return;
+    await admin.from("engagement_agreements").update({ signed_file_path: path }).eq("id", agreementId);
+  } catch (err) {
+    // The signatures are safely recorded either way; only the merged
+    // copy is missing, and it can be rebuilt.
+    console.error("could not build the signed agreement", err);
+  }
+}
+
+// Where on the contract the signatures belong — the certifier drags a
+// box onto their own execution block once per agreement.
+export async function setSignaturePlacement(formData: FormData): Promise<void> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const agreementId = String(formData.get("agreement_id"));
+  const jobId = String(formData.get("job_id"));
+  await supabase
+    .from("engagement_agreements")
+    .update({
+      signature_page: Number(formData.get("page")) || 1,
+      signature_x: Number(formData.get("x")),
+      signature_y: Number(formData.get("y")),
+      signature_width: Number(formData.get("width")) || 0.25,
+    })
+    .eq("id", agreementId)
+    .eq("firm_id", profile.firm_id);
+  revalidatePath(`/jobs/${jobId}`);
+}
+
 export async function removeAgreement(formData: FormData) {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
@@ -141,9 +211,12 @@ export async function signAgreement(_prev: SignState, formData: FormData): Promi
     return { error: `Please sign as ${party.name}. If you are signing on their behalf, contact the certifier so the agreement can be reissued in your name.` };
   }
 
-  // A drawn signature is optional, and only ever an inline image. Anything
-  // that isn't one is dropped rather than stored and later rendered.
+  // The signature itself, and it is required — a tick alone is not a
+  // signature, and this image is what gets drawn into the contract.
+  // Only ever an inline image: anything else is refused rather than
+  // stored and later rendered.
   const signature = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(drawn) && drawn.length < 400_000 ? drawn : null;
+  if (!signature) return { error: "Please sign in the box — draw your signature, or use “Write it for me” to have it written from your name." };
 
   const head = await headers();
   const { error } = await admin
@@ -177,6 +250,7 @@ async function afterSignature(
 
   if (progress.complete) {
     await admin.from("engagement_agreements").update({ completed_at: new Date().toISOString() }).eq("id", agreement.id);
+    await buildAndStoreSignedCopy(admin, agreement.id);
   }
 
   await recordAuditEvent(admin, {

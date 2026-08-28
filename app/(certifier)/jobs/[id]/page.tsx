@@ -116,7 +116,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
   // than failing the whole page.
   const { data: agreementRow } = await supabase
     .from("engagement_agreements")
-    .select("id, file_path, file_name, sent_at, completed_at, created_at, engagement_signatories(id, name, email, role, sent_at, signed_at, signed_name)")
+    .select("id, file_path, file_name, signed_file_path, signature_page, signature_x, signature_y, signature_width, sent_at, completed_at, created_at, engagement_signatories(id, name, email, role, sent_at, signed_at, signed_name)")
     .eq("job_id", id)
     .eq("firm_id", profile.firm_id)
     .order("created_at", { ascending: false })
@@ -130,9 +130,21 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
         completed_at: (agreementRow.completed_at as string | null) ?? null,
         created_at: agreementRow.created_at as string,
         signatories: ((agreementRow.engagement_signatories as never[]) || []) as never[],
+        placement:
+          agreementRow.signature_page != null && agreementRow.signature_x != null
+            ? {
+                page: Number(agreementRow.signature_page),
+                x: Number(agreementRow.signature_x),
+                y: Number(agreementRow.signature_y),
+                width: Number(agreementRow.signature_width ?? 0.25),
+              }
+            : null,
       }
     : null;
-  const agreementUrl = await signedUrl((agreementRow?.file_path as string | null) ?? null);
+  const [agreementUrl, agreementSignedUrl] = await Promise.all([
+    signedUrl((agreementRow?.file_path as string | null) ?? null),
+    signedUrl((agreementRow?.signed_file_path as string | null) ?? null),
+  ]);
 
   const modificationsWithChecklist = (modifications || []).map((m) => {
     const cl = modChecklistsById.get(m.id);
@@ -217,7 +229,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
         }))}
         content={{
           details: <DetailsTab job={typedJob} clients={clients || []} sharedClients={sharedClients} contractors={contractors} certifiers={certifiers || []} />,
-          agreement: <AgreementPanel jobId={id} firmId={profile.firm_id} agreement={agreement} documentUrl={agreementUrl} />,
+          agreement: <AgreementPanel jobId={id} firmId={profile.firm_id} agreement={agreement} documentUrl={agreementUrl} signedUrl={agreementSignedUrl} />,
           pathway: pathwayChecklist ? (
             <div className="space-y-6">
               <CertificatesPanel

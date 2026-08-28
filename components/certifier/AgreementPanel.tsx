@@ -5,7 +5,8 @@ import { FileUpload } from "@/components/certifier/FileUpload";
 import { createAgreement, sendAgreement, removeAgreement, type AgreementState } from "@/lib/actions/agreements";
 import { agreementProgress, progressLabel, type Signatory } from "@/lib/agreements";
 import { formatISODate } from "@/lib/business";
-import { FileText, Send, CheckCircle2, Clock, Trash2, Plus } from "lucide-react";
+import { FileText, Send, CheckCircle2, Clock, Trash2, Plus, FileCheck2 } from "lucide-react";
+import { SignaturePositioner } from "@/components/certifier/SignaturePositioner";
 
 type Agreement = {
   id: string;
@@ -14,6 +15,7 @@ type Agreement = {
   completed_at: string | null;
   created_at: string;
   signatories: Signatory[];
+  placement: { page: number; x: number; y: number; width: number } | null;
 };
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
@@ -25,8 +27,20 @@ const labelCls = "block text-xs font-semibold text-placeholder mb-1";
 // write the contract, it sends it out and captures the signatures. Each
 // signatory gets their own private link and needs no login: an owner is
 // usually not the person using the client portal.
-export function AgreementPanel({ jobId, firmId, agreement, documentUrl }: { jobId: string; firmId: string; agreement: Agreement | null; documentUrl: string | null }) {
-  if (agreement) return <ExistingAgreement jobId={jobId} agreement={agreement} documentUrl={documentUrl} />;
+export function AgreementPanel({
+  jobId,
+  firmId,
+  agreement,
+  documentUrl,
+  signedUrl,
+}: {
+  jobId: string;
+  firmId: string;
+  agreement: Agreement | null;
+  documentUrl: string | null;
+  signedUrl: string | null;
+}) {
+  if (agreement) return <ExistingAgreement jobId={jobId} agreement={agreement} documentUrl={documentUrl} signedUrl={signedUrl} />;
   return <NewAgreement jobId={jobId} firmId={firmId} />;
 }
 
@@ -111,7 +125,7 @@ function NewAgreement({ jobId, firmId }: { jobId: string; firmId: string }) {
   );
 }
 
-function ExistingAgreement({ jobId, agreement, documentUrl }: { jobId: string; agreement: Agreement; documentUrl: string | null }) {
+function ExistingAgreement({ jobId, agreement, documentUrl, signedUrl }: { jobId: string; agreement: Agreement; documentUrl: string | null; signedUrl: string | null }) {
   const [state, formAction, pending] = useActionState<AgreementState, FormData>(sendAgreement, undefined);
   const progress = agreementProgress(agreement.signatories);
 
@@ -129,10 +143,42 @@ function ExistingAgreement({ jobId, agreement, documentUrl }: { jobId: string; a
         )}
       </div>
 
-      {documentUrl && (
-        <a href={documentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-semibold text-secondary hover:underline">
-          <FileText size={15} /> {agreement.file_name || "Open the agreement"}
-        </a>
+      <div className="flex flex-wrap items-center gap-4">
+        {signedUrl && (
+          <a
+            href={signedUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent/10 border border-accent/40 text-accent text-sm font-semibold hover:bg-accent/15"
+          >
+            <FileCheck2 size={15} /> Signed agreement
+          </a>
+        )}
+        {documentUrl && (
+          <a href={documentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-semibold text-secondary hover:underline">
+            <FileText size={15} /> {signedUrl ? "The original, unsigned" : agreement.file_name || "Open the agreement"}
+          </a>
+        )}
+      </div>
+
+      {/* Where the signatures land on the firm's own execution block.
+          Worth setting before sending, but it can be moved right up
+          until the last signature arrives. */}
+      {!agreement.completed_at && documentUrl && (
+        <div className="rounded-md bg-surface border border-line px-4 py-3 flex flex-wrap items-center gap-3">
+          <div className="text-xs text-muted flex-1 min-w-[220px]">
+            {agreement.placement
+              ? `Signatures will be drawn onto page ${agreement.placement.page} of your contract.`
+              : "Signatures will be added on a page at the end unless you place them on your contract's own signature box."}
+          </div>
+          <SignaturePositioner
+            agreementId={agreement.id}
+            jobId={jobId}
+            fileUrl={documentUrl}
+            signatories={agreement.signatories.length}
+            initial={agreement.placement}
+          />
+        </div>
       )}
 
       <div className="rounded-lg border border-line overflow-hidden">
@@ -173,7 +219,7 @@ function ExistingAgreement({ jobId, agreement, documentUrl }: { jobId: string; a
         )}
         {progress.complete && (
           <a href={`/agreements/${agreement.id}/record`} className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-line text-sm font-semibold text-primary hover:bg-hover">
-            <FileText size={14} /> Certificate of signing
+            <FileText size={14} /> Signing record
           </a>
         )}
         <form action={removeAgreement} className="ml-auto">
