@@ -1,5 +1,5 @@
 import { Check, X } from "lucide-react";
-import type { SystemCheck, EnvCheck } from "@/lib/systemCheck";
+import type { SystemCheck, EnvCheck, NotificationCheck } from "@/lib/systemCheck";
 
 // Reads as a list of things that either work or do not, with the reason
 // they matter beside each. The point is that a feature which silently
@@ -22,7 +22,7 @@ function Row({ ok, label, detail, note }: { ok: boolean; label: string; detail: 
   );
 }
 
-export function SystemCheckSection({ checks, env }: { checks: SystemCheck[]; env: EnvCheck[] }) {
+export function SystemCheckSection({ checks, env, notifications = [] }: { checks: SystemCheck[]; env: EnvCheck[]; notifications?: NotificationCheck[] }) {
   const missing = checks.filter((c) => !c.applied);
   const outstanding = Array.from(new Set(missing.map((c) => c.migration))).sort();
 
@@ -45,6 +45,19 @@ export function SystemCheckSection({ checks, env }: { checks: SystemCheck[]; env
           <Row key={i} ok={c.applied} label={c.label} detail={c.detail} note={`migration ${c.migration}`} />
         ))}
       </div>
+
+      {notifications.length > 0 && (
+        <div>
+          {/* Whether the alerts have anywhere to go — the quietest way
+              this app can fail is an email nobody was ever going to get. */}
+          <div className="text-xs font-semibold text-placeholder uppercase tracking-wide mb-2">Alerts</div>
+          <div className="rounded-lg border border-line overflow-hidden">
+            {notifications.map((n, i) => (
+              <Row key={i} ok={n.ok} label={n.label} detail={n.detail} />
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <div className="text-xs font-semibold text-placeholder uppercase tracking-wide mb-2">Settings held in Vercel</div>

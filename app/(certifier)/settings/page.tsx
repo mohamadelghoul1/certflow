@@ -5,7 +5,7 @@ import { CloudBackupSection } from "@/components/certifier/CloudBackupSection";
 import { getBackupStatus } from "@/lib/actions/backup";
 import { DocumentLibrarySection } from "@/components/certifier/DocumentLibrarySection";
 import { signedUrl } from "@/lib/storage";
-import { runSystemChecks, runEnvChecks } from "@/lib/systemCheck";
+import { runSystemChecks, runEnvChecks, runNotificationChecks } from "@/lib/systemCheck";
 import { SystemCheckSection } from "@/components/certifier/SystemCheckSection";
 import Link from "next/link";
 import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, Activity, type LucideIcon } from "lucide-react";
@@ -77,7 +77,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     const backup = await getBackupStatus(profile.firm_id);
     content = <CloudBackupSection configured={backup.configured} connections={backup.connections} />;
   } else {
-    content = <SystemCheckSection checks={await runSystemChecks(supabase)} env={runEnvChecks()} />;
+    content = (
+      <SystemCheckSection
+        checks={await runSystemChecks(supabase)}
+        env={runEnvChecks()}
+        notifications={await runNotificationChecks(supabase, profile.firm_id)}
+      />
+    );
   }
 
   return (

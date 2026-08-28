@@ -159,6 +159,24 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Clients with overdue invoices are chased by email, on the schedule set in Payment details.",
       probe: hasColumn(supabase, "invoices", "last_payment_reminder_at"),
     },
+    {
+      migration: "0039",
+      label: "Client upload alerts",
+      detail: "Emails you when a client sends a document in, batching a burst into one summary.",
+      probe: hasTable(supabase, "portal_uploads"),
+    },
+    {
+      migration: "0040",
+      label: "Certifier notification email",
+      detail: "Where each certifier's own alerts are sent, set in Settings → Certifiers.",
+      probe: hasColumn(supabase, "certifiers", "email"),
+    },
+    {
+      migration: "0041",
+      label: "Review alerts to clients",
+      detail: "Emails the client when their documents are approved or need changes.",
+      probe: hasTable(supabase, "review_events"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));
@@ -206,6 +224,51 @@ export function runEnvChecks(): EnvCheck[] {
       label: "ePlanning inbound credentials",
       detail: "The Basic Auth details lodged with ePlanning so their gateway can download documents from CertFlow.",
       configured: !!(process.env.EPLANNING_INBOUND_USERNAME && process.env.EPLANNING_INBOUND_PASSWORD),
+    },
+  ];
+}
+
+// Whether the alerts CertFlow sends have somewhere to go.
+//
+// A notification with no recipient is the quietest possible failure: the
+// upload succeeds, the client sees no error, and the certifier simply
+// never hears. These name the two things that silently break it — a
+// project with nobody assigned, and a certifier with no address on file
+// — while there is still time to fix them.
+export type NotificationCheck = { label: string; detail: string; ok: boolean };
+
+export async function runNotificationChecks(supabase: SupabaseClient, firmId: string): Promise<NotificationCheck[]> {
+  const [{ data: jobs }, { data: certifiers }, { data: firm }] = await Promise.all([
+    supabase.from("jobs").select("id, assigned_certifier_id, deleted_at").eq("firm_id", firmId),
+    supabase.from("certifiers").select("*").eq("firm_id", firmId),
+    supabase.from("firms").select("email").eq("id", firmId).single(),
+  ]);
+
+  const live = (jobs || []).filter((j) => !j.deleted_at);
+  const unassigned = live.filter((j) => !j.assigned_certifier_id).length;
+
+  // The same order notifyJobCertifier tries, minus the login address,
+  // which isn't readable from here.
+  const withoutEmail = (certifiers || []).filter(
+    (c) => !((c as { email?: string | null }).email || c.portal_email || (c as { practice_email?: string | null }).practice_email)
+  );
+
+  return [
+    {
+      label: "Every project has a certifier assigned",
+      detail:
+        unassigned === 0
+          ? "Client uploads and inspection bookings have someone to notify on all projects."
+          : `${unassigned} project${unassigned === 1 ? " has" : "s have"} nobody assigned — nothing on ${unassigned === 1 ? "it" : "them"} can notify anyone. Set it on the project's Details tab.`,
+      ok: unassigned === 0,
+    },
+    {
+      label: "Every certifier has an email address",
+      detail:
+        withoutEmail.length === 0
+          ? "Alerts reach each certifier directly."
+          : `${withoutEmail.map((c) => c.name).join(", ")} has no address in Settings → Certifiers${firm?.email ? ", so their alerts fall back to the firm's address" : " and the firm has no address either, so their alerts go nowhere"}.`,
+      ok: withoutEmail.length === 0 || !!firm?.email,
     },
   ];
 }
