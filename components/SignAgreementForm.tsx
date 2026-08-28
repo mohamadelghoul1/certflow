@@ -2,7 +2,7 @@
 
 import { useActionState, useRef, useState } from "react";
 import { signAgreement, type SignState } from "@/lib/actions/agreements";
-import { PenLine, Type, Eraser } from "lucide-react";
+import { PenLine, Type, Eraser, CheckCircle2 } from "lucide-react";
 
 // Signing means making a mark, not ticking a box.
 //
@@ -106,6 +106,23 @@ export function SignAgreementForm({ token, name }: { token: string; name: string
     if (!drawing) return;
     setDrawing(false);
     if (hasMark) capture();
+  }
+
+  // The moment the signature is recorded, the form is replaced by the
+  // confirmation. A signatory who pressed Sign and saw the same form
+  // again has no way of knowing anything happened — and a browser
+  // cannot close a tab it did not open, so saying so plainly is the
+  // honest version of "the page closes".
+  if (state?.signed) {
+    return (
+      <div className="rounded-md bg-success-bg border border-accent/40 px-5 py-6 text-center">
+        <CheckCircle2 size={32} className="mx-auto text-accent" />
+        <div className="font-bold text-accent text-lg mt-3">Thank you — your signature has been recorded</div>
+        <p className="text-sm text-muted mt-2">
+          A copy of the signed agreement will be held with your project, and your certifier has been notified. You can close this page.
+        </p>
+      </div>
+    );
   }
 
   const tab = (active: boolean) =>

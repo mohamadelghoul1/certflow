@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
@@ -185,7 +186,7 @@ export async function removeAgreement(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
-export type SignState = { error?: string } | undefined;
+export type SignState = { error?: string; signed?: boolean } | undefined;
 
 // The signatory's own act, taken with no login: the token in their link
 // is the authorisation, so everything here runs through the admin client
@@ -237,9 +238,25 @@ export async function signAgreement(_prev: SignState, formData: FormData): Promi
     .is("signed_at", null);
   if (error) return { error: "That signature could not be saved. Please try again." };
 
+  // Everything after the signature itself — telling the certifier,
+  // marking the agreement complete, building the executed copy — runs
+  // once the answer is already on its way. Merging a signed PDF takes a
+  // moment, and the last person to sign should not be the one who waits
+  // for it wondering whether their click registered.
   const agreement = party.engagement_agreements as unknown as { id: string; job_id: string; firm_id: string; jobs: { address: string } | null } | null;
-  if (agreement) await afterSignature(admin, agreement, typedName);
-  return undefined;
+  if (agreement) {
+    after(async () => {
+      try {
+        await afterSignature(admin, agreement, typedName);
+      } catch (err) {
+        console.error("post-signature steps failed", err);
+      }
+    });
+  }
+  // So a refresh of the signing page shows it signed rather than the
+  // form again.
+  revalidatePath(`/sign/${token}`);
+  return { signed: true };
 }
 
 // Tell the certifier, and mark the agreement complete once the last
