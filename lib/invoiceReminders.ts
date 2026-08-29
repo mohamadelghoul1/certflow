@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendEmail } from "@/lib/email";
+import { firmSender, sendEmail } from "@/lib/email";
 import { buildInvoiceFile } from "@/lib/invoices/invoiceDocument";
 import { recordAuditEvent } from "@/lib/audit";
 import { invoiceTotals, invoiceNumberOf, formatMoney } from "@/lib/invoices/invoiceLogic";
@@ -114,7 +114,16 @@ export async function runInvoiceReminders(admin: SupabaseClient, now: Date = new
     // The same PDF the invoice went out with, so a chase is a complete
     // second copy rather than a nudge with nothing in it.
     const file = await buildInvoiceFile(typed.id, admin);
-    const result = await sendEmail(typed.clients.email, subject, html, file ? [{ filename: file.fileName, content: Buffer.from(file.bytes) }] : undefined);
+    // From the firm the invoice belongs to. A nightly sweep runs across
+    // every firm at once, so this is the one place where sending as the
+    // deployment would put one firm's name on another firm's chase.
+    const result = await sendEmail(
+      typed.clients.email,
+      subject,
+      html,
+      file ? [{ filename: file.fileName, content: Buffer.from(file.bytes) }] : undefined,
+      await firmSender(admin, typed.firm_id),
+    );
     // The clock moves either way: a bad address becomes a weekly note in
     // the audit log, not a daily one.
     await admin.from("invoices").update({ last_payment_reminder_at: now.toISOString() }).eq("id", typed.id);

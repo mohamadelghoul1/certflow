@@ -253,6 +253,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: hasTable(supabase, "certificate_templates"),
     },
     {
+      migration: "0058",
+      label: "Each firm's own sending address",
+      detail: "Lets a second firm send from its own address instead of this deployment's, so its clients never see another firm's name.",
+      probe: hasColumn(supabase, "firms", "from_email"),
+    },
+    {
       migration: "0056",
       label: "Occupation Certificate layout",
       detail: "Lets the OC be laid out per firm as well, not only the CDC and CC.",

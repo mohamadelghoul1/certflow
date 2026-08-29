@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { sendEmail, emailConfigured } from "@/lib/email";
+import { firmSender, sendEmail, emailConfigured } from "@/lib/email";
 import { siteUrl } from "@/lib/siteUrl";
 import type { ActionState } from "@/lib/actions/auth";
 
@@ -26,6 +26,11 @@ export async function updateFirm(_prev: ActionState, formData: FormData): Promis
   // that has not run it, save everything else rather than failing the form.
   const newer = {
     portal_email: String(formData.get("portal_email") || "").trim() || null,
+    // Who this firm's emails come from — migration 0058. Blank falls
+    // back to the deployment's address, which is what a single-firm
+    // deployment has always used.
+    from_email: String(formData.get("from_email") || "").trim() || null,
+    reply_to_email: String(formData.get("reply_to_email") || "").trim() || null,
   };
   const { error } = await supabase.from("firms").update({ ...fields, ...newer }).eq("id", profile.firm_id);
   if (error) {
@@ -337,7 +342,11 @@ export async function inviteClient(_prev: InviteState, formData: FormData): Prom
         client.user_id ? "Set a new password" : "Set up my portal access"
       }</a></p>`,
       `<p>From the portal you can see your project's progress, upload requested documents, and download what we send you.</p>`,
-    ].join("")
+    ].join(""),
+    undefined,
+    // The client is being invited by a firm, and should see that firm's
+    // name on the invitation rather than the deployment's.
+    await firmSender(supabase, profile.firm_id)
   );
   if (!result.sent) return { error: result.error || "The email could not be sent." };
 

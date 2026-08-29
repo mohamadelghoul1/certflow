@@ -55,10 +55,37 @@ export type EmailAttachment = { filename: string; content: Buffer };
 // error on it. That second kind used to pass straight through this
 // function as a success, which is how an email nobody received could
 // look exactly like one that arrived.
-export async function sendEmail(to: string, subject: string, html: string, attachments?: EmailAttachment[]): Promise<SendResult> {
+export type EmailSender = { from: string; replyTo: string | null };
+
+// Which firm the email is from, looked up once.
+//
+// The sending address used to be one setting for the whole deployment,
+// which is right for one firm and wrong the moment there are two: a
+// second firm's clients would receive their certificates apparently from
+// the first firm, and every reply would land in the first firm's inbox.
+//
+// Blank falls back to the deployment's own address, so a firm that has
+// not filled it in behaves exactly as before.
+export async function firmSender(supabase: SupabaseClient, firmId: string): Promise<EmailSender> {
+  const fallback = emailSenderSettings();
+  try {
+    // select("*") on purpose: naming the columns would fail the whole
+    // lookup on a database that has not run migration 0058, and an
+    // email that does not send is worse than one from the wrong name.
+    const { data } = await supabase.from("firms").select("*").eq("id", firmId).maybeSingle();
+    const firm = data as { from_email?: string | null; reply_to_email?: string | null } | null;
+    const from = (firm?.from_email || "").trim();
+    const replyTo = (firm?.reply_to_email || "").trim();
+    return { from: from || fallback.from, replyTo: replyTo || (from ? null : fallback.replyTo) };
+  } catch {
+    return { from: fallback.from, replyTo: fallback.replyTo };
+  }
+}
+
+export async function sendEmail(to: string, subject: string, html: string, attachments?: EmailAttachment[], sender?: EmailSender): Promise<SendResult> {
   if (!resend) return { sent: false, skipped: "not-configured" };
   try {
-    const { from, replyTo } = emailSenderSettings();
+    const { from, replyTo } = sender ?? emailSenderSettings();
     const { error } = await resend.emails.send({
       from,
       to,
@@ -133,7 +160,8 @@ export async function notifyJobClient(
     client.email,
     subject,
     `<p>Hi ${client.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to your CertFlow portal to view the details: <a href="${SITE_URL}/client-login">${SITE_URL}/client-login</a></p>`,
-    attachments
+    attachments,
+    await firmSender(supabase, job.firm_id)
   );
 
   if (result.error) {
@@ -178,7 +206,9 @@ export async function notifyJobCertifier(supabase: SupabaseClient, jobId: string
   const result = await sendEmail(
     email,
     subject,
-    `<p>Hi ${certifier?.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to CertFlow to view the details: <a href="${SITE_URL}/login">${SITE_URL}/login</a></p>`
+    `<p>Hi ${certifier?.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to CertFlow to view the details: <a href="${SITE_URL}/login">${SITE_URL}/login</a></p>`,
+    undefined,
+    await firmSender(supabase, job.firm_id)
   );
 
   if (result.error) return fail(email, result.error);

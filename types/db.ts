@@ -15,6 +15,10 @@ export type Firm = {
   website: string | null;
   logo_url: string | null;
   // The company's Planning Portal account. Added by migration 0032.
+  // Who this firm's emails come from, and where a reply lands. Blank
+  // falls back to the deployment's own address — see lib/email.
+  from_email?: string | null;
+  reply_to_email?: string | null;
   portal_email?: string | null;
   // Automatic document chasing. Added by migration 0033.
   document_reminders_enabled?: boolean;

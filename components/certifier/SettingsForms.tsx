@@ -104,6 +104,18 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
           <label className={labelCls}>Website</label>
           <input name="website" defaultValue={firm?.website || ""} className={inputCls} />
         </div>
+        {/* Who clients see an email from, and where their reply lands.
+            Left blank these fall back to the deployment's own address,
+            which is right for a single firm and wrong the moment there
+            are two. */}
+        <div>
+          <label className={labelCls}>Emails come from</label>
+          <input name="from_email" defaultValue={firm?.from_email || ""} placeholder="Your Firm &lt;notifications@yourfirm.com.au&gt;" className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Replies go to</label>
+          <input name="reply_to_email" defaultValue={firm?.reply_to_email || ""} placeholder="info@yourfirm.com.au" className={inputCls} />
+        </div>
         <div className="sm:col-span-2">
           <label className={labelCls}>NSW Planning Portal account email</label>
           <input name="portal_email" type="email" defaultValue={firm?.portal_email || ""} placeholder="the email the company signs into the Planning Portal with" className={inputCls} />

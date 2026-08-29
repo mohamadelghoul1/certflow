@@ -235,6 +235,20 @@ ONEDRIVE_CLIENT_ID=
 ONEDRIVE_CLIENT_SECRET=
 ```
 
+### Each firm's own sending address
+
+`RESEND_FROM_EMAIL` and `RESEND_REPLY_TO` are the deployment's default.
+With more than one firm on a deployment, each sets its own under
+**Settings → Firm details → Emails come from / Replies go to**, and its
+clients see that firm rather than the first one.
+
+The address must belong to a domain verified with Resend
+(**Resend → Domains**). Add each firm's domain there before they fill
+the field in — an unverified sender is refused at send time.
+
+Left blank, a firm uses the deployment default, which is what a
+single-firm deployment has always done.
+
 ### Where client replies go
 
 Emails go out as `RESEND_FROM_EMAIL`. A firm that sends from an address

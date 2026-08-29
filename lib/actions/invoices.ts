@@ -5,7 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { todayISO } from "@/lib/business";
-import { sendEmail, emailConfigured } from "@/lib/email";
+import { firmSender, sendEmail, emailConfigured } from "@/lib/email";
 import { recordAuditEvent } from "@/lib/audit";
 import { invoiceTotals, invoiceNumberOf, nextInvoiceNumber, formatMoney } from "@/lib/invoices/invoiceLogic";
 import { stripeConfigured, createInvoicePaymentLink } from "@/lib/payments/stripe";
@@ -306,7 +306,10 @@ export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: F
     client.email,
     `Invoice ${number}${typed.reference ? ` — ${typed.reference}` : ""}`,
     html,
-    file ? [{ filename: file.fileName, content: Buffer.from(file.bytes) }] : undefined
+    file ? [{ filename: file.fileName, content: Buffer.from(file.bytes) }] : undefined,
+    // From this firm, not the deployment's. A second firm's client
+    // should never see the first firm's name on their invoice.
+    await firmSender(supabase, profile.firm_id)
   );
   if (!result.sent) return { error: result.error || "The email could not be sent." };
 
