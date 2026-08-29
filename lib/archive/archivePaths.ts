@@ -33,14 +33,31 @@ export function jobFolder(reference: string, address: string) {
   return archiveSegment(parts.join(" - "), "Job");
 }
 
-// Numbered so a file browser lists them in the order the job ran, rather
-// than alphabetically — Approval before Documents before Inspections.
+// The layout a certifier's own filing already uses: everything for a job
+// under one Documents folder, in named sections rather than numbered
+// ones. A folder CertFlow files and a folder filed by hand open the same
+// way, which is the whole point of a backup you can read without us.
+export const ARCHIVE_ROOT = "Documents";
+
+// A Fire Safety folder sits alongside these in a certifier's own filing.
+// Nothing in CertFlow belongs there yet, and a folder is only created by
+// putting a file in it, so it is simply absent rather than empty — the
+// one filed by hand is untouched.
 export const ARCHIVE_SECTIONS = {
-  approval: "01 Approval",
-  documents: "02 Documents",
-  inspections: "03 Inspections",
-  correspondence: "04 Correspondence",
+  documents: `${ARCHIVE_ROOT}/Document Sets`,
+  inspections: `${ARCHIVE_ROOT}/Inspections`,
+  neighbours: `${ARCHIVE_ROOT}/Notice to Neighbours`,
+  oc: `${ARCHIVE_ROOT}/Occupation Certificate`,
 } as const;
+
+// The certificate this firm issued, under its own name. A PC/OC job
+// issues no certificate of ours — what sits here is the approval another
+// certifier issued, so calling it a Complying Development Certificate
+// would misfile someone else's document under our own heading.
+export function certificateFolder(pathway: string) {
+  const name = pathway === "CC" ? "Construction Certificate" : pathway === "PC_OC" ? "Approval" : "Complying Development Certificate";
+  return `${ARCHIVE_ROOT}/${name}`;
+}
 
 // One folder per checklist item, numbered in the certifier's own order so
 // the archive matches Schedule 1 rather than an alphabetical shuffle.

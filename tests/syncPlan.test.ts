@@ -11,7 +11,7 @@ describe("planning a backup run", () => {
   // nightly run to the day's new files.
   test("a file already sent is not sent again", () => {
     const plan = planUploads(
-      [candidate("a/plans-v1.pdf", "02 Documents/01 Plans", "v1.pdf"), candidate("a/plans-v2.pdf", "02 Documents/01 Plans", "v2 (current).pdf")],
+      [candidate("a/plans-v1.pdf", "Documents/Document Sets/01 Plans", "v1.pdf"), candidate("a/plans-v2.pdf", "Documents/Document Sets/01 Plans", "v2 (current).pdf")],
       [{ storage_path: "a/plans-v1.pdf" }],
       "/CertFlow",
       "CDC-26001 - 21 Coquet Way"
@@ -20,8 +20,8 @@ describe("planning a backup run", () => {
   });
 
   test("the remote path is the firm's folder, the job, then where it belongs", () => {
-    const [plan] = planUploads([candidate("a/x.pdf", "02 Documents/01 Plans", "v1.pdf")], [], "/CertFlow", "CDC-26001 - 21 Coquet Way");
-    assert.equal(plan.remotePath, "/CertFlow/CDC-26001 - 21 Coquet Way/02 Documents/01 Plans/v1.pdf");
+    const [plan] = planUploads([candidate("a/x.pdf", "Documents/Document Sets/01 Plans", "v1.pdf")], [], "/CertFlow", "CDC-26001 - 21 Coquet Way");
+    assert.equal(plan.remotePath, "/CertFlow/CDC-26001 - 21 Coquet Way/Documents/Document Sets/01 Plans/v1.pdf");
   });
 
   test("the same file reached twice on one job is sent once", () => {
@@ -32,11 +32,11 @@ describe("planning a backup run", () => {
   // The approved set is rebuilt on demand and can genuinely change, so it
   // is remembered by what it is rather than by a path it doesn't have.
   test("a generated document is sent again only when it has changed", () => {
-    const first = candidate(null, "01 Approval", "Approved Set.pdf", "signed-2026-08-25");
+    const first = candidate(null, "Documents/Complying Development Certificate", "Approved Set.pdf", "signed-2026-08-25");
     const unchanged = planUploads([first], [{ storage_path: uploadKey(first) }], "/CertFlow", "job");
     assert.equal(unchanged.length, 0, "an unchanged approval is not sent again");
 
-    const changed = candidate(null, "01 Approval", "Approved Set.pdf", "signed-2026-09-01");
+    const changed = candidate(null, "Documents/Complying Development Certificate", "Approved Set.pdf", "signed-2026-09-01");
     const after = planUploads([changed], [{ storage_path: uploadKey(first) }], "/CertFlow", "job");
     assert.equal(after.length, 1, "a reissued approval is");
   });
@@ -44,7 +44,7 @@ describe("planning a backup run", () => {
 
 describe("remote paths", () => {
   test("stray separators from addresses and references are collapsed", () => {
-    assert.equal(remotePath("/CertFlow/", "CDC-26001", "/02 Documents/", "v1.pdf"), "/CertFlow/CDC-26001/02 Documents/v1.pdf");
+    assert.equal(remotePath("/CertFlow/", "CDC-26001", "/Documents/Document Sets/", "v1.pdf"), "/CertFlow/CDC-26001/Documents/Document Sets/v1.pdf");
     assert.equal(remotePath("CertFlow", "job", "", "v1.pdf"), "/CertFlow/job/v1.pdf");
   });
 });
@@ -75,7 +75,7 @@ describe("what each provider is asked to do", () => {
   // A path with a space or a comma in it — every address has one — has to
   // survive the very different ways these two carry it.
   test("a path with spaces and commas survives both", () => {
-    const path = "/CertFlow/CDC-26001 - 21 Coquet Way, Green Valley/02 Documents/v1.pdf";
+    const path = "/CertFlow/CDC-26001 - 21 Coquet Way, Green Valley/Documents/Document Sets/v1.pdf";
 
     const dropbox = DROPBOX.uploadRequest({ accessToken: "t", remotePath: path, size: 10 });
     assert.equal(JSON.parse(dropbox.headers["Dropbox-API-Arg"]).path, path, "Dropbox carries it as JSON in a header");

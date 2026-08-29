@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { signedUrl } from "@/lib/storage";
 import { formatISODate, resolvePathwayCertRef } from "@/lib/business";
 import { currentDocuments, versionsOf } from "@/lib/checklistDocuments";
-import { ARCHIVE_SECTIONS, documentFolder, inspectionFolder, jobFolder, photoFileName, versionFileName } from "@/lib/archive/archivePaths";
+import { certificateFolder, documentFolder, inspectionFolder, jobFolder, photoFileName, versionFileName } from "@/lib/archive/archivePaths";
 import { planUploads, type SyncCandidate } from "@/lib/backup/syncPlan";
 import { providerFor } from "@/lib/backup/providers";
 import { usableAccessToken, type Connection } from "@/lib/backup/connection";
@@ -28,7 +28,7 @@ export function candidatesForJob(job: Job, items: ItemWithFiles[], inspections: 
 
   if (job.pathway_approval_file_path) {
     const extension = job.pathway_approval_file_path.includes(".") ? job.pathway_approval_file_path.slice(job.pathway_approval_file_path.lastIndexOf(".")) : "";
-    candidates.push({ storagePath: job.pathway_approval_file_path, folder: ARCHIVE_SECTIONS.approval, fileName: `Signed approval (uploaded)${extension}` });
+    candidates.push({ storagePath: job.pathway_approval_file_path, folder: certificateFolder(job.pathway), fileName: `Signed approval (uploaded)${extension}` });
   }
 
   items.forEach((item, index) => {

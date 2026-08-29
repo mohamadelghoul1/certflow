@@ -1,7 +1,7 @@
 import JSZip from "jszip";
 import { formatISODate } from "@/lib/business";
 import { currentDocuments, versionsOf } from "@/lib/checklistDocuments";
-import { ARCHIVE_SECTIONS, documentFolder, inspectionFolder, photoFileName, versionFileName } from "@/lib/archive/archivePaths";
+import { certificateFolder, documentFolder, inspectionFolder, photoFileName, versionFileName } from "@/lib/archive/archivePaths";
 import type { ChecklistItem, ChecklistItemFile, Defect, Inspection, InspectionPhoto, Job } from "@/types/db";
 
 // A job's complete archive: everything the firm holds for it, in one zip.
@@ -46,8 +46,9 @@ export async function buildJobArchive(input: ArchiveInput): Promise<Uint8Array> 
     return true;
   };
 
-  if (input.approval) zip.file(`${ARCHIVE_SECTIONS.approval}/${input.approval.name}`, input.approval.bytes);
-  await add(`${ARCHIVE_SECTIONS.approval}/Signed approval (uploaded)${extensionOf(input.job.pathway_approval_file_path)}`, input.job.pathway_approval_file_path);
+  const certificates = certificateFolder(input.job.pathway);
+  if (input.approval) zip.file(`${certificates}/${input.approval.name}`, input.approval.bytes);
+  await add(`${certificates}/Signed approval (uploaded)${extensionOf(input.job.pathway_approval_file_path)}`, input.job.pathway_approval_file_path);
 
   // Documents, in the certifier's own order, every version of each kept.
   // The earlier versions are the point: they are what shows the set a

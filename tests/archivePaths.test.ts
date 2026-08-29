@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { archiveSegment, jobFolder, jobFolderRef, documentFolder, versionFileName, inspectionFolder, photoFileName } from "@/lib/archive/archivePaths";
+import { archiveSegment, jobFolder, jobFolderRef, certificateFolder, documentFolder, versionFileName, inspectionFolder, photoFileName } from "@/lib/archive/archivePaths";
 
 describe("laying out a job archive", () => {
   // Certificate references carry slashes and addresses carry commas.
@@ -39,8 +39,8 @@ describe("laying out a job archive", () => {
   // Numbered so a file browser lists them in the order the job ran and
   // Schedule 1 lists them, not alphabetically.
   test("documents keep the certifier's order", () => {
-    assert.equal(documentFolder(1, "CDC Application Form"), "02 Documents/01 CDC Application Form");
-    assert.equal(documentFolder(12, "Architectural Plans"), "02 Documents/12 Architectural Plans");
+    assert.equal(documentFolder(1, "CDC Application Form"), "Documents/Document Sets/01 CDC Application Form");
+    assert.equal(documentFolder(12, "Architectural Plans"), "Documents/Document Sets/12 Architectural Plans");
   });
 
   test("versions sit together, with the one relied on marked", () => {
@@ -50,13 +50,24 @@ describe("laying out a job archive", () => {
   });
 
   test("an inspection folder carries the date it was carried out", () => {
-    assert.equal(inspectionFolder(2, "Slab Steel", "20 Aug 2026"), "03 Inspections/02 Slab Steel - 20 Aug 2026");
-    assert.equal(inspectionFolder(1, "Frame", null), "03 Inspections/01 Frame");
+    assert.equal(inspectionFolder(2, "Slab Steel", "20 Aug 2026"), "Documents/Inspections/02 Slab Steel - 20 Aug 2026");
+    assert.equal(inspectionFolder(1, "Frame", null), "Documents/Inspections/01 Frame");
   });
 
   test("photos cannot collide, even when a phone names two the same", () => {
     assert.equal(photoFileName(1, "x/IMG_0001.jpg", "Slab reinforcement"), "01 Slab reinforcement.jpg");
     assert.equal(photoFileName(2, "x/IMG_0001.jpg", ""), "02.jpg");
     assert.notEqual(photoFileName(1, "x/IMG_0001.jpg", ""), photoFileName(2, "x/IMG_0001.jpg", ""));
+  });
+});
+
+// The certificate goes under its own name, because "Complying Development
+// Certificate" on a job where another certifier issued the approval files
+// their document under our heading.
+describe("which folder the certificate goes in", () => {
+  test("each pathway names its own", () => {
+    assert.equal(certificateFolder("CDC"), "Documents/Complying Development Certificate");
+    assert.equal(certificateFolder("CC"), "Documents/Construction Certificate");
+    assert.equal(certificateFolder("PC_OC"), "Documents/Approval", "a PC/OC job issues no certificate of ours");
   });
 });

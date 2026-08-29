@@ -1,8 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncJob, type GeneratedDocument } from "@/lib/backup/sync";
-import { ARCHIVE_SECTIONS } from "@/lib/archive/archivePaths";
+import { ARCHIVE_SECTIONS, certificateFolder } from "@/lib/archive/archivePaths";
 import { buildApprovalSet } from "@/lib/pdf/approvalSet";
 import { buildOcSet } from "@/lib/pdf/ocSet";
+import { getNeighbourLetterData } from "@/lib/certificates/neighbourLetterData";
+import { buildNeighbourLetterPdf } from "@/lib/pdf/neighbourLetter";
+import { fetchStampImage } from "@/lib/pdf/stamp";
 import { recordAuditEvent } from "@/lib/audit";
 import type { Connection } from "@/lib/backup/connection";
 import type { Profile } from "@/types/db";
@@ -44,26 +47,53 @@ async function generatedFor(reason: AutoBackupReason, jobId: string, profile: Pr
   const admin = createAdminClient();
 
   if (reason === "pathway") {
-    const { data: job } = await admin.from("jobs").select("pathway_signed_at, pathway_version").eq("id", jobId).maybeSingle();
-    return [
+    const { data: job } = await admin.from("jobs").select("pathway, pathway_signed_at, pathway_version").eq("id", jobId).maybeSingle();
+    const row = job as { pathway?: string; pathway_signed_at?: string | null; pathway_version?: number | null } | null;
+    const marker = `v${row?.pathway_version ?? 1}:${row?.pathway_signed_at || "unsigned"}`;
+    const documents: GeneratedDocument[] = [
       {
-        folder: ARCHIVE_SECTIONS.approval,
+        folder: certificateFolder(row?.pathway || "CDC"),
         fileName: "Approved set.pdf",
-        marker: `v${job?.pathway_version ?? 1}:${job?.pathway_signed_at || "unsigned"}`,
+        marker,
         build: async () => (await buildApprovalSet(jobId, profile))?.bytes || null,
       },
     ];
+
+    // The s134 notice belongs to the CDC application, so there is none to
+    // file on a CC or a PC/OC job. Its marker is the certificate's, so
+    // the copy filed is the letter as it read when the certificate went
+    // out rather than one rebuilt from details edited afterwards.
+    if ((row?.pathway || "") === "CDC") {
+      documents.push({
+        folder: ARCHIVE_SECTIONS.neighbours,
+        fileName: "Notice to neighbours.pdf",
+        marker,
+        build: () => neighbourNoticeBytes(jobId, profile),
+      });
+    }
+
+    return documents;
   }
 
   const { data: records } = await admin.from("oc_records").select("id, type, signed_at, generated_date").eq("job_id", jobId).order("created_at");
   return ((records || []) as { id: string; type: string; signed_at: string | null; generated_date: string | null }[])
     .filter((record) => record.signed_at || record.generated_date)
     .map((record) => ({
-      folder: ARCHIVE_SECTIONS.approval,
+      folder: ARCHIVE_SECTIONS.oc,
       fileName: `${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate set.pdf`,
       marker: `${record.id}:${record.signed_at || record.generated_date}`,
       build: async () => (await buildOcSet(jobId, record.id, profile))?.bytes || null,
     }));
+}
+
+// The s134 letter is generated on demand rather than stored, so the copy
+// that goes to the firm's own filing is built here the same way the
+// download route builds it.
+async function neighbourNoticeBytes(jobId: string, profile: Profile): Promise<Uint8Array | null> {
+  const context = await getNeighbourLetterData(jobId, profile);
+  if (!context) return null;
+  const [logo, signature] = await Promise.all([fetchStampImage(context.logoUrl), fetchStampImage(context.signatureUrl)]);
+  return await buildNeighbourLetterPdf(context.data, { logo, signature });
 }
 
 export async function backUpIssuedJob(jobId: string, profile: Profile, reason: AutoBackupReason): Promise<void> {
