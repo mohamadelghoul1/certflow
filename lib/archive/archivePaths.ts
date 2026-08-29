@@ -18,8 +18,18 @@ export function archiveSegment(value: string, fallback = "Untitled") {
   return cleaned || fallback;
 }
 
+// A certificate reference carries the version it belongs to —
+// "CDC-26280/01" — but a job is one folder, not one per version. A
+// re-issued certificate belongs beside the first, in the same folder for
+// the same site, which is also how a certifier's own filing already
+// reads: "CDC-26280 - 28 Eucalyptus Street".
+export function jobFolderRef(reference: string) {
+  const trimmed = (reference || "").trim();
+  return trimmed.replace(/\/\s*\d+\s*$/, "").trim() || trimmed;
+}
+
 export function jobFolder(reference: string, address: string) {
-  const parts = [reference.trim(), address.trim()].filter(Boolean);
+  const parts = [jobFolderRef(reference), address.trim()].filter(Boolean);
   return archiveSegment(parts.join(" - "), "Job");
 }
 

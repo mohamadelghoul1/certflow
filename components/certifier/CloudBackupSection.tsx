@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { Cloud, CloudOff, CheckCircle2, AlertTriangle } from "lucide-react";
-import { disconnectBackup } from "@/lib/actions/backup";
+import { disconnectBackup, setBackupFolder, type BackupFolderState } from "@/lib/actions/backup";
 import { formatISODate } from "@/lib/business";
 import type { ConnectionStatus } from "@/lib/backup/connection";
 import type { ProviderId } from "@/lib/backup/providers";
@@ -72,9 +72,9 @@ function ConnectedRow({ connection }: { connection: ConnectionStatus }) {
           </button>
         </form>
       </div>
+      <BackupFolderField connection={connection} />
       <div className="text-[11px] text-muted mt-1">
-        Backing up to <span className="font-medium">{connection.root_folder}</span> ·{" "}
-        {connection.last_sync_at ? `last copied ${formatISODate(connection.last_sync_at.slice(0, 10))}` : "nothing copied yet"}
+        {connection.last_sync_at ? `Last copied ${formatISODate(connection.last_sync_at.slice(0, 10))}.` : "Nothing copied yet."}
       </div>
       {connection.last_sync_error ? (
         <div className="flex items-start gap-1.5 text-[11px] text-warning-text mt-1.5">
@@ -88,5 +88,35 @@ function ConnectedRow({ connection }: { connection: ConnectionStatus }) {
         )
       )}
     </div>
+  );
+}
+
+// The folder the copies land in, typed rather than fixed: a firm that
+// already files its jobs under BCS/Office wants ours in the same list,
+// not in a folder of our own beside it.
+function BackupFolderField({ connection }: { connection: ConnectionStatus }) {
+  const [state, formAction, pending] = useActionState<BackupFolderState, FormData>(setBackupFolder, undefined);
+
+  return (
+    <form action={formAction} className="mt-2">
+      <label className="block text-[11px] font-semibold text-muted mb-1">Back up into this folder</label>
+      <div className="flex items-center gap-2 flex-wrap">
+        <input type="hidden" name="connection_id" value={connection.id} />
+        <input
+          name="root_folder"
+          defaultValue={connection.root_folder}
+          placeholder="/BCS/Office"
+          className="flex-1 min-w-[12rem] border border-line rounded-md px-2.5 py-1.5 text-sm bg-white"
+        />
+        <button disabled={pending} className="text-xs font-semibold text-secondary hover:underline disabled:opacity-60">
+          {pending ? "Saving…" : "Save folder"}
+        </button>
+      </div>
+      <div className="text-[11px] text-muted mt-1">
+        Each project gets its own folder inside it, named the way you already file them — <span className="font-medium">CDC-26280 - 28 Eucalyptus Street, Constitution Hill</span>.
+      </div>
+      {state?.error && <div className="text-[11px] text-error mt-1">{state.error}</div>}
+      {state?.saved && <div className="text-[11px] text-accent mt-1">{state.saved}</div>}
+    </form>
   );
 }

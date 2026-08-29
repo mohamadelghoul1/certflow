@@ -5,7 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { configuredProviders, type Connection, type ConnectionStatus } from "@/lib/backup/connection";
 import type { ActionState } from "@/lib/actions/auth";
-import type { ProviderId } from "@/lib/backup/providers";
+import { remotePath, type ProviderId } from "@/lib/backup/providers";
 
 // Never returns a token. The connection rows hold live credentials to a
 // firm's own cloud storage, and the only things the app needs to show are
@@ -29,3 +29,29 @@ export async function disconnectBackup(formData: FormData) {
   revalidatePath("/settings");
 }
 
+
+// Where in the firm's cloud storage the copies land.
+//
+// A firm already has a filing system — ours copies into it rather than
+// beside it, so a job CertFlow files and a job filed by hand sit in the
+// same list. Only the folder moves: what has already been copied stays
+// where it was sent, so a change made halfway leaves the earlier jobs in
+// the old folder rather than silently re-copying gigabytes.
+export type BackupFolderState = { error?: string; saved?: string } | undefined;
+
+export async function setBackupFolder(_prev: BackupFolderState, formData: FormData): Promise<BackupFolderState> {
+  const { profile } = await requireProfile("certifier");
+  const folder = remotePath(String(formData.get("root_folder") || ""));
+  if (folder === "/") return { error: "Type the folder to back up into, such as /BCS/Office." };
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("cloud_backup_connections")
+    .update({ root_folder: folder })
+    .eq("id", String(formData.get("connection_id")))
+    .eq("firm_id", profile.firm_id);
+  if (error) return { error: "That folder could not be saved. Please try again." };
+
+  revalidatePath("/settings");
+  return { saved: `Backing up to ${folder}` };
+}

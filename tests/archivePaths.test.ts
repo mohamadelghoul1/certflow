@@ -1,13 +1,28 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { archiveSegment, jobFolder, documentFolder, versionFileName, inspectionFolder, photoFileName } from "@/lib/archive/archivePaths";
+import { archiveSegment, jobFolder, jobFolderRef, documentFolder, versionFileName, inspectionFolder, photoFileName } from "@/lib/archive/archivePaths";
 
 describe("laying out a job archive", () => {
   // Certificate references carry slashes and addresses carry commas.
   // Windows refuses several characters outright, and a folder it refuses
   // is a folder that silently doesn't extract.
   test("a job folder is named for the certificate and the address", () => {
-    assert.equal(jobFolder("CDC-26001/01", "21 Coquet Way, Green Valley"), "CDC-26001-01 - 21 Coquet Way, Green Valley");
+    assert.equal(jobFolder("CDC-26001/01", "21 Coquet Way, Green Valley"), "CDC-26001 - 21 Coquet Way, Green Valley");
+  });
+
+  // One folder per job, not one per version — the way a certifier's own
+  // filing already reads, so ours drops into the same list.
+  test("the version a certificate belongs to is not part of the folder name", () => {
+    assert.equal(jobFolderRef("CDC-26280/01"), "CDC-26280");
+    assert.equal(jobFolderRef("CDC-26280/02"), "CDC-26280", "a re-issued certificate belongs in the same folder");
+    assert.equal(jobFolder("CC-26315/03", "45 Sharples Circuit, Oran Park"), "CC-26315 - 45 Sharples Circuit, Oran Park");
+  });
+
+  test("a reference with no version is left exactly as the certifier typed it", () => {
+    assert.equal(jobFolderRef("CDC-26280"), "CDC-26280");
+    assert.equal(jobFolderRef("2026/14 Smith"), "2026/14 Smith", "only a trailing version comes off");
+    assert.equal(jobFolderRef("CDC-26280/"), "CDC-26280/", "a stray slash is not a version");
+    assert.equal(jobFolderRef(""), "");
   });
 
   test("characters Windows rejects are removed", () => {
