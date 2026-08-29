@@ -297,3 +297,50 @@ ERROR_ALERT_EMAIL=
 
 Worth setting: a failure that happens before anyone has signed in belongs
 to no firm, so this address is the only one it can reach.
+
+## Still to set up
+
+Things decided on and deliberately left for later. Nothing here is
+broken; each is a step that makes CertFlow better without which it still
+works.
+
+### CertFlow's own web address
+
+The site answers on the address Vercel generated
+(`certflow-drab.vercel.app`). It works, and the certificate that secures
+it is real — but it is the address a client sees on every invoice and
+portal link, and an auto-generated one invites hesitation before a
+builder clicks it.
+
+Suggested: `portal.qpcertifiers.com.au`. A subdomain leaves the existing
+website alone and reads as the firm's own.
+
+1. Vercel -> the CertFlow project -> Settings -> Domains -> add
+   `portal.qpcertifiers.com.au`. Vercel then names one DNS record to
+   create — use the value it gives, they vary.
+2. At whoever manages `qpcertifiers.com.au` (the same place the Resend
+   verification records were added), create that record. Usually a CNAME
+   on the name `portal`. Default TTL.
+3. Wait for Vercel's Domains page to read "Valid Configuration". It
+   issues the HTTPS certificate itself.
+4. Vercel -> Settings -> Environment Variables -> set
+   `NEXT_PUBLIC_SITE_URL` to `https://portal.qpcertifiers.com.au`, then
+   Deployments -> Redeploy. It is read when the app is built, so saving
+   alone does not take effect.
+
+Step 4 only matters for the overnight reminder sweep: everything a
+certifier triggers builds its links from the address they are actually
+on. Do it anyway so the nightly chasers agree with the rest.
+
+The Vercel address keeps working afterwards, so any link a client has
+already been sent still resolves.
+
+### Two things noticed while testing, for the firm to decide
+
+- **The firm's name reads two ways.** Email goes out as "QP Certifiers"
+  and signs off "Quality Private Certifiers" — the sign-off is
+  Settings -> Firm details -> Name, which is also what prints on
+  certificates. Deliberate, or worth making consistent.
+- **A test client carries a real address.** The invoice test went to a
+  client record whose email is the owner's own. Worth tidying before real
+  invoices go out, or a client's invoice lands in the wrong inbox.
