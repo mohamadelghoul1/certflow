@@ -61,18 +61,23 @@ export async function recordOutcome(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
-// The two prose parts of the generated report. Blank intro means "use the
-// standard wording" rather than "print nothing", so clearing the box
-// restores the default instead of leaving a gap.
-export async function updateInspectionReportText(formData: FormData) {
+// The report's notes section, written on site. Blank leaves the section
+// out of the report entirely rather than printing an empty heading.
+//
+// This used to save the report's opening paragraph as well, from a box on
+// the job page. It wrote both fields every time, and the on-site notes
+// screen posts only the notes — so saving a note in the van silently
+// erased whatever opening paragraph had been written at the desk. Now
+// that the opening paragraph is not editable anywhere, this touches only
+// the field it is given, which is what it should have done regardless.
+export async function updateInspectionNotes(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
-  const introOverride = String(formData.get("report_intro_override") || "").trim() || null;
   const notes = String(formData.get("report_notes") || "").trim() || null;
 
-  await supabase.from("inspections").update({ report_intro_override: introOverride, report_notes: notes, updated_at: new Date().toISOString() }).eq("id", inspectionId);
+  await supabase.from("inspections").update({ report_notes: notes, updated_at: new Date().toISOString() }).eq("id", inspectionId);
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath("/jobs/[jobId]/inspections/[inspectionId]/report", "page");
 }

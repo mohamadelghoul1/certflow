@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateInspectionReportText } from "@/lib/actions/inspections";
+import { updateInspectionNotes } from "@/lib/actions/inspections";
 
 // Anything that belongs on the report beyond the issues themselves.
 //
@@ -23,7 +23,7 @@ export function SiteNotes({ inspectionId, jobId, notes }: { inspectionId: string
         fd.set("inspection_id", inspectionId);
         fd.set("job_id", jobId);
         fd.set("report_notes", text);
-        await updateInspectionReportText(fd);
+        await updateInspectionNotes(fd);
         setState("saved");
       } catch {
         setState("failed");
