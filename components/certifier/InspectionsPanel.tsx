@@ -72,7 +72,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
 
   return (
     <InspectionSigning jobId={jobId} inspectionId={insp.id} signedAt={insp.report_signed_at}>
-      <InspectionCardState inspectionId={insp.id} jobId={jobId} outcome={insp.outcome} date={insp.date || ""}>
+      <InspectionCardState inspectionId={insp.id} jobId={jobId} outcome={insp.outcome} date={insp.date || ""} portalReported={!!insp.portal_reported}>
         <InspectionCardShell>
           <div className="flex items-start justify-between gap-3">
             <div>

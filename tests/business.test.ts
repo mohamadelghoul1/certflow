@@ -145,3 +145,22 @@ describe("compliance severity", () => {
     assert.equal(severityFor("2026-09-04", today), "upcoming");
   });
 });
+
+// The green cue on an inspection card. Recording an outcome is the start
+// of the work, so the card has to keep looking unfinished until the
+// report is signed and the Portal has been told.
+import { inspectionFinished } from "@/lib/business";
+
+describe("an inspection card is finished", () => {
+  test("only once the report is signed and reported to the Portal", () => {
+    assert.equal(inspectionFinished(null, false), false, "nothing done yet");
+    assert.equal(inspectionFinished(null, true), false, "reported but the report is not signed");
+    assert.equal(inspectionFinished("2026-08-26T01:00:00Z", false), false, "signed but the Portal has not been told");
+    assert.equal(inspectionFinished("2026-08-26T01:00:00Z", true), true);
+  });
+
+  test("an inspection with no signed report at all is not finished", () => {
+    assert.equal(inspectionFinished(undefined, true), false);
+    assert.equal(inspectionFinished("", true), false);
+  });
+});

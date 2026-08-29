@@ -404,3 +404,12 @@ export function formatClassifications(classifications: string[] | undefined | nu
   }
   return codes.join(", ");
 }
+
+// An inspection card only counts as finished — and only then turns green —
+// once the report has been signed and the inspection has been reported to
+// the NSW Planning Portal. Recording the outcome is the start of that
+// work, not the end of it, so choosing "Passed" on its own leaves the card
+// looking exactly as unfinished as it is.
+export function inspectionFinished(signedAt: string | null | undefined, portalReported: boolean) {
+  return !!signedAt && portalReported;
+}

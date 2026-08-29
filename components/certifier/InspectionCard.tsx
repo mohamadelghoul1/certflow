@@ -5,7 +5,9 @@ import { CheckCircle2, XCircle, AlertTriangle, Circle } from "lucide-react";
 import { setInspectionDate, recordOutcome, removeInspection } from "@/lib/actions/inspections";
 import { InspectionIssues } from "@/components/certifier/InspectionIssues";
 import { useInspectionList } from "@/components/certifier/InspectionOrder";
+import { useInspectionSigning } from "@/components/certifier/SignInspectionReportButton";
 import { DateField, todayISO } from "@/components/DateField";
+import { inspectionFinished } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Defect } from "@/types/db";
 
@@ -41,6 +43,8 @@ function OutcomeIcon({ outcome, size }: { outcome: Outcome; size: number }) {
 type Ctx = {
   outcome: Outcome;
   date: string;
+  // Whether the NSW Planning Portal has been told about this inspection.
+  portalReported: boolean;
   setOutcome: (next: Outcome) => void;
   setDate: (next: string) => void;
 };
@@ -58,12 +62,14 @@ export function InspectionCardState({
   jobId,
   outcome,
   date,
+  portalReported,
   children,
 }: {
   inspectionId: string;
   jobId: string;
   outcome: Outcome;
   date: string;
+  portalReported: boolean;
   children: React.ReactNode;
 }) {
   const [optimisticOutcome, setOptimisticOutcome] = useOptimistic(outcome);
@@ -82,6 +88,7 @@ export function InspectionCardState({
       value={{
         outcome: optimisticOutcome,
         date: optimisticDate,
+        portalReported,
         setOutcome: (next) =>
           startTransition(async () => {
             setOptimisticOutcome(next);
@@ -106,14 +113,20 @@ export function InspectionCardState({
   );
 }
 
-// Green once the inspection has been carried out, whatever was found —
-// the same whole-card cue an approved checklist item gets. The badge
-// still carries the outcome itself, so a failed inspection reads as done
-// without reading as fine.
+// Green only when the inspection is genuinely finished: the report
+// signed and the NSW Planning Portal told about it.
+//
+// It used to go green the moment an outcome was picked, which is the
+// start of the work rather than the end of it — a card that reads as
+// done while its report is unsigned and the Portal has not been told is
+// a card that invites both to be forgotten. The badge still carries the
+// outcome from the moment it is recorded, so nothing is hidden; only the
+// "this one is finished" cue waits for the two steps that finish it.
 export function InspectionCardShell({ children }: { children: React.ReactNode }) {
-  const { outcome } = useCard();
-  const done = outcome !== "pending";
-  return <div className={`card-lift rounded-xl border shadow-sm p-6 ${done ? "border-accent/40 bg-success-bg" : "border-line bg-white"}`}>{children}</div>;
+  const { portalReported } = useCard();
+  const signing = useInspectionSigning();
+  const finished = inspectionFinished(signing?.signedAt, portalReported);
+  return <div className={`card-lift rounded-xl border shadow-sm p-6 ${finished ? "border-accent/40 bg-success-bg" : "border-line bg-white"}`}>{children}</div>;
 }
 
 export function OutcomeBadge() {

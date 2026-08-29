@@ -53,6 +53,13 @@ export function InspectionSigning({ jobId, inspectionId, signedAt, children }: {
   );
 }
 
+// Read by the card shell, which only goes green once the report has
+// been signed. Null outside a signing provider rather than throwing, so
+// a card rendered on its own simply reads as unsigned.
+export function useInspectionSigning() {
+  return useContext(SigningContext);
+}
+
 export function SignInspectionReportButton() {
   const ctx = useContext(SigningContext);
   if (!ctx) return null;
