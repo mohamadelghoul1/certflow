@@ -1,20 +1,12 @@
 import { requireProfile } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import { formatClassifications, formatDocumentDate, formatISODate } from "@/lib/business";
+import { formatDocumentDate, formatISODate } from "@/lib/business";
 import { signOc, uploadOcApproval } from "@/lib/actions/jobs";
 import { CertificatePackage } from "@/components/certifier/CertificatePackage";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
 import { getOcCertificateData } from "@/lib/certificates/ocData";
 import { formatAddress } from "@/lib/certificates/pathwayData";
-
-function CertRow({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <tr className="align-top">
-      <td className="py-1.5 pr-4 text-sm font-semibold text-heading whitespace-nowrap w-1/3">{label}</td>
-      <td className="py-1.5 text-sm text-muted">{value || "—"}</td>
-    </tr>
-  );
-}
+import { OcCertificateRows } from "@/components/certifier/OcCertificateRows";
 
 function Section({ children, last }: { children: React.ReactNode; last?: boolean }) {
   return (
@@ -62,7 +54,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
 
   const data = await getOcCertificateData(jobId, ocId, profile.firm_id);
   if (!data) notFound();
-  const { job, firm, record, issuedBy, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, consentLabel, daNumber, daDate, d, issuedDate, applicantName } = data;
+  const { job, firm, record, issuedBy, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, consentLabel, daNumber, d, issuedDate, applicantName } = data;
 
   return (
     <CertificatePackage
@@ -207,18 +199,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
             <h1 className="text-center text-2xl font-bold text-heading uppercase tracking-wide mb-1">{typeLabel}</h1>
             <p className="text-center text-xs text-placeholder mb-8">Issued under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979</p>
 
-            <table className="w-full mb-8">
-              <tbody>
-                <CertRow label="Property address" value={job.address} />
-                <CertRow label="Lot/Section/DP" value={d.certificateDetails?.lotSectionDp} />
-                <CertRow label="Development description" value={record.description || job.description} />
-                <CertRow label="Building classification(s)" value={formatClassifications(d.proposal?.classifications)} />
-                <CertRow label={`${consentLabel} relied upon`} value={consentRef} />
-                {daNumber && <CertRow label="Development Consent (DA) No." value={daNumber} />}
-                {daDate && <CertRow label="Development Consent (DA) date" value={daDate} />}
-                <CertRow label="Date of issue" value={issuedDate} />
-              </tbody>
-            </table>
+            <OcCertificateRows data={data} />
 
             <div className="mb-8">
               <div className="text-xs font-bold uppercase tracking-wide text-placeholder mb-2">Documents relied upon</div>
