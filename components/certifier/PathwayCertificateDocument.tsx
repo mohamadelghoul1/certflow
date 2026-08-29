@@ -1,10 +1,15 @@
-import { formatClassifications, formatDocumentDate, formatISODate } from "@/lib/business";
+import { formatDocumentDate, formatISODate } from "@/lib/business";
 import { DocumentHeader } from "@/components/certifier/DocumentHeader";
 import { PreInspectionReportBody } from "@/components/certifier/PreInspectionReportBody";
 import type { PreInspectionData } from "@/lib/certificates/preInspectionData";
 import { LetterBodyEditor } from "@/components/certifier/LetterBodyEditor";
 import { EditableDocText } from "@/components/certifier/EditableDocText";
-import { formatAddress, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
+import { formatAddress, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
+import { Fragment } from "react";
+import { resolveTemplate } from "@/lib/certificates/certificateTemplate";
+import { certificateFieldValues } from "@/lib/certificates/certificateValues";
+import { writeKey } from "@/lib/certificates/docKeys";
+import type { FieldKey } from "@/lib/certificates/templateFields";
 
 // The CDC/CC package as it appears on screen and, more importantly, as it
 // comes out of the browser's print dialog.
@@ -184,11 +189,8 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
     conditions,
     allItems,
     selectedInspections,
-    activeVersionId,
     signatureUrl,
-    uploadedApprovalUrl,
     logoUrl,
-    lapseDate,
     ref,
     projRef,
     isCdc,
@@ -198,9 +200,6 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
     issuedDate,
     applicantName,
     applicantPhone,
-    ownerName,
-    ownerAddress,
-    ownerPhone,
     councilBody,
     applicantBody,
     requiredDocsList,
@@ -383,80 +382,44 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
 
         <table className="w-full">
           <tbody>
-            <TableSectionHeading>APPLICANT DETAILS</TableSectionHeading>
-            <CertRow label="Applicant:" value={applicantName} jobId={job.id} docKey="cert.applicant" overrides={docOverrides} />
-            <CertRow label="Address:" value={formatAddress(d.applicantAddress)} jobId={job.id} docKey="cert.applicantAddress" overrides={docOverrides} />
-            <CertRow label="Phone:" value={applicantPhone} jobId={job.id} docKey="cert.applicantPhone" overrides={docOverrides} />
-
-            <TableSectionHeading>OWNER DETAILS</TableSectionHeading>
-            <CertRow label={isCdc ? "Owner" : "Owner:"} value={ownerName} jobId={job.id} docKey="cert.owner" overrides={docOverrides} />
-            <CertRow label="Address:" value={ownerAddress} jobId={job.id} docKey="cert.ownerAddress" overrides={docOverrides} />
-            <CertRow label="Phone:" value={ownerPhone} jobId={job.id} docKey="cert.ownerPhone" overrides={docOverrides} />
-
-            {isCdc ? (
-              <>
-                <TableSectionHeading>{pathwayFull.toUpperCase()} DETAILS</TableSectionHeading>
-                <CertRow label="NSW Planning Portal Ref Number:" value={cd.planningPortalRef} jobId={job.id} docKey="cert.portalRef" overrides={docOverrides} />
-                <CertRow label="Local Government Area:" value={d.council?.lga} jobId={job.id} docKey="cert.lga" overrides={docOverrides} />
-                <CertRow label="Relevant Environmental Planning Instrument" value={cd.relevantInstrument} jobId={job.id} docKey="cert.epi" overrides={docOverrides} />
-                <CertRow label="Relevant Part of Code" value={cd.relevantPartOfCode} jobId={job.id} docKey="cert.partOfCode" overrides={docOverrides} />
-                <CertRow label="Date of Determination:" value={formatISODate(cd.determinationDate)} jobId={job.id} docKey="cert.determination" overrides={docOverrides} />
-                <CertRow label="Date of Lapse:" value={/^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate} jobId={job.id} docKey="cert.lapse" overrides={docOverrides} />
-              </>
-            ) : (
-              <>
-                <TableSectionHeading>RELEVANT DEVELOPMENT CONSENTS</TableSectionHeading>
-                <CertRow label="Consent Authority / Local Government Area:" value={d.council?.lga} jobId={job.id} docKey="cert.consentAuthority" overrides={docOverrides} />
-                <CertRow label="Development Consent Number:" value={cd.developmentConsentNumber} jobId={job.id} docKey="cert.consentNumber" overrides={docOverrides} />
-                <CertRow label="Development Consent Date:" value={formatISODate(cd.developmentConsentDate)} jobId={job.id} docKey="cert.consentDate" overrides={docOverrides} />
-                <CertRow label="NSW Planning Portal Ref Number:" value={cd.planningPortalRef} jobId={job.id} docKey="cert.portalRef" overrides={docOverrides} />
-                <CertRow label="Construction Certificate Number:" value={ref} jobId={job.id} docKey="cert.ccNumber" overrides={docOverrides} />
-                <CertRow label="Date of Issue of Construction Certificate:" value={issuedDate} jobId={job.id} docKey="cert.ccIssueDate" overrides={docOverrides} />
-              </>
-            )}
-
-            <TableSectionHeading>PROPOSAL</TableSectionHeading>
-            <CertRow label="Address of Development:" value={job.address} jobId={job.id} docKey="cert.devAddress" overrides={docOverrides} />
-            <CertRow label={isCdc ? "Lot/Section/DP:" : "Lot/ DP:"} value={cd.lotSectionDp} jobId={job.id} docKey="cert.lotDp" overrides={docOverrides} />
-            {isCdc && <CertRow label="Land Use Zone:" value={d.zoning} jobId={job.id} docKey="cert.zone" overrides={docOverrides} />}
-            <CertRow label={isCdc ? "BCA Classification/s:" : "BCA Classification:"} value={formatClassifications(d.proposal?.classifications)} jobId={job.id} docKey="cert.bcaClass" overrides={docOverrides} />
-            <CertRow label="BCA/NCC Version:" value={formatBcaVersion(d.bcaVersion, d.bcaVolumes)} jobId={job.id} docKey="cert.bcaVersion" overrides={docOverrides} />
-            <CertRow label="Description of Building Works:" value={job.description} jobId={job.id} docKey="cert.description" overrides={docOverrides} />
-            <CertRow
-              label={isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)"}
-              value={formatCurrency(d.proposal?.estimatedCost)}
-              jobId={job.id}
-              docKey="cert.value"
-              overrides={docOverrides}
-            />
-            <CertRow label={isCdc ? "Attachments" : "Attachments:"} value="Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon" jobId={job.id} docKey="cert.attachments" overrides={docOverrides} />
-            {isCdc && (
-              <tr className="align-top">
-                <td className="py-1.5 pr-4 text-sm font-semibold text-heading whitespace-nowrap w-1/3">Conditions:</td>
-                <td className="py-1.5 text-sm text-muted">
-                  <EditableDocText
-                    jobId={job.id}
-                    docKey="cert.conditions"
-                    value={docOverrides["cert.conditions"] ?? standardConditions}
-                    overridden={!!docOverrides["cert.conditions"]}
-                    label="the conditions"
-                    rows={8}
-                    className="space-y-1"
-                  />
-                </td>
-              </tr>
-            )}
-            <CertRow label={isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:"} value="See attached Notice" jobId={job.id} docKey="cert.inspections" overrides={docOverrides} />
-
-            {/* Who the certificate is issued by, on the same page as what
-                it covers — dropping the project-reference subtitle freed
-                the room this block needs. Registration body then number,
-                in that order: read together they're one statement of the
-                authority the certificate is issued under. */}
-            <TableSectionHeading>REGISTERED CERTIFIER</TableSectionHeading>
-            <CertRow label="Registered Certifier:" value={issuedBy?.name} jobId={job.id} docKey="cert.certifierName" overrides={docOverrides} />
-            <CertRow label="Registration Body:" value={issuedBy?.registration_body} jobId={job.id} docKey="cert.registrationBody" overrides={docOverrides} />
-            <CertRow label="Registration No:" value={issuedBy?.registration_no} jobId={job.id} docKey="cert.registrationNo" overrides={docOverrides} />
+            {/* Drawn from the firm's own layout where they have saved one,
+                CertFlow's otherwise — the same layout the PDF and the Word
+                export walk, so what is edited here is what is issued. */}
+            {resolveTemplate(data.template, certificateFieldValues(data), pathwayFull).map((section) => (
+              <Fragment key={section.heading}>
+                {section.heading && <TableSectionHeading>{section.heading}</TableSectionHeading>}
+                {section.rows.map((row, i) =>
+                  row.kind === "conditions" ? (
+                    <tr key={`${row.key}-${i}`} className="align-top">
+                      <td className="py-1.5 pr-4 text-sm font-semibold text-heading whitespace-nowrap w-1/3">{row.label}</td>
+                      <td className="py-1.5 text-sm text-muted">
+                        <EditableDocText
+                          jobId={job.id}
+                          docKey="cert.conditions"
+                          value={docOverrides["cert.conditions"] ?? standardConditions}
+                          overridden={!!docOverrides["cert.conditions"]}
+                          label="the conditions"
+                          rows={8}
+                          className="space-y-1"
+                        />
+                      </td>
+                    </tr>
+                  ) : (
+                    <CertRow
+                      key={`${row.key}-${i}`}
+                      label={row.label}
+                      value={row.value}
+                      jobId={job.id}
+                      // A row of the firm's own wording has nothing behind
+                      // it to correct per job — it says the same thing on
+                      // every certificate, and is changed in Settings.
+                      docKey={row.key === "fixed" ? undefined : writeKey(row.key as FieldKey)}
+                      overrides={docOverrides}
+                    />
+                  ),
+                )}
+              </Fragment>
+            ))}
           </tbody>
         </table>
         <DocFooter projRef={projRef} website={firm?.website} />

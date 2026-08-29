@@ -1,6 +1,7 @@
 import { formatAddress, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatClassifications, formatISODate } from "@/lib/business";
 import type { FieldValues } from "@/lib/certificates/templateFields";
+import { DOC_KEYS } from "@/lib/certificates/docKeys";
 import type { OcCertificateData } from "@/lib/certificates/ocData";
 
 // What every row on a certificate can say, worked out once.
@@ -43,18 +44,18 @@ export function certificateFieldValues(data: PathwayCertificateData): FieldValue
     owner: ov("owner", ownerName),
     ownerAddress: ov("ownerAddress", ownerAddress),
     ownerPhone: ov("ownerPhone", ownerPhone),
-    planningPortalRef: from(["cert.planningPortalRef", "cert.portalRef"], cd.planningPortalRef),
-    lga: from(["cert.lga", "cert.consentAuthority"], d.council?.lga),
+    planningPortalRef: from(DOC_KEYS.planningPortalRef, cd.planningPortalRef),
+    lga: from(DOC_KEYS.lga, d.council?.lga),
     epi: ov("epi", cd.relevantInstrument),
     partOfCode: ov("partOfCode", cd.relevantPartOfCode),
-    determinationDate: from(["cert.determinationDate", "cert.determination"], formatISODate(cd.determinationDate)),
+    determinationDate: from(DOC_KEYS.determinationDate, formatISODate(cd.determinationDate)),
     // A lapse date can be a sentence rather than a date — a CDC that has
     // been acted upon has none — so only a real date is formatted.
-    lapseDate: from(["cert.lapseDate", "cert.lapse"], /^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate),
-    developmentConsentNumber: from(["cert.developmentConsentNumber", "cert.consentNumber"], cd.developmentConsentNumber),
-    developmentConsentDate: from(["cert.developmentConsentDate", "cert.consentDate"], formatISODate(cd.developmentConsentDate)),
-    certificateNumber: from(["cert.certificateNumber", "cert.ccNumber"], ref),
-    issuedDate: from(["cert.issuedDate", "cert.ccIssueDate"], issuedDate),
+    lapseDate: from(DOC_KEYS.lapseDate, /^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate),
+    developmentConsentNumber: from(DOC_KEYS.developmentConsentNumber, cd.developmentConsentNumber),
+    developmentConsentDate: from(DOC_KEYS.developmentConsentDate, formatISODate(cd.developmentConsentDate)),
+    certificateNumber: from(DOC_KEYS.certificateNumber, ref),
+    issuedDate: from(DOC_KEYS.issuedDate, issuedDate),
     devAddress: ov("devAddress", job.address),
     lotDp: ov("lotDp", cd.lotSectionDp),
     zone: ov("zone", d.zoning),
