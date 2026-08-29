@@ -30,7 +30,24 @@ function reducer(state: Defect[], action: IssueAction): Defect[] {
   }
 }
 
-export function InspectionIssues({ inspectionId, jobId, defects }: { inspectionId: string; jobId: string; defects: Defect[] }) {
+export function InspectionIssues({
+  inspectionId,
+  jobId,
+  defects,
+  title,
+  placeholder,
+  hint,
+}: {
+  inspectionId: string;
+  jobId: string;
+  defects: Defect[];
+  // What this list is called on this outcome — issues on a failed
+  // inspection, documents still owed on a satisfactory one. See
+  // lib/inspectionIssues.
+  title: string;
+  placeholder: string;
+  hint?: string;
+}) {
   const [list, dispatch] = useOptimistic(defects, reducer);
   const [, startTransition] = useTransition();
   const [draft, setDraft] = useState("");
@@ -79,6 +96,8 @@ export function InspectionIssues({ inspectionId, jobId, defects }: { inspectionI
 
   return (
     <div className="mt-3 space-y-2">
+      <div className="text-[11px] font-semibold text-muted">{title}</div>
+      {hint && <p className="text-[11px] text-warning-text bg-warning-bg rounded-md px-2.5 py-1.5">{hint}</p>}
       {list.map((d) => (
         <div key={d.id} className="flex items-center gap-2">
           <input
@@ -105,7 +124,7 @@ export function InspectionIssues({ inspectionId, jobId, defects }: { inspectionI
           // click, this fires first and the button's handler then finds the
           // box already empty and does nothing.
           onBlur={() => handleAdd()}
-          placeholder="Add an issue / document required…"
+          placeholder={placeholder}
           className="w-full px-3 py-2 rounded-md border border-line text-xs"
         />
       </form>

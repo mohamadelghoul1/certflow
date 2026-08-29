@@ -7,6 +7,8 @@ import { formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { directionsUrl } from "@/lib/site/visitList";
 import { OutcomeChoice } from "@/components/site/OutcomeChoice";
+import { SiteOutcomeState } from "@/components/site/SiteOutcome";
+import { SiteSteps } from "@/components/site/SiteSteps";
 import { SiteIssues } from "@/components/site/SiteIssues";
 import { SitePhotos } from "@/components/site/SitePhotos";
 import { SiteNotes } from "@/components/site/SiteNotes";
@@ -17,18 +19,6 @@ import type { Defect, InspectionPhoto, JobDetails } from "@/types/db";
 // what did I find, what is wrong, photographs, anything else, sign, send.
 //
 // Nothing here needs a second hand or a steady desk.
-function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
-  return (
-    <section className="bg-white border border-line rounded-xl p-4">
-      <h2 className="flex items-center gap-2 text-sm font-bold text-heading mb-3">
-        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs">{n}</span>
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
 export default async function SiteInspectionPage({ params }: { params: Promise<{ inspectionId: string }> }) {
   const { inspectionId } = await params;
   const { profile } = await requireProfile("certifier");
@@ -99,37 +89,44 @@ export default async function SiteInspectionPage({ params }: { params: Promise<{
         )}
       </div>
 
-      <Step n={1} title="What did you find?">
-        <OutcomeChoice inspectionId={inspection.id} jobId={jobId} outcome={inspection.outcome} />
-      </Step>
-
-      <Step n={2} title="Issues to record">
-        <SiteIssues inspectionId={inspection.id} jobId={jobId} issues={inspection.defects.map((d) => ({ id: d.id, text: d.text }))} />
-      </Step>
-
-      <Step n={3} title="Photos">
-        <SitePhotos
-          inspectionId={inspection.id}
-          jobId={jobId}
-          pathPrefix={`${profile.firm_id}/${jobId}/inspections/${inspection.id}`}
-          photos={inspection.inspection_photos.map((p, i) => ({ id: p.id, url: photoUrls[i] }))}
+      {/* The outcome is held above the steps because it decides whether
+          there is an issues step at all, and what it is called. */}
+      <SiteOutcomeState inspectionId={inspection.id} jobId={jobId} outcome={inspection.outcome}>
+        <SiteSteps
+          hasIssues={inspection.defects.length > 0}
+          issues={<SiteIssues inspectionId={inspection.id} jobId={jobId} issues={inspection.defects.map((d) => ({ id: d.id, text: d.text }))} />}
+          steps={[
+            { key: "outcome", title: "What did you find?", node: <OutcomeChoice /> },
+            {
+              key: "photos",
+              title: "Photos",
+              node: (
+                <SitePhotos
+                  inspectionId={inspection.id}
+                  jobId={jobId}
+                  pathPrefix={`${profile.firm_id}/${jobId}/inspections/${inspection.id}`}
+                  photos={inspection.inspection_photos.map((p, i) => ({ id: p.id, url: photoUrls[i] }))}
+                />
+              ),
+            },
+            { key: "notes", title: "Notes", node: <SiteNotes inspectionId={inspection.id} jobId={jobId} notes={inspection.report_notes || ""} /> },
+            {
+              key: "finish",
+              title: "Sign and send",
+              node: (
+                <FinishOnSite
+                  inspectionId={inspection.id}
+                  jobId={jobId}
+                  outcome={inspection.outcome}
+                  signedAt={inspection.report_signed_at}
+                  sentAt={inspection.report_sent ? inspection.report_sent_date || "sent" : null}
+                  reportHref={`/jobs/${jobId}/inspections/${inspection.id}/report`}
+                />
+              ),
+            },
+          ]}
         />
-      </Step>
-
-      <Step n={4} title="Notes">
-        <SiteNotes inspectionId={inspection.id} jobId={jobId} notes={inspection.report_notes || ""} />
-      </Step>
-
-      <Step n={5} title="Sign and send">
-        <FinishOnSite
-          inspectionId={inspection.id}
-          jobId={jobId}
-          outcome={inspection.outcome}
-          signedAt={inspection.report_signed_at}
-          sentAt={inspection.report_sent ? inspection.report_sent_date || "sent" : null}
-          reportHref={`/jobs/${jobId}/inspections/${inspection.id}/report`}
-        />
-      </Step>
+      </SiteOutcomeState>
 
       <Link href={`/jobs/${jobId}`} className="block text-center text-sm text-placeholder py-2">
         Open the full project

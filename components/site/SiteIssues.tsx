@@ -3,6 +3,8 @@
 import { useRef, useState, useTransition } from "react";
 import { Plus, X } from "lucide-react";
 import { addDefect, removeDefect } from "@/lib/actions/inspections";
+import { issuesSection } from "@/lib/inspectionIssues";
+import { useSiteOutcome } from "@/components/site/SiteOutcome";
 
 // What was wrong, typed one item at a time.
 //
@@ -19,6 +21,10 @@ export function SiteIssues({
   jobId: string;
   issues: { id: string; text: string }[];
 }) {
+  // A satisfactory inspection is waiting on documents, not defects, so
+  // the box asks for the right thing — see lib/inspectionIssues.
+  const { outcome } = useSiteOutcome();
+  const { placeholder, addLabel } = issuesSection(outcome, issues.length > 0);
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
@@ -78,7 +84,7 @@ export function SiteIssues({
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={2}
-        placeholder="What needs fixing? One item at a time."
+        placeholder={placeholder}
         className="w-full px-3 py-3 rounded-lg border border-line text-base outline-none focus:ring-2 focus:ring-icon"
       />
       <button
@@ -87,7 +93,7 @@ export function SiteIssues({
         disabled={pending || !text.trim()}
         className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-white py-3 font-semibold disabled:opacity-40"
       >
-        <Plus size={18} /> {pending ? "Adding…" : "Add issue"}
+        <Plus size={18} /> {pending ? "Adding…" : addLabel}
       </button>
       {error && <div className="text-xs text-error mt-2">{error}</div>}
     </div>

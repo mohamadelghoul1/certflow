@@ -1,8 +1,7 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
 import { Check, AlertTriangle, X } from "lucide-react";
-import { recordOutcome } from "@/lib/actions/inspections";
+import { useSiteOutcome } from "@/components/site/SiteOutcome";
 
 // What was found, in three taps' worth of screen.
 //
@@ -22,21 +21,11 @@ const CHOICES = [
   { value: "failed", label: "Failed", icon: X, tone: "border-error bg-error-bg text-error", active: "bg-error border-error text-white" },
 ];
 
-export function OutcomeChoice({ inspectionId, jobId, outcome }: { inspectionId: string; jobId: string; outcome: string }) {
-  const [, startTransition] = useTransition();
+export function OutcomeChoice() {
   // The tap lands on the button instantly; the save travels behind it.
-  const [shown, setShown] = useOptimistic(outcome, (_current: string, next: string) => next);
-
-  function choose(value: string) {
-    startTransition(async () => {
-      setShown(value);
-      const fd = new FormData();
-      fd.set("inspection_id", inspectionId);
-      fd.set("job_id", jobId);
-      fd.set("outcome", value);
-      await recordOutcome(fd);
-    });
-  }
+  // Held above this component because the issues section below reads it
+  // too — see SiteOutcome.
+  const { outcome: shown, choose } = useSiteOutcome();
 
   return (
     <div className="space-y-2">

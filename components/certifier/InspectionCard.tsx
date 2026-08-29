@@ -8,6 +8,7 @@ import { useInspectionList } from "@/components/certifier/InspectionOrder";
 import { useInspectionSigning } from "@/components/certifier/SignInspectionReportButton";
 import { DateField, todayISO } from "@/components/DateField";
 import { inspectionFinished, fallsOnWeekend } from "@/lib/business";
+import { issuesSection } from "@/lib/inspectionIssues";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Defect } from "@/types/db";
 
@@ -185,8 +186,21 @@ export function InspectionDateBox() {
 
 export function IssuesWhenNeeded({ inspectionId, jobId, defects }: { inspectionId: string; jobId: string; defects: Defect[] }) {
   const { outcome } = useCard();
-  if (outcome !== "failed" && outcome !== "passed_subject_to") return null;
-  return <InspectionIssues inspectionId={inspectionId} jobId={jobId} defects={defects} />;
+  // A passed inspection has nothing to record, and what a satisfactory
+  // one is waiting on is a document rather than a defect. One rule,
+  // shared with the on-site screen — see lib/inspectionIssues.
+  const section = issuesSection(outcome, defects.length > 0);
+  if (!section.show) return null;
+  return (
+    <InspectionIssues
+      inspectionId={inspectionId}
+      jobId={jobId}
+      defects={defects}
+      title={section.title}
+      placeholder={section.placeholder}
+      hint={section.hint}
+    />
+  );
 }
 
 // Reporting an inspection to the NSW Planning Portal tells the regulator
