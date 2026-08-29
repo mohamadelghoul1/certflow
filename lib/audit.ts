@@ -32,6 +32,8 @@ export type AuditAction =
   | "invoice.reminder"
   | "backup.failed"
   | "documents.pruned"
+  // Kept although online signing has been removed: the log is
+  // append-only, so events recorded while it existed still say this.
   | "agreement.signed";
 
 export type AuditSeverity = "info" | "warning" | "error";

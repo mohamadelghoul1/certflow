@@ -17,16 +17,12 @@ import { OcPanel } from "@/components/certifier/OcPanel";
 import { InspectionsPanel } from "@/components/certifier/InspectionsPanel";
 import { JobTabs } from "@/components/certifier/JobTabs";
 import { signedUrl } from "@/lib/storage";
-import { AgreementPanel } from "@/components/certifier/AgreementPanel";
 import type { Contractor, Job } from "@/types/db";
 import { pathwayLabel, type Pathway } from "@/lib/business";
 
 function tabsFor(pathway: Pathway) {
   return [
     { key: "details", label: "Details" },
-    // The engagement agreement is settled before any certification work
-    // starts, so it sits beside the details rather than in a stage.
-    { key: "agreement", label: "Agreement" },
     // A PC/OC job issues no certificate, so its second tab holds the
     // approval another certifier issued rather than one of ours.
     { key: "pathway", label: pathway === "PC_OC" ? "Approval" : pathway },
@@ -111,41 +107,6 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
   const ocChecklist = (checklists || []).find((c) => c.kind === "oc");
   const modChecklistsById = new Map((checklists || []).filter((c) => c.kind === "modification").map((c) => [c.modification_id, c]));
 
-  // The engagement agreement, if one has been prepared. Asked for on its
-  // own so a database without migration 0044 shows the tab empty rather
-  // than failing the whole page.
-  const { data: agreementRow } = await supabase
-    .from("engagement_agreements")
-    .select("id, file_path, file_name, signed_file_path, signature_page, signature_x, signature_y, signature_width, sent_at, completed_at, created_at, engagement_signatories(id, name, email, role, sent_at, signed_at, signed_name)")
-    .eq("job_id", id)
-    .eq("firm_id", profile.firm_id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const agreement = agreementRow
-    ? {
-        id: agreementRow.id as string,
-        file_name: (agreementRow.file_name as string | null) ?? null,
-        sent_at: (agreementRow.sent_at as string | null) ?? null,
-        completed_at: (agreementRow.completed_at as string | null) ?? null,
-        created_at: agreementRow.created_at as string,
-        signatories: ((agreementRow.engagement_signatories as never[]) || []) as never[],
-        placement:
-          agreementRow.signature_page != null && agreementRow.signature_x != null
-            ? {
-                page: Number(agreementRow.signature_page),
-                x: Number(agreementRow.signature_x),
-                y: Number(agreementRow.signature_y),
-                width: Number(agreementRow.signature_width ?? 0.25),
-              }
-            : null,
-      }
-    : null;
-  const [agreementUrl, agreementSignedUrl] = await Promise.all([
-    signedUrl((agreementRow?.file_path as string | null) ?? null),
-    signedUrl((agreementRow?.signed_file_path as string | null) ?? null),
-  ]);
-
   const modificationsWithChecklist = (modifications || []).map((m) => {
     const cl = modChecklistsById.get(m.id);
     return { ...m, checklistId: cl?.id || null, items: (cl?.checklist_items as never[]) || [] };
@@ -229,7 +190,6 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
         }))}
         content={{
           details: <DetailsTab job={typedJob} clients={clients || []} sharedClients={sharedClients} contractors={contractors} certifiers={certifiers || []} />,
-          agreement: <AgreementPanel jobId={id} firmId={profile.firm_id} agreement={agreement} documentUrl={agreementUrl} signedUrl={agreementSignedUrl} />,
           pathway: pathwayChecklist ? (
             <div className="space-y-6">
               <CertificatesPanel
