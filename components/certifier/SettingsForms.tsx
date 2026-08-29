@@ -109,18 +109,6 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
           <label className={labelCls}>Website</label>
           <input name="website" defaultValue={firm?.website || ""} className={inputCls} />
         </div>
-        {/* Who clients see an email from, and where their reply lands.
-            Left blank these fall back to the deployment's own address,
-            which is right for a single firm and wrong the moment there
-            are two. */}
-        <div>
-          <label className={labelCls}>Emails come from</label>
-          <input name="from_email" defaultValue={firm?.from_email || ""} placeholder="Your Firm &lt;notifications@yourfirm.com.au&gt;" className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Replies go to</label>
-          <input name="reply_to_email" defaultValue={firm?.reply_to_email || ""} placeholder="info@yourfirm.com.au" className={inputCls} />
-        </div>
         <div className="sm:col-span-2">
           <label className={labelCls}>NSW Planning Portal account email</label>
           <input name="portal_email" type="email" defaultValue={firm?.portal_email || ""} placeholder="the email the company signs into the Planning Portal with" className={inputCls} />
@@ -243,11 +231,16 @@ export function EmailSenderForm({
   status,
   effective,
   deploymentFrom,
+  sharedDeployment,
 }: {
   firm: Firm | null;
   status: { apiKeySet: boolean; updatedAt: string | null; installed: boolean };
   effective: { from: string; replyTo: string | null; ownAccount: boolean };
   deploymentFrom: string;
+  // Whether another firm is running on this deployment. With one firm
+  // the deployment's address is that firm's own, so saying it belongs to
+  // somebody else would be a warning about nothing.
+  sharedDeployment: boolean;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateFirmSender, undefined);
   const [keyState, keyAction, keyPending] = useActionState<ActionState, FormData>(saveFirmEmailKey, undefined);
@@ -270,9 +263,10 @@ export function EmailSenderForm({
           {effective.replyTo ? `Replies go to ${effective.replyTo}.` : "Replies go back to the sending address."}
         </div>
         {!ownName && effective.from === deploymentFrom && (
-          <div className="text-[11px] text-warning-text mt-1.5">
-            That is this deployment&rsquo;s address, not yours. Until you set your own below, your clients see someone else&rsquo;s name on every
-            certificate, invoice and reminder you send.
+          <div className={`text-[11px] mt-1.5 ${sharedDeployment ? "text-warning-text" : "text-muted"}`}>
+            {sharedDeployment
+              ? "That address belongs to another firm on this deployment, not to you. Until you set your own below, your clients see someone else's name on every certificate, invoice and reminder you send."
+              : "That is coming from this deployment's own setting rather than from here. Filling in the boxes below puts it under your control, so you can change it yourself without touching Vercel."}
           </div>
         )}
         {nothingToSendAs && (

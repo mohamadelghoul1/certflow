@@ -381,7 +381,10 @@ export type NotificationCheck = { label: string; detail: string; ok: boolean };
 // How many firms this deployment is running, or null when it cannot be
 // asked. Null is treated as one: a check that cannot see the answer
 // should stay quiet rather than raise a warning it cannot support.
-async function firmCount(): Promise<number | null> {
+//
+// Counted with the service-role client because row-level security shows
+// a certifier only their own firm, which would always count one.
+export async function deploymentFirmCount(): Promise<number | null> {
   try {
     const { count, error } = await createAdminClient().from("firms").select("id", { count: "exact", head: true });
     if (error) return null;
@@ -414,7 +417,7 @@ export async function runNotificationChecks(supabase: SupabaseClient, firmId: st
   //
   // Counted with the service-role client because row-level security
   // shows a certifier only their own firm, which would always count one.
-  const firms = await firmCount();
+  const firms = await deploymentFirmCount();
   const deploymentSender = emailSenderSettings();
   const sharedDeployment = firms !== null && firms > 1;
 

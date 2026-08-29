@@ -28,13 +28,12 @@ export async function updateFirm(_prev: ActionState, formData: FormData): Promis
   };
   // The Portal account column arrived in migration 0032. On a database
   // that has not run it, save everything else rather than failing the form.
+  // The sending address used to be edited here too. It has its own
+  // section now — Settings → Email sending, where it sits beside the
+  // Resend account that has to agree with it — and two forms owning the
+  // same two columns is how one silently undoes the other.
   const newer = {
     portal_email: String(formData.get("portal_email") || "").trim() || null,
-    // Who this firm's emails come from — migration 0058. Blank falls
-    // back to the deployment's address, which is what a single-firm
-    // deployment has always used.
-    from_email: String(formData.get("from_email") || "").trim() || null,
-    reply_to_email: String(formData.get("reply_to_email") || "").trim() || null,
   };
   const { error } = await supabase.from("firms").update({ ...fields, ...newer }).eq("id", profile.firm_id);
   if (error) {

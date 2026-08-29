@@ -18,7 +18,7 @@ import { certificateTemplatesForFirm } from "@/lib/actions/certificateTemplates"
 import { getBackupStatus } from "@/lib/actions/backup";
 import { DocumentLibrarySection } from "@/components/certifier/DocumentLibrarySection";
 import { signedUrl } from "@/lib/storage";
-import { runSystemChecks, runEnvChecks, runNotificationChecks } from "@/lib/systemCheck";
+import { runSystemChecks, runEnvChecks, runNotificationChecks, deploymentFirmCount } from "@/lib/systemCheck";
 import { getStorageUsage } from "@/lib/storageUsage";
 import { StorageSection } from "@/components/certifier/StorageSection";
 import { SystemCheckSection } from "@/components/certifier/SystemCheckSection";
@@ -60,7 +60,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       const stampUrl = firm?.stamp_url ? (await signedUrl(firm.stamp_url)) || undefined : undefined;
       content = <FirmForm firm={firm} logoUrl={logoUrl} stampUrl={stampUrl} />;
     } else if (active.key === "email") {
-      const [emailStatus, effective] = await Promise.all([firmEmailStatus(supabase), firmSender(supabase, profile.firm_id)]);
+      const [emailStatus, effective, firms] = await Promise.all([
+        firmEmailStatus(supabase),
+        firmSender(supabase, profile.firm_id),
+        deploymentFirmCount(),
+      ]);
       content = (
         <EmailSenderForm
           firm={firm}
@@ -70,6 +74,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           // could drift from the truth.
           effective={{ from: effective.from, replyTo: effective.replyTo, ownAccount: effective.ownAccount }}
           deploymentFrom={emailSenderSettings().from}
+          sharedDeployment={firms !== null && firms > 1}
         />
       );
     } else if (active.key === "payments") {
