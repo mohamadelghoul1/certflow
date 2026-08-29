@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditEvent } from "@/lib/audit";
+import { siteUrl } from "@/lib/siteUrl";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 // Who an email comes from, and where a reply to it lands.
@@ -27,14 +28,18 @@ export function emailSenderSettings() {
     usingFallbackSender: !configured,
   };
 }
-// Falls back to the production URL Vercel supplies, so a missing or
-// stale setting cannot mail out a localhost link. See lib/siteUrl.ts —
-// emails are sent from scheduled runs too, where no request exists.
-const SITE_URL =
-  (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost") ? process.env.NEXT_PUBLIC_SITE_URL : "") ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "") ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
-  "http://localhost:3000";
+// Where the links in these emails point.
+//
+// Asked of the request the email is being sent from, so moving the site
+// to its own domain needs nothing changed here: the next notification a
+// certifier triggers already carries the address they are looking at.
+// Only a scheduled run has no request, and there siteUrl falls back to
+// the configured address, then to the production URL Vercel supplies —
+// so a missing or stale setting still cannot mail out a localhost link.
+//
+// It used to be read once when this file was loaded, which meant a
+// changed address took a redeploy to take effect and, until then, mailed
+// out the old one with nothing to say so.
 
 // Whether email is switched on at all. The rest of the app uses this to
 // say so plainly rather than letting a certifier believe a client was
@@ -248,10 +253,11 @@ export async function notifyJobClient(
     return { sent: false, reason: "The client has no email address on file." };
   }
 
+  const site = await siteUrl();
   const result = await sendEmail(
     client.email,
     subject,
-    `<p>Hi ${client.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to your CertFlow portal to view the details: <a href="${SITE_URL}/client-login">${SITE_URL}/client-login</a></p>`,
+    `<p>Hi ${client.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to your CertFlow portal to view the details: <a href="${site}/client-login">${site}/client-login</a></p>`,
     attachments,
     await firmSender(supabase, job.firm_id)
   );
@@ -295,10 +301,11 @@ export async function notifyJobCertifier(supabase: SupabaseClient, jobId: string
   }
   if (!email) return fail(certifier?.name || "the assigned certifier", "no email address on file for the assigned certifier or the firm");
 
+  const site = await siteUrl();
   const result = await sendEmail(
     email,
     subject,
-    `<p>Hi ${certifier?.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to CertFlow to view the details: <a href="${SITE_URL}/login">${SITE_URL}/login</a></p>`,
+    `<p>Hi ${certifier?.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to CertFlow to view the details: <a href="${site}/login">${site}/login</a></p>`,
     undefined,
     await firmSender(supabase, job.firm_id)
   );
