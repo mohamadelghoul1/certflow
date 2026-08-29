@@ -1,16 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { portalReportDeadline, calcCdcLapseDate, issuesCertificate, type Pathway } from "@/lib/business";
+import { calcCdcLapseDate, type Pathway } from "@/lib/business";
 import type { ChecklistItem } from "@/types/db";
 
 // Every deadline the firm is currently standing under, in one list.
 //
-// A certifier's real exposure is spread across screens: a certificate
-// issued but not yet reported to the Portal (2 business days), an
-// inspection carried out but never resulted or reported, a registration
+// A certifier's real exposure is spread across screens: a registration
 // or PI insurance quietly running out, an invoice past its due date, a
 // CDC approaching its five-year lapse. Each is visible somewhere; none
 // were visible together. This gathers them, dated, sorted by how much
 // trouble they'd cause, each row linking to the place it gets fixed.
+//
+// What is left out matters as much as what is in. A page of deadlines is
+// only worth opening if everything on it is really a deadline — one row
+// that turns out to be nothing teaches a certifier to skim the rest.
 
 export type ComplianceSeverity = "overdue" | "soon" | "upcoming";
 
@@ -35,14 +37,11 @@ type JobRow = {
   id: string;
   address: string;
   pathway: Pathway;
-  status: string;
-  pathway_generated: boolean;
-  pathway_generated_date: string | null;
-  pathway_portal_reported: boolean;
   pathway_approval_date: string | null;
   checklists: { kind: string; checklist_items: Pick<ChecklistItem, "status">[] }[];
-  inspections: { id: string; title: string; date: string | null; outcome: string; portal_reported: boolean }[];
-  oc_records: { id: string; generated_date: string | null; portal_reported: boolean }[];
+  // Only the outcomes, and only because the CDC lapse rule asks whether
+  // work has commenced.
+  inspections: { outcome: string }[];
 };
 
 export async function getComplianceItems(supabase: SupabaseClient, firmId: string, todayIso: string): Promise<ComplianceItem[]> {
@@ -50,7 +49,7 @@ export async function getComplianceItems(supabase: SupabaseClient, firmId: strin
     supabase
       .from("jobs")
       .select(
-        "id, address, pathway, status, pathway_generated, pathway_generated_date, pathway_portal_reported, pathway_approval_date, checklists(kind, checklist_items(status)), inspections(id, title, date, outcome, portal_reported), oc_records(id, generated_date, portal_reported)"
+        "id, address, pathway, pathway_approval_date, checklists(kind, checklist_items(status)), inspections(outcome)"
       )
       .eq("firm_id", firmId)
       .eq("status", "active")
@@ -64,43 +63,17 @@ export async function getComplianceItems(supabase: SupabaseClient, firmId: strin
     items.push({ severity: severityFor(dueDate, todayIso), dueDate, title, detail, href });
   };
 
+  // Deliberately not here: the two-business-day Portal reporting clocks,
+  // and inspections past their date with no result recorded.
+  //
+  // Both were noise more often than signal. An inspection is reported
+  // from its own card, where the state is plain and the button is; a
+  // date that has passed with nothing recorded is usually a booking that
+  // moved rather than a duty missed. Repeating them here as red
+  // deadlines made a page whose whole worth is that everything on it
+  // matters harder to trust. The Portal reporting state still shows on
+  // the inspection and the certificate themselves.
   for (const job of (jobs || []) as unknown as JobRow[]) {
-    // A CDC/CC issued but not yet reported to the Portal — the two
-    // business day clock, the sharpest statutory edge a certifier has.
-    if (issuesCertificate(job.pathway) && job.pathway_generated && !job.pathway_portal_reported && job.pathway_generated_date) {
-      add(
-        portalReportDeadline(job.pathway_generated_date),
-        `Report ${job.pathway} issuance to the Planning Portal`,
-        job.address,
-        `/jobs/${job.id}?tab=pathway`
-      );
-    }
-
-    for (const oc of job.oc_records || []) {
-      if (oc.generated_date && !oc.portal_reported) {
-        add(portalReportDeadline(oc.generated_date), "Report OC issuance to the Planning Portal", job.address, `/jobs/${job.id}?tab=oc`);
-      }
-    }
-
-    for (const inspection of job.inspections || []) {
-      if (!inspection.date) continue;
-      // Carried out and resulted, but never reported — same 2-day clock.
-      if (["passed", "failed", "passed_subject_to"].includes(inspection.outcome) && !inspection.portal_reported) {
-        add(
-          portalReportDeadline(inspection.date),
-          "Report inspection to the Planning Portal",
-          `${inspection.title} — ${job.address}`,
-          `/jobs/${job.id}?tab=inspections`
-        );
-      }
-      // Its date has passed and no outcome was ever recorded: either it
-      // didn't happen, or it happened and the record is missing. Both
-      // need a certifier's hand.
-      if (inspection.outcome === "pending" && inspection.date < todayIso) {
-        add(inspection.date, "Inspection past its date with no result recorded", `${inspection.title} — ${job.address}`, `/jobs/${job.id}?tab=inspections`);
-      }
-    }
-
     // The five-year CDC lapse, once it is inside the horizon. Only dated
     // lapses appear — a commenced job returns a sentence, not a date.
     const nocItems = job.checklists.find((c) => c.kind === "noc")?.checklist_items || [];

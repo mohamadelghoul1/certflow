@@ -164,3 +164,69 @@ describe("an inspection card is finished", () => {
     assert.equal(inspectionFinished("", true), false);
   });
 });
+
+// What the Compliance page carries, and what it deliberately does not.
+//
+// A page of deadlines is only worth opening if everything on it is
+// really a deadline. The two-business-day Portal reporting clocks and
+// inspections past their date with nothing recorded were noise more
+// often than signal — an inspection is reported from its own card, and a
+// passed date is usually a booking that moved rather than a duty missed.
+import { getComplianceItems } from "@/lib/compliance";
+import { fakeSupabase } from "./helpers/fakeSupabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+describe("the Compliance page", () => {
+  // A job with every one of the removed situations true at once: a
+  // certificate issued and unreported, an OC issued and unreported, an
+  // inspection resulted and unreported, and one past its date with no
+  // result. None of them may appear.
+  const client = fakeSupabase((call) => {
+    if (call.table === "jobs") {
+      return {
+        data: [
+          {
+            id: "job-1",
+            address: "21 Coquet Way",
+            pathway: "CDC",
+            pathway_approval_date: null,
+            checklists: [],
+            inspections: [{ outcome: "pending" }],
+          },
+        ],
+      };
+    }
+    if (call.table === "certifiers") return { data: [{ id: "c1", name: "Mohamad", registration_expiry: null, pi_insurance_expiry: null }] };
+    if (call.table === "invoices") return { data: [] };
+    return { data: [] };
+  }).client as unknown as SupabaseClient;
+
+  test("carries no Portal reporting deadlines and no unresulted inspections", async () => {
+    const items = await getComplianceItems(client, "firm-1", "2026-08-26");
+    assert.equal(
+      items.filter((i) => /Planning Portal/i.test(i.title)).length,
+      0,
+      "a Portal reporting clock is back on the Compliance page",
+    );
+    assert.equal(
+      items.filter((i) => /no result recorded/i.test(i.title)).length,
+      0,
+      "an unresulted inspection is back on the Compliance page",
+    );
+  });
+
+  // The ones that remain are the point of the page: a registration or
+  // policy running out is not visible anywhere else.
+  test("still carries a registration and an insurance policy running out", async () => {
+    const expiring = fakeSupabase((call) => {
+      if (call.table === "certifiers") {
+        return { data: [{ id: "c1", name: "Mohamad", registration_expiry: "2026-09-01", pi_insurance_expiry: "2026-08-30" }] };
+      }
+      return { data: [] };
+    }).client as unknown as SupabaseClient;
+
+    const items = await getComplianceItems(expiring, "firm-1", "2026-08-26");
+    assert.ok(items.some((i) => /registration/i.test(i.title)), "a registration expiry went missing");
+    assert.ok(items.some((i) => /insurance/i.test(i.title)), "an insurance expiry went missing");
+  });
+});
