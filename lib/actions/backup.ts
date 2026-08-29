@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { configuredProviders, type Connection, type ConnectionStatus } from "@/lib/backup/connection";
-import { syncJob } from "@/lib/backup/sync";
 import type { ActionState } from "@/lib/actions/auth";
 import type { ProviderId } from "@/lib/backup/providers";
 
@@ -30,27 +29,3 @@ export async function disconnectBackup(formData: FormData) {
   revalidatePath("/settings");
 }
 
-export async function backUpJob(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
-  const jobId = String(formData.get("job_id"));
-
-  const admin = createAdminClient();
-  const { data: connections } = await admin.from("cloud_backup_connections").select("*").eq("firm_id", profile.firm_id);
-  if (!connections || connections.length === 0) return { error: "No cloud storage is connected. Connect Dropbox or OneDrive in Settings." };
-
-  const problems: string[] = [];
-  let uploaded = 0;
-  for (const connection of connections as Connection[]) {
-    try {
-      const result = await syncJob(connection, jobId);
-      uploaded += result.uploaded;
-      if (result.failed.length) problems.push(`${connection.provider}: ${result.failed[0].reason}`);
-    } catch (error) {
-      problems.push(`${connection.provider}: ${error instanceof Error ? error.message : "backup failed"}`);
-    }
-  }
-
-  revalidatePath(`/jobs/${jobId}`);
-  if (problems.length) return { error: `Copied ${uploaded} file${uploaded === 1 ? "" : "s"}. ${problems.join(" · ")}` };
-  return undefined;
-}

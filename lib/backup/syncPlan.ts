@@ -20,11 +20,15 @@ export type SyncCandidate = {
   // For a generated document: something that changes when the document
   // does, so an unchanged one is not sent again.
   marker?: string;
+  // How to produce a generated document's bytes. Called only when the
+  // plan says this one is actually going up, so a set that is already
+  // backed up is never rebuilt.
+  generate?: () => Promise<Uint8Array | null>;
 };
 
 export type AlreadyUploaded = { storage_path: string };
 
-export type PlannedUpload = { storagePath: string | null; key: string; remotePath: string };
+export type PlannedUpload = { storagePath: string | null; key: string; remotePath: string; generate?: () => Promise<Uint8Array | null> };
 
 // The key a file is remembered by. A stored file is remembered by its
 // storage path, which is unique and permanent. A generated one has no
@@ -46,7 +50,12 @@ export function planUploads(candidates: SyncCandidate[], alreadyUploaded: Alread
     // under two headings, a photo counted twice. Sending it twice would
     // be two uploads for one file.
     if (planned.has(key)) continue;
-    planned.set(key, { storagePath: candidate.storagePath, key, remotePath: remotePath(rootFolder, jobFolder, candidate.folder, candidate.fileName) });
+    planned.set(key, {
+      storagePath: candidate.storagePath,
+      key,
+      remotePath: remotePath(rootFolder, jobFolder, candidate.folder, candidate.fileName),
+      generate: candidate.generate,
+    });
   }
 
   return [...planned.values()];

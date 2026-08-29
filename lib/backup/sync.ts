@@ -65,7 +65,14 @@ export function candidatesForJob(job: Job, items: ItemWithFiles[], inspections: 
   return candidates;
 }
 
-export async function syncJob(connection: Connection, jobId: string): Promise<SyncResult> {
+// Documents this job generates rather than stores: the approved set and
+// each Occupation Certificate set. Supplied by the caller because
+// building them needs the signed-in certifier's own session, which a
+// background sweep does not have — so a run without them still copies
+// every stored file, and a run with them copies the finished sets too.
+export type GeneratedDocument = { folder: string; fileName: string; marker: string; build: () => Promise<Uint8Array | null> };
+
+export async function syncJob(connection: Connection, jobId: string, generated: GeneratedDocument[] = []): Promise<SyncResult> {
   const provider = providerFor(connection.provider);
   if (!provider) throw new Error("Unknown backup provider.");
 
@@ -86,7 +93,10 @@ export async function syncJob(connection: Connection, jobId: string): Promise<Sy
   const folder = jobFolder(resolvePathwayCertRef(activeVersion?.cert_ref, job.pathway, projRef, job.pathway_version), job.address || "");
 
   const items = (checklists || []).flatMap((c) => ((c.checklist_items as never[]) || []) as ItemWithFiles[]);
-  const candidates = candidatesForJob(job, items, ((inspections || []) as InspectionWithPhotos[]));
+  const candidates = [
+    ...candidatesForJob(job, items, (inspections || []) as InspectionWithPhotos[]),
+    ...generated.map((doc) => ({ storagePath: null, folder: doc.folder, fileName: doc.fileName, marker: doc.marker, generate: doc.build })),
+  ];
   const plan = planUploads(candidates, uploaded || [], connection.root_folder, folder);
 
   const accessToken = await usableAccessToken(connection);
@@ -97,12 +107,20 @@ export async function syncJob(connection: Connection, jobId: string): Promise<Sy
   // silently stops halfway.
   for (const upload of plan) {
     try {
-      if (!upload.storagePath) continue;
-      const url = await signedUrl(upload.storagePath);
-      if (!url) throw new Error("the file could not be read from storage");
-      const file = await fetch(url);
-      if (!file.ok) throw new Error(`the file could not be read (${file.status})`);
-      const bytes = new Uint8Array(await file.arrayBuffer());
+      // Typed as its own buffer so it can be handed straight to fetch.
+      let bytes: Uint8Array<ArrayBuffer>;
+      if (upload.storagePath) {
+        const url = await signedUrl(upload.storagePath);
+        if (!url) throw new Error("the file could not be read from storage");
+        const file = await fetch(url);
+        if (!file.ok) throw new Error(`the file could not be read (${file.status})`);
+        bytes = new Uint8Array(await file.arrayBuffer());
+      } else {
+        // Built only now, because the plan has decided it is going up.
+        const built = await upload.generate?.();
+        if (!built) throw new Error("the document could not be generated");
+        bytes = new Uint8Array(built);
+      }
 
       if (bytes.byteLength > provider.simpleUploadLimit) {
         throw new Error(`larger than ${provider.label} accepts in one piece (${Math.round(bytes.byteLength / 1024 / 1024)} MB)`);

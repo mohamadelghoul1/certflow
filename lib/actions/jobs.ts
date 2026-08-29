@@ -13,6 +13,7 @@ import { todayISO, normalizePortalRef, portalRefKindFor, type PortalRefKind, typ
 import { splitAddress } from "@/lib/address";
 import { notifyJobClient } from "@/lib/email";
 import { certificateIssuedEmail } from "@/lib/certificateIssuedEmail";
+import { backUpIssuedJob } from "@/lib/backup/autoBackup";
 import { outstandingSections, outstandingCount, reminderEmailHtml } from "@/lib/documentReminders";
 import type { ActionState } from "@/lib/actions/auth";
 import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
@@ -1186,6 +1187,13 @@ export async function sendPathwayCertificateToClient(_prev: ActionState, formDat
     detail: { pathway: job.pathway, version: job.pathway_version },
   });
 
+  // The moment a certificate is released is the moment the job's records
+  // are worth keeping. After the response, because a copy to somebody's
+  // Dropbox must never hold up issuing a certificate.
+  after(async () => {
+    await backUpIssuedJob(jobId, profile, "pathway");
+  });
+
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pathway/${jobId}`);
   return undefined;
@@ -1378,7 +1386,7 @@ export async function signOc(_prev: ActionState, formData: FormData): Promise<Ac
 }
 
 export async function sendOcToClient(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireProfile("certifier");
+  const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const ocId = String(formData.get("oc_id"));
@@ -1397,6 +1405,10 @@ export async function sendOcToClient(_prev: ActionState, formData: FormData): Pr
     "Occupation Certificate issued",
     `<p>Your ${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate has been issued and is now available to view in your portal.</p>`
   );
+
+  after(async () => {
+    await backUpIssuedJob(jobId, profile, "oc");
+  });
 
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/oc/${jobId}/${ocId}`);
