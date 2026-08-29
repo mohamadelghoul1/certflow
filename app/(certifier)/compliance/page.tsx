@@ -23,7 +23,7 @@ export default async function CompliancePage() {
     <div className="max-w-3xl">
       <h1 className="text-xl font-bold text-primary mb-1">Compliance</h1>
       <p className="text-sm text-muted mb-6">
-        Portal reporting clocks, unresulted inspections, registrations and insurance, overdue invoices and approaching lapse dates — everything with a date attached, worst first.
+        Registrations and insurance, overdue invoices and approaching lapse dates — everything with a date attached, worst first.
       </p>
 
       {items.length === 0 && (
