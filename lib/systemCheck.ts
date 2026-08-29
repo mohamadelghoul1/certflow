@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isUnknownColumn } from "@/lib/softDelete";
 import { emailConfigured } from "@/lib/email";
 import { portalConfigured } from "@/lib/portal/config";
+import { storageLimitBytes } from "@/lib/storageUsage";
 
 // Whether this database has actually had each migration run against it.
 //
@@ -303,6 +304,11 @@ export function runEnvChecks(): EnvCheck[] {
       label: "NSW Planning Portal",
       detail: "Set once ePlanning finishes API onboarding — then inspections can be reported from CertFlow.",
       configured: portalConfigured(),
+    },
+    {
+      label: "Storage limit",
+      detail: "How much space the Supabase plan allows, as STORAGE_LIMIT_GB. Without it the Storage page can show what is used but not what is left.",
+      configured: storageLimitBytes() !== null,
     },
     {
       label: "Card payments",

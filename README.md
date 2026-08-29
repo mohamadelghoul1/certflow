@@ -212,6 +212,22 @@ ONEDRIVE_CLIENT_ID=
 ONEDRIVE_CLIENT_SECRET=
 ```
 
+### How much storage is left
+
+The Storage page in Settings shows what every project is holding. To
+have it also show how much room is left, tell it how much the plan
+allows:
+
+```
+STORAGE_LIMIT_GB=1
+```
+
+The number is gigabytes, and it is your Supabase project's storage
+allowance — find it under **Supabase → Settings → Usage**, which also
+shows what you are currently billed for. Leave it out and the page
+shows what is used but says plainly that no limit has been recorded,
+rather than inventing one and reporting headroom that may not exist.
+
 Either pair can be left out — a provider with no keys simply isn't
 offered. Each firm then connects its own account under Settings → Cloud
 backup, and the tokens are stored per firm in a table with row level
