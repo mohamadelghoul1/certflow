@@ -7,7 +7,7 @@ import { InspectionIssues } from "@/components/certifier/InspectionIssues";
 import { useInspectionList } from "@/components/certifier/InspectionOrder";
 import { useInspectionSigning } from "@/components/certifier/SignInspectionReportButton";
 import { DateField, todayISO } from "@/components/DateField";
-import { inspectionFinished } from "@/lib/business";
+import { inspectionFinished, fallsOnWeekend } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Defect } from "@/types/db";
 
@@ -160,11 +160,6 @@ export function OutcomeSelect() {
       <option value="passed_subject_to">Satisfactory (minor issues) subject to documents being provided</option>
     </select>
   );
-}
-
-function fallsOnWeekend(isoDate: string) {
-  const day = new Date(`${isoDate}T00:00:00`).getDay();
-  return day === 0 || day === 6;
 }
 
 // Saves when you click away, like the rest of the card — and fills in on

@@ -200,6 +200,12 @@ export function dayOfWeek(isoDate: string): number {
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
+export function fallsOnWeekend(isoDate: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate || "")) return false;
+  const day = dayOfWeek(isoDate);
+  return day === 0 || day === 6;
+}
+
 // A date landing on a weekend moves to the Monday.
 //
 // Not the Tuesday: the reason a Friday or weekend enquiry waits until
@@ -413,3 +419,31 @@ export function formatClassifications(classifications: string[] | undefined | nu
 export function inspectionFinished(signedAt: string | null | undefined, portalReported: boolean) {
   return !!signedAt && portalReported;
 }
+
+// Where an inspection sits between "the client asked for a date" and
+// "the visit happened".
+//
+// Both sides of the app read this, because a client and a certifier
+// disagreeing about whether a booking is settled is how a certifier
+// turns up on a day nobody agreed to. The client sees the request is
+// with their certifier and cannot ask again; the certifier sees a
+// decision waiting to be made.
+export type BookingStage = "not_booked" | "awaiting_confirmation" | "confirmed" | "carried_out";
+
+export function bookingStage(inspection: { outcome: string; date: string | null; booked_by_client: boolean; confirmed: boolean }): BookingStage {
+  // An outcome is the end of it, whatever the booking said.
+  if (inspection.outcome !== "pending") return "carried_out";
+  if (inspection.confirmed && inspection.date) return "confirmed";
+  if (inspection.booked_by_client) return "awaiting_confirmation";
+  return "not_booked";
+}
+
+// What the client's portal calls it. Deliberately not "Pending", which
+// said the same thing before a booking and after one — so a client who
+// had just asked for a date could not tell whether the request had
+// landed, and asked again.
+export const BOOKING_STAGE_LABEL: Record<Exclude<BookingStage, "carried_out">, string> = {
+  not_booked: "Not yet booked",
+  awaiting_confirmation: "Awaiting certifier confirmation",
+  confirmed: "Confirmed",
+};

@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Download, AlertTriangle, FileDown } from "lucide-react";
 import { StageTabs } from "@/components/portal/StageTabs";
-import { displayStatus, unresolvedCount, checklistProgress, formatISODate, todayISO, BOOKING_RULE_NOTE } from "@/lib/business";
+import { displayStatus, unresolvedCount, checklistProgress, formatISODate, todayISO, BOOKING_RULE_NOTE, bookingStage, BOOKING_STAGE_LABEL } from "@/lib/business";
 import { currentDocuments } from "@/lib/checklistDocuments";
 import { ItemDropCard } from "@/components/portal/ItemDropCard";
 import { certificatesDownloadable, accessClosedNotice, inspectionBookingOpen } from "@/lib/portalAccess";
@@ -404,9 +404,8 @@ async function InspectionsSection({
         <div className="px-5 py-3 border-b border-line font-bold text-primary">Inspections</div>
         <div className="p-5 space-y-3">
           {inspections.map((insp) => {
-            const meta = OUTCOME_META[insp.outcome];
             const inspector = certifiers.find((c) => c.id === insp.inspector_certifier_id);
-            return <InspectionCard key={insp.id} insp={insp} jobId={jobId} meta={meta} inspectorName={inspector?.name} bookingOpen={bookingOpen} />;
+            return <InspectionCard key={insp.id} insp={insp} jobId={jobId} inspectorName={inspector?.name} bookingOpen={bookingOpen} />;
           })}
           {inspections.length === 0 && (
             <div className="py-6 text-center text-sm text-muted">Your certifier hasn&rsquo;t scheduled any inspections for this project yet.</div>
@@ -417,16 +416,20 @@ async function InspectionsSection({
   );
 }
 
+const BOOKING_STAGE_STYLE: Record<string, string> = {
+  not_booked: "bg-surface text-muted",
+  awaiting_confirmation: "bg-warning-bg text-warning-text",
+  confirmed: "bg-success-bg text-success",
+};
+
 async function InspectionCard({
   insp,
   jobId,
-  meta,
   inspectorName,
   bookingOpen,
 }: {
   insp: Inspection & { defects: Defect[] };
   jobId: string;
-  meta: { label: string; style: string };
   inspectorName?: string;
   bookingOpen: boolean;
 }) {
@@ -435,7 +438,18 @@ async function InspectionCard({
   // Reading only the uploaded path is why a report signed in the app
   // never appeared here at all.
   const reportUrl = await signedUrl(insp.report_pdf_path || insp.report_file_path);
-  const canBook = insp.outcome === "pending" && bookingOpen;
+  const stage = bookingStage(insp);
+  // The badge says where the booking is until there is an outcome, and
+  // what was found after that.
+  const meta =
+    stage === "carried_out"
+      ? OUTCOME_META[insp.outcome]
+      : { label: BOOKING_STAGE_LABEL[stage], style: BOOKING_STAGE_STYLE[stage] };
+  // One request per inspection. Asking again while the first is still
+  // with the certifier would silently overwrite the date they are about
+  // to confirm, and a client with no way to tell whether the first
+  // request landed will ask again.
+  const canBook = stage === "not_booked" && bookingOpen;
 
   return (
     <div className="border border-line rounded-md p-4">
@@ -465,7 +479,16 @@ async function InspectionCard({
           <div className="text-[11px] text-placeholder mt-1">{BOOKING_RULE_NOTE}</div>
         </div>
       )}
-      {insp.booked_by_client && !insp.confirmed && <div className="text-xs text-warning-text mt-2">Awaiting confirmation from your certifier.</div>}
+      {stage === "awaiting_confirmation" && (
+        <div className="text-xs text-warning-text mt-2 bg-warning-bg rounded-md px-3 py-2">
+          You asked for <strong>{formatISODate(insp.date)}</strong>. Your certifier will confirm it or offer another day, and this page will update.
+        </div>
+      )}
+      {stage === "confirmed" && (
+        <div className="text-xs text-success mt-2 bg-success-bg rounded-md px-3 py-2">
+          Confirmed for <strong>{formatISODate(insp.date)}</strong>. Call us if the site will not be ready.
+        </div>
+      )}
 
       {insp.report_sent && reportUrl && (
         <a href={reportUrl} target="_blank" rel="noreferrer" className="inline-block mt-3 text-xs text-primary font-semibold hover:underline">

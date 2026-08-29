@@ -114,3 +114,62 @@ describe("the answers the database gives for the same moments", () => {
     });
   }
 });
+
+// Where a booking sits between the client asking and the visit
+// happening. Both the portal and the certifier's card read this, and a
+// client and a certifier disagreeing about whether a date is settled is
+// how a certifier turns up on a day nobody agreed to.
+import { bookingStage, BOOKING_STAGE_LABEL, fallsOnWeekend } from "@/lib/business";
+
+describe("where a booking sits", () => {
+  const insp = (over: Partial<{ outcome: string; date: string | null; booked_by_client: boolean; confirmed: boolean }> = {}) => ({
+    outcome: "pending",
+    date: null as string | null,
+    booked_by_client: false,
+    confirmed: false,
+    ...over,
+  });
+
+  test("nothing asked for yet", () => {
+    assert.equal(bookingStage(insp()), "not_booked");
+  });
+
+  test("the client has asked and the certifier has not answered", () => {
+    assert.equal(bookingStage(insp({ booked_by_client: true, date: "2026-09-01" })), "awaiting_confirmation");
+  });
+
+  test("the certifier has accepted the day", () => {
+    assert.equal(bookingStage(insp({ booked_by_client: true, date: "2026-09-01", confirmed: true })), "confirmed");
+  });
+
+  test("a date the certifier set themselves is already settled", () => {
+    assert.equal(bookingStage(insp({ date: "2026-09-01", confirmed: true })), "confirmed");
+  });
+
+  // Once there is an outcome the visit happened, and what the booking
+  // said stops mattering.
+  test("an outcome ends it, whatever the booking said", () => {
+    assert.equal(bookingStage(insp({ outcome: "passed", booked_by_client: true, date: "2026-09-01" })), "carried_out");
+    assert.equal(bookingStage(insp({ outcome: "failed", date: "2026-09-01", confirmed: true })), "carried_out");
+  });
+
+  // The bug this fixes: "Pending" said the same thing before a request
+  // and after one, so a client could not tell theirs had landed.
+  test("a request and no request do not read the same", () => {
+    assert.notEqual(BOOKING_STAGE_LABEL.not_booked, BOOKING_STAGE_LABEL.awaiting_confirmation);
+    assert.match(BOOKING_STAGE_LABEL.awaiting_confirmation, /confirmation/i);
+  });
+});
+
+describe("weekend dates", () => {
+  test("Saturday and Sunday are the weekend, weekdays are not", () => {
+    assert.equal(fallsOnWeekend("2026-08-29"), true, "Saturday");
+    assert.equal(fallsOnWeekend("2026-08-30"), true, "Sunday");
+    assert.equal(fallsOnWeekend("2026-08-28"), false, "Friday");
+    assert.equal(fallsOnWeekend("2026-08-31"), false, "Monday");
+  });
+
+  test("nothing at all is not a weekend", () => {
+    assert.equal(fallsOnWeekend(""), false);
+  });
+});

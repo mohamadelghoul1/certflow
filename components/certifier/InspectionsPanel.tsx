@@ -5,7 +5,6 @@ import { formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import {
   assignInspector,
-  confirmBooking,
   uploadInspectionReport,
   updateInspectionReportText,
   setPhotoCaption,
@@ -22,6 +21,7 @@ import { DownloadButton } from "@/components/certifier/DownloadButton";
 import { InspectionOrderProvider, InspectionMoveButtons } from "@/components/certifier/InspectionOrder";
 import { InspectionCardState, InspectionCardShell, OutcomeBadge, OutcomeSelect, InspectionDateBox, IssuesWhenNeeded, RemoveInspectionButton } from "@/components/certifier/InspectionCard";
 import { AddInspectionForm } from "@/components/certifier/AddInspectionForm";
+import { BookingDecision } from "@/components/certifier/BookingDecision";
 import { AutoSubmitSelect } from "@/components/certifier/AutoSubmitSelect";
 import type { Inspection, Defect, InspectionPhoto, Certifier } from "@/types/db";
 
@@ -78,9 +78,6 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
             <div>
               <div className="text-base font-semibold text-heading">{insp.title}</div>
               <div className="text-sm text-muted mt-0.5">{insp.description}</div>
-              {insp.booked_by_client && !insp.confirmed && (
-                <div className="text-xs text-warning-text font-medium mt-1">Booked by client for {formatISODate(insp.date)} — needs confirmation</div>
-              )}
             </div>
             <div className="flex items-start gap-2 shrink-0">
               <OutcomeBadge />
@@ -115,13 +112,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
             </div>
           </div>
 
-          {insp.booked_by_client && !insp.confirmed && (
-            <form action={confirmBooking} className="mt-2">
-              <input type="hidden" name="inspection_id" value={insp.id} />
-              <input type="hidden" name="job_id" value={jobId} />
-              <button className="text-xs font-semibold text-success hover:underline">Confirm client&apos;s booking</button>
-            </form>
-          )}
+          {insp.booked_by_client && !insp.confirmed && <BookingDecision inspectionId={insp.id} jobId={jobId} requestedDate={insp.date} />}
 
           <IssuesWhenNeeded inspectionId={insp.id} jobId={jobId} defects={insp.defects} />
 

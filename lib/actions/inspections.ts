@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { todayISO, todayInNsw } from "@/lib/business";
+import { todayISO, todayInNsw, formatISODate } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
 import { inspectionDescriptionFor, MAX_INSPECTION_PHOTOS } from "@/lib/constants";
 import { reorderedIds } from "@/lib/checklists";
@@ -231,13 +231,64 @@ export async function unsignInspectionReport(_prev: ActionState, formData: FormD
   return undefined;
 }
 
+// Accepting the day the client asked for. The client's portal is waiting
+// on this: until it happens their request reads as outstanding and they
+// cannot ask again, so nothing here may fail quietly.
 export async function confirmBooking(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
-  await supabase.from("inspections").update({ confirmed: true }).eq("id", inspectionId);
+  const { data } = await supabase.from("inspections").update({ confirmed: true }).eq("id", inspectionId).select("title, date").maybeSingle();
+  const row = data as { title: string; date: string | null } | null;
+
+  if (row?.date) {
+    await notifyJobClient(
+      supabase,
+      jobId,
+      `Inspection confirmed — ${row.title}`,
+      `<p>Your <strong>${row.title}</strong> inspection is confirmed for <strong>${formatISODate(row.date)}</strong>.</p>
+       <p>Please make sure the site is ready and accessible on the day. If anything changes, let us know as early as you can.</p>`,
+    );
+  }
+
   revalidatePath(`/jobs/${jobId}`);
+}
+
+// Offering the client a different day.
+//
+// Not the date box beside it: that box records when a visit happened and
+// refuses a future date, which is exactly the wrong rule for a booking
+// that has not happened yet. This one takes the future date and tells
+// the client, because a date changed without telling them is a certifier
+// arriving on a day the builder is not expecting.
+export async function rescheduleBooking(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const inspectionId = String(formData.get("inspection_id"));
+  const jobId = String(formData.get("job_id"));
+  const date = String(formData.get("date") || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Pick the day you want to inspect." };
+
+  const { data, error } = await supabase
+    .from("inspections")
+    .update({ date, confirmed: true, booked_by_client: false, updated_at: new Date().toISOString() })
+    .eq("id", inspectionId)
+    .select("title")
+    .maybeSingle();
+  if (error) return { error: "That date could not be saved. Please try again." };
+
+  const title = (data as { title: string } | null)?.title || "the";
+  await notifyJobClient(
+    supabase,
+    jobId,
+    `Inspection rescheduled — ${title}`,
+    `<p>We could not make the day you asked for, so your <strong>${title}</strong> inspection has been booked for <strong>${formatISODate(date)}</strong> instead.</p>
+     <p>Please make sure the site is ready and accessible on the day. If that date does not suit, call us and we will find another.</p>`,
+  );
+
+  revalidatePath(`/jobs/${jobId}`);
+  return undefined;
 }
 
 // An inspection the job needs beyond the standard set: an occasional one

@@ -237,6 +237,17 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       // probed is the function the route calls.
       probe: hasFunction(supabase, "certifier_for_calendar_token", { p_token: null }),
     },
+    {
+      migration: "0053",
+      label: "One booking request per inspection",
+      detail: "Stops a client asking for a second date while the first is still with you, or moving one you have confirmed.",
+      // This migration changes no table or column — it only adds
+      // refusals inside a function that already existed, and both
+      // versions turn a certifier away at the same first line, so
+      // nothing about calling it tells them apart. The migration leaves
+      // a marker behind for exactly this reason.
+      probe: hasFunction(supabase, "booking_request_lock_installed", {}),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));
