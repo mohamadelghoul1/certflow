@@ -15,5 +15,5 @@ export const config = {
   // which is most worth hearing about precisely when it happens to
   // someone who is not signed in. Redirecting any of them to the login
   // page would silently break the feature behind it.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/portal-files/|api/eplanning/|api/cron/|api/stripe/|api/client-error|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/portal-files/|api/eplanning/|api/cron/|api/stripe/|api/calendar/|api/client-error|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

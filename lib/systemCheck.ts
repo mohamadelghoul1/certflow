@@ -228,6 +228,15 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "A request after 1pm on a Thursday is booked for the Monday rather than the Tuesday. Replaces 0049.",
       probe: bookingAnswer(supabase, "2026-08-27T14:00:00+10:00", "2026-08-31"),
     },
+    {
+      migration: "0052",
+      label: "Inspection calendar feed",
+      detail: "Gives each certifier a private address their phone's calendar can subscribe to, and a way to replace it.",
+      // The column alone would say "applied" on a database that has it
+      // but not the lookup the feed actually depends on, so what is
+      // probed is the function the route calls.
+      probe: hasFunction(supabase, "certifier_for_calendar_token", { p_token: null }),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));

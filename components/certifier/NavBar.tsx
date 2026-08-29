@@ -49,6 +49,7 @@ export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmN
           createLabel="New quote"
           itemHrefBase="/quotes"
         />
+        <NavLink href="/calendar">Calendar</NavLink>
         <NavLink href="/invoices">Invoices</NavLink>
         <NavLink href="/compliance">Compliance</NavLink>
         <NavLink href="/audit">Audit</NavLink>
