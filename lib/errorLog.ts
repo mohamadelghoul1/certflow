@@ -79,7 +79,7 @@ function alertHtml(report: ErrorReport, siteUrl: string): string {
     ["Kind", report.source === "browser" ? "Failed in someone's browser" : `Failed on the server${report.routeType ? ` (${report.routeType})` : ""}`],
   ];
   return [
-    `<p>Something in CertFlow failed for the first time. It has been recorded — this is not a copy of an old problem.</p>`,
+    `<p>Something in Certlyn failed for the first time. It has been recorded — this is not a copy of an old problem.</p>`,
     `<table style="border-collapse:collapse;font-size:14px">`,
     ...rows.map(([label, value]) => `<tr><td style="padding:4px 14px 4px 0;font-weight:bold;vertical-align:top">${label}</td><td style="padding:4px 0">${escapeHtml(value)}</td></tr>`),
     `</table>`,
@@ -96,7 +96,7 @@ function alertHtml(report: ErrorReport, siteUrl: string): string {
 // at least written the failure to the server log.
 export async function recordError(report: ErrorReport, siteUrl?: string): Promise<void> {
   try {
-    console.error(`[certflow] ${report.source} error at ${report.route || "unknown"}:`, report.message);
+    console.error(`[certlyn] ${report.source} error at ${report.route || "unknown"}:`, report.message);
 
     const admin = createAdminClient();
     const { data, error } = await admin.rpc("record_error_event", {
@@ -120,9 +120,9 @@ export async function recordError(report: ErrorReport, siteUrl?: string): Promis
     // own name. Only a fault with no firm attached — one on the login
     // page — falls back to the deployment's address.
     const sender = report.firmId ? await firmSender(admin, report.firmId, admin) : undefined;
-    await sendEmail(recipient, `CertFlow problem: ${shortMessage(report.message, 80)}`, alertHtml(report, siteUrl || ""), undefined, sender);
+    await sendEmail(recipient, `Certlyn problem: ${shortMessage(report.message, 80)}`, alertHtml(report, siteUrl || ""), undefined, sender);
   } catch (err) {
-    console.error("[certflow] could not record the error above", err);
+    console.error("[certlyn] could not record the error above", err);
   }
 }
 

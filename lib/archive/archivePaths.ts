@@ -35,12 +35,12 @@ export function jobFolder(reference: string, address: string) {
 
 // The layout a certifier's own filing already uses: everything for a job
 // under one Documents folder, in named sections rather than numbered
-// ones. A folder CertFlow files and a folder filed by hand open the same
+// ones. A folder Certlyn files and a folder filed by hand open the same
 // way, which is the whole point of a backup you can read without us.
 export const ARCHIVE_ROOT = "Documents";
 
 // A Fire Safety folder sits alongside these in a certifier's own filing.
-// Nothing in CertFlow belongs there yet, and a folder is only created by
+// Nothing in Certlyn belongs there yet, and a folder is only created by
 // putting a file in it, so it is simply absent rather than empty — the
 // one filed by hand is untouched.
 export const ARCHIVE_SECTIONS = {

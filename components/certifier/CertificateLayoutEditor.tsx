@@ -9,7 +9,7 @@ import type { ActionState } from "@/lib/actions/auth";
 
 // A firm's own certificate layout.
 //
-// Every firm uses CertFlow's layout until it presses Customise, and
+// Every firm uses Certlyn's layout until it presses Customise, and
 // pressing it copies that layout rather than opening a blank page —
 // there is no version of this where a firm has to build a statutory
 // certificate from nothing.
@@ -67,7 +67,7 @@ export function CertificateLayoutEditor({
           <FileText size={15} className="text-placeholder shrink-0" />
           <span className="font-semibold text-heading">{label}</span>
           <span className={`text-[11px] px-2 py-0.5 rounded-full ${custom ? "bg-warning-bg text-warning-text" : "bg-surface text-muted"}`}>
-            {custom ? "Your own layout" : "CertFlow's standard layout"}
+            {custom ? "Your own layout" : "Certlyn's standard layout"}
           </span>
         </div>
         <button type="button" onClick={() => setOpen((v) => !v)} className="text-xs font-semibold text-secondary hover:underline">
@@ -218,7 +218,7 @@ export function CertificateLayoutEditor({
             </form>
 
             <button type="button" onClick={() => setSections(DEFAULT_TEMPLATES[pathway].sections)} className="text-xs text-secondary hover:underline">
-              Start again from CertFlow&rsquo;s layout
+              Start again from Certlyn&rsquo;s layout
             </button>
 
             {custom && (

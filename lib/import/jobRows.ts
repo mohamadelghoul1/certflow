@@ -5,7 +5,7 @@ import type { ParsedPaste } from "@/lib/import/parseTable";
 import type { JobDetails } from "@/types/db";
 import { normalizePortalRef } from "@/lib/business";
 
-// Turning a row of someone else's spreadsheet into a CertFlow project.
+// Turning a row of someone else's spreadsheet into a Certlyn project.
 //
 // These are jobs already under construction elsewhere: the certificate
 // was issued by whoever held the appointment before, and what is wanted
@@ -41,7 +41,7 @@ export type ImportPreview = {
   headers: string[] | null;
 };
 
-// A row is a heading row when enough of it matches names CertFlow knows.
+// A row is a heading row when enough of it matches names Certlyn knows.
 // Two is deliberately low: a spreadsheet with only "Address" and "Scope"
 // as recognisable headings is still a heading row.
 export function looksLikeHeadings(row: string[]): boolean {

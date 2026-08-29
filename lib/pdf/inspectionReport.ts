@@ -11,7 +11,7 @@ import type { InspectionReportData } from "@/lib/certificates/inspectionReportDa
 // It exists so the report can simply be downloaded. Until now the only
 // way to get a PDF of it was the browser's print dialog, which means
 // margins, headers and page breaks decided by whatever browser and
-// printer driver the certifier happens to have, rather than by CertFlow.
+// printer driver the certifier happens to have, rather than by Certlyn.
 
 const LABEL_FRACTION = 0.38;
 

@@ -13,7 +13,7 @@ create table if not exists cloud_backup_connections (
   -- is going to rather than only that "a" connection exists.
   account_label text,
   -- Where the backup lives inside that account.
-  root_folder text not null default '/CertFlow',
+  root_folder text not null default '/Certlyn',
   access_token text not null,
   refresh_token text,
   -- Access tokens are short-lived; this is when the current one dies and

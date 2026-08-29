@@ -503,8 +503,8 @@ export async function reportInspectionToPortalLive(_prev: ActionState, formData:
 
   // The Portal requires the submitting user's registered email — the
   // account they sign into the Portal website with, which is not always
-  // their CertFlow login. The panel asks for it, prefilled with the
-  // CertFlow one.
+  // their Certlyn login. The panel asks for it, prefilled with the
+  // Certlyn one.
   const portalEmail = String(formData.get("portal_user_email") || "").trim() || profile.email || "";
   if (!portalEmail) return { error: "Enter the email you sign into the Planning Portal with." };
 
@@ -520,7 +520,7 @@ export async function reportInspectionToPortalLive(_prev: ActionState, formData:
     registrationNumber: inspector.registration_no,
     updatedByEmail: portalEmail,
     // A case the Portal already opened resumes automatically: the number
-    // CertFlow remembered from an earlier attempt, or one typed into the
+    // Certlyn remembered from an earlier attempt, or one typed into the
     // panel's recovery box.
     existingChildCaseId: String(formData.get("existing_child_case_id") || "").trim() || inspection.portal_child_case_id || null,
   });

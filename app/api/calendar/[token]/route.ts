@@ -53,7 +53,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const events: CalendarEvent[] = rows.map((row) => ({
     // Tied to the row, so an inspection moved to another day moves in
     // the subscriber's calendar instead of appearing twice.
-    uid: `inspection-${row.id}@certflow`,
+    uid: `inspection-${row.id}@certlyn`,
     date: row.date!,
     summary: `${row.title} — ${row.jobs!.address}`,
     location: row.jobs!.address,
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       // Never cached: an inspection booked this morning for tomorrow has
       // to reach the phone on its next refresh, not after a CDN expiry.
       "Cache-Control": "no-store, max-age=0",
-      "Content-Disposition": 'inline; filename="certflow-inspections.ics"',
+      "Content-Disposition": 'inline; filename="certlyn-inspections.ics"',
     },
   });
 }

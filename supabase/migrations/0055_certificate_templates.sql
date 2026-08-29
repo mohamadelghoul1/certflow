@@ -1,6 +1,6 @@
 -- A firm's own certificate layout.
 --
--- Every firm uses CertFlow's layout until it chooses not to. A firm that
+-- Every firm uses Certlyn's layout until it chooses not to. A firm that
 -- wants a row we do not print, or does not want one we do, saves a
 -- template of its own here; a firm with no row in this table gets the
 -- built-in default, which is the certificate that has always been

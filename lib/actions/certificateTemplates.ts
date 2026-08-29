@@ -63,7 +63,7 @@ export async function saveCertificateTemplate(_prev: ActionState, formData: Form
   return undefined;
 }
 
-// Back to CertFlow's layout. The firm's own is deleted rather than
+// Back to Certlyn's layout. The firm's own is deleted rather than
 // overwritten with a copy of the default, so "have they customised this?"
 // stays a question with one answer.
 export async function resetCertificateTemplate(_prev: ActionState, formData: FormData): Promise<ActionState> {

@@ -1,5 +1,5 @@
 -- =============================================================================
--- CertFlow demo firm — realistic fictional data for screenshots and videos
+-- Certlyn demo firm — realistic fictional data for screenshots and videos
 -- =============================================================================
 --
 -- Creates a SECOND, completely separate firm alongside your real one, so

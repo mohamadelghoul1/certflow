@@ -136,7 +136,7 @@ function OrphanedFiles({ count, bytes }: { count: number; bytes: number }) {
       </div>
       <p className="text-xs text-warning-text mt-1.5">
         Deleting a project was supposed to take its documents with it and, until a recent fix, did not. These files are no longer reachable from
-        anywhere in CertFlow, but they still count against your storage. Clearing them cannot be undone.
+        anywhere in Certlyn, but they still count against your storage. Clearing them cannot be undone.
       </p>
       <form action={clear} className="mt-2.5">
         <button

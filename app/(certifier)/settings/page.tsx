@@ -122,7 +122,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     content = (
       <div className="space-y-3">
         <p className="text-xs text-muted">
-          Every certificate uses CertFlow&rsquo;s standard layout unless you change it here. What you set applies to certificates generated from now
+          Every certificate uses Certlyn&rsquo;s standard layout unless you change it here. What you set applies to certificates generated from now
           on; anything already issued keeps the layout it was issued under.
         </p>
         {templates.map((t) => (

@@ -83,7 +83,7 @@ export type PathwayCertificateData = {
   applicantRequirementsIntro: string;
   applicantClosing: string;
   // The layout this certificate is drawn from: the firm's own where they
-  // have saved one, CertFlow's otherwise. Loaded here so the PDF, the
+  // have saved one, Certlyn's otherwise. Loaded here so the PDF, the
   // Word export and the on-screen copy all draw the same certificate.
   template: CertificateTemplate;
   templateProblems: string[];

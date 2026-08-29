@@ -22,7 +22,7 @@ export default function ClientLoginPage() {
     <div className="min-h-screen bg-primary flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="font-serif text-4xl font-medium text-white">CertFlow</div>
+          <div className="font-serif text-4xl font-medium text-white">Certlyn</div>
           <div className="mt-2 text-[12px] tracking-[0.2em] uppercase text-icon-300">Client portal sign in</div>
         </div>
         <form action={formAction} className="bg-white rounded-t-lg p-6 space-y-4 shadow-xl">

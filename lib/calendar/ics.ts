@@ -1,6 +1,6 @@
 // The inspection diary as a calendar feed.
 //
-// A certifier's week does not live in CertFlow — it lives in whatever
+// A certifier's week does not live in Certlyn — it lives in whatever
 // calendar is already on their phone, beside the school pickup and the
 // dentist. So rather than asking them to check two places, this hands
 // that calendar a subscription: one URL, added once, and every inspection
@@ -78,7 +78,7 @@ export function buildIcs(events: CalendarEvent[], calendarName: string, now = ne
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//CertFlow//Inspections//EN",
+    "PRODID:-//Certlyn//Inspections//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${escapeText(calendarName)}`,

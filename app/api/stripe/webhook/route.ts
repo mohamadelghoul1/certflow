@@ -46,13 +46,13 @@ export async function POST(request: NextRequest) {
   const admin = createAdminClient();
   const { data: invoice } = await admin.from("invoices").select("*").eq("stripe_payment_link_id", paymentLinkId).maybeSingle();
   // No invoice carries this link — it was deleted, or the event is for
-  // something CertFlow did not create. Acknowledged rather than
+  // something Certlyn did not create. Acknowledged rather than
   // refused: a 4xx here would have Stripe retrying a link that will
   // never exist for days.
   if (!invoice) return NextResponse.json({ received: true });
 
   const credentials = await firmStripeCredentials(admin, invoice.firm_id);
-  // The firm takes card payments but has not given CertFlow the signing
+  // The firm takes card payments but has not given Certlyn the signing
   // secret, so nothing can be trusted yet. Refused rather than
   // acknowledged, so Stripe keeps retrying and the payment lands the
   // moment the secret is filled in on Settings → Payment details.

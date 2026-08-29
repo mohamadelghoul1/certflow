@@ -6,7 +6,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Excluded outright, because their callers hold no CertFlow login and
+  // Excluded outright, because their callers hold no Certlyn login and
   // each carries its own proof instead: api/portal-files and
   // api/eplanning serve the NSW Planning Portal's downloader (sealed
   // token in the link / Basic Auth), api/cron is Vercel's scheduler

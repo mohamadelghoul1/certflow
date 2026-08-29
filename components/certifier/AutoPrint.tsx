@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 // ?print=1 — which is how the "Save as PDF" links on the inspection
 // report cards work. Printing can only be triggered from the page being
 // printed, so a card can't do it directly; it opens the document and hands
-// over. The approval doesn't use this route at all — it leaves CertFlow as
+// over. The approval doesn't use this route at all — it leaves Certlyn as
 // the Word export or the full approved set PDF.
 //
 // Waits for the load event so images (the letterhead logo, the signature)

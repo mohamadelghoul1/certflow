@@ -13,19 +13,19 @@ describe("planning a backup run", () => {
     const plan = planUploads(
       [candidate("a/plans-v1.pdf", "Documents/Document Sets/01 Plans", "v1.pdf"), candidate("a/plans-v2.pdf", "Documents/Document Sets/01 Plans", "v2 (current).pdf")],
       [{ storage_path: "a/plans-v1.pdf" }],
-      "/CertFlow",
+      "/Certlyn",
       "CDC-26001 - 21 Coquet Way"
     );
     assert.deepEqual(plan.map((p) => p.storagePath), ["a/plans-v2.pdf"]);
   });
 
   test("the remote path is the firm's folder, the job, then where it belongs", () => {
-    const [plan] = planUploads([candidate("a/x.pdf", "Documents/Document Sets/01 Plans", "v1.pdf")], [], "/CertFlow", "CDC-26001 - 21 Coquet Way");
-    assert.equal(plan.remotePath, "/CertFlow/CDC-26001 - 21 Coquet Way/Documents/Document Sets/01 Plans/v1.pdf");
+    const [plan] = planUploads([candidate("a/x.pdf", "Documents/Document Sets/01 Plans", "v1.pdf")], [], "/Certlyn", "CDC-26001 - 21 Coquet Way");
+    assert.equal(plan.remotePath, "/Certlyn/CDC-26001 - 21 Coquet Way/Documents/Document Sets/01 Plans/v1.pdf");
   });
 
   test("the same file reached twice on one job is sent once", () => {
-    const plan = planUploads([candidate("a/x.pdf", "f", "x.pdf"), candidate("a/x.pdf", "f", "x.pdf")], [], "/CertFlow", "job");
+    const plan = planUploads([candidate("a/x.pdf", "f", "x.pdf"), candidate("a/x.pdf", "f", "x.pdf")], [], "/Certlyn", "job");
     assert.equal(plan.length, 1);
   });
 
@@ -33,19 +33,19 @@ describe("planning a backup run", () => {
   // is remembered by what it is rather than by a path it doesn't have.
   test("a generated document is sent again only when it has changed", () => {
     const first = candidate(null, "Documents/Complying Development Certificate", "Approved Set.pdf", "signed-2026-08-25");
-    const unchanged = planUploads([first], [{ storage_path: uploadKey(first) }], "/CertFlow", "job");
+    const unchanged = planUploads([first], [{ storage_path: uploadKey(first) }], "/Certlyn", "job");
     assert.equal(unchanged.length, 0, "an unchanged approval is not sent again");
 
     const changed = candidate(null, "Documents/Complying Development Certificate", "Approved Set.pdf", "signed-2026-09-01");
-    const after = planUploads([changed], [{ storage_path: uploadKey(first) }], "/CertFlow", "job");
+    const after = planUploads([changed], [{ storage_path: uploadKey(first) }], "/Certlyn", "job");
     assert.equal(after.length, 1, "a reissued approval is");
   });
 });
 
 describe("remote paths", () => {
   test("stray separators from addresses and references are collapsed", () => {
-    assert.equal(remotePath("/CertFlow/", "CDC-26001", "/Documents/Document Sets/", "v1.pdf"), "/CertFlow/CDC-26001/Documents/Document Sets/v1.pdf");
-    assert.equal(remotePath("CertFlow", "job", "", "v1.pdf"), "/CertFlow/job/v1.pdf");
+    assert.equal(remotePath("/Certlyn/", "CDC-26001", "/Documents/Document Sets/", "v1.pdf"), "/Certlyn/CDC-26001/Documents/Document Sets/v1.pdf");
+    assert.equal(remotePath("Certlyn", "job", "", "v1.pdf"), "/Certlyn/job/v1.pdf");
   });
 });
 
@@ -75,7 +75,7 @@ describe("what each provider is asked to do", () => {
   // A path with a space or a comma in it — every address has one — has to
   // survive the very different ways these two carry it.
   test("a path with spaces and commas survives both", () => {
-    const path = "/CertFlow/CDC-26001 - 21 Coquet Way, Green Valley/Documents/Document Sets/v1.pdf";
+    const path = "/Certlyn/CDC-26001 - 21 Coquet Way, Green Valley/Documents/Document Sets/v1.pdf";
 
     const dropbox = DROPBOX.uploadRequest({ accessToken: "t", remotePath: path, size: 10 });
     assert.equal(JSON.parse(dropbox.headers["Dropbox-API-Arg"]).path, path, "Dropbox carries it as JSON in a header");
@@ -83,7 +83,7 @@ describe("what each provider is asked to do", () => {
     const onedrive = ONEDRIVE.uploadRequest({ accessToken: "t", remotePath: path, size: 10 });
     assert.ok(onedrive.url.includes("21%20Coquet%20Way%2C%20Green%20Valley"), "Graph carries it in the URL, so it must be escaped");
     assert.ok(!onedrive.url.includes("21 Coquet"), "an unescaped space would make a different URL");
-    assert.ok(onedrive.url.startsWith("https://graph.microsoft.com/v1.0/me/drive/root:/CertFlow/"), "and the slashes stay slashes");
+    assert.ok(onedrive.url.startsWith("https://graph.microsoft.com/v1.0/me/drive/root:/Certlyn/"), "and the slashes stay slashes");
   });
 
   test("each knows the size its simple upload stops at", () => {

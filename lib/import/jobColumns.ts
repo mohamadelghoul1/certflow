@@ -27,7 +27,7 @@ export type JobField =
   | "projectNumber"
   | "classification"
   | "zoning"
-  // Exports commonly split what CertFlow keeps together, so the parts
+  // Exports commonly split what Certlyn keeps together, so the parts
   // are recognised in their own right and joined back up on the way in.
   | "lot"
   | "plan"

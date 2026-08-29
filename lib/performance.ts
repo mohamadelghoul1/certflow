@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-// Two numbers a firm runs on and CertFlow has never shown: how long a
+// Two numbers a firm runs on and Certlyn has never shown: how long a
 // certificate takes, and how much work the quotes actually win.
 //
 // Both are worked out from what is already recorded. Nothing new has to

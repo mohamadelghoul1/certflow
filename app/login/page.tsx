@@ -22,7 +22,7 @@ export default function CertifierLoginPage() {
     <div className="min-h-screen bg-heading flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="font-serif text-4xl font-medium text-warning">CertFlow</div>
+          <div className="font-serif text-4xl font-medium text-warning">Certlyn</div>
           <div className="mt-2 text-[12px] tracking-[0.2em] uppercase text-placeholder">Certifier sign in</div>
         </div>
         <form action={formAction} className="bg-heading border border-warning/30 border-b-0 rounded-t-lg p-6 space-y-4">

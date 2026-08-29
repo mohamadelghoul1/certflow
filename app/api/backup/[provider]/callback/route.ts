@@ -5,7 +5,7 @@ import { providerFor } from "@/lib/backup/providers";
 import { accountLabel, exchangeCode, redirectUriFor } from "@/lib/backup/connection";
 
 // Where Dropbox or Microsoft sends the certifier back to, with a code to
-// exchange for the tokens that let CertFlow write to their storage.
+// exchange for the tokens that let Certlyn write to their storage.
 export async function GET(request: NextRequest, { params }: { params: Promise<{ provider: string }> }) {
   const { provider: providerId } = await params;
   const { profile, userId } = await requireProfile("certifier");

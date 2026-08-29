@@ -130,7 +130,7 @@ export async function listFilesRecursively(
   bucket: string,
   prefix: string,
   // Guards against a cycle or a pathological tree costing a request per
-  // level forever. Nothing in CertFlow nests more than four deep.
+  // level forever. Nothing in Certlyn nests more than four deep.
   depth = 0,
 ): Promise<string[]> {
   if (depth > 8) return [];

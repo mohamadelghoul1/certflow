@@ -143,7 +143,7 @@ export default async function PortalChecklistDocumentPage({ params }: { params: 
 
 
         <div className="text-[10px] text-muted border-t border-line pt-2 mt-6">
-          Prepared from the CertFlow client portal on {formatISODate(todayISO())}. Statuses shown are correct at the time of printing.
+          Prepared from the Certlyn client portal on {formatISODate(todayISO())}. Statuses shown are correct at the time of printing.
         </div>
       </div>
     </div>

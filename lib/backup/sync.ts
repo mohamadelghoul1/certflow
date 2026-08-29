@@ -16,7 +16,7 @@ import type { ChecklistItem, ChecklistItemFile, Inspection, InspectionPhoto, Job
 // the compliance record and keeps every version of every document,
 // because the superseded ones are what show the set a certificate was
 // actually assessed against. This is the firm's working filing, and holds
-// one file per document: the approved one. The history stays in CertFlow
+// one file per document: the approved one. The history stays in Certlyn
 // and in the archive download for the day it is needed.
 //
 // lib/archive/archivePaths.ts is the single answer to where anything

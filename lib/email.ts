@@ -15,7 +15,7 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 // Read when an email is sent rather than when this file is loaded, so
 // what the System check reports is what the next email will actually
 // carry.
-const FALLBACK_FROM = "CertFlow <onboarding@resend.dev>";
+const FALLBACK_FROM = "Certlyn <onboarding@resend.dev>";
 
 export function emailSenderSettings() {
   const configured = (process.env.RESEND_FROM_EMAIL || "").trim();
@@ -257,7 +257,7 @@ export async function notifyJobClient(
   const result = await sendEmail(
     client.email,
     subject,
-    `<p>Hi ${client.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to your CertFlow portal to view the details: <a href="${site}/client-login">${site}/client-login</a></p>`,
+    `<p>Hi ${client.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to your Certlyn portal to view the details: <a href="${site}/client-login">${site}/client-login</a></p>`,
     attachments,
     await firmSender(supabase, job.firm_id)
   );
@@ -305,7 +305,7 @@ export async function notifyJobCertifier(supabase: SupabaseClient, jobId: string
   const result = await sendEmail(
     email,
     subject,
-    `<p>Hi ${certifier?.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to CertFlow to view the details: <a href="${site}/login">${site}/login</a></p>`,
+    `<p>Hi ${certifier?.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to Certlyn to view the details: <a href="${site}/login">${site}/login</a></p>`,
     undefined,
     await firmSender(supabase, job.firm_id)
   );

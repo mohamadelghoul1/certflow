@@ -6,7 +6,7 @@
 --
 -- The certifier uploads the agreement they already use, names who has to
 -- sign it, and each signatory gets their own private link. They need no
--- CertFlow login — an owner is often not the person using the portal —
+-- Certlyn login — an owner is often not the person using the portal —
 -- and the agreement is only complete once every one of them has signed.
 create table if not exists engagement_agreements (
   id uuid primary key default gen_random_uuid(),

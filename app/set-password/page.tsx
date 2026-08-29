@@ -12,11 +12,11 @@ export default function SetCertifierPasswordPage() {
     <div className="min-h-screen bg-heading flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="font-serif text-4xl font-medium text-warning">CertFlow</div>
+          <div className="font-serif text-4xl font-medium text-warning">Certlyn</div>
           <div className="mt-2 text-[12px] tracking-[0.2em] uppercase text-placeholder">Set a new password</div>
         </div>
         <form action={formAction} className="bg-heading border border-warning/30 rounded-lg p-6 space-y-4">
-          <p className="text-sm text-placeholder">Choose a new password for your CertFlow certifier login.</p>
+          <p className="text-sm text-placeholder">Choose a new password for your Certlyn certifier login.</p>
           <div>
             <label className="block text-xs font-semibold text-placeholder mb-1">New password (min. 8 characters)</label>
             <input

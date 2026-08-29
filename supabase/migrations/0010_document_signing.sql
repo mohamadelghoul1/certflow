@@ -1,4 +1,4 @@
--- Adds an explicit "signed" step to the documents CertFlow generates
+-- Adds an explicit "signed" step to the documents Certlyn generates
 -- (CDC/CC certificate package, Occupation Certificate, inspection reports).
 -- Previously the certifier's signature image was inserted automatically the
 -- moment a document was generated/issued, with no way to review the Word

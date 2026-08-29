@@ -2,7 +2,7 @@ import { FIELD_KEYS, isRequired, type CertificatePathway, type FieldKey, type Fi
 
 // The shape of a certificate: sections, and the rows under them.
 //
-// The default below is the certificate CertFlow has always printed,
+// The default below is the certificate Certlyn has always printed,
 // written out as data instead of as code. A firm that has never touched
 // it gets exactly that. A firm that wants their own starts from a copy of
 // it and edits from there, so "their own template" is never a blank page.

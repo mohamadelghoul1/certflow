@@ -3,7 +3,7 @@ import { requireProfile } from "@/lib/auth";
 import { inspectionReportPdf } from "@/lib/pdf/inspectionReportFile";
 import { attachmentHeader } from "@/lib/downloadName";
 
-// The inspection report as a PDF, laid out by CertFlow rather than by the
+// The inspection report as a PDF, laid out by Certlyn rather than by the
 // browser's print dialog — so the margins, page breaks and letterhead are
 // the same ones every other document from this job carries. The assembly
 // itself lives in lib/pdf/inspectionReportFile.ts, because the

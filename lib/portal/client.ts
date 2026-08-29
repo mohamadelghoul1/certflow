@@ -1,6 +1,6 @@
 import { type PortalConfig } from "@/lib/portal/config";
 
-// The one place CertFlow actually talks to the NSW Planning Portal.
+// The one place Certlyn actually talks to the NSW Planning Portal.
 //
 // Every call carries the api-key and the registered organisation name,
 // per the department's specification. Nothing here decides *what* to

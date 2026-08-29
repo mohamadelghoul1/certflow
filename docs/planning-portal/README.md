@@ -5,17 +5,17 @@ Service, downloaded from the NSW Department of Planning and Environment's
 Planning Portal by the firm and stored here so the integration is built
 against the department's own words, not a paraphrase.
 
-## What the service does for CertFlow
+## What the service does for Certlyn
 
 - **Inspections** (the headline): `InitiateInspection` → `PerformInspection`
   (or `MissedInspection`) → `CompleteInspection`. An inspection completed
-  and signed in CertFlow can be reported to the Portal without a separate
+  and signed in Certlyn can be reported to the Portal without a separate
   login. `NotifyCriticalStageInspection` serves the critical stage
   inspection notice.
 - **Applications flow in**: the Portal *pushes* a lodged CC/OC/PCA/SC case
   and its documents to the certifier's system in real time
   (`CreatePCC`/`UpdatePCC` in the "ePlanning to Certifier" spec). This
-  needs CertFlow to expose registered receiving endpoints — phase 2.
+  needs Certlyn to expose registered receiving endpoints — phase 2.
 - **Assessment and determination**: `AcceptReturn`, `Assessment`,
   `ReqAddInfo`/`ProvideAddInfo`, `Determine`.
 - **Certificate Registration** ties in at determination (see
@@ -29,12 +29,12 @@ against the department's own words, not a paraphrase.
 - Auth: an `api-key` header (issued by ePlanning at onboarding) plus an
   `organisationID` header naming the registered certifier organisation.
 - Documents travel as **links, not uploads**: each document entry carries a
-  `documentURL` the Portal downloads from. CertFlow's short-lived signed
+  `documentURL` the Portal downloads from. Certlyn's short-lived signed
   storage links suit this.
 - The Portal accepts only fixed value lists for inspection types and
   results. They are extracted (with the request schemas) into
   `pcc-certifier-schemas.json` — generated from the YAML, not hand-written
-  — and `lib/portal/inspections.ts` maps CertFlow's vocabulary onto them.
+  — and `lib/portal/inspections.ts` maps Certlyn's vocabulary onto them.
   `tests/portalInspections.test.ts` holds every outgoing payload against
   that file.
 
@@ -46,7 +46,7 @@ against the department's own words, not a paraphrase.
 | `PLANNING_PORTAL_ORGANISATION_ID` | The registered certifier organisation name. |
 | `PLANNING_PORTAL_BASE_URL` | Optional. **Defaults to the UAT (test) environment**; set to the production URL only when UAT testing is done. |
 
-Until the first two are set, CertFlow treats the Portal as not connected
+Until the first two are set, Certlyn treats the Portal as not connected
 and attempts nothing.
 
 ## Status

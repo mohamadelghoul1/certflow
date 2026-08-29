@@ -2,12 +2,12 @@ import type { NextConfig } from "next";
 
 // Headers every response carries.
 //
-// Worth having from the moment CertFlow is linked to from a public
+// Worth having from the moment Certlyn is linked to from a public
 // website: a page holding statutory certificates, client documents and
 // invoices should not be silently embeddable by a site nobody here
 // controls.
 const securityHeaders = [
-  // Only CertFlow may frame CertFlow. Without this, another site could
+  // Only Certlyn may frame Certlyn. Without this, another site could
   // load a signed-in certifier's screen inside an invisible frame and
   // have them click things they cannot see — the reason a bank's
   // pages refuse to be framed. Both headers say the same thing; the

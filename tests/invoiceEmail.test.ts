@@ -21,7 +21,7 @@ function html(overrides: Partial<Parameters<typeof invoiceEmailHtml>[0]> = {}) {
     cardSurcharge: null,
     paymentDetails: null,
     notes: null,
-    portalUrl: "https://certflow.example",
+    portalUrl: "https://certlyn.example",
     firmName: "QP Certifiers Pty Ltd",
     ...overrides,
   });
@@ -67,7 +67,7 @@ describe("the invoice email a client receives", () => {
     assert.match(body, /&lt;script&gt;/);
   });
 
-  test("it signs off as the firm, not as CertFlow", () => {
+  test("it signs off as the firm, not as Certlyn", () => {
     assert.match(html(), /Kind regards,<br\/>QP Certifiers Pty Ltd/);
   });
 });

@@ -164,7 +164,7 @@ export async function createInvoicePaymentLink(opts: {
     {
       "line_items[0][price]": String(price.body.id),
       "line_items[0][quantity]": "1",
-      "metadata[certflow_invoice_id]": opts.invoiceId,
+      "metadata[certlyn_invoice_id]": opts.invoiceId,
     },
     opts.secretKey
   );

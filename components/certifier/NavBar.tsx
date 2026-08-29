@@ -20,7 +20,7 @@ export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmN
       <div className="flex items-center overflow-x-auto" style={{ scrollbarWidth: "none" }}>
         <Link href="/dashboard" className="flex items-center gap-2 py-4 pr-6 shrink-0 whitespace-nowrap">
           <span className="w-7 h-7 rounded-md bg-secondary text-white text-xs font-bold flex items-center justify-center">CF</span>
-          <span className="font-semibold tracking-tight text-base text-white">CertFlow</span>
+          <span className="font-semibold tracking-tight text-base text-white">Certlyn</span>
         </Link>
         <div className="hidden sm:contents">
         <NavDropdown

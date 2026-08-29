@@ -36,12 +36,12 @@ describe("the calendar feed", () => {
   });
 
   const event = {
-    uid: "insp-1@certflow",
+    uid: "insp-1@certlyn",
     date: "2026-08-26",
     summary: "Piers — 28 Eucalyptus Street",
     location: "28 Eucalyptus Street, Constitution Hill",
     description: "Booked by the client.",
-    url: "https://certflow.app/site/insp-1",
+    url: "https://certlyn.app/site/insp-1",
   };
 
   test("an inspection becomes a one-day event on the day it is booked", () => {
@@ -50,7 +50,7 @@ describe("the calendar feed", () => {
     // Exclusive end: a one-day event on the 26th ends on the 27th.
     // The 26th would show as nothing at all.
     assert.ok(ics.includes("DTEND;VALUE=DATE:20260827"));
-    assert.ok(ics.includes("UID:insp-1@certflow"));
+    assert.ok(ics.includes("UID:insp-1@certlyn"));
     assert.ok(ics.includes("DTSTAMP:20260825T040000Z"));
   });
 
@@ -63,7 +63,7 @@ describe("the calendar feed", () => {
 
   test("a URL is not escaped — an escaped one opens nothing", () => {
     const ics = buildIcs([event], "Inspections");
-    assert.ok(ics.includes("URL:https://certflow.app/site/insp-1"));
+    assert.ok(ics.includes("URL:https://certlyn.app/site/insp-1"));
   });
 
   test("an empty diary is still a valid calendar", () => {

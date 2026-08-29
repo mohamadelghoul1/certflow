@@ -1,12 +1,12 @@
-// Translating a CertFlow inspection into the NSW Planning Portal's exact
+// Translating a Certlyn inspection into the NSW Planning Portal's exact
 // vocabulary.
 //
 // The Portal's PCC service accepts only fixed lists of inspection types
 // and results (docs/planning-portal/pcc-certifier-schemas.json, taken
-// from the department's own API specification). CertFlow's inspection
+// from the department's own API specification). Certlyn's inspection
 // names are the certifier's working shorthand — "Slab Steel", "Frame" —
 // so this file is the dictionary between the two. Anything without a
-// match goes up as "Other Inspection" with the CertFlow title carried in
+// match goes up as "Other Inspection" with the Certlyn title carried in
 // the description, which the spec provides for exactly this case.
 
 // The Portal's own values, verbatim from the specification. Not to be
@@ -36,11 +36,11 @@ export const PORTAL_RESULTS_WORKS = {
   failed: "Works are not satisfactory",
 } as const;
 
-// CertFlow's standard stages, mapped by what the inspection actually is
+// Certlyn's standard stages, mapped by what the inspection actually is
 // rather than by exact spelling — matched loosely so "Piers & Footings",
 // "piers and footings" and "Footings" all land on the same Portal value.
-export function portalInspectionType(certflowTitle: string): string {
-  const t = certflowTitle.toLowerCase();
+export function portalInspectionType(certlynTitle: string): string {
+  const t = certlynTitle.toLowerCase();
   if (t.includes("excavation")) return PORTAL_INSPECTION_TYPES.afterExcavation;
   if (t.includes("footing") || t.includes("pier") || t.includes("slab")) return PORTAL_INSPECTION_TYPES.footings;
   if (t.includes("frame")) return PORTAL_INSPECTION_TYPES.framework;
@@ -56,7 +56,7 @@ export function portalInspectionResult(outcome: string, kind: "building" | "work
 }
 
 // A document as the Portal wants it: not the file itself but a link it
-// downloads from. CertFlow's storage links are signed and short-lived,
+// downloads from. Certlyn's storage links are signed and short-lived,
 // which suits this — the Portal fetches promptly, and the link then dies.
 //
 // Each call accepts only its own documentType, enforced by the live
@@ -91,14 +91,14 @@ export function portalDocument(fileName: string, signedUrl: string, documentType
 // close it out. Each builder returns exactly the body the specification
 // asks for — the tests hold them against the schema file.
 
-export function initiateInspectionBody(input: { certflowTitle: string; scheduledDate?: string | null; registrationNumber: string; updatedByEmail?: string }) {
-  const type = portalInspectionType(input.certflowTitle);
+export function initiateInspectionBody(input: { certlynTitle: string; scheduledDate?: string | null; registrationNumber: string; updatedByEmail?: string }) {
+  const type = portalInspectionType(input.certlynTitle);
   return {
     ...(input.scheduledDate ? { dateOfInspection: input.scheduledDate } : {}),
     // The specification asks for this only on "Other Inspection"; the
     // live service demanded it on every type ("Description required"),
-    // so it always carries the inspection's CertFlow name.
-    description: input.certflowTitle,
+    // so it always carries the inspection's Certlyn name.
+    description: input.certlynTitle,
     registrationNumber: input.registrationNumber,
     inspectionType: [type],
     ...(input.updatedByEmail ? { updatedByEmail: input.updatedByEmail } : {}),
@@ -107,7 +107,7 @@ export function initiateInspectionBody(input: { certflowTitle: string; scheduled
 
 export function performInspectionBody(input: {
   childCaseID: string;
-  certflowTitle: string;
+  certlynTitle: string;
   inspectionDate: string;
   outcome: string;
   inspectorName: string;
@@ -122,7 +122,7 @@ export function performInspectionBody(input: {
     ...(input.comments ? { enterComments: input.comments } : {}),
     inspectionConductedBy: input.inspectorName,
     inspectionResult: portalInspectionResult(input.outcome, input.resultKind) || "",
-    inspectionType: [portalInspectionType(input.certflowTitle)],
+    inspectionType: [portalInspectionType(input.certlynTitle)],
     documents: input.documents,
     ...(input.updatedByEmail ? { updatedByEmail: input.updatedByEmail } : {}),
   };

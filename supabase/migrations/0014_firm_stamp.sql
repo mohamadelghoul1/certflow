@@ -1,6 +1,6 @@
 -- The firm's own approval stamp image.
 --
--- CertFlow already draws a stamp on approved documents from the details it
+-- Certlyn already draws a stamp on approved documents from the details it
 -- holds — the firm name, the CDC/CC number, the certifier who signed the
 -- approval and their registration number. A firm that has its own stamp
 -- artwork (a scanned rubber stamp, or one their designer made) can upload

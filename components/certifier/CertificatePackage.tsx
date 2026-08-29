@@ -97,7 +97,7 @@ function SignButton({
 // so re-exporting an editable copy no longer makes sense.
 //
 // uploadAction (optional) is the answer to "how do I get my Word edits back
-// into CertFlow": there is no live connection between a downloaded file
+// into Certlyn": there is no live connection between a downloaded file
 // open in Word and this page — Word can't notify a website when you press
 // Save. Exporting, editing, and re-uploading the finished file here is the
 // actual mechanism, so it lives right next to Export/Sign instead of buried
@@ -122,13 +122,13 @@ export function CertificatePackage({
   wordExportHref: string;
   /* A route that builds this document as a PDF, downloaded straight to
      the certifier's machine. Where it exists it replaces the browser's
-     print dialog entirely: the file is laid out by CertFlow rather than
+     print dialog entirely: the file is laid out by Certlyn rather than
      by whatever print engine the browser happens to have. */
   pdfHref?: string;
   children: React.ReactNode;
   /* Whether this document offers "Save as PDF". The approval turns
      it off: it goes out as the Word export or as the full approved set
-     PDF, both laid out by CertFlow, rather than as whatever the browser's
+     PDF, both laid out by Certlyn, rather than as whatever the browser's
      own print engine makes of the page. */
   allowPrint?: boolean;
   signed?: boolean;

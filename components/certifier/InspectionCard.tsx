@@ -216,7 +216,7 @@ export function IssuesWhenNeeded({ inspectionId, jobId, defects }: { inspectionI
 }
 
 // Reporting an inspection to the NSW Planning Portal tells the regulator
-// it was carried out. Removing it afterwards would leave CertFlow
+// it was carried out. Removing it afterwards would leave Certlyn
 // disagreeing with the Portal about what happened on the job, so once
 // reported the button is gone and the reason is on the card.
 export function RemoveInspectionButton({ inspectionId, jobId, portalReported }: { inspectionId: string; jobId: string; portalReported: boolean }) {

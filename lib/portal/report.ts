@@ -9,7 +9,7 @@ import { INSPECTION_OUTCOME_TEXT } from "@/lib/constants";
 import { formatISODate } from "@/lib/business";
 import type { Profile } from "@/types/db";
 
-// Reporting one CertFlow inspection to the NSW Planning Portal.
+// Reporting one Certlyn inspection to the NSW Planning Portal.
 //
 // Three calls, in the order the department's workflow runs them: open
 // the inspection case against the Portal case, record the visit with
@@ -67,7 +67,7 @@ export async function sendInspectionToPortal(
       severity: ok ? "info" : "error",
     });
 
-  // Documents are announced at CertFlow's registered inbound endpoint —
+  // Documents are announced at Certlyn's registered inbound endpoint —
   // ePlanning's gateway only downloads from the inbound URL lodged at
   // registration, using the department's Get External Document contract,
   // and refuses any other link without even fetching it.
@@ -110,7 +110,7 @@ export async function sendInspectionToPortal(
     await log("InitiateInspection", true, { note: "resuming an inspection case the Portal already opened", childCaseId });
   } else {
     const initiate = await callPortal(config, "POST", `/InitiateInspection/${encodeURIComponent(caseId)}`, initiateInspectionBody({
-      certflowTitle: inspection.title,
+      certlynTitle: inspection.title,
       scheduledDate: inspection.date,
       registrationNumber,
       updatedByEmail,
@@ -139,7 +139,7 @@ export async function sendInspectionToPortal(
   // 2. Record the visit.
   const perform = await callPortal(config, "PUT", `/PerformInspection/${encodeURIComponent(caseId)}`, performInspectionBody({
     childCaseID: childCaseId,
-    certflowTitle: inspection.title,
+    certlynTitle: inspection.title,
     inspectionDate: inspection.date,
     outcome: inspection.outcome,
     inspectorName,

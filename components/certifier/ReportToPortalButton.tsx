@@ -10,7 +10,7 @@ import type { ActionState } from "@/lib/actions/auth";
 //
 // With the Portal connection configured, the button opens a small
 // confirmation panel — what will be sent, and against which Portal case —
-// and one press sends it: CertFlow makes the API calls and attaches the
+// and one press sends it: Certlyn makes the API calls and attaches the
 // signed report itself, so there is nothing to upload. Without the
 // connection, the button falls back to what it always did: marking an
 // inspection the certifier reported by hand on the Portal website.
@@ -129,7 +129,7 @@ export function ReportToPortalButton({
           className="w-full sm:w-80 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
         />
         <p className="text-[11px] text-placeholder mt-1">
-          The Portal records the submission against this account, so it must be the exact email of your Portal login — not necessarily your CertFlow one.
+          The Portal records the submission against this account, so it must be the exact email of your Portal login — not necessarily your Certlyn one.
         </p>
       </div>
 

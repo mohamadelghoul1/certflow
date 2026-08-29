@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 
-// Clean download links for the documents CertFlow hands the Portal.
+// Clean download links for the documents Certlyn hands the Portal.
 //
 // Storage's own signed links end in a long query string, and the
 // Portal's document validation refused one. These links look like an

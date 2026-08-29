@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     admin,
     jobId,
     "Client booked an inspection",
-    `<p>Your client has booked the <strong>${insp?.title || "an"}</strong> inspection for <strong>${formatISODate(date)}</strong>. Please confirm it in CertFlow.</p>`
+    `<p>Your client has booked the <strong>${insp?.title || "an"}</strong> inspection for <strong>${formatISODate(date)}</strong>. Please confirm it in Certlyn.</p>`
   );
 
   return NextResponse.json({ ok: true });

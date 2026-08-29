@@ -329,7 +329,7 @@ export function runEnvChecks(): EnvCheck[] {
     },
     {
       label: "NSW Planning Portal",
-      detail: "Set once ePlanning finishes API onboarding — then inspections can be reported from CertFlow.",
+      detail: "Set once ePlanning finishes API onboarding — then inspections can be reported from Certlyn.",
       configured: portalConfigured(),
     },
     {
@@ -363,13 +363,13 @@ export function runEnvChecks(): EnvCheck[] {
     },
     {
       label: "ePlanning inbound credentials",
-      detail: "The Basic Auth details lodged with ePlanning so their gateway can download documents from CertFlow.",
+      detail: "The Basic Auth details lodged with ePlanning so their gateway can download documents from Certlyn.",
       configured: !!(process.env.EPLANNING_INBOUND_USERNAME && process.env.EPLANNING_INBOUND_PASSWORD),
     },
   ];
 }
 
-// Whether the alerts CertFlow sends have somewhere to go.
+// Whether the alerts Certlyn sends have somewhere to go.
 //
 // A notification with no recipient is the quietest possible failure: the
 // upload succeeds, the client sees no error, and the certifier simply

@@ -383,7 +383,7 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
         <table className="w-full">
           <tbody>
             {/* Drawn from the firm's own layout where they have saved one,
-                CertFlow's otherwise — the same layout the PDF and the Word
+                Certlyn's otherwise — the same layout the PDF and the Word
                 export walk, so what is edited here is what is issued. */}
             {resolveTemplate(data.template, certificateFieldValues(data), pathwayFull).map((section) => (
               <Fragment key={section.heading}>

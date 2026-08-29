@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "CertFlow",
+  title: "Certlyn",
   description: "Certification project management for NSW building certifiers",
 };
 

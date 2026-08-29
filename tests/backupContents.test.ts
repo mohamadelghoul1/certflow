@@ -6,7 +6,7 @@ import { candidatesForJob } from "@/lib/backup/sync";
 //
 // The firm's filing holds what it relied on: one file per document, the
 // approved one. Superseded drafts and documents still waiting on a
-// decision stay in CertFlow. A folder with four plans in it and no way to
+// decision stay in Certlyn. A folder with four plans in it and no way to
 // tell which the certificate was issued against is worse than no copy.
 
 const job = {

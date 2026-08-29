@@ -1,4 +1,4 @@
-# CertFlow — Build Brief (v2)
+# Certlyn — Build Brief (v2)
 
 A client project portal for a NSW building certification firm (Quality Private
 Certifiers). This document describes the certifier-side prototype
@@ -79,7 +79,7 @@ modification)
   previous one**, no version history kept (firm's explicit choice)
 - **`revision`, `documentDate`, `preparedBy`**: the actual document's own revision
   letter, the date it was prepared, and who prepared it (e.g. the architect) —
-  separate from CertFlow's internal submission/approval dates. Shown on the
+  separate from Certlyn's internal submission/approval dates. Shown on the
   generated certificate's document schedule.
 
 **Modification** (a Modified CDC/CC)

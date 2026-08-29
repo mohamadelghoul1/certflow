@@ -2,7 +2,7 @@ import sharp from "sharp";
 import { ensureFonts } from "@/lib/portal/fontsBoot";
 
 // The Portal refuses to record a visit without at least one "Inspection
-// images" document. CertFlow deliberately sends this generated card and
+// images" document. Certlyn deliberately sends this generated card and
 // nothing else: the firm's site photographs are its own working records
 // and stay on its file, while the government record gets a clean card
 // stating what the inspection was and how it ended, pointing at the

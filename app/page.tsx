@@ -50,7 +50,7 @@ export default function HomePage() {
         {/* Brand */}
         <LogoMark size={56} />
         <div className="mt-4 font-serif text-5xl font-medium tracking-tight">
-          Cert<span className="text-[#f0b93a]">Flow</span>
+          Cert<span className="text-[#f0b93a]">lyn</span>
         </div>
         <div className="mt-2 text-[12px] tracking-[0.35em] uppercase text-slate-400">Certification Records</div>
 

@@ -227,8 +227,8 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
             signing — the document page hides its own Export at that point,
             which otherwise left no way to download the final approval.
             There is deliberately no browser-print option here: the approval
-            leaves CertFlow as the Word export or as the full approved set
-            PDF, both of which are laid out by CertFlow itself rather than
+            leaves Certlyn as the Word export or as the full approved set
+            PDF, both of which are laid out by Certlyn itself rather than
             by whatever the certifier's browser and printer driver decide. */}
         {version.visible_to_client && (
           <>

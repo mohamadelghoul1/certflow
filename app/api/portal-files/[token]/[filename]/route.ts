@@ -4,7 +4,7 @@ import { verifyPortalFileToken } from "@/lib/portal/files";
 
 // Serves one document to the NSW Planning Portal's downloader.
 //
-// Public by design — the Portal holds no CertFlow login — but the token
+// Public by design — the Portal holds no Certlyn login — but the token
 // in the path is the authority: it names exactly one storage file and an
 // expiry, sealed server-side, so the route can serve nothing it wasn't
 // asked to. The filename segment exists so the link ends the way a file

@@ -183,7 +183,7 @@ export function PaymentSettingsForm({ firm }: { firm: Firm | null }) {
       </label>
       <p className="text-[11px] text-muted">
         The surcharge equals Stripe&rsquo;s standard fee (1.7% + 30&cent;), shown to the client before they pay; bank transfer stays surcharge-free. Only lawful at your actual card
-        cost — leave this off if Stripe has given you a cheaper negotiated rate. Australia bans card surcharges from 1 October 2026, and CertFlow stops adding it automatically from
+        cost — leave this off if Stripe has given you a cheaper negotiated rate. Australia bans card surcharges from 1 October 2026, and Certlyn stops adding it automatically from
         that date.
       </p>
       <label className="flex items-center gap-2 text-sm text-muted pt-2 border-t border-line">
@@ -203,7 +203,7 @@ export function PaymentSettingsForm({ firm }: { firm: Firm | null }) {
         days until it&rsquo;s marked paid
       </div>
       <p className="text-[11px] text-muted">
-        Bank transfers aren&rsquo;t visible to CertFlow, so every reminder carries an &ldquo;if you&rsquo;ve already paid, please disregard&rdquo; line — and marking an invoice paid stops
+        Bank transfers aren&rsquo;t visible to Certlyn, so every reminder carries an &ldquo;if you&rsquo;ve already paid, please disregard&rdquo; line — and marking an invoice paid stops
         its reminders immediately. Any single invoice can be paused from its own page.
       </p>
       {state?.error && <div className="text-sm text-error">{state.error}</div>}
@@ -352,7 +352,7 @@ export function EmailSenderForm({
               </ol>
               <p className="text-[11px] text-muted">
                 Resend only sends from a domain verified in your own account, so this is what makes the address above actually work. Once saved the
-                key cannot be read back out of CertFlow by anyone; replace it by pasting a new one.
+                key cannot be read back out of Certlyn by anyone; replace it by pasting a new one.
               </p>
             </div>
 
@@ -423,7 +423,7 @@ export function StripeConnectionForm({
 
           {connected && !status.webhookSecretSet && (
             <p className="text-[11px] text-warning-text">
-              Clients can pay, but CertFlow won&rsquo;t hear about it — an invoice paid by card will stay showing as unpaid until the signing secret
+              Clients can pay, but Certlyn won&rsquo;t hear about it — an invoice paid by card will stay showing as unpaid until the signing secret
               below is filled in.
             </p>
           )}
@@ -483,7 +483,7 @@ export function StripeConnectionForm({
               <li>Stripe then shows that endpoint&rsquo;s signing secret — that is the second box above.</li>
             </ol>
             <p className="text-[11px] text-muted">
-              Once saved, neither can be read back out of CertFlow — not by us, not by anyone logged in. Replace one by pasting a new one; if you
+              Once saved, neither can be read back out of Certlyn — not by us, not by anyone logged in. Replace one by pasting a new one; if you
               think a key has got out, roll it in Stripe and paste the new one here.
             </p>
           </div>
@@ -495,7 +495,7 @@ export function StripeConnectionForm({
                 {disconnecting ? "Disconnecting…" : "Disconnect Stripe"}
               </button>
               <p className="text-[11px] text-muted mt-1">
-                Removes both keys. Payment links already sent keep working in Stripe, but CertFlow will no longer mark those invoices paid on its own.
+                Removes both keys. Payment links already sent keep working in Stripe, but Certlyn will no longer mark those invoices paid on its own.
               </p>
             </form>
           )}
@@ -698,7 +698,7 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
           <input name="portal_email" type="email" defaultValue={certifier.portal_email || ""} placeholder="the email this certifier signs into the Portal with" className={inputCls} />
           <p className="text-[11px] text-muted mt-1">
             Inspections reported to the Portal go up under this account, and the Portal refuses an email it doesn&rsquo;t know. It&rsquo;s the Portal website login — not necessarily the
-            CertFlow one.
+            Certlyn one.
           </p>
         </div>
       </div>

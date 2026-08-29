@@ -263,7 +263,7 @@ export async function updateCertifier(_prev: ActionState, formData: FormData): P
       // The email this certifier signs into the NSW Planning Portal
       // with — what API submissions go up under. Added by migration 0031.
       portal_email: text("portal_email"),
-      // Where CertFlow's own notifications to them go. Added by 0040.
+      // Where Certlyn's own notifications to them go. Added by 0040.
       email: text("email"),
       // The mobile a client rings to move a booked inspection. Kept
       // apart from the firm's office line, which is what prints on
@@ -446,7 +446,7 @@ export async function inviteClient(_prev: InviteState, formData: FormData): Prom
   if (error || !linkData?.properties?.hashed_token) {
     if (/already.*registered|already.*exists/i.test(error?.message || "")) {
       return {
-        error: `${client.email} already has a CertFlow login. If that's your own certifier email, use a different address for the client — one login can't be both certifier and client.`,
+        error: `${client.email} already has a Certlyn login. If that's your own certifier email, use a different address for the client — one login can't be both certifier and client.`,
       };
     }
     return { error: error?.message || "The invite link could not be created." };
@@ -460,7 +460,7 @@ export async function inviteClient(_prev: InviteState, formData: FormData): Prom
 
   const result = await sendEmail(
     client.email,
-    "Your CertFlow client portal access",
+    "Your Certlyn client portal access",
     [
       `<p>Hi ${client.name || "there"},</p>`,
       `<p>You've been given access to the client portal for your project with us. Set your password to get started:</p>`,

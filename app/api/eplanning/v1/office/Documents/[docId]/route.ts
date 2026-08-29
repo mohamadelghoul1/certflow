@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyEplanningDocId, eplanningAuthOk } from "@/lib/portal/files";
 
-// CertFlow's registered inbound endpoint for the NSW Planning Portal's
+// Certlyn's registered inbound endpoint for the NSW Planning Portal's
 // document downloader — the department's own "Get External Document"
 // contract: GET {registered base}/Documents/{DocID}.
 //
@@ -11,7 +11,7 @@ import { verifyEplanningDocId, eplanningAuthOk } from "@/lib/portal/files";
 // storage file. Everything and everyone else gets nothing.
 export async function GET(request: NextRequest, { params }: { params: Promise<{ docId: string }> }) {
   if (!eplanningAuthOk(request.headers.get("authorization"))) {
-    return new NextResponse("Unauthorised.", { status: 401, headers: { "WWW-Authenticate": 'Basic realm="CertFlow"' } });
+    return new NextResponse("Unauthorised.", { status: 401, headers: { "WWW-Authenticate": 'Basic realm="Certlyn"' } });
   }
 
   const { docId } = await params;

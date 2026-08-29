@@ -1,6 +1,6 @@
-# CertFlow
+# Certlyn
 
-A real, working staging version of the CertFlow certification-job-management
+A real, working staging version of the Certlyn certification-job-management
 software described in `certflow-build-brief.md` — built with a real database,
 real logins for both certifiers and clients, and real file uploads, replacing
 the click-through prototype (`certflow-client-portal.jsx`).
@@ -29,7 +29,7 @@ at this stage (small free tiers on both).
 ## Step 1 — Create your Supabase project
 
 1. Go to [supabase.com](https://supabase.com) and click **Start your project**, sign up (GitHub sign-in is easiest).
-2. Click **New project**. Pick any name (e.g. "certflow"), set a database password (save it somewhere safe — a password manager, not a sticky note), pick the region closest to Sydney (e.g. `ap-southeast-2`), and click **Create new project**. Wait ~2 minutes while it's provisioned.
+2. Click **New project**. Pick any name (e.g. "certlyn"), set a database password (save it somewhere safe — a password manager, not a sticky note), pick the region closest to Sydney (e.g. `ap-southeast-2`), and click **Create new project**. Wait ~2 minutes while it's provisioned.
 
 ## Step 2 — Create the database structure
 
@@ -106,7 +106,7 @@ OC checklist on their projects comes out empty with nothing to say why.
 ## Step 6 — Deploy to Vercel
 
 1. Go to [vercel.com](https://vercel.com) and sign up (GitHub sign-in is easiest — use the same GitHub account this repository is under).
-2. Click **Add New** → **Project**, and import this GitHub repository (`certflow`).
+2. Click **Add New** → **Project**, and import this GitHub repository (`certlyn`).
 3. Before clicking Deploy, open **Environment Variables** and add these four (values from Step 5, plus your Vercel URL once you know it — you can add/edit the last one after the first deploy):
 
    | Name | Value |
@@ -176,7 +176,7 @@ with an API key only you can obtain, exactly as the build brief describes:
 - **Combined stamped PDF bundle** (§11) — merging approved documents into one stamped PDF (the per-document "requires stamping" toggle is already in place, ready for this).
 - **Multi-certifier-firm billing/signup** (§13) — this is intentionally a later phase, once the certifier side is proven on this firm's real jobs.
 - **Offline inspection capture** (§14) — a mobile-specific, offline-first rebuild.
-- **Live-editing generated documents via OneDrive/Word Online** — instead of downloading a plain Word file, register CertFlow with Microsoft, let each firm connect their Microsoft 365/OneDrive account, and create the letters/certificate there directly. Editing in desktop Word (or Word Online embedded right in the page) would then autosave back to that same file with no download/re-upload step, which is what a proper "edit and it's just saved" experience actually requires. Needs a Microsoft developer/Azure app registration and an OAuth connect flow per firm before it can be built — today's Export as Word → edit → "Upload edited/signed copy" is the interim workflow.
+- **Live-editing generated documents via OneDrive/Word Online** — instead of downloading a plain Word file, register Certlyn with Microsoft, let each firm connect their Microsoft 365/OneDrive account, and create the letters/certificate there directly. Editing in desktop Word (or Word Online embedded right in the page) would then autosave back to that same file with no download/re-upload step, which is what a proper "edit and it's just saved" experience actually requires. Needs a Microsoft developer/Azure app registration and an OAuth connect flow per firm before it can be built — today's Export as Word → edit → "Upload edited/signed copy" is the interim workflow.
 - Reports and Audit screens from the prototype haven't been ported yet (all the underlying data is there — this is a next-iteration UI task, not a data-model gap).
 
 Tell me when you're ready for any of these and I'll wire it up — most of
@@ -213,7 +213,7 @@ Lets a firm keep its own copy of every document in its own cloud storage,
 in the same folders as the job archive download. Off unless configured:
 the Settings page only offers a provider whose keys are present.
 
-You register the app with the provider; CertFlow never sees your firm's
+You register the app with the provider; Certlyn never sees your firm's
 password, and the keys below are the deployment's, not any one firm's.
 
 **Dropbox** — create an app at https://www.dropbox.com/developers/apps
@@ -301,13 +301,13 @@ to no firm, so this address is the only one it can reach.
 ## Still to set up
 
 Things decided on and deliberately left for later. Nothing here is
-broken; each is a step that makes CertFlow better without which it still
+broken; each is a step that makes Certlyn better without which it still
 works.
 
-### CertFlow's own web address
+### Certlyn's own web address
 
 The site answers on the address Vercel generated
-(`certflow-drab.vercel.app`). It works, and the certificate that secures
+(`certlyn-drab.vercel.app`). It works, and the certificate that secures
 it is real — but it is the address a client sees on every invoice and
 portal link, and an auto-generated one invites hesitation before a
 builder clicks it.
@@ -315,7 +315,7 @@ builder clicks it.
 Suggested: `portal.qpcertifiers.com.au`. A subdomain leaves the existing
 website alone and reads as the firm's own.
 
-1. Vercel -> the CertFlow project -> Settings -> Domains -> add
+1. Vercel -> the Certlyn project -> Settings -> Domains -> add
    `portal.qpcertifiers.com.au`. Vercel then names one DNS record to
    create — use the value it gives, they vary.
 2. At whoever manages `qpcertifiers.com.au` (the same place the Resend

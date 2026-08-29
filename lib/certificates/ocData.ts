@@ -36,7 +36,7 @@ export type OcCertificateData = {
   issuedDate: string;
   applicantName: string;
   // The layout this certificate is drawn from: the firm's own where they
-  // have saved one, CertFlow's otherwise.
+  // have saved one, Certlyn's otherwise.
   template: CertificateTemplate;
 };
 

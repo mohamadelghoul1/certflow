@@ -32,7 +32,7 @@ export function ImportJobsForm({ certifiers }: { certifiers: { id: string; name:
   const readyCount = preview?.jobs.filter((job) => job.address).length || 0;
 
   // One chip per column: its heading where there was one, otherwise its
-  // position, and what CertFlow took it to mean.
+  // position, and what Certlyn took it to mean.
   const columnLabels = useMemo(() => {
     if (!preview) return [];
     const width = preview.headers ? preview.headers.length : Math.max(...preview.jobs.map((_, i) => i), 0, ...[0]);
@@ -77,7 +77,7 @@ export function ImportJobsForm({ certifiers }: { certifiers: { id: string; name:
         <label className="block text-sm font-semibold text-primary mb-1">Paste your projects</label>
         <p className="text-xs text-muted mb-3">
           Export a list from your current system, open it, select everything including the heading row, copy, and paste it here. The column headings can say whatever they already say —
-          CertFlow works out what they mean.
+          Certlyn works out what they mean.
         </p>
         <textarea
           value={pasted}
@@ -91,7 +91,7 @@ export function ImportJobsForm({ certifiers }: { certifiers: { id: string; name:
       {preview && (
         <div className="bg-white rounded-lg border border-line p-5 space-y-4">
           <div>
-            <div className="text-sm font-semibold text-primary mb-2">What CertFlow read</div>
+            <div className="text-sm font-semibold text-primary mb-2">What Certlyn read</div>
             {preview.inferred && (
               <p className="text-[11px] text-warning-text mb-2">
                 No heading row, so the columns were read from the values themselves. Check the table below before importing — and if anything is wrong, paste the heading row too and it
@@ -152,7 +152,7 @@ export function ImportJobsForm({ certifiers }: { certifiers: { id: string; name:
               </table>
             </div>
             <p className="text-[11px] text-placeholder mt-2">
-              A project missing something still imports — the gap is yours to fill on the project itself, and CertFlow asks for anything genuinely required again before an Occupation
+              A project missing something still imports — the gap is yours to fill on the project itself, and Certlyn asks for anything genuinely required again before an Occupation
               Certificate can be issued.
             </p>
           </div>

@@ -1,5 +1,5 @@
 -- =============================================================================
--- CertFlow — initial schema
+-- Certlyn — initial schema
 --
 -- Multi-tenant from day one (Build Brief §12): every row that belongs to a
 -- firm carries firm_id, and Row Level Security (RLS) enforces the boundary

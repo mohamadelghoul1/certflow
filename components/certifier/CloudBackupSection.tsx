@@ -14,7 +14,7 @@ const LABELS: Record<ProviderId, string> = { dropbox: "Dropbox", onedrive: "OneD
 //
 // A certifier holds job records for years — longer than any subscription
 // — so the point of this is that the files are theirs, in a folder they
-// can open without CertFlow, laid out exactly as the downloadable archive
+// can open without Certlyn, laid out exactly as the downloadable archive
 // is.
 export function CloudBackupSection({ configured, connections }: { configured: ProviderId[]; connections: ConnectionStatus[] }) {
   const connected = new Map(connections.map((c) => [c.provider, c]));
@@ -32,7 +32,7 @@ export function CloudBackupSection({ configured, connections }: { configured: Pr
     <div className="space-y-3">
       <p className="text-xs text-muted">
         Keeps a copy of every document in your own cloud storage, in the same folders as the job archive download. Your files stay yours, readable
-        without CertFlow.
+        without Certlyn.
       </p>
       {configured.map((provider) => {
         const connection = connected.get(provider);
@@ -105,7 +105,7 @@ function BackupFolderField({ connection }: { connection: ConnectionStatus }) {
         <input
           name="root_folder"
           defaultValue={connection.root_folder}
-          placeholder="/CertFlow"
+          placeholder="/Certlyn"
           className="flex-1 min-w-[12rem] border border-line rounded-md px-2.5 py-1.5 text-sm bg-white"
         />
         <button disabled={pending} className="text-xs font-semibold text-secondary hover:underline disabled:opacity-60">

@@ -71,7 +71,7 @@ grant execute on function set_firm_stripe_credentials(text, text) to authenticat
 
 -- Disconnecting. Clears both halves together: a webhook secret without a
 -- key signs nothing, and a key without a webhook secret takes payments
--- CertFlow will never hear about.
+-- Certlyn will never hear about.
 create or replace function clear_firm_stripe_credentials()
 returns void
 language plpgsql

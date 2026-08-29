@@ -1,5 +1,5 @@
 -- ============================================================================
--- CertFlow — add another firm
+-- Certlyn — add another firm
 --
 -- Everything a new firm needs, in one run: the firm, its first certifier,
 -- the login that gets them in, and a document library to start from.

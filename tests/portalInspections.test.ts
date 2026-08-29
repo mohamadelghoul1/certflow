@@ -47,7 +47,7 @@ const doc = portalDocument("inspection-report.pdf", "https://example.supabase.co
 const photo = portalDocument("site-photo.jpg", "https://example.supabase.co/signed/photo", PORTAL_DOC_TYPES.photos);
 
 describe("speaking the Portal's language", () => {
-  test("every CertFlow standard stage lands on a value the Portal accepts", () => {
+  test("every Certlyn standard stage lands on a value the Portal accepts", () => {
     for (const { title } of [...INSPECTION_LIBRARY, ...ADDITIONAL_INSPECTION_LIBRARY]) {
       const mapped = portalInspectionType(title);
       assert.ok(spec.inspectionTypes.includes(mapped), `"${title}" mapped to "${mapped}", which the Portal does not accept`);
@@ -73,7 +73,7 @@ describe("speaking the Portal's language", () => {
     assert.equal(portalInspectionType("Fire Rated Wall"), "Other Inspection");
   });
 
-  test("every CertFlow outcome maps to a result the Portal accepts, in both wordings", () => {
+  test("every Certlyn outcome maps to a result the Portal accepts, in both wordings", () => {
     for (const outcome of ["passed", "passed_subject_to", "failed"]) {
       for (const kind of ["building", "works"] as const) {
         const mapped = portalInspectionResult(outcome, kind);
@@ -89,7 +89,7 @@ describe("speaking the Portal's language", () => {
 
 describe("the three calls that report one inspection", () => {
   test("opening the inspection case conforms to the specification", () => {
-    const body = initiateInspectionBody({ certflowTitle: "Frame", scheduledDate: "2026-08-26", registrationNumber: "BDC2961", updatedByEmail: "m@example.com" });
+    const body = initiateInspectionBody({ certlynTitle: "Frame", scheduledDate: "2026-08-26", registrationNumber: "BDC2961", updatedByEmail: "m@example.com" });
     assertConforms(body, spec.requests.InitiateInspection, "InitiateInspection");
     assert.deepEqual(body.inspectionType, ["Framework (prior to fixing floor, wall and ceiling linings)"]);
     // The live Portal rejects a call without the submitting user's email,
@@ -99,9 +99,9 @@ describe("the three calls that report one inspection", () => {
 
   // The live Portal demands a description on every inspection type, not
   // just "Other Inspection" as the written spec says.
-  test("every inspection carries its CertFlow name in the description", () => {
+  test("every inspection carries its Certlyn name in the description", () => {
     for (const title of ["Pool Steel", "Frame"]) {
-      const body = initiateInspectionBody({ certflowTitle: title, registrationNumber: "BDC2961" });
+      const body = initiateInspectionBody({ certlynTitle: title, registrationNumber: "BDC2961" });
       assertConforms(body, spec.requests.InitiateInspection, "InitiateInspection");
       assert.equal(body.description, title);
     }
@@ -110,7 +110,7 @@ describe("the three calls that report one inspection", () => {
   test("recording the visit conforms, and carries the signed report as a link", () => {
     const body = performInspectionBody({
       childCaseID: "INS-1234",
-      certflowTitle: "Waterproofing",
+      certlynTitle: "Waterproofing",
       inspectionDate: "2026-08-26",
       outcome: "passed_subject_to",
       inspectorName: "Mohamad El Ghoul",
@@ -232,10 +232,10 @@ describe("the document links handed to the Portal", () => {
 
   test("the URL ends in the plain filename", async () => {
     process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "test-secret";
-    process.env.NEXT_PUBLIC_SITE_URL = "https://certflow.example";
+    process.env.NEXT_PUBLIC_SITE_URL = "https://certlyn.example";
     const { portalFileUrl } = await import("@/lib/portal/files");
     const url = portalFileUrl("firm/job/x.jpg", "inspection-record.jpg");
-    assert.ok(url.startsWith("https://certflow.example/api/portal-files/"));
+    assert.ok(url.startsWith("https://certlyn.example/api/portal-files/"));
     assert.ok(url.endsWith("/inspection-record.jpg"));
     assert.ok(!url.includes("?"), "no query string for the Portal's validator to refuse");
   });
@@ -278,10 +278,10 @@ describe("the registered inbound document endpoint", () => {
   });
 
   test("the announced documentURL sits under the registered inbound base", async () => {
-    process.env.NEXT_PUBLIC_SITE_URL = "https://certflow.example";
+    process.env.NEXT_PUBLIC_SITE_URL = "https://certlyn.example";
     const { eplanningDocumentUrl } = await import("@/lib/portal/files");
     const url = eplanningDocumentUrl("firm/job/x.pdf");
-    assert.ok(url.startsWith("https://certflow.example/api/eplanning/v1/office/Documents/"));
+    assert.ok(url.startsWith("https://certlyn.example/api/eplanning/v1/office/Documents/"));
     assert.ok(!url.includes("?"));
   });
 });

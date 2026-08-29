@@ -58,7 +58,7 @@ export type ResetState = { error?: string; success?: string } | undefined;
 // "I've forgotten my password" — for clients and certifiers alike.
 //
 // The link is minted here and sent through the firm's own email service,
-// like every other CertFlow email, rather than Supabase's capped mailer.
+// like every other Certlyn email, rather than Supabase's capped mailer.
 // The reply never says whether the address is known: telling a stranger
 // which emails hold accounts is how account lists leak.
 export async function sendPasswordReset(_prev: ResetState, formData: FormData): Promise<ResetState> {
@@ -91,10 +91,10 @@ export async function sendPasswordReset(_prev: ResetState, formData: FormData): 
 
   await sendEmail(
     email,
-    "Reset your CertFlow password",
+    "Reset your Certlyn password",
     [
       `<p>Hi,</p>`,
-      `<p>Here's the link to set a new password for your CertFlow ${kind === "certifier" ? "certifier" : "client portal"} login:</p>`,
+      `<p>Here's the link to set a new password for your Certlyn ${kind === "certifier" ? "certifier" : "client portal"} login:</p>`,
       `<p><a href="${link}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">Set a new password</a></p>`,
       `<p>If you didn't ask for this, you can ignore this email — your password stays as it is.</p>`,
     ].join(""),

@@ -5,7 +5,7 @@ import { UploadCloud, X } from "lucide-react";
 
 type Alert = { id: number; address: string | null; fileName: string | null; itemTitle: string | null };
 
-// A gentle live alert while CertFlow is open: every half minute the app
+// A gentle live alert while Certlyn is open: every half minute the app
 // asks whether a client has uploaded anything since it last looked, and
 // a new document gets a corner toast and a two-note chime. The email
 // still goes out regardless — this is for the certifier already at
