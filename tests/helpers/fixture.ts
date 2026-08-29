@@ -5,6 +5,7 @@ import type { NeighbourLetterData } from "@/lib/certificates/neighbourLetterData
 import type { InspectionReportData } from "@/lib/certificates/inspectionReportData";
 import type { OcCertificateData } from "@/lib/certificates/ocData";
 import type { Firm, Certifier } from "@/types/db";
+import { DEFAULT_TEMPLATES } from "@/lib/certificates/certificateTemplate";
 
 // One job, complete enough to generate every document from. Overrides let
 // a test vary only what it cares about.
@@ -73,6 +74,10 @@ export function certificateFixture(overrides: Record<string, unknown> = {}): Pat
     councilBody: ["Quality Private Certifiers Pty Ltd has issued a Complying Development Certificate under Part 4 of the Act for the above premises."],
     applicantBody: ["Quality Private Certifiers Pty Ltd has issued a Complying Development Certificate under Part 4 of the Act for the above premises."],
     requiredDocsList: ["Receipt of the Council Contribution Fee.", "Receipt of the Council Bond."],
+    // The layout the certificate is drawn from. A fixture without one
+    // would test a certificate no firm can ever be issued.
+    template: DEFAULT_TEMPLATES.CDC,
+    templateProblems: [],
     ...overrides,
   } as unknown as PathwayCertificateData;
 }

@@ -4,6 +4,9 @@ import { formatClassifications, formatDocumentDate, formatISODate } from "@/lib/
 import { letterheadHeader, projectFooter, type PackageImages } from "@/lib/pdf/letterhead";
 import { drawPreInspectionReport, signPreInspectionReport } from "@/lib/pdf/preInspectionReport";
 import type { PreInspectionData } from "@/lib/certificates/preInspectionData";
+import { resolveTemplate } from "@/lib/certificates/certificateTemplate";
+import type { FieldValues } from "@/lib/certificates/templateFields";
+import { certificateFieldValues, conditionParagraphs } from "@/lib/certificates/certificateValues";
 
 // The CDC/CC certificate package as a PDF, mirroring
 // lib/docx/pathwayCertificate.ts section for section: council letter,
@@ -28,6 +31,7 @@ export async function buildCertificatePackagePdf(
   preInspection?: PreInspectionData | null
 ): Promise<Uint8Array> {
   const {
+    template,
     job,
     firm,
     issuedBy,
@@ -153,77 +157,45 @@ export async function buildCertificatePackagePdf(
   // the generated value, so the approved set says what the screen says.
   const ov = (key: string, value?: string | null) => (docOverrides || {})[`cert.${key}`] ?? value ?? "";
 
-  l.heading("APPLICANT DETAILS", { rule: true, gapBefore: 6 });
-  l.fieldRow("Applicant:", ov("applicant", applicantName));
-  l.fieldRow("Address:", ov("applicantAddress", formatAddress(d.applicantAddress)));
-  l.fieldRow("Phone:", ov("applicantPhone", applicantPhone));
+  // Every value the certificate can show, worked out once and shared
+  // with the Word export so the two cannot say different things.
+  const values = certificateFieldValues(data);
 
-  l.heading("OWNER DETAILS", { rule: true, gapBefore: 6 });
-  l.fieldRow(isCdc ? "Owner" : "Owner:", ov("owner", ownerName));
-  l.fieldRow("Address:", ov("ownerAddress", ownerAddress));
-  l.fieldRow("Phone:", ov("ownerPhone", ownerPhone));
+  const sections = resolveTemplate(template, values, pathwayFull);
 
-  if (isCdc) {
-    l.heading(`${pathwayFull.toUpperCase()} DETAILS`, { rule: true, gapBefore: 6 });
-    l.fieldRow("NSW Planning Portal Ref Number:", cd.planningPortalRef || "");
-    l.fieldRow("Local Government Area:", d.council?.lga || "");
-    l.fieldRow("Relevant Environmental Planning Instrument", ov("epi", cd.relevantInstrument));
-    l.fieldRow("Relevant Part of Code", ov("partOfCode", cd.relevantPartOfCode));
-    l.fieldRow("Date of Determination:", formatISODate(cd.determinationDate));
-    l.fieldRow("Date of Lapse:", /^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate);
-  } else {
-    l.heading("RELEVANT DEVELOPMENT CONSENTS", { rule: true, gapBefore: 6 });
-    l.fieldRow("Consent Authority / Local Government Area:", d.council?.lga || "");
-    l.fieldRow("Development Consent Number:", cd.developmentConsentNumber || "");
-    l.fieldRow("Development Consent Date:", formatISODate(cd.developmentConsentDate));
-    l.fieldRow("NSW Planning Portal Ref Number:", cd.planningPortalRef || "");
-    l.fieldRow("Construction Certificate Number:", ref);
-    l.fieldRow("Date of Issue of Construction Certificate:", issuedDate);
-  }
+  sections.forEach((section, index) => {
+    // The last section is reserved whole rather than allowed to split: a
+    // heading left behind on one page with its rows on the next is what
+    // the first version of this did. 71 is the measured cost of the
+    // block, and the 6pt lead-in on the sections above is what makes the
+    // room for it.
+    const last = index === sections.length - 1;
+    if (last) l.ensure(71);
+    l.heading(section.heading, { rule: true, gapBefore: last ? 0 : 6 });
 
-  l.heading("PROPOSAL", { rule: true, gapBefore: 6 });
-  l.fieldRow("Address of Development:", ov("devAddress", job.address));
-  l.fieldRow(isCdc ? "Lot/Section/DP:" : "Lot/ DP:", ov("lotDp", cd.lotSectionDp));
-  if (isCdc) l.fieldRow("Land Use Zone:", ov("zone", d.zoning));
-  l.fieldRow(isCdc ? "BCA Classification/s:" : "BCA Classification:", ov("bcaClass", formatClassifications(d.proposal?.classifications)));
-  l.fieldRow("BCA/NCC Version:", ov("bcaVersion", formatBcaVersion(d.bcaVersion, d.bcaVolumes)));
-  l.fieldRow("Description of Building Works:", ov("description", job.description));
-  l.fieldRow(isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)", ov("value", formatCurrency(d.proposal?.estimatedCost)));
-  l.fieldRow(isCdc ? "Attachments" : "Attachments:", ov("attachments", "Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon"));
+    for (const row of section.rows) {
+      if (row.kind === "conditions") {
+        drawConditions(row.label);
+        continue;
+      }
+      l.fieldRow(row.label, row.value);
+    }
+  });
 
-  if (isCdc) {
-    // Conditions is a row of the same table, not a section of its own —
-    // the label sits in the label column and everything it says lines up
-    // under the values beside it.
+  // Conditions is a row of the same table, not a section of its own — the
+  // label sits in the label column and everything it says lines up under
+  // the values beside it.
+  function drawConditions(label: string) {
     const labelWidth = l.contentWidth * 0.28;
     const valueX = MARGIN + labelWidth + 8;
     const valueWidth = l.contentWidth - labelWidth - 8;
-    const conditionParas = (docOverrides || {})["cert.conditions"]
-      ? (docOverrides || {})["cert.conditions"].split("\n\n").map((para) => para.trim()).filter(Boolean)
-      : [
-          "Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying Development) Codes 2008 & State Environmental Planning Policy (Housing) 2021",
-          "Any monetary contribution fee’s and/or any other Council fee’s/bonds that are required by council MUST be paid prior to commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from Council and a copy of such approval provided to the PC prior to the works commencing.",
-          ...conditions.map((c) => c.text),
-        ];
-    l.fieldRow("Conditions:", conditionParas[0] || "");
+    // The PDF sets them all as paragraphs; only Word bullets a list.
+    const conditionParas = conditionParagraphs(data).map((c) => c.text);
+    l.fieldRow(label, conditionParas[0] || "");
     conditionParas.slice(1).forEach((para) => l.text(para, { x: valueX, width: valueWidth, justify: true, gapAfter: 3 }));
   }
-  l.fieldRow(isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", ov("inspections", "See attached Notice"));
 
-  // Who the certificate is issued by, on the same page as what it covers —
-  // dropping the project-reference subtitle freed the room. The
-  // declaration and signature keep their own page.
-  // Reserved as one block: if a long conditions list ever leaves too
-  // little room, the whole block moves to the next page rather than the
-  // heading staying behind while the rows spill — which is exactly what
-  // the first render of this change did. 71 is the measured cost of the
-  // block; the page's section headings run a 6pt lead-in (not the default
-  // 8) to make the room.
-  l.ensure(71);
-  l.heading("REGISTERED CERTIFIER", { rule: true, gapBefore: 0 });
-  l.fieldRow("Registered Certifier:", ov("certifierName", issuedBy?.name));
-  l.fieldRow("Registration Body:", ov("registrationBody", issuedBy?.registration_body));
-  l.fieldRow("Registration No:", ov("registrationNo", issuedBy?.registration_no));
+  // The declaration and signature keep their own page.
   l.pageBreak();
   l.text(
     isCdc

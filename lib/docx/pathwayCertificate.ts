@@ -5,6 +5,8 @@ import type { Letterhead } from "@/lib/letterhead";
 import { p, mixed, bullet, pageBreak, splitRow, fieldTable, gridTable, calloutBox, image, signatureBlock, PAGE_PROPERTIES, FONT, TEXT_COLOR, MUTED_COLOR, ruleLine, footerLine, documentTitle, SMALL_SIZE, TITLE_SIZE, HEADING_COLOR, SECTION_GAP, INSPECTION_HEADER_FILL, BODY_SIZE, signatureRule, signatory, addressBlock, LETTER_PARA_AFTER, LETTER_LINE_SPACING, TIGHT_LINE_SPACING, LETTER_BODY_SIZE, LETTER_SIGNATURE_NAME_SIZE } from "@/lib/docx/shared";
 import { formatAddress, formatAddressLines, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatClassifications, formatDocumentDate, formatISODate, letterheadAddressLines } from "@/lib/business";
+import { resolveTemplate } from "@/lib/certificates/certificateTemplate";
+import { certificateFieldValues, conditionParagraphs } from "@/lib/certificates/certificateValues";
 
 // A letter's field labels are sentences, not the certificate's one-word
 // "Applicant:", so they get a wider column to sit in. At the letter's
@@ -55,6 +57,14 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
   // A field the certifier corrected on the certificate itself wins over
   // the generated value, so the Word copy says what the screen says.
   const ov = (key: string, value?: string | null) => (docOverrides || {})[`cert.${key}`] ?? value;
+
+  // The firm's layout, resolved once. The last section is drawn on its
+  // own so Word keeps it whole rather than splitting a certifier's name
+  // from their registration number across a page.
+  const resolvedSections = resolveTemplate(data.template, certificateFieldValues(data), pathwayFull);
+  const certificateSections = resolvedSections;
+  const closingSection = resolvedSections[resolvedSections.length - 1];
+
   const salutationApplicant = applicantSalutation || "Dear Sir/Madam,";
   const salutationCouncil = councilSalutation || "Dear Sir/Madam,";
   const introApplicant = applicantIntro || `Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`;
@@ -138,62 +148,23 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       { bold: true, spacingAfter: 150 }
     ),
     fieldTable([
-      { kind: "heading", text: "APPLICANT DETAILS" },
-      { kind: "row", label: "Applicant:", value: ov("applicant", applicantName) },
-      { kind: "row", label: "Address:", value: ov("applicantAddress", formatAddress(d.applicantAddress)) },
-      { kind: "row", label: "Phone:", value: ov("applicantPhone", applicantPhone) },
-      { kind: "heading", text: "OWNER DETAILS" },
-      { kind: "row", label: isCdc ? "Owner" : "Owner:", value: ov("owner", ownerName) },
-      { kind: "row", label: "Address:", value: ov("ownerAddress", ownerAddress) },
-      { kind: "row", label: "Phone:", value: ov("ownerPhone", ownerPhone) },
-      ...(isCdc
-        ? ([
-            { kind: "heading", text: `${pathwayFull.toUpperCase()} DETAILS` },
-            { kind: "row", label: "NSW Planning Portal Ref Number:", value: cd.planningPortalRef },
-            { kind: "row", label: "Local Government Area:", value: d.council?.lga },
-            { kind: "row", label: "Relevant Environmental Planning Instrument", value: ov("epi", cd.relevantInstrument) },
-            { kind: "row", label: "Relevant Part of Code", value: ov("partOfCode", cd.relevantPartOfCode) },
-            { kind: "row", label: "Date of Determination:", value: formatISODate(cd.determinationDate) },
-            { kind: "row", label: "Date of Lapse:", value: /^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate },
-          ] as const)
-        : ([
-            { kind: "heading", text: "RELEVANT DEVELOPMENT CONSENTS" },
-            { kind: "row", label: "Consent Authority / Local Government Area:", value: d.council?.lga },
-            { kind: "row", label: "Development Consent Number:", value: cd.developmentConsentNumber },
-            { kind: "row", label: "Development Consent Date:", value: formatISODate(cd.developmentConsentDate) },
-            { kind: "row", label: "NSW Planning Portal Ref Number:", value: cd.planningPortalRef },
-            { kind: "row", label: "Construction Certificate Number:", value: ref },
-            { kind: "row", label: "Date of Issue of Construction Certificate:", value: issuedDate },
-          ] as const)),
-      { kind: "heading", text: "PROPOSAL" },
-      { kind: "row", label: "Address of Development:", value: ov("devAddress", job.address) },
-      { kind: "row", label: isCdc ? "Lot/Section/DP:" : "Lot/ DP:", value: ov("lotDp", cd.lotSectionDp) },
-      ...(isCdc ? ([{ kind: "row", label: "Land Use Zone:", value: ov("zone", d.zoning) }] as const) : []),
-      { kind: "row", label: isCdc ? "BCA Classification/s:" : "BCA Classification:", value: ov("bcaClass", formatClassifications(d.proposal?.classifications)) },
-      { kind: "row", label: "BCA/NCC Version:", value: ov("bcaVersion", formatBcaVersion(d.bcaVersion, d.bcaVolumes)) },
-      { kind: "row", label: "Description of Building Works:", value: ov("description", job.description) },
-      { kind: "row", label: isCdc ? "Value of Construction (incl. GST):" : "Value of Construction Certificate (incl. GST)", value: ov("value", formatCurrency(d.proposal?.estimatedCost)) },
-      { kind: "row", label: isCdc ? "Attachments" : "Attachments:", value: ov("attachments", "Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon") },
-      ...(isCdc
-        ? ([
-            {
-              kind: "row",
-              label: "Conditions:",
-              children: (docOverrides || {})["cert.conditions"]
-                ? (docOverrides || {})["cert.conditions"]
-                    .split("\n\n")
-                    .map((para) => para.trim())
-                    .filter(Boolean)
-                    .map((para) => p(para, { spacingAfter: 30 }))
-                : [
-                    p("Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying Development) Codes 2008 & State Environmental Planning Policy (Housing) 2021", { spacingAfter: 30 }),
-                    p("Any monetary contribution fee’s and/or any other Council fee’s/bonds that are required by council MUST be paid prior to commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from Council and a copy of such approval provided to the PC prior to the works commencing.", { spacingAfter: conditions.length ? 30 : 0 }),
-                    ...conditions.map((c) => bullet(c.text)),
-                  ],
-            },
-          ] as const)
-        : []),
-      { kind: "row", label: isCdc ? "Critical stage inspections:" : "Critical Stage Inspections:", value: ov("inspections", "See attached Notice") },
+      // Every section but the last, drawn from the firm's template —
+      // the same one the PDF walks, so the two exports of one job can
+      // only differ if the template does.
+      ...certificateSections.slice(0, -1).flatMap((section) => [
+        { kind: "heading" as const, text: section.heading },
+        ...section.rows.map((row) =>
+          row.kind === "conditions"
+            ? {
+                kind: "row" as const,
+                label: row.label,
+                children: conditionParagraphs(data).map((para) =>
+                  para.bulleted ? bullet(para.text) : p(para.text, { spacingAfter: 30 }),
+                ),
+              }
+            : { kind: "row" as const, label: row.label, value: row.value },
+        ),
+      ]),
     ]),
     // Who the certificate is issued by, on the same page as what it
     // covers — dropping the project-reference subtitle freed the room. Its
@@ -203,10 +174,8 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     // signature keep their own page.
     fieldTable(
       [
-        { kind: "heading", text: "REGISTERED CERTIFIER" },
-        { kind: "row", label: "Registered Certifier:", value: ov("certifierName", issuedBy?.name) },
-        { kind: "row", label: "Registration Body:", value: ov("registrationBody", issuedBy?.registration_body) },
-        { kind: "row", label: "Registration No:", value: ov("registrationNo", issuedBy?.registration_no) },
+        { kind: "heading" as const, text: closingSection.heading },
+        ...closingSection.rows.map((row) => ({ kind: "row" as const, label: row.label, value: row.value })),
       ],
       { keepTogether: true }
     ),

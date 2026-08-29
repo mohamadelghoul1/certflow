@@ -4,6 +4,7 @@ import { buildCertificatePackagePdf } from "@/lib/pdf/certificatePackage";
 import { buildPathwayCertificateDocx } from "@/lib/docx/pathwayCertificate";
 import { certificateFixture } from "./helpers/fixture";
 import { readPdf, readDocx, docxPageBreaks, type PdfPages } from "./helpers/readDocuments";
+import { DEFAULT_TEMPLATES } from "@/lib/certificates/certificateTemplate";
 
 // The approval as a certifier receives it. These assert on the generated
 // files themselves, so a layout or content regression fails here rather
@@ -104,6 +105,9 @@ describe("a CC job", () => {
         certificateFixture({
           isCdc: false,
           pathwayFull: "Construction Certificate",
+          // A CC job draws the CC layout — different sections and
+          // different labels from a CDC.
+          template: DEFAULT_TEMPLATES.CC,
           ref: "CC-26001/01",
           cd: { developmentConsentNumber: "DA-2025/0456", developmentConsentDate: "2025-11-02", planningPortalRef: "CFT-123456", lotSectionDp: "339//DP815298" },
         }),

@@ -245,6 +245,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: hasColumn(supabase, "certifiers", "mobile"),
     },
     {
+      migration: "0055",
+      label: "Certificate layout per firm",
+      detail: "Lets a firm add, rename or drop rows on its own CDC and CC. Every firm stays on the standard layout until it does.",
+      probe: hasTable(supabase, "certificate_templates"),
+    },
+    {
       migration: "0053",
       label: "One booking request per inspection",
       detail: "Stops a client asking for a second date while the first is still with you, or moving one you have confirmed.",

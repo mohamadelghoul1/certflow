@@ -4,6 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { signedUrl } from "@/lib/storage";
 import { formatISODate, resolvePathwayCertRef, calcCdcLapseDate } from "@/lib/business";
 import type { Job, Firm, Certifier, ConditionOfConsent, CriticalStageInspection, JobDetails, ChecklistItemFile } from "@/types/db";
+import { loadCertificateTemplate } from "@/lib/certificates/loadTemplate";
+import type { CertificateTemplate } from "@/lib/certificates/certificateTemplate";
 
 export function formatAddress(a?: Record<string, string> | null) {
   if (!a) return "—";
@@ -80,6 +82,11 @@ export type PathwayCertificateData = {
   applicantIntro: string;
   applicantRequirementsIntro: string;
   applicantClosing: string;
+  // The layout this certificate is drawn from: the firm's own where they
+  // have saved one, CertFlow's otherwise. Loaded here so the PDF, the
+  // Word export and the on-screen copy all draw the same certificate.
+  template: CertificateTemplate;
+  templateProblems: string[];
 };
 
 // Single source of truth for the CDC/CC certificate package's content —
@@ -201,7 +208,12 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
     ? docOverrides["applicant.requirements"].split("\n").map((line) => line.trim()).filter(Boolean)
     : standardRequiredDocs;
 
+  // The firm's own layout where they have saved one, ours otherwise.
+  const { template, problems } = await loadCertificateTemplate(supabase, firmId, job.pathway);
+
   return {
+    template,
+    templateProblems: problems,
     job,
     firm: firm || null,
     issuedBy: issuedBy || null,
