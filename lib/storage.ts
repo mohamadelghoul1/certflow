@@ -113,3 +113,61 @@ export async function fetchStoredFile(
     return null;
   }
 }
+
+// Everything under a folder, however deep.
+//
+// Supabase's list() is not recursive: asked for a project's folder it
+// answers with the folders inside it — checklist, inspections,
+// certificates — not the files under those. Handing those folder paths
+// to remove() deletes nothing at all and reports no error, which is how
+// purging a project could leave every one of its documents behind,
+// invisible to the app and still counting against the storage quota.
+//
+// A folder is told from a file by its id: Supabase gives real objects an
+// id and folders none.
+export async function listFilesRecursively(
+  client: SupabaseClient,
+  bucket: string,
+  prefix: string,
+  // Guards against a cycle or a pathological tree costing a request per
+  // level forever. Nothing in CertFlow nests more than four deep.
+  depth = 0,
+): Promise<string[]> {
+  if (depth > 8) return [];
+
+  const found: string[] = [];
+  const pageSize = 1000;
+
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await client.storage.from(bucket).list(prefix, { limit: pageSize, offset });
+    if (error || !data || data.length === 0) break;
+
+    for (const entry of data) {
+      const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.id) found.push(path);
+      else found.push(...(await listFilesRecursively(client, bucket, path, depth + 1)));
+    }
+
+    if (data.length < pageSize) break;
+  }
+
+  return found;
+}
+
+// Delete a folder and everything under it. Returns how many files went,
+// so a caller can say so rather than claiming a cleanup it did not do.
+export async function removeFolder(client: SupabaseClient, bucket: string, prefix: string): Promise<{ removed: number; error?: string }> {
+  const paths = await listFilesRecursively(client, bucket, prefix);
+  if (paths.length === 0) return { removed: 0 };
+
+  let removed = 0;
+  // In batches: a project with hundreds of photos is one request per
+  // batch rather than one enormous one that times out.
+  for (let i = 0; i < paths.length; i += 100) {
+    const batch = paths.slice(i, i + 100);
+    const { error } = await client.storage.from(bucket).remove(batch);
+    if (error) return { removed, error: error.message };
+    removed += batch.length;
+  }
+  return { removed };
+}

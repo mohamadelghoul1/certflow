@@ -1,5 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import { AlertTriangle, HardDrive } from "lucide-react";
+import { AlertTriangle, HardDrive, Trash2 } from "lucide-react";
+import { useActionState } from "react";
+import { clearOrphanedFiles } from "@/lib/actions/storage";
+import type { ActionState } from "@/lib/actions/auth";
 import { formatBytes, storageHeadroom, type StorageUsage } from "@/lib/storageUsage";
 
 // Where the firm's storage is going. Sorted biggest first, because the
@@ -17,6 +22,10 @@ export function StorageSection({ usage }: { usage: StorageUsage }) {
   const biggest = usage.jobs[0]?.bytes || 1;
   const projects = usage.jobs.filter((j) => j.isProject).length;
   const headroom = storageHeadroom(usage.total, usage.limit);
+  // Files left behind by projects that were purged before the delete was
+  // recursive. They are invisible to the app and still cost quota.
+  const orphans = usage.jobs.filter((j) => !j.isProject && j.address === "Deleted project");
+  const orphanBytes = orphans.reduce((sum, j) => sum + j.bytes, 0);
 
   return (
     <div className="space-y-5">
@@ -75,6 +84,8 @@ export function StorageSection({ usage }: { usage: StorageUsage }) {
         )}
       </div>
 
+      {orphans.length > 0 && <OrphanedFiles count={orphans.length} bytes={orphanBytes} />}
+
       {usage.jobs.length === 0 ? (
         <div className="text-sm text-muted">No documents stored yet.</div>
       ) : (
@@ -103,6 +114,39 @@ export function StorageSection({ usage }: { usage: StorageUsage }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Documents belonging to projects that no longer exist.
+//
+// Offered rather than swept: these are documents, a certifier holds
+// records for years, and deciding they are gone is a decision — not
+// something that should happen overnight without anyone saying so.
+function OrphanedFiles({ count, bytes }: { count: number; bytes: number }) {
+  const [state, clear, clearing] = useActionState<ActionState, FormData>(clearOrphanedFiles, undefined);
+
+  return (
+    <div className="rounded-lg border border-warning/50 bg-warning-bg px-5 py-4">
+      <div className="flex items-start gap-2 text-sm font-semibold text-warning-text">
+        <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+        <span>
+          {formatBytes(bytes)} belongs to {count} project{count === 1 ? "" : "s"} that {count === 1 ? "has" : "have"} been deleted
+        </span>
+      </div>
+      <p className="text-xs text-warning-text mt-1.5">
+        Deleting a project was supposed to take its documents with it and, until a recent fix, did not. These files are no longer reachable from
+        anywhere in CertFlow, but they still count against your storage. Clearing them cannot be undone.
+      </p>
+      <form action={clear} className="mt-2.5">
+        <button
+          disabled={clearing}
+          className="inline-flex items-center gap-1.5 bg-error text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:opacity-90 disabled:opacity-60"
+        >
+          <Trash2 size={13} /> {clearing ? "Clearing…" : `Clear ${formatBytes(bytes)}`}
+        </button>
+      </form>
+      {state?.error && <div className="text-[11px] text-error mt-1.5">{state.error}</div>}
     </div>
   );
 }

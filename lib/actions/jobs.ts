@@ -25,6 +25,7 @@ import { isUnknownColumn } from "@/lib/softDelete";
 import type { JobDetails, CriticalStageInspection } from "@/types/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { escapeHtml } from "@/lib/html";
+import { removeFolder } from "@/lib/storage";
 
 // Not exported — a plain helper, not a server action — even though this
 // file is "use server". Reads the firm's own editable document library
@@ -1533,14 +1534,16 @@ export async function purgeJob(_prev: ActionState, formData: FormData): Promise<
     severity: "warning",
   });
 
-  // Storage has no recursive delete, so the paths are listed first. A
-  // failure here is not fatal — the job still goes, and orphaned files
-  // are invisible to the app.
-  const prefix = `${profile.firm_id}/${jobId}`;
-  const { data: files } = await supabase.storage.from("certflow-files").list(prefix, { limit: 1000 });
-  if (files?.length) {
-    await supabase.storage.from("certflow-files").remove(files.map((f) => `${prefix}/${f.name}`));
-  }
+  // Storage has no recursive delete, and listing one level down a
+  // project's folder answers with folders — checklist, inspections,
+  // certificates — not the files inside them. Handing those folder paths
+  // to remove() deleted nothing and reported no error, so every purged
+  // project left its documents behind, invisible to the app and still
+  // counting against the storage quota. See lib/storage.
+  //
+  // Still not fatal if it fails: the project goes either way, and the
+  // Storage page offers to clear what is left.
+  await removeFolder(supabase, "certflow-files", `${profile.firm_id}/${jobId}`);
 
   const { error } = await supabase.from("jobs").delete().eq("id", jobId).eq("firm_id", profile.firm_id);
   if (error) return { error: error.message };
