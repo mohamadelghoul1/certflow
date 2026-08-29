@@ -68,6 +68,15 @@ export default async function PortalJobPage({
   // RLS grants nothing on them — see lib/invoices/portalInvoices.
   const invoices = profile.client_id ? await clientPortalInvoices(createAdminClient(), profile.client_id, todayISO(), id) : [];
 
+  // How to reach the firm, for a client who needs to move a booking they
+  // have already agreed. Read with the admin client for the same reason
+  // invoices are: a client has no read on firms at all. These are the
+  // firm's own published contact details, shown to that firm's own
+  // client — telling someone to ring without giving them the number is
+  // how a change of date becomes a missed inspection.
+  const { data: firmRow } = await createAdminClient().from("firms").select("phone, email").eq("id", job.firm_id).maybeSingle();
+  const firmContact = (firmRow as { phone?: string | null; email?: string | null } | null) || null;
+
   // Which of this project's documents the firm has a blank form for.
   // Checklist items link to a library item whether or not a form has been
   // attached to it, and the document library isn't readable by a client at
@@ -187,6 +196,7 @@ export default async function PortalJobPage({
           certifiers={certifiers || []}
           bookingOpen={bookingOpen}
           nocProgress={checklistProgress(nocItems)}
+          contact={firmContact}
         />
   );
 
@@ -368,6 +378,7 @@ async function InspectionsSection({
   certifiers,
   bookingOpen,
   nocProgress,
+  contact,
 }: {
   jobId: string;
   pathwayGenerated: boolean;
@@ -376,6 +387,8 @@ async function InspectionsSection({
   // Booking waits on the Notice of Commencement — see migration 0048.
   bookingOpen: boolean;
   nocProgress: string | null;
+  // How to reach the firm, for a date already agreed.
+  contact: { phone?: string | null; email?: string | null } | null;
 }) {
   if (!pathwayGenerated) {
     return (
@@ -405,7 +418,7 @@ async function InspectionsSection({
         <div className="p-5 space-y-3">
           {inspections.map((insp) => {
             const inspector = certifiers.find((c) => c.id === insp.inspector_certifier_id);
-            return <InspectionCard key={insp.id} insp={insp} jobId={jobId} inspectorName={inspector?.name} bookingOpen={bookingOpen} />;
+            return <InspectionCard key={insp.id} insp={insp} jobId={jobId} inspectorName={inspector?.name} bookingOpen={bookingOpen} contact={contact} />;
           })}
           {inspections.length === 0 && (
             <div className="py-6 text-center text-sm text-muted">Your certifier hasn&rsquo;t scheduled any inspections for this project yet.</div>
@@ -413,6 +426,40 @@ async function InspectionsSection({
         </div>
       </div>
     </div>
+  );
+}
+
+// A date already agreed is not moved from a form: the certifier has
+// planned a day's run around it, so changing it is a conversation. Which
+// means giving them something to reach — telling somebody to ring
+// without a number is how a change of date becomes a missed inspection.
+function ChangeOfDate({ contact }: { contact: { phone?: string | null; email?: string | null } | null }) {
+  const phone = contact?.phone?.trim();
+  const email = contact?.email?.trim();
+  if (!phone && !email) return <>To change it, call or email us.</>;
+
+  return (
+    <>
+      To change it,{" "}
+      {phone && (
+        <>
+          call{" "}
+          <a href={`tel:${phone.replace(/\s+/g, "")}`} className="font-semibold underline">
+            {phone}
+          </a>
+        </>
+      )}
+      {phone && email ? " or " : ""}
+      {email && (
+        <>
+          email{" "}
+          <a href={`mailto:${email}`} className="font-semibold underline">
+            {email}
+          </a>
+        </>
+      )}
+      .
+    </>
   );
 }
 
@@ -427,11 +474,13 @@ async function InspectionCard({
   jobId,
   inspectorName,
   bookingOpen,
+  contact,
 }: {
   insp: Inspection & { defects: Defect[] };
   jobId: string;
   inspectorName?: string;
   bookingOpen: boolean;
+  contact: { phone?: string | null; email?: string | null } | null;
 }) {
   // The signed report the certifier produced on site comes first; an
   // uploaded file is the fallback for a report done outside CertFlow.
@@ -486,7 +535,8 @@ async function InspectionCard({
       )}
       {stage === "confirmed" && (
         <div className="text-xs text-success mt-2 bg-success-bg rounded-md px-3 py-2">
-          Confirmed for <strong>{formatISODate(insp.date)}</strong>. Call us if the site will not be ready.
+          Confirmed for <strong>{formatISODate(insp.date)}</strong>. Please have the site ready and accessible on the day.{" "}
+          <ChangeOfDate contact={contact} />
         </div>
       )}
 
