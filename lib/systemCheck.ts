@@ -3,6 +3,7 @@ import { isUnknownColumn } from "@/lib/softDelete";
 import { emailConfigured } from "@/lib/email";
 import { portalConfigured } from "@/lib/portal/config";
 import { storageLimitBytes } from "@/lib/storageUsage";
+import { emailSenderSettings } from "@/lib/email";
 
 // Whether this database has actually had each migration run against it.
 //
@@ -284,6 +285,7 @@ export type EnvCheck = { label: string; detail: string; configured: boolean };
 // Vercel rather than in the database. Only whether each is set — never
 // the value.
 export function runEnvChecks(): EnvCheck[] {
+  const sender = emailSenderSettings();
   return [
     {
       label: "Email delivery",
@@ -304,6 +306,16 @@ export function runEnvChecks(): EnvCheck[] {
       label: "NSW Planning Portal",
       detail: "Set once ePlanning finishes API onboarding — then inspections can be reported from CertFlow.",
       configured: portalConfigured(),
+    },
+    {
+      // Named rather than merely ticked: "configured" cannot tell a firm
+      // that its mail is going out as onboarding@resend.dev, or that a
+      // client's reply is landing in a mailbox nobody reads.
+      label: `Sender address — ${sender.from}`,
+      detail: sender.replyTo
+        ? `Replies go to ${sender.replyTo}.`
+        : "Replies go to the sending address. Set RESEND_REPLY_TO to send them somewhere else.",
+      configured: !sender.usingFallbackSender,
     },
     {
       label: "Storage limit",

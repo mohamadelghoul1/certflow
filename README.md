@@ -212,6 +212,19 @@ ONEDRIVE_CLIENT_ID=
 ONEDRIVE_CLIENT_SECRET=
 ```
 
+### Where client replies go
+
+Emails go out as `RESEND_FROM_EMAIL`. A firm that sends from an address
+nobody reads can have answers arrive somewhere else:
+
+```
+RESEND_REPLY_TO=info@qpcertifiers.com.au
+```
+
+Leave it out and a reply goes to the sending address, as it always did.
+Settings → System check names both, so what an email carries can be
+checked without sending one.
+
 ### How much storage is left
 
 The Storage page in Settings shows what every project is holding. To

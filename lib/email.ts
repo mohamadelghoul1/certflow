@@ -3,7 +3,29 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { recordAuditEvent } from "@/lib/audit";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM = process.env.RESEND_FROM_EMAIL || "CertFlow <onboarding@resend.dev>";
+// Who an email comes from, and where a reply to it lands.
+//
+// A firm sends from an address nobody reads — notifications@, no-reply@ —
+// and wants answers at the one they do. Without a reply-to, a client
+// pressing Reply writes to the sending address, and if nobody watches
+// that mailbox their answer is simply lost.
+//
+// Read when an email is sent rather than when this file is loaded, so
+// what the System check reports is what the next email will actually
+// carry.
+const FALLBACK_FROM = "CertFlow <onboarding@resend.dev>";
+
+export function emailSenderSettings() {
+  const configured = (process.env.RESEND_FROM_EMAIL || "").trim();
+  const replyTo = (process.env.RESEND_REPLY_TO || "").trim();
+  return {
+    from: configured || FALLBACK_FROM,
+    replyTo: replyTo || null,
+    // Nothing has been set, so mail goes out from Resend's own address —
+    // which looks like nobody and lands in spam.
+    usingFallbackSender: !configured,
+  };
+}
 // Falls back to the production URL Vercel supplies, so a missing or
 // stale setting cannot mail out a localhost link. See lib/siteUrl.ts —
 // emails are sent from scheduled runs too, where no request exists.
@@ -36,7 +58,16 @@ export type EmailAttachment = { filename: string; content: Buffer };
 export async function sendEmail(to: string, subject: string, html: string, attachments?: EmailAttachment[]): Promise<SendResult> {
   if (!resend) return { sent: false, skipped: "not-configured" };
   try {
-    const { error } = await resend.emails.send({ from: FROM, to, subject, html, ...(attachments?.length ? { attachments } : {}) });
+    const { from, replyTo } = emailSenderSettings();
+    const { error } = await resend.emails.send({
+      from,
+      to,
+      subject,
+      html,
+      // The SDK's own name for it; it sends the API's reply_to.
+      ...(replyTo ? { replyTo } : {}),
+      ...(attachments?.length ? { attachments } : {}),
+    });
     if (error) return { sent: false, error: error.message || String(error) };
     return { sent: true };
   } catch (err) {
