@@ -5,7 +5,7 @@ import { NotifyClientButton } from "@/components/certifier/NotifyClientButton";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
 import { RemovableRow } from "@/components/certifier/RemovableRow";
-import { ItemStatusProvider, ItemCard, ItemStatusBadge, ItemStatusActions, ApprovalInclusionToggle, NotInApprovalBadge } from "@/components/certifier/ItemStatus";
+import { ItemStatusProvider, ItemCard, ItemStatusBadge, ItemStatusActions, ApprovalInclusionToggle, NotInApprovalBadge, InternalBadge, InternalToggle } from "@/components/certifier/ItemStatus";
 import { ChecklistOrderProvider, MoveButtons } from "@/components/certifier/ChecklistOrder";
 import { EditableChecklistItemHeader } from "@/components/certifier/EditableChecklistItemHeader";
 import { AmendmentsList } from "@/components/certifier/AmendmentsList";
@@ -165,7 +165,14 @@ async function ItemRow({
       .pop() ?? null;
 
   return (
-    <ItemStatusProvider itemId={item.id} jobId={jobId} status={item.status} amendments={item.amendments} includeInApproval={item.include_in_approval !== false}>
+    <ItemStatusProvider
+      itemId={item.id}
+      jobId={jobId}
+      status={item.status}
+      amendments={item.amendments}
+      includeInApproval={item.include_in_approval !== false}
+      internal={item.internal === true}
+    >
       <ItemCard>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -178,6 +185,7 @@ async function ItemRow({
               {lastSubmittedAt && <div className="text-xs text-muted mt-0.5">Submitted {formatISODate(lastSubmittedAt)}</div>}
               <div className="flex flex-wrap items-center gap-2">
                 <ItemStatusBadge />
+                <InternalBadge />
                 {partOfApproval && <NotInApprovalBadge />}
               </div>
             </div>
@@ -237,6 +245,7 @@ async function ItemRow({
           {/* Only on the checklist the approval is built from — leaving a
               document out of an approval means nothing anywhere else. */}
           {partOfApproval && <ApprovalInclusionToggle />}
+          <InternalToggle />
         </div>
 
         <details className="mt-3">

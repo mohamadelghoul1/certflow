@@ -217,6 +217,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: bookingAnswer(supabase, "2026-08-28T09:00:00+10:00", "2026-09-01"),
     },
     {
+      migration: "0051",
+      label: "Internal checklist items",
+      detail: "Lets an item be kept off the client's portal — the firm's own steps, hidden by row security.",
+      probe: hasColumn(supabase, "checklist_items", "internal"),
+    },
+    {
       migration: "0050",
       label: "Thursday afternoon books the Monday",
       detail: "A request after 1pm on a Thursday is booked for the Monday rather than the Tuesday. Replaces 0049.",

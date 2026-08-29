@@ -109,7 +109,10 @@ export async function recordReviewEvent(
   admin: SupabaseClient,
   { jobId, itemId, kind, note }: { jobId: string; itemId: string; kind: "approved" | "changes"; note: string | null }
 ): Promise<void> {
-  const { data: item } = await admin.from("checklist_items").select("title").eq("id", itemId).single();
+  const { data: item } = await admin.from("checklist_items").select("*").eq("id", itemId).maybeSingle();
+  // An internal item was never on the client's list, so there is nothing
+  // to tell them about it.
+  if ((item as { internal?: boolean } | null)?.internal) return;
   const { error } = await admin.from("review_events").insert({ job_id: jobId, item_title: item?.title || null, kind, note });
   if (error) {
     const { data: job } = await admin.from("jobs").select("address").eq("id", jobId).single();

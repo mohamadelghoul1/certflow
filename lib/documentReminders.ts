@@ -23,7 +23,7 @@ export type ReminderItem = {
 
 export type ReminderSection = { label: string; items: ReminderItem[] };
 
-type ItemRow = { title: string; status: string; amendments?: { resolved: boolean }[] | null };
+type ItemRow = { title: string; status: string; internal?: boolean | null; amendments?: { resolved: boolean }[] | null };
 type ChecklistRow = { kind: string; checklist_items?: ItemRow[] | null };
 
 function sectionLabel(kind: string, pathway: Pathway): string {
@@ -44,6 +44,9 @@ export function outstandingSections(checklists: ChecklistRow[], pathway: Pathway
   for (const checklist of checklists) {
     const items: ReminderItem[] = [];
     for (const item of checklist.checklist_items || []) {
+      // An internal item is the firm's own step. Chasing a client for
+      // something they cannot see is the worst kind of reminder.
+      if (item.internal) continue;
       const needsChanges = (item.amendments || []).some((a) => !a.resolved);
       if (needsChanges) items.push({ title: item.title, needsChanges: true });
       else if (item.status === "requested") items.push({ title: item.title, needsChanges: false });
@@ -130,7 +133,7 @@ export async function runDocumentReminders(admin: SupabaseClient, now: Date = ne
   const { data: jobs, error: jobsError } = await admin
     .from("jobs")
     .select(
-      "id, firm_id, address, pathway, client_id, created_at, last_notified_at, last_document_reminder_at, checklists(kind, checklist_items(title, status, amendments(resolved)))"
+      "id, firm_id, address, pathway, client_id, created_at, last_notified_at, last_document_reminder_at, checklists(kind, checklist_items(*, amendments(resolved)))"
     )
     .eq("status", "active")
     .is("deleted_at", null)

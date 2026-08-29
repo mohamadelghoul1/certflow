@@ -1,9 +1,9 @@
 "use client";
 
 import { createContext, useContext, useOptimistic, useState, useTransition } from "react";
-import { CheckCircle2, Clock, AlertTriangle, Circle, EyeOff, RotateCcw, UploadCloud } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Circle, EyeOff, RotateCcw, UploadCloud, Lock } from "lucide-react";
 import { displayStatus, unresolvedCount } from "@/lib/business";
-import { approveItem, reopenItem, certifierUploadItem, toggleStamping, toggleApprovalInclusion } from "@/lib/actions/jobs";
+import { approveItem, reopenItem, certifierUploadItem, toggleStamping, toggleApprovalInclusion, toggleItemInternal } from "@/lib/actions/jobs";
 import { FileUpload } from "@/components/certifier/FileUpload";
 import { StampToggle } from "@/components/certifier/StampToggle";
 import type { Amendment, ChecklistItem } from "@/types/db";
@@ -34,6 +34,11 @@ type Ctx = {
   // have to flip together the moment the button is pressed.
   includedInApproval: boolean;
   toggleInclusion: () => void;
+  // Kept off the client portal entirely. Same optimistic treatment as
+  // the two above: the chip by the title and the button in the action
+  // row have to flip together.
+  internal: boolean;
+  toggleInternal: () => void;
 };
 
 const ItemStatusContext = createContext<Ctx | null>(null);
@@ -50,6 +55,7 @@ export function ItemStatusProvider({
   status,
   amendments,
   includeInApproval,
+  internal,
   children,
 }: {
   itemId: string;
@@ -57,10 +63,12 @@ export function ItemStatusProvider({
   status: ItemStatus;
   amendments: Amendment[];
   includeInApproval: boolean;
+  internal: boolean;
   children: React.ReactNode;
 }) {
   const [optimisticStatus, setOptimisticStatus] = useOptimistic(status);
   const [optimisticInclusion, setOptimisticInclusion] = useOptimistic(includeInApproval);
+  const [optimisticInternal, setOptimisticInternal] = useOptimistic(internal);
   const [, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
 
@@ -100,6 +108,17 @@ export function ItemStatusProvider({
             fd.set("job_id", jobId);
             fd.set("value", next.toString());
             await toggleApprovalInclusion(fd);
+          }),
+        internal: optimisticInternal,
+        toggleInternal: () =>
+          startTransition(async () => {
+            const next = !optimisticInternal;
+            setOptimisticInternal(next);
+            const fd = new FormData();
+            fd.set("item_id", itemId);
+            fd.set("job_id", jobId);
+            fd.set("value", next.toString());
+            await toggleItemInternal(fd);
           }),
       }}
     >
@@ -301,12 +320,27 @@ export function ItemStatusActions({
       );
     }
 
-    // Nothing uploaded yet, or changes are outstanding — the ball is with
-    // the client, so there's nothing to decide here beyond the note.
+    // Changes are outstanding — the ball is with the client, so there is
+    // nothing to decide here beyond the note.
     if (unresolved > 0) {
       return <span className="text-xs text-warning-text">Waiting on the client to address {unresolved} requested change{unresolved === 1 ? "" : "s"}.</span>;
     }
-    return null;
+
+    // Nothing uploaded. Usually that means waiting on the client — but
+    // not always: the document may have arrived by email, been sighted on
+    // site, or simply not apply to this job. Without this, the only way
+    // to finish such an item was to upload something for the sake of it,
+    // which put a meaningless file into the approved set.
+    return (
+      <button
+        type="button"
+        onClick={approve}
+        title="Mark this item done without a document — already sighted, supplied another way, or not applicable to this job"
+        className="flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-hover"
+      >
+        <CheckCircle2 size={13} /> Mark satisfied without a document
+      </button>
+    );
   }
 
   return (
@@ -341,6 +375,34 @@ export function NotInApprovalBadge() {
     <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-warning-bg text-warning-text">
       <EyeOff size={12} /> Not in the approval
     </span>
+  );
+}
+
+// Said beside the title, because the one thing that matters about an
+// internal item is that the client is not seeing it.
+export function InternalBadge() {
+  const { internal } = useItemStatus();
+  if (!internal) return null;
+  return (
+    <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-surface text-muted border border-line">
+      <Lock size={12} /> Not shown to the client
+    </span>
+  );
+}
+
+export function InternalToggle() {
+  const { internal, toggleInternal } = useItemStatus();
+  return (
+    <button
+      type="button"
+      onClick={toggleInternal}
+      title={internal ? "Show this item in the client's portal" : "Keep this item off the client's portal — for the firm's own steps"}
+      className={`flex items-center gap-1.5 text-sm font-medium rounded-full px-4 py-1.5 border ${
+        internal ? "bg-surface border-line text-muted" : "border-line text-muted hover:bg-hover"
+      }`}
+    >
+      <Lock size={13} /> {internal ? "Hidden from the client" : "Hide from the client"}
+    </button>
   );
 }
 

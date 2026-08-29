@@ -446,6 +446,24 @@ export async function toggleApprovalInclusion(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// Whether an item is the firm's own business or the client's. An
+// internal item never appears in the portal, never carries a reminder,
+// and never holds up a booking — the client cannot act on something they
+// cannot see.
+export async function toggleItemInternal(formData: FormData) {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const itemId = String(formData.get("item_id"));
+  const jobId = String(formData.get("job_id"));
+  const internal = String(formData.get("value")) === "true";
+
+  const { error } = await supabase.from("checklist_items").update({ internal, updated_at: new Date().toISOString() }).eq("id", itemId);
+  // A database still to have migration 0051 run has no such column; the
+  // item simply stays as it was rather than the press appearing to work.
+  if (error && isUnknownColumn(error)) return;
+  revalidatePath(`/jobs/${jobId}`);
+}
+
 export async function approveItem(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
@@ -1142,11 +1160,11 @@ export async function sendPathwayCertificateToClient(_prev: ActionState, formDat
   // what is still outstanding on the NOC checklist rather than leaving
   // "issued" to be read as "go ahead".
   const [{ data: nocChecklist }, { data: firm }] = await Promise.all([
-    supabase.from("checklists").select("id, checklist_items(title, status, sort_order)").eq("job_id", jobId).eq("kind", "noc").maybeSingle(),
+    supabase.from("checklists").select("id, checklist_items(*)").eq("job_id", jobId).eq("kind", "noc").maybeSingle(),
     supabase.from("firms").select("name").eq("id", profile.firm_id).maybeSingle(),
   ]);
-  const outstanding = (((nocChecklist?.checklist_items as { title: string; status: string; sort_order: number }[] | null) || [])
-    .filter((i) => i.status !== "approved")
+  const outstanding = (((nocChecklist?.checklist_items as { title: string; status: string; sort_order: number; internal?: boolean }[] | null) || [])
+    .filter((i) => i.status !== "approved" && !i.internal)
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((i) => i.title));
 

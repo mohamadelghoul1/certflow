@@ -96,3 +96,30 @@ describe("the reminder email", () => {
     assert.ok(html.includes("Plans &lt;v2&gt; &amp; specs"));
   });
 });
+
+// An internal item is the firm's own step — a peer review, a fee to
+// collect. Chasing a client for something they cannot even see is the
+// worst kind of reminder.
+test("an internal item is never chased", () => {
+  const sections = outstandingSections(
+    [
+      {
+        kind: "noc",
+        checklist_items: [
+          { title: "Insurance certificate", status: "requested" },
+          { title: "Peer review by second certifier", status: "requested", internal: true },
+        ],
+      },
+    ],
+    "CDC"
+  );
+  assert.deepEqual(
+    sections.flatMap((s) => s.items.map((i) => i.title)),
+    ["Insurance certificate"]
+  );
+});
+
+test("a checklist of nothing but internal items produces no reminder at all", () => {
+  const sections = outstandingSections([{ kind: "noc", checklist_items: [{ title: "Fee to collect", status: "requested", internal: true }] }], "CDC");
+  assert.deepEqual(sections, []);
+});

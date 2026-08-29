@@ -329,6 +329,11 @@ export type ChecklistItem = {
   requires_stamping: boolean;
   file_path: string | null;
   sort_order: number;
+  // Kept off the client portal entirely — a peer review, a fee to
+  // collect, a note to chase council. Hidden by row security rather than
+  // by filtering, so nothing can leak one by forgetting. Added by
+  // migration 0051; absent until it has been run.
+  internal?: boolean;
   // Where the approval stamp sits on this document, as a fraction of the
   // page from its top-left, and how big it is. Null means the
   // bottom-right corner at normal size. See migration 0015.
