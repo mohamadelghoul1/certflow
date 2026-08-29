@@ -73,6 +73,23 @@ export function versionFileName(version: number, isCurrent: boolean, originalPat
   return `${base}${extension}`;
 }
 
+// What a document is called in the firm's cloud copy.
+//
+// The copy holds one file per document — the approved one — so there is
+// nothing for a folder-per-document to separate. The file sits straight
+// in Document Sets under the item's own name, numbered in the certifier's
+// Schedule 1 order, which is what a person opening the folder is looking
+// for.
+//
+// An item carrying more than one document still needs each of them told
+// apart, so those take the label the certifier gave them, or their
+// document number when they have no label.
+export function approvedDocumentFile(position: number, title: string, originalPath: string, label = "", documentNo = 1, ofMany = false) {
+  const extension = originalPath.includes(".") ? originalPath.slice(originalPath.lastIndexOf(".")) : "";
+  const suffix = ofMany ? ` - ${archiveSegment(label, `Document ${documentNo}`)}` : "";
+  return `${String(position).padStart(2, "0")} ${archiveSegment(title, "Document")}${suffix}${extension}`;
+}
+
 export function inspectionFolder(position: number, title: string, date: string | null) {
   const dated = date ? `${archiveSegment(title, "Inspection")} - ${date}` : archiveSegment(title, "Inspection");
   return `${ARCHIVE_SECTIONS.inspections}/${String(position).padStart(2, "0")} ${dated}`;

@@ -1,8 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { signedUrl } from "@/lib/storage";
 import { formatISODate, resolvePathwayCertRef } from "@/lib/business";
-import { currentDocuments, versionsOf } from "@/lib/checklistDocuments";
-import { certificateFolder, documentFolder, inspectionFolder, jobFolder, photoFileName, versionFileName } from "@/lib/archive/archivePaths";
+import { currentDocuments } from "@/lib/checklistDocuments";
+import { ARCHIVE_SECTIONS, approvedDocumentFile, certificateFolder, inspectionFolder, jobFolder, photoFileName } from "@/lib/archive/archivePaths";
 import { planUploads, type SyncCandidate } from "@/lib/backup/syncPlan";
 import { providerFor } from "@/lib/backup/providers";
 import { usableAccessToken, type Connection } from "@/lib/backup/connection";
@@ -10,10 +10,17 @@ import type { ChecklistItem, ChecklistItemFile, Inspection, InspectionPhoto, Job
 
 // Copying a job's files up to the firm's own cloud storage.
 //
-// The same layout as the downloadable archive, deliberately: a firm that
-// has been backing up for a year and then downloads an archive should
-// find the folders it already knows. lib/archive/archivePaths.ts is the
-// single answer to where anything belongs.
+// The same folders as the downloadable archive — a firm that has been
+// backing up for a year and then downloads an archive should find the
+// folders it already knows — but not the same contents. The archive is
+// the compliance record and keeps every version of every document,
+// because the superseded ones are what show the set a certificate was
+// actually assessed against. This is the firm's working filing, and holds
+// one file per document: the approved one. The history stays in CertFlow
+// and in the archive download for the day it is needed.
+//
+// lib/archive/archivePaths.ts is the single answer to where anything
+// belongs.
 
 export type SyncResult = { uploaded: number; skipped: number; failed: { path: string; reason: string }[] };
 
@@ -31,23 +38,25 @@ export function candidatesForJob(job: Job, items: ItemWithFiles[], inspections: 
     candidates.push({ storagePath: job.pathway_approval_file_path, folder: certificateFolder(job.pathway), fileName: `Signed approval (uploaded)${extension}` });
   }
 
+  // Only what was approved, and only the copy that was approved. A
+  // superseded draft and a document still waiting on a decision are both
+  // working papers, not the firm's record of what it relied on — filing
+  // them here is how a folder ends up with four plans in it and no way
+  // to tell which one the certificate was issued against.
+  //
+  // Numbered by position in the whole checklist rather than among the
+  // approved ones, so a document keeps its Schedule 1 number even when
+  // the item above it has not been approved yet.
   items.forEach((item, index) => {
-    const folder = documentFolder(index + 1, item.title);
+    if (item.status !== "approved") return;
     const docs = currentDocuments(item);
     for (const doc of docs) {
-      const target = docs.length > 1 ? `${folder}/Document ${doc.documentNo}${doc.label ? ` - ${doc.label}` : ""}` : folder;
-      const versions = versionsOf(item, doc.documentNo);
-      if (versions.length === 0) {
-        if (doc.filePath) candidates.push({ storagePath: doc.filePath, folder: target, fileName: versionFileName(1, true, doc.filePath) });
-        continue;
-      }
-      for (const version of versions) {
-        candidates.push({
-          storagePath: version.file_path,
-          folder: target,
-          fileName: versionFileName(version.version, version.is_current !== false && version.file_path === doc.filePath, version.file_path),
-        });
-      }
+      if (!doc.filePath) continue;
+      candidates.push({
+        storagePath: doc.filePath,
+        folder: ARCHIVE_SECTIONS.documents,
+        fileName: approvedDocumentFile(index + 1, item.title, doc.filePath, doc.label, doc.documentNo, docs.length > 1),
+      });
     }
   });
 
