@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditEvent } from "@/lib/audit";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -55,7 +56,69 @@ export type EmailAttachment = { filename: string; content: Buffer };
 // error on it. That second kind used to pass straight through this
 // function as a success, which is how an email nobody received could
 // look exactly like one that arrived.
-export type EmailSender = { from: string; replyTo: string | null };
+export type EmailSender = {
+  from: string;
+  replyTo: string | null;
+  // The Resend account the message actually leaves through. Null means
+  // the deployment's own.
+  apiKey: string | null;
+  // True when this firm sends through its own Resend account rather
+  // than the deployment's.
+  ownAccount: boolean;
+};
+
+// The service-role client, which is the only thing that can read a
+// firm's Resend key: migration 0060 gives that table no read policy at
+// all. Null when the service key is not configured — in tests, and in
+// any environment where it is genuinely absent — in which case a firm
+// simply falls back to the deployment's account, as it did before.
+function adminOrNull(): SupabaseClient | null {
+  try {
+    return createAdminClient();
+  } catch {
+    return null;
+  }
+}
+
+// The Resend account this firm sends through.
+export async function firmEmailCredentials(admin: SupabaseClient | null, firmId: string): Promise<{ apiKey: string | null; ownAccount: boolean }> {
+  if (!admin) return { apiKey: null, ownAccount: false };
+  try {
+    const { data } = await admin.from("firm_email_credentials").select("*").eq("firm_id", firmId).maybeSingle();
+    const key = ((data as { resend_api_key?: string | null } | null)?.resend_api_key || "").trim();
+    if (key) return { apiKey: key, ownAccount: true };
+  } catch {
+    // Migration 0060 has not been run. Falls through to the
+    // deployment's account, which is how it worked before.
+  }
+  return { apiKey: null, ownAccount: false };
+}
+
+// What Settings is allowed to know about the firm's Resend account:
+// whether a key is set, and when it last changed. Asked with the
+// certifier's own session — the function behind it returns booleans, so
+// nothing that reaches a browser could carry a key.
+export type FirmEmailStatus = {
+  apiKeySet: boolean;
+  updatedAt: string | null;
+  // False until migration 0060 has been run against this database.
+  installed: boolean;
+};
+
+export async function firmEmailStatus(supabase: SupabaseClient): Promise<FirmEmailStatus> {
+  const { data, error } = await supabase.rpc("firm_email_status");
+  if (error) return { apiKeySet: false, updatedAt: null, installed: false };
+  const row = (data as { api_key_set?: boolean; updated_at?: string }[] | null)?.[0];
+  return { apiKeySet: row?.api_key_set === true, updatedAt: row?.updated_at || null, installed: true };
+}
+
+// Whether this firm can send email at all — through its own Resend
+// account, or the deployment's. Used by the buttons that would otherwise
+// tell a firm on its own account that "email isn't switched on".
+export async function firmEmailConfigured(supabase: SupabaseClient): Promise<boolean> {
+  if (emailConfigured()) return true;
+  return (await firmEmailStatus(supabase)).apiKeySet;
+}
 
 // Which firm the email is from, looked up once.
 //
@@ -64,10 +127,18 @@ export type EmailSender = { from: string; replyTo: string | null };
 // second firm's clients would receive their certificates apparently from
 // the first firm, and every reply would land in the first firm's inbox.
 //
-// Blank falls back to the deployment's own address, so a firm that has
-// not filled it in behaves exactly as before.
-export async function firmSender(supabase: SupabaseClient, firmId: string): Promise<EmailSender> {
+// Two settings, and they must not be mixed. Resend will only send from a
+// domain verified in the account whose key is used, so a firm on its own
+// Resend account can only send as itself — being handed the deployment's
+// address there would not merely look wrong, it would be rejected. So a
+// firm with its own account never inherits the deployment's address or
+// its reply-to; it sends as itself or it does not send, and the failure
+// says which.
+//
+// A firm with neither set behaves exactly as before.
+export async function firmSender(supabase: SupabaseClient, firmId: string, admin?: SupabaseClient | null): Promise<EmailSender> {
   const fallback = emailSenderSettings();
+  const account = await firmEmailCredentials(admin === undefined ? adminOrNull() : admin, firmId);
   try {
     // select("*") on purpose: naming the columns would fail the whole
     // lookup on a database that has not run migration 0058, and an
@@ -76,17 +147,38 @@ export async function firmSender(supabase: SupabaseClient, firmId: string): Prom
     const firm = data as { from_email?: string | null; reply_to_email?: string | null } | null;
     const from = (firm?.from_email || "").trim();
     const replyTo = (firm?.reply_to_email || "").trim();
-    return { from: from || fallback.from, replyTo: replyTo || (from ? null : fallback.replyTo) };
+    const ownName = !!from || account.ownAccount;
+    return {
+      from: from || (account.ownAccount ? "" : fallback.from),
+      replyTo: replyTo || (ownName ? null : fallback.replyTo),
+      apiKey: account.apiKey,
+      ownAccount: account.ownAccount,
+    };
   } catch {
-    return { from: fallback.from, replyTo: fallback.replyTo };
+    return {
+      from: account.ownAccount ? "" : fallback.from,
+      replyTo: account.ownAccount ? null : fallback.replyTo,
+      apiKey: account.apiKey,
+      ownAccount: account.ownAccount,
+    };
   }
 }
 
 export async function sendEmail(to: string, subject: string, html: string, attachments?: EmailAttachment[], sender?: EmailSender): Promise<SendResult> {
-  if (!resend) return { sent: false, skipped: "not-configured" };
+  const { from, replyTo, apiKey } = sender ?? { ...emailSenderSettings(), apiKey: null, ownAccount: false };
+  // The firm's own Resend account when it has one, this deployment's
+  // otherwise.
+  const client = apiKey ? new Resend(apiKey) : resend;
+  if (!client) return { sent: false, skipped: "not-configured" };
+  // A firm on its own Resend account with no sending address of its own.
+  // Nothing sensible can be sent: the deployment's address would be
+  // rejected by their account as an unverified domain, and sending it
+  // anyway is exactly what having their own account is meant to prevent.
+  if (!from) {
+    return { sent: false, error: "No sending address set for this firm — Settings → Email sending." };
+  }
   try {
-    const { from, replyTo } = sender ?? emailSenderSettings();
-    const { error } = await resend.emails.send({
+    const { error } = await client.emails.send({
       from,
       to,
       subject,

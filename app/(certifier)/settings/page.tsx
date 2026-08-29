@@ -1,8 +1,17 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { FirmForm, CertifierList, ClientList, ReminderSettingsForm, PaymentSettingsForm, StripeConnectionForm } from "@/components/certifier/SettingsForms";
+import {
+  FirmForm,
+  CertifierList,
+  ClientList,
+  ReminderSettingsForm,
+  PaymentSettingsForm,
+  StripeConnectionForm,
+  EmailSenderForm,
+} from "@/components/certifier/SettingsForms";
 import { firmStripeStatus, deploymentStripeConfigured } from "@/lib/payments/stripe";
 import { siteUrl } from "@/lib/siteUrl";
+import { firmSender, firmEmailStatus, emailSenderSettings } from "@/lib/email";
 import { CloudBackupSection } from "@/components/certifier/CloudBackupSection";
 import { CertificateLayoutEditor } from "@/components/certifier/CertificateLayoutEditor";
 import { certificateTemplatesForFirm } from "@/lib/actions/certificateTemplates";
@@ -14,7 +23,7 @@ import { getStorageUsage } from "@/lib/storageUsage";
 import { StorageSection } from "@/components/certifier/StorageSection";
 import { SystemCheckSection } from "@/components/certifier/SystemCheckSection";
 import Link from "next/link";
-import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, Activity, FileText, type LucideIcon, HardDrive } from "lucide-react";
+import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, Activity, FileText, Mail, type LucideIcon, HardDrive } from "lucide-react";
 
 // Settings, one section at a time. Everything used to sit on one long
 // page; finding the certifier list meant scrolling past the firm form
@@ -24,6 +33,7 @@ import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, A
 
 const SECTIONS: { key: string; label: string; icon: LucideIcon; blurb: string }[] = [
   { key: "firm", label: "Firm details", icon: Building2, blurb: "Name, addresses, logo, stamp and Portal account" },
+  { key: "email", label: "Email sending", icon: Mail, blurb: "The address your clients see, and the account it sends through" },
   { key: "payments", label: "Payment details", icon: Landmark, blurb: "Bank details on invoices, card surcharge, your Stripe account" },
   { key: "reminders", label: "Client reminders", icon: BellRing, blurb: "Automatic chasing of outstanding documents" },
   { key: "certifiers", label: "Certifiers", icon: Users, blurb: "The team, signatures and registrations" },
@@ -43,12 +53,25 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
   let content: React.ReactNode = null;
 
-  if (active.key === "firm" || active.key === "payments" || active.key === "reminders") {
+  if (active.key === "firm" || active.key === "payments" || active.key === "reminders" || active.key === "email") {
     const { data: firm } = await supabase.from("firms").select("*").eq("id", profile.firm_id).single();
     if (active.key === "firm") {
       const logoUrl = firm?.logo_url ? (await signedUrl(firm.logo_url)) || undefined : undefined;
       const stampUrl = firm?.stamp_url ? (await signedUrl(firm.stamp_url)) || undefined : undefined;
       content = <FirmForm firm={firm} logoUrl={logoUrl} stampUrl={stampUrl} />;
+    } else if (active.key === "email") {
+      const [emailStatus, effective] = await Promise.all([firmEmailStatus(supabase), firmSender(supabase, profile.firm_id)]);
+      content = (
+        <EmailSenderForm
+          firm={firm}
+          status={emailStatus}
+          // What the next email will actually carry, worked out by the
+          // same function that sends it — not re-derived here, where it
+          // could drift from the truth.
+          effective={{ from: effective.from, replyTo: effective.replyTo, ownAccount: effective.ownAccount }}
+          deploymentFrom={emailSenderSettings().from}
+        />
+      );
     } else if (active.key === "payments") {
       const [stripeStatus, base] = await Promise.all([firmStripeStatus(supabase), siteUrl()]);
       content = (

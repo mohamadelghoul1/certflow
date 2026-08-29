@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { firmSender, sendEmail, emailConfigured } from "@/lib/email";
+import { firmSender, sendEmail, firmEmailConfigured } from "@/lib/email";
 import { siteUrl } from "@/lib/siteUrl";
 import type { ActionState } from "@/lib/actions/auth";
 
@@ -83,6 +83,81 @@ export async function updateFirmPayments(_prev: ActionState, formData: FormData)
     if (!error) break;
     if (!isUnknown(error.code)) return { error: error.message };
     if (index === attempts.length - 1) return { error: "Run database updates 0035–0038 first (System check shows what's been run)." };
+  }
+  revalidatePath("/settings");
+  return undefined;
+}
+
+// The address this firm's clients see, and where their replies land.
+//
+// Migration 0058 added the columns; until now only a hand-written SQL
+// statement could fill them, which meant a second firm's certificates
+// and invoices went out under the first firm's name. This is the form.
+const ADDRESS = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+
+// Accepts either a bare address or the "Their Firm <mail@theirs.com.au>"
+// form Resend takes, and reports which part is wrong rather than only
+// that something is.
+function senderAddressProblem(value: string, label: string): string | null {
+  const angled = value.match(/^(.+?)\s*<([^>]+)>$/);
+  const address = angled ? angled[2].trim() : value;
+  if (angled && !angled[1].trim()) return `Put your firm's name before the angle brackets in ${label}, or just give the address on its own.`;
+  if (!ADDRESS.test(address)) return `${label} doesn't look like an email address — for example Your Firm <mail@yourfirm.com.au>.`;
+  return null;
+}
+
+export async function updateFirmSender(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const fromEmail = String(formData.get("from_email") || "").trim();
+  const replyToEmail = String(formData.get("reply_to_email") || "").trim();
+
+  if (fromEmail) {
+    const problem = senderAddressProblem(fromEmail, "The sending address");
+    if (problem) return { error: problem };
+  }
+  if (replyToEmail) {
+    const problem = senderAddressProblem(replyToEmail, "The reply-to address");
+    if (problem) return { error: problem };
+  }
+
+  const { error } = await supabase
+    .from("firms")
+    .update({ from_email: fromEmail || null, reply_to_email: replyToEmail || null })
+    .eq("id", profile.firm_id);
+  if (error) {
+    return { error: error.code === "PGRST204" || error.code === "42703" ? "Run database update 0058 first (Settings → System check)." : error.message };
+  }
+  revalidatePath("/settings");
+  return undefined;
+}
+
+// Connecting a firm's own Resend account.
+//
+// Stored and read exactly like the Stripe keys: written through a
+// database function, never readable by anything holding a login. See
+// migration 0060.
+export async function saveFirmEmailKey(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const apiKey = String(formData.get("resend_api_key") || "").trim();
+  if (!apiKey) return { error: "Paste your Resend API key first." };
+  if (!apiKey.startsWith("re_")) return { error: "That doesn't look like a Resend API key — they start with re_." };
+
+  const { error } = await supabase.rpc("set_firm_email_api_key", { p_api_key: apiKey });
+  if (error) {
+    return { error: MISSING_FUNCTION.includes(error.code) ? "Run database update 0060 first (Settings → System check)." : error.message };
+  }
+  revalidatePath("/settings");
+  return undefined;
+}
+
+export async function disconnectFirmEmailKey(_prev: ActionState, _formData: FormData): Promise<ActionState> {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("clear_firm_email_api_key");
+  if (error) {
+    return { error: MISSING_FUNCTION.includes(error.code) ? "Run database update 0060 first (Settings → System check)." : error.message };
   }
   revalidatePath("/settings");
   return undefined;
@@ -356,7 +431,7 @@ export async function inviteClient(_prev: InviteState, formData: FormData): Prom
   const supabase = await createClient();
   const { data: client } = await supabase.from("clients").select("name, email, user_id").eq("id", clientId).eq("firm_id", profile.firm_id).single();
   if (!client?.email) return { error: "This contact has no email address — add one first." };
-  if (!emailConfigured()) return { error: "Email isn't switched on for this deployment (RESEND_API_KEY)." };
+  if (!(await firmEmailConfigured(supabase))) return { error: "Email isn't switched on yet — connect your Resend account in Settings → Email sending." };
 
   const admin = createAdminClient();
   const site = await siteUrl();

@@ -253,6 +253,15 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: hasTable(supabase, "certificate_templates"),
     },
     {
+      migration: "0060",
+      label: "Each firm's own email account",
+      detail: "Lets a firm send through its own Resend account, so its mail leaves under its own name rather than this deployment's.",
+      // The table has no read policy by design, so probing it would
+      // report "not applied" wherever it exists. The status function
+      // answers the same question and is safe to call.
+      probe: hasFunction(supabase, "firm_email_status", {}),
+    },
+    {
       migration: "0059",
       label: "Each firm's own Stripe account",
       detail: "Sends a firm's card payments to its own bank account instead of whichever Stripe account this deployment was set up with.",
@@ -327,9 +336,9 @@ export function runEnvChecks(): EnvCheck[] {
       // that its mail is going out as onboarding@resend.dev, or that a
       // client's reply is landing in a mailbox nobody reads.
       label: `Sender address — ${sender.from}`,
-      detail: sender.replyTo
-        ? `Replies go to ${sender.replyTo}.`
-        : "Replies go to the sending address. Set RESEND_REPLY_TO to send them somewhere else.",
+      detail: `${
+        sender.replyTo ? `Replies go to ${sender.replyTo}. ` : "Replies go to the sending address. "
+      }Only the fallback since migration 0060: a firm that sets its own on Settings → Email sending never uses this one.`,
       configured: !sender.usingFallbackSender,
     },
     {
@@ -372,7 +381,9 @@ export async function runNotificationChecks(supabase: SupabaseClient, firmId: st
   const [{ data: jobs }, { data: certifiers }, { data: firm }] = await Promise.all([
     supabase.from("jobs").select("id, assigned_certifier_id, deleted_at").eq("firm_id", firmId),
     supabase.from("certifiers").select("*").eq("firm_id", firmId),
-    supabase.from("firms").select("email").eq("id", firmId).single(),
+    // select("*") rather than naming from_email, so this still answers on
+    // a database that has not run migration 0058.
+    supabase.from("firms").select("*").eq("id", firmId).single(),
   ]);
 
   const live = (jobs || []).filter((j) => !j.deleted_at);
@@ -380,6 +391,8 @@ export async function runNotificationChecks(supabase: SupabaseClient, firmId: st
 
   // The same order notifyJobCertifier tries, minus the login address,
   // which isn't readable from here.
+  const ownSender = ((firm as { from_email?: string | null } | null)?.from_email || "").trim();
+
   const withoutEmail = (certifiers || []).filter(
     (c) => !((c as { email?: string | null }).email || c.portal_email || (c as { practice_email?: string | null }).practice_email)
   );
@@ -400,6 +413,15 @@ export async function runNotificationChecks(supabase: SupabaseClient, firmId: st
           ? "Alerts reach each certifier directly."
           : `${withoutEmail.map((c) => c.name).join(", ")} has no address in Settings → Certifiers${firm?.email ? ", so their alerts fall back to the firm's address" : " and the firm has no address either, so their alerts go nowhere"}.`,
       ok: withoutEmail.length === 0 || !!firm?.email,
+    },
+    {
+      // The one that is invisible until a client points it out: mail
+      // that goes out perfectly well, under somebody else's name.
+      label: "Your email goes out under your own name",
+      detail: ownSender
+        ? `Certificates, invoices and reminders are sent as ${ownSender}.`
+        : "No sending address of your own is set, so your clients see whichever address this deployment was set up with — not yours. Set it on Settings → Email sending.",
+      ok: !!ownSender,
     },
   ];
 }

@@ -5,7 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { todayISO } from "@/lib/business";
-import { firmSender, sendEmail, emailConfigured } from "@/lib/email";
+import { firmSender, sendEmail, firmEmailConfigured } from "@/lib/email";
 import { recordAuditEvent } from "@/lib/audit";
 import { invoiceTotals, invoiceNumberOf, nextInvoiceNumber, formatMoney } from "@/lib/invoices/invoiceLogic";
 import { firmStripeCredentials, createInvoicePaymentLink } from "@/lib/payments/stripe";
@@ -269,7 +269,7 @@ export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: F
   ]);
   if (!invoice) return { error: "Invoice not found." };
   if (!invoice.client_id) return { error: "Choose which client this invoice goes to first." };
-  if (!emailConfigured()) return { error: "Email isn't switched on for this deployment yet (RESEND_API_KEY)." };
+  if (!(await firmEmailConfigured(supabase))) return { error: "Email isn't switched on yet — connect your Resend account in Settings → Email sending." };
 
   const { data: client } = await supabase.from("clients").select("name, email").eq("id", invoice.client_id).single();
   if (!client?.email) return { error: "That client has no email address on file — add one in their record." };

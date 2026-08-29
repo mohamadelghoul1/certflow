@@ -22,6 +22,9 @@ import {
   inviteClient,
   saveFirmStripe,
   disconnectFirmStripe,
+  updateFirmSender,
+  saveFirmEmailKey,
+  disconnectFirmEmailKey,
 } from "@/lib/actions/settings";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Firm, Certifier, ClientContact } from "@/types/db";
@@ -220,6 +223,158 @@ export function PaymentSettingsForm({ firm }: { firm: Firm | null }) {
         {pending ? "Saving…" : "Save payment settings"}
       </button>
     </form>
+  );
+}
+
+// Who this firm's email comes from.
+//
+// Two settings that have to agree. The address is what a client sees;
+// the Resend account is what actually sends it, and Resend will only
+// send from a domain verified in the account whose key is used. Set the
+// address without the account and mail either goes out under whoever
+// this deployment belongs to, or is refused; set the account without the
+// address and there is nothing valid to send as. Both are on this one
+// screen so neither is done alone.
+//
+// The key is write-only, like the Stripe keys: this form is told whether
+// one is set and nothing more.
+export function EmailSenderForm({
+  firm,
+  status,
+  effective,
+  deploymentFrom,
+}: {
+  firm: Firm | null;
+  status: { apiKeySet: boolean; updatedAt: string | null; installed: boolean };
+  effective: { from: string; replyTo: string | null; ownAccount: boolean };
+  deploymentFrom: string;
+}) {
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(updateFirmSender, undefined);
+  const [keyState, keyAction, keyPending] = useActionState<ActionState, FormData>(saveFirmEmailKey, undefined);
+  const [offState, offAction, offPending] = useActionState<ActionState, FormData>(disconnectFirmEmailKey, undefined);
+  const [showKey, setShowKey] = useState(false);
+
+  const ownName = !!(firm as { from_email?: string | null } | null)?.from_email;
+  const nothingToSendAs = status.apiKeySet && !ownName;
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-md border border-line bg-surface p-3">
+        <div className="text-[11px] font-semibold text-placeholder mb-1">Your clients currently see</div>
+        {effective.from ? (
+          <div className="text-sm text-primary font-medium break-all">{effective.from}</div>
+        ) : (
+          <div className="text-sm text-error font-medium">Nothing — no sending address is set, so no email can go out.</div>
+        )}
+        <div className="text-[11px] text-muted mt-0.5">
+          {effective.replyTo ? `Replies go to ${effective.replyTo}.` : "Replies go back to the sending address."}
+        </div>
+        {!ownName && effective.from === deploymentFrom && (
+          <div className="text-[11px] text-warning-text mt-1.5">
+            That is this deployment&rsquo;s address, not yours. Until you set your own below, your clients see someone else&rsquo;s name on every
+            certificate, invoice and reminder you send.
+          </div>
+        )}
+        {nothingToSendAs && (
+          <div className="text-[11px] text-error mt-1.5">
+            You have your own Resend account connected but no sending address, so nothing can be sent. Fill in the address below.
+          </div>
+        )}
+      </div>
+
+      <form action={formAction} className="space-y-3">
+        <div>
+          <label className={labelCls}>Sending address</label>
+          <input
+            name="from_email"
+            defaultValue={(firm as { from_email?: string | null } | null)?.from_email || ""}
+            placeholder="Your Firm Pty Ltd <notifications@yourfirm.com.au>"
+            className={inputCls}
+          />
+          <p className="text-[11px] text-muted mt-1">
+            What every certificate, invoice, reminder and portal notification goes out as. Put your firm&rsquo;s name in front of the address and
+            that is the name clients see in their inbox.
+          </p>
+        </div>
+        <div>
+          <label className={labelCls}>Replies go to</label>
+          <input
+            name="reply_to_email"
+            defaultValue={(firm as { reply_to_email?: string | null } | null)?.reply_to_email || ""}
+            placeholder="info@yourfirm.com.au"
+            className={inputCls}
+          />
+          <p className="text-[11px] text-muted mt-1">
+            Leave blank and replies go back to the sending address. Worth filling in if you send from an address nobody watches — otherwise a
+            client&rsquo;s answer is simply lost.
+          </p>
+        </div>
+        {state?.error && <div className="text-sm text-error">{state.error}</div>}
+        <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
+          {pending ? "Saving…" : "Save sending address"}
+        </button>
+      </form>
+
+      <div className="pt-4 border-t border-line space-y-3">
+        <div className="font-semibold text-primary text-sm">Your Resend account</div>
+
+        {!status.installed ? (
+          <p className="text-[11px] text-warning-text">
+            Run database update 0060 first — Settings → System check shows what&rsquo;s been run. Until then, mail is sent through whichever Resend
+            account this deployment was set up with.
+          </p>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <span className={`inline-block w-2 h-2 rounded-full ${status.apiKeySet ? "bg-success" : "bg-line"}`} />
+              API key — {status.apiKeySet ? "set, mail leaves your own account" : "not set, mail leaves this deployment's account"}
+            </div>
+
+            <form action={keyAction} className="space-y-3">
+              <div>
+                <label className={labelCls}>
+                  Resend API key {status.apiKeySet && <span className="font-normal text-muted">(paste a new one to replace it)</span>}
+                </label>
+                <input name="resend_api_key" type={showKey ? "text" : "password"} autoComplete="off" spellCheck={false} placeholder="re_…" className={inputCls} />
+              </div>
+              <label className="flex items-center gap-2 text-[11px] text-muted">
+                <input type="checkbox" checked={showKey} onChange={(e) => setShowKey(e.target.checked)} className="accent-icon" />
+                Show what I&rsquo;m typing
+              </label>
+              {keyState?.error && <div className="text-sm text-error">{keyState.error}</div>}
+              <button disabled={keyPending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
+                {keyPending ? "Saving…" : status.apiKeySet ? "Replace key" : "Connect Resend"}
+              </button>
+            </form>
+
+            <div className="rounded-md bg-surface border border-line p-3 space-y-1">
+              <div className="text-[11px] font-semibold text-placeholder">How to get one</div>
+              <ol className="text-[11px] text-muted list-decimal ml-4 space-y-0.5">
+                <li>
+                  Sign up at <span className="font-medium">resend.com</span> — the free tier covers a small certifier.
+                </li>
+                <li>Domains → Add domain → your firm&rsquo;s domain. Resend gives you three DNS records to add wherever your domain is managed.</li>
+                <li>Once it shows Verified, go to API Keys → Create API key and paste it above.</li>
+              </ol>
+              <p className="text-[11px] text-muted">
+                Resend only sends from a domain verified in your own account, so this is what makes the address above actually work. Once saved the
+                key cannot be read back out of CertFlow by anyone; replace it by pasting a new one.
+              </p>
+            </div>
+
+            {status.apiKeySet && (
+              <form action={offAction}>
+                {offState?.error && <div className="text-sm text-error mb-1">{offState.error}</div>}
+                <button disabled={offPending} className="text-xs text-error hover:underline disabled:opacity-60">
+                  {offPending ? "Disconnecting…" : "Disconnect Resend"}
+                </button>
+                <p className="text-[11px] text-muted mt-1">Mail goes back to this deployment&rsquo;s account, under whatever address it sends as.</p>
+              </form>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
