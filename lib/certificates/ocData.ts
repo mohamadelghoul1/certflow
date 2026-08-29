@@ -3,6 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { signedUrl } from "@/lib/storage";
 import { formatISODate, resolvePathwayCertRef, resolveOcCertRef, governingApproval } from "@/lib/business";
 import type { Job, Firm, OcRecord, JobDetails } from "@/types/db";
+import { loadCertificateTemplate } from "@/lib/certificates/loadTemplate";
+import type { CertificateTemplate } from "@/lib/certificates/certificateTemplate";
 
 // drawing_number is the stored column name; it holds any document
 // reference, not only a drawing number.
@@ -33,6 +35,9 @@ export type OcCertificateData = {
   d: JobDetails;
   issuedDate: string;
   applicantName: string;
+  // The layout this certificate is drawn from: the firm's own where they
+  // have saved one, CertFlow's otherwise.
+  template: CertificateTemplate;
 };
 
 // Single source of truth for the OC certificate package's content — used
@@ -85,5 +90,7 @@ export async function getOcCertificateData(jobId: string, ocId: string, firmId: 
   const daNumber = (d.certificateDetails?.developmentConsentNumber || "").trim();
   const daDate = d.certificateDetails?.developmentConsentDate ? formatISODate(d.certificateDetails.developmentConsentDate) : "";
 
-  return { job, firm: firm || null, record, issuedBy: issuedBy || null, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, consentLabel, daNumber, daDate, d, issuedDate, applicantName };
+  const { template } = await loadCertificateTemplate(supabase, firmId, "OC");
+
+  return { template, job, firm: firm || null, record, issuedBy: issuedBy || null, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, consentLabel, daNumber, daDate, d, issuedDate, applicantName };
 }

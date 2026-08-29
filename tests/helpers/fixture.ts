@@ -223,6 +223,9 @@ export function ocCertificateFixture(overrides: Record<string, unknown> = {}): O
     },
     issuedDate: "24 Aug 2026",
     applicantName: "Anh Cao",
+    // The layout the certificate is drawn from. Before the spread, so a
+    // test can hand in a layout of its own.
+    template: DEFAULT_TEMPLATES.OC,
     ...overrides,
   } as unknown as OcCertificateData;
 }

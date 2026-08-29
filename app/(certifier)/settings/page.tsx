@@ -27,7 +27,7 @@ const SECTIONS: { key: string; label: string; icon: LucideIcon; blurb: string }[
   { key: "certifiers", label: "Certifiers", icon: Users, blurb: "The team, signatures and registrations" },
   { key: "clients", label: "Clients & portal access", icon: KeyRound, blurb: "Contacts and their portal logins" },
   { key: "library", label: "Document library", icon: Library, blurb: "What each checklist asks for" },
-  { key: "certificates", label: "Certificate layout", icon: FileText, blurb: "What prints on your CDC and CC" },
+  { key: "certificates", label: "Certificate layout", icon: FileText, blurb: "What prints on your CDC, CC and OC" },
   { key: "backup", label: "Cloud backup", icon: CloudUpload, blurb: "Copies in your own Dropbox or OneDrive" },
   { key: "storage", label: "Storage", icon: HardDrive, blurb: "What each project is holding" },
   { key: "system", label: "System check", icon: Activity, blurb: "Database updates and connected services" },

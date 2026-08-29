@@ -16,7 +16,8 @@ import type { ActionState } from "@/lib/actions/auth";
 // it lands in the audit log like any other decision of that weight.
 
 function pathwayOf(value: FormDataEntryValue | null): CertificatePathway {
-  return String(value) === "CC" ? "CC" : "CDC";
+  const asked = String(value);
+  return asked === "CC" || asked === "OC" ? asked : "CDC";
 }
 
 export async function saveCertificateTemplate(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -92,7 +93,7 @@ export async function certificateTemplatesForFirm(firmId: string) {
   try {
     const { data } = await supabase.from("certificate_templates").select("pathway, layout").eq("firm_id", firmId);
     const saved = new Map((data || []).map((r) => [String(r.pathway), (r.layout as { sections?: unknown })?.sections]));
-    return (["CDC", "CC"] as CertificatePathway[]).map((pathway) => {
+    return (["CDC", "CC", "OC"] as CertificatePathway[]).map((pathway) => {
       const sections = saved.get(pathway);
       return {
         pathway,
@@ -102,6 +103,6 @@ export async function certificateTemplatesForFirm(firmId: string) {
     });
   } catch {
     // No table yet — every firm is on the standard layout.
-    return (["CDC", "CC"] as CertificatePathway[]).map((pathway) => ({ pathway, custom: false, template: DEFAULT_TEMPLATES[pathway] }));
+    return (["CDC", "CC", "OC"] as CertificatePathway[]).map((pathway) => ({ pathway, custom: false, template: DEFAULT_TEMPLATES[pathway] }));
   }
 }

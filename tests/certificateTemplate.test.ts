@@ -144,12 +144,32 @@ describe("a template that cannot be used", () => {
     assert.ok(templateProblems(without).some((p) => p.includes("devAddress")));
   });
 
-  test("an empty template, an empty heading and an empty label are all caught", () => {
+  test("an empty template and an unlabelled row are caught", () => {
     assert.ok(templateProblems({ pathway: "CDC", sections: [] }).some((p) => /at least one section/.test(p)));
-    const blank: CertificateTemplate = { pathway: "CDC", sections: [{ heading: " ", rows: [{ source: "applicant", label: " " }] }] };
-    const problems = templateProblems(blank);
-    assert.ok(problems.some((p) => /no heading/.test(p)));
-    assert.ok(problems.some((p) => /no label/.test(p)));
+    const blank: CertificateTemplate = { pathway: "CDC", sections: [{ heading: "APPLICANT", rows: [{ source: "applicant", label: " " }] }] };
+    assert.ok(templateProblems(blank).some((p) => /no label/.test(p)));
+  });
+
+  // A section without a heading prints its rows and nothing else. An
+  // Occupation Certificate opens with exactly such a block, under the
+  // certificate's own title rather than a heading of its own.
+  test("a section with no heading is allowed", () => {
+    const headless: CertificateTemplate = {
+      pathway: "OC",
+      sections: [
+        {
+          heading: "",
+          rows: [
+            { source: "devAddress", label: "Property address:" },
+            { source: "lotDp", label: "Lot/Section/DP:" },
+            { source: "description", label: "Development description:" },
+            { source: "consentRelied", label: "Approval relied upon:" },
+            { source: "issuedDate", label: "Date of issue:" },
+          ],
+        },
+      ],
+    };
+    assert.deepEqual(templateProblems(headless), []);
   });
 
   test("what is required differs by pathway", () => {

@@ -5,6 +5,8 @@ import { p, mixed, pageBreak, splitRow, fieldTable, gridTable, image, signatureB
 import type { OcCertificateData } from "@/lib/certificates/ocData";
 import { formatAddress } from "@/lib/certificates/pathwayData";
 import { formatClassifications, formatDocumentDate, formatISODate, letterheadAddressLines } from "@/lib/business";
+import { resolveTemplate } from "@/lib/certificates/certificateTemplate";
+import { ocFieldValues } from "@/lib/certificates/certificateValues";
 
 // Mirrors app/certificate/oc/[jobId]/[ocId]/page.tsx section-for-section.
 // The council/applicant letters (sections 1-2) share the same logo
@@ -99,18 +101,16 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
       center: true,
       subtitle: "Issued under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979",
     }),
-    fieldTable([
-      { kind: "row", label: "Property address", value: job.address },
-      { kind: "row", label: "Lot/Section/DP", value: d.certificateDetails?.lotSectionDp },
-      { kind: "row", label: "Development description", value: record.description || job.description },
-      { kind: "row", label: "Building classification(s)", value: formatClassifications(d.proposal?.classifications) },
-      { kind: "row", label: `${consentLabel} relied upon`, value: consentRef },
-      // A CDC job has no development consent behind it, so these two rows
-      // only appear on an OC that follows a construction certificate.
-      ...(daNumber ? [{ kind: "row" as const, label: "Development Consent (DA) No.", value: daNumber }] : []),
-      ...(daDate ? [{ kind: "row" as const, label: "Development Consent (DA) date", value: daDate }] : []),
-      { kind: "row", label: "Date of issue", value: issuedDate },
-    ]),
+    // The same layout the PDF walks, so a firm's Word copy and their PDF
+    // of one certificate can only differ if the layout does. The labels
+    // carry their own punctuation, which is why the trailing colons that
+    // used to be added here are now part of the label itself.
+    fieldTable(
+      resolveTemplate(data.template, ocFieldValues(data), typeLabel, consentLabel).flatMap((section) => [
+        ...(section.heading ? [{ kind: "heading" as const, text: section.heading }] : []),
+        ...section.rows.map((row) => ({ kind: "row" as const, label: row.label, value: row.value })),
+      ]),
+    ),
     headingRule("DOCUMENTS RELIED UPON"),
     approvedItems.length > 0
       ? gridTable(

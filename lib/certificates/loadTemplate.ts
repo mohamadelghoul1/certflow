@@ -17,7 +17,7 @@ export async function loadCertificateTemplate(
   firmId: string,
   pathway: string,
 ): Promise<{ template: CertificateTemplate; custom: boolean; problems: string[] }> {
-  const key: CertificatePathway = pathway === "CC" ? "CC" : "CDC";
+  const key: CertificatePathway = pathway === "CC" || pathway === "OC" ? pathway : "CDC";
   const fallback = { template: DEFAULT_TEMPLATES[key], custom: false, problems: [] as string[] };
 
   try {

@@ -14,8 +14,16 @@ export type TemplateRow = {
   label: string;
   // For a fixed row: what it says.
   fixedValue?: string;
+  // Left off the certificate entirely when it has no value, rather than
+  // printing a label with nothing beside it. A CDC job has no
+  // development consent behind it, and an empty "Development Consent
+  // (DA) No.:" reads as a certificate missing something.
+  hideWhenEmpty?: boolean;
 };
 
+// A section with no heading prints its rows and nothing else — an
+// Occupation Certificate opens with a block of details under the title
+// rather than under a heading of its own.
 export type TemplateSection = { heading: string; rows: TemplateRow[] };
 export type CertificateTemplate = { pathway: CertificatePathway; sections: TemplateSection[] };
 
@@ -101,6 +109,30 @@ export const DEFAULT_TEMPLATES: Record<CertificatePathway, CertificateTemplate> 
       },
     ],
   },
+  OC: {
+    pathway: "OC",
+    sections: [
+      {
+        // No heading: these rows sit straight under the certificate's
+        // own title, as they always have.
+        heading: "",
+        rows: [
+          f("devAddress", "Property address:"),
+          f("lotDp", "Lot/Section/DP:"),
+          f("description", "Development description:"),
+          f("bcaClass", "Building classification(s):"),
+          // {CONSENT} is filled in with what the job was approved under
+          // — a complying development certificate or a construction
+          // certificate — so one row covers both without a firm that
+          // renames it losing that.
+          f("consentRelied", "{CONSENT} relied upon:"),
+          { source: "daNumber", label: "Development Consent (DA) No.:", hideWhenEmpty: true },
+          { source: "daDate", label: "Development Consent (DA) date:", hideWhenEmpty: true },
+          f("issuedDate", "Date of issue:"),
+        ],
+      },
+    ],
+  },
 };
 
 // A row ready to be drawn: what it is called and what it says. "conditions"
@@ -109,15 +141,21 @@ export const DEFAULT_TEMPLATES: Record<CertificatePathway, CertificateTemplate> 
 export type ResolvedRow = { key: string; label: string; value: string; kind: "field" | "conditions" };
 export type ResolvedSection = { heading: string; rows: ResolvedRow[] };
 
-export function resolveTemplate(template: CertificateTemplate, values: FieldValues, pathwayFull: string): ResolvedSection[] {
+export function resolveTemplate(template: CertificateTemplate, values: FieldValues, pathwayFull: string, consentLabel = ""): ResolvedSection[] {
+  const fill = (text: string) => text.replace("{PATHWAY}", pathwayFull.toUpperCase()).replace("{CONSENT}", consentLabel);
+
   return template.sections.map((section) => ({
-    heading: section.heading.replace("{PATHWAY}", pathwayFull.toUpperCase()),
-    rows: section.rows.map((row) => ({
-      key: row.source,
-      label: row.label,
-      value: row.source === "fixed" ? row.fixedValue || "" : values[row.source] || "",
-      kind: row.source === "conditions" ? ("conditions" as const) : ("field" as const),
-    })),
+    heading: fill(section.heading),
+    rows: section.rows
+      .map((row) => ({
+        key: row.source,
+        label: fill(row.label),
+        value: row.source === "fixed" ? row.fixedValue || "" : values[row.source] || "",
+        kind: row.source === "conditions" ? ("conditions" as const) : ("field" as const),
+        hideWhenEmpty: row.hideWhenEmpty === true,
+      }))
+      .filter((row) => !(row.hideWhenEmpty && !row.value.trim()))
+      .map(({ hideWhenEmpty: _hide, ...row }) => row),
   }));
 }
 
@@ -135,7 +173,6 @@ export function templateProblems(template: CertificateTemplate): string[] {
   if (template.sections.length === 0) problems.push("A certificate needs at least one section.");
 
   for (const section of template.sections) {
-    if (!section.heading.trim()) problems.push("A section has no heading.");
     for (const row of section.rows) {
       if (!row.label.trim()) problems.push(`A row under “${section.heading}” has no label.`);
       if (row.source !== "fixed" && !keys.has(row.source)) problems.push(`“${row.label}” is filled by something this certificate does not have (${row.source}).`);

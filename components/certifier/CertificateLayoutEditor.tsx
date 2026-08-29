@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { ChevronDown, ChevronUp, FileText, Plus, RotateCcw, X } from "lucide-react";
 import { saveCertificateTemplate, resetCertificateTemplate } from "@/lib/actions/certificateTemplates";
 import { DEFAULT_TEMPLATES, templateProblems, type CertificateTemplate, type TemplateSection } from "@/lib/certificates/certificateTemplate";
-import { FIELD_KEYS, FIELD_NAMES, isRequired, type CertificatePathway, type FieldKey } from "@/lib/certificates/templateFields";
+import { FIELDS_FOR_PATHWAY, FIELD_NAMES, isRequired, type CertificatePathway, type FieldKey } from "@/lib/certificates/templateFields";
 import type { ActionState } from "@/lib/actions/auth";
 
 // A firm's own certificate layout.
@@ -33,7 +33,12 @@ export function CertificateLayoutEditor({
   const [resetState, reset, resetting] = useActionState<ActionState, FormData>(resetCertificateTemplate, undefined);
 
   const problems = templateProblems({ pathway, sections });
-  const label = pathway === "CDC" ? "Complying Development Certificate" : "Construction Certificate";
+  const label =
+    pathway === "CDC" ? "Complying Development Certificate" : pathway === "CC" ? "Construction Certificate" : "Occupation Certificate";
+  // Only what this certificate has something to put in: a CDC's date of
+  // lapse on an Occupation Certificate is a row that can only ever be
+  // blank.
+  const available = FIELDS_FOR_PATHWAY[pathway];
 
   function edit(next: TemplateSection[]) {
     setSections(next);
@@ -121,7 +126,7 @@ export function CertificateLayoutEditor({
                         disabled={locked}
                         className="min-w-[11rem] border border-line rounded px-2 py-1.5 text-xs bg-white disabled:opacity-60"
                       >
-                        {FIELD_KEYS.map((key) => (
+                        {available.map((key) => (
                           <option key={key} value={key}>
                             {FIELD_NAMES[key]}
                           </option>
@@ -142,6 +147,20 @@ export function CertificateLayoutEditor({
                           className="flex-1 min-w-[10rem] border border-line rounded px-2 py-1.5 text-xs bg-white"
                         />
                       )}
+                      <label className="flex items-center gap-1 text-[10px] text-muted shrink-0" title="Leave this row off the certificate when it has no value">
+                        <input
+                          type="checkbox"
+                          checked={row.hideWhenEmpty === true}
+                          onChange={(e) =>
+                            edit(
+                              sections.map((sec, i) =>
+                                i === s ? { ...sec, rows: sec.rows.map((x, j) => (j === r ? { ...x, hideWhenEmpty: e.target.checked } : x)) } : sec,
+                              ),
+                            )
+                          }
+                        />
+                        Hide if blank
+                      </label>
                       <Mover onUp={() => moveRow(s, r, -1)} onDown={() => moveRow(s, r, 1)} />
                       {locked ? (
                         <span className="text-[10px] text-placeholder shrink-0 w-14 text-center">Required</span>

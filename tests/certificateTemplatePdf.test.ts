@@ -131,3 +131,61 @@ describe("the Word export follows the same layout", () => {
     assert.ok(!text.includes("Land Use Zone:"), "a removed row still printed in Word");
   });
 });
+
+// The Occupation Certificate, on the same machinery.
+describe("a firm's own Occupation Certificate layout", () => {
+  async function ocText(template: CertificateTemplate) {
+    const { buildOcPackagePdf } = await import("@/lib/pdf/ocPackage");
+    const { ocCertificateFixture } = await import("./helpers/fixture");
+    const pdf = await readPdf(await buildOcPackagePdf(ocCertificateFixture({ template }), { logo: null, signature: null }));
+    return pdf.text.replace(/\s+/g, " ");
+  }
+
+  test("the default prints the rows it always has", async () => {
+    const text = await ocText(DEFAULT_TEMPLATES.OC);
+    for (const label of ["Property address:", "Lot/Section/DP:", "Development description:", "Building classification(s):", "Date of issue:"]) {
+      assert.ok(text.includes(label), `the default Occupation Certificate lost "${label}"`);
+    }
+  });
+
+  // A CDC job has no development consent behind it, so the rows that
+  // would carry one are left off rather than printed with nothing
+  // beside them.
+  test("a row marked hide-if-blank is left off when the job has no value for it", async () => {
+    const text = await ocText(DEFAULT_TEMPLATES.OC);
+    assert.ok(!text.includes("Development Consent (DA) No.:"), "an empty consent row printed anyway");
+  });
+
+  test("the same row prints when the job does have one", async () => {
+    const { buildOcPackagePdf } = await import("@/lib/pdf/ocPackage");
+    const { ocCertificateFixture } = await import("./helpers/fixture");
+    const pdf = await readPdf(
+      await buildOcPackagePdf(ocCertificateFixture({ daNumber: "DA-2026/0044", daDate: "02 Sep 2026" }), { logo: null, signature: null }),
+    );
+    const text = pdf.text.replace(/\s+/g, " ");
+    assert.ok(text.includes("Development Consent (DA) No.:") && text.includes("DA-2026/0044"));
+  });
+
+  test("a firm's own row and label reach the certificate", async () => {
+    const template: CertificateTemplate = {
+      pathway: "OC",
+      sections: [
+        {
+          heading: "",
+          rows: [
+            { source: "devAddress", label: "Site:" },
+            { source: "lotDp", label: "Lot/Section/DP:" },
+            { source: "description", label: "Works:" },
+            { source: "consentRelied", label: "Approval:" },
+            { source: "issuedDate", label: "Issued:" },
+            { source: "fixed", label: "Fire safety schedule:", fixedValue: "Attached" },
+          ],
+        },
+      ],
+    };
+    const text = await ocText(template);
+    assert.ok(text.includes("Site:") && text.includes("Works:"), "the renamed labels did not print");
+    assert.ok(text.includes("Fire safety schedule:") && text.includes("Attached"), "the added row did not print");
+    assert.ok(!text.includes("Property address:"), "the old label printed as well");
+  });
+});

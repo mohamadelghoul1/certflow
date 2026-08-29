@@ -3,6 +3,8 @@ import { letterheadHeader, projectFooter, type PackageImages } from "@/lib/pdf/l
 import { formatAddressLines } from "@/lib/certificates/pathwayData";
 import { formatClassifications, formatDocumentDate } from "@/lib/business";
 import type { OcCertificateData } from "@/lib/certificates/ocData";
+import { resolveTemplate } from "@/lib/certificates/certificateTemplate";
+import { ocFieldValues } from "@/lib/certificates/certificateValues";
 
 // The Occupation Certificate package as a PDF, mirroring
 // lib/docx/ocCertificate.ts section for section: council letter,
@@ -91,16 +93,13 @@ export async function buildOcPackagePdf(data: OcCertificateData, images: Package
     subtitle: ["Issued under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979", `Certificate No.: ${ref}`],
     center: true,
   });
-  l.fieldRow("Property address:", job.address || "—");
-  l.fieldRow("Lot/Section/DP:", d.certificateDetails?.lotSectionDp || "—");
-  l.fieldRow("Development description:", record.description || job.description || "—");
-  l.fieldRow("Building classification(s):", formatClassifications(d.proposal?.classifications) || "—");
-  l.fieldRow(`${consentLabel} relied upon:`, consentRef || "—");
-  // A CDC job has no development consent behind it, so these two rows
-  // only appear on an OC that follows a construction certificate.
-  if (daNumber) l.fieldRow("Development Consent (DA) No.:", daNumber);
-  if (daDate) l.fieldRow("Development Consent (DA) date:", daDate);
-  l.fieldRow("Date of issue:", issuedDate);
+  // The firm's layout where they have one, ours otherwise. A CDC job has
+  // no development consent behind it, and the rows that would carry one
+  // drop out rather than printing a label with nothing beside it.
+  for (const section of resolveTemplate(data.template, ocFieldValues(data), typeLabel, consentLabel)) {
+    if (section.heading) l.heading(section.heading, { rule: true, gapBefore: 6 });
+    for (const row of section.rows) l.fieldRow(row.label, row.value);
+  }
 
   l.heading("DOCUMENTS RELIED UPON", { rule: true, gapBefore: 6 });
   if (approvedItems.length > 0) {

@@ -1,6 +1,7 @@
 import { formatAddress, formatBcaVersion, formatCurrency, type PathwayCertificateData } from "@/lib/certificates/pathwayData";
 import { formatClassifications, formatISODate } from "@/lib/business";
 import type { FieldValues } from "@/lib/certificates/templateFields";
+import type { OcCertificateData } from "@/lib/certificates/ocData";
 
 // What every row on a certificate can say, worked out once.
 //
@@ -98,4 +99,26 @@ export function conditionParagraphs(data: PathwayCertificateData): ConditionPara
     // The job's own conditions are a list, and read as one.
     ...data.conditions.map((c) => ({ text: c.text, bulleted: true })),
   ];
+}
+
+// The same idea for an Occupation Certificate, which names the approval
+// it was issued against rather than the consents behind an approval it
+// is granting.
+export function ocFieldValues(data: OcCertificateData): FieldValues {
+  return {
+    devAddress: data.job.address || "—",
+    lotDp: data.d.certificateDetails?.lotSectionDp || "—",
+    description: data.record.description || data.job.description || "—",
+    bcaClass: formatClassifications(data.d.proposal?.classifications) || "—",
+    consentRelied: data.consentRef || "—",
+    // Blank on a CDC job, which has no development consent behind it —
+    // the rows that carry them are dropped rather than printed empty.
+    daNumber: data.daNumber || "",
+    daDate: data.daDate || "",
+    issuedDate: data.issuedDate,
+    certificateNumber: data.ref,
+    certifierName: data.issuedBy?.name || "—",
+    registrationBody: data.issuedBy?.registration_body || "—",
+    registrationNo: data.issuedBy?.registration_no || "—",
+  };
 }

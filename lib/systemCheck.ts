@@ -251,6 +251,16 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: hasTable(supabase, "certificate_templates"),
     },
     {
+      migration: "0056",
+      label: "Occupation Certificate layout",
+      detail: "Lets the OC be laid out per firm as well, not only the CDC and CC.",
+      // 0055 created the table but its check constraint refused an OC
+      // row, so the table alone would report this one as applied. A
+      // constraint cannot be probed by reading — only by writing, which
+      // this page must never do — so the migration leaves a marker.
+      probe: hasFunction(supabase, "oc_certificate_template_allowed", {}),
+    },
+    {
       migration: "0053",
       label: "One booking request per inspection",
       detail: "Stops a client asking for a second date while the first is still with you, or moving one you have confirmed.",

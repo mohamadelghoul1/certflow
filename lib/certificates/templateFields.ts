@@ -11,7 +11,7 @@
 // template instead of a fixed script, and the default template reproduces
 // exactly what has always been printed.
 
-export type CertificatePathway = "CDC" | "CC";
+export type CertificatePathway = "CDC" | "CC" | "OC";
 
 // Every value a row can show. The renderer works these out once from the
 // job and hands them over as a plain record, so the catalogue names
@@ -47,6 +47,11 @@ export const FIELD_KEYS = [
   "certifierName",
   "registrationBody",
   "registrationNo",
+  // An Occupation Certificate names the approval it was issued against
+  // rather than the consents behind an approval it is granting.
+  "consentRelied",
+  "daNumber",
+  "daDate",
 ] as const;
 
 export type FieldKey = (typeof FIELD_KEYS)[number];
@@ -85,6 +90,9 @@ export const FIELD_NAMES: Record<FieldKey, string> = {
   certifierName: "Registered certifier",
   registrationBody: "Registration body",
   registrationNo: "Registration number",
+  consentRelied: "Approval relied upon",
+  daNumber: "Development consent (DA) number",
+  daDate: "Development consent (DA) date",
 };
 
 // Rows a certificate must carry, whatever a firm prefers.
@@ -100,8 +108,22 @@ export const FIELD_NAMES: Record<FieldKey, string> = {
 export const REQUIRED_FIELDS: Record<CertificatePathway, FieldKey[]> = {
   CDC: ["applicant", "owner", "devAddress", "lotDp", "description", "determinationDate", "certifierName", "registrationNo"],
   CC: ["applicant", "owner", "devAddress", "lotDp", "description", "developmentConsentNumber", "certifierName", "registrationNo"],
+  // An Occupation Certificate names the building it covers, what it was
+  // assessed against, and when it was issued. Who signed it is printed
+  // by the signature block rather than as a row.
+  OC: ["devAddress", "lotDp", "description", "consentRelied", "issuedDate"],
 };
 
 export function isRequired(pathway: CertificatePathway, key: string): boolean {
   return REQUIRED_FIELDS[pathway].includes(key as FieldKey);
 }
+
+// Which values a given certificate can actually show. A row is only
+// worth offering if the certificate has something to put in it — a CDC's
+// date of lapse on an Occupation Certificate is a row that can only ever
+// be blank.
+export const FIELDS_FOR_PATHWAY: Record<CertificatePathway, FieldKey[]> = {
+  CDC: FIELD_KEYS.filter((k) => !["consentRelied", "daNumber", "daDate", "developmentConsentNumber", "developmentConsentDate"].includes(k)),
+  CC: FIELD_KEYS.filter((k) => !["consentRelied", "daNumber", "daDate", "determinationDate", "lapseDate", "epi", "partOfCode", "zone"].includes(k)),
+  OC: ["devAddress", "lotDp", "description", "bcaClass", "consentRelied", "daNumber", "daDate", "issuedDate", "certificateNumber", "certifierName", "registrationBody", "registrationNo"],
+};
