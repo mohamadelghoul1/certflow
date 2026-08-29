@@ -50,8 +50,9 @@ export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmN
           itemHrefBase="/quotes"
         />
         <NavLink href="/calendar">Calendar</NavLink>
-        <NavLink href="/invoices">Invoices</NavLink>
-        <NavLink href="/compliance">Compliance</NavLink>
+        {/* One entry for both: they answer the same question, and an
+            overdue invoice used to appear under each of them. */}
+        <NavLink href="/invoices">Invoices &amp; compliance</NavLink>
         <NavLink href="/audit">Audit</NavLink>
         <NavLink href="/settings">Settings</NavLink>
         </div>
