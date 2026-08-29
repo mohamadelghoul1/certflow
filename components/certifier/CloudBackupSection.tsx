@@ -92,8 +92,8 @@ function ConnectedRow({ connection }: { connection: ConnectionStatus }) {
 }
 
 // The folder the copies land in, typed rather than fixed: a firm that
-// already files its jobs under BCS/Office wants ours in the same list,
-// not in a folder of our own beside it.
+// already keeps its projects somewhere in particular wants ours in that
+// same list, not in a folder of our own beside it.
 function BackupFolderField({ connection }: { connection: ConnectionStatus }) {
   const [state, formAction, pending] = useActionState<BackupFolderState, FormData>(setBackupFolder, undefined);
 
@@ -105,7 +105,7 @@ function BackupFolderField({ connection }: { connection: ConnectionStatus }) {
         <input
           name="root_folder"
           defaultValue={connection.root_folder}
-          placeholder="/BCS/Office"
+          placeholder="/CertFlow"
           className="flex-1 min-w-[12rem] border border-line rounded-md px-2.5 py-1.5 text-sm bg-white"
         />
         <button disabled={pending} className="text-xs font-semibold text-secondary hover:underline disabled:opacity-60">

@@ -33,8 +33,8 @@ export async function disconnectBackup(formData: FormData) {
 // Where in the firm's cloud storage the copies land.
 //
 // A firm already has a filing system — ours copies into it rather than
-// beside it, so a job CertFlow files and a job filed by hand sit in the
-// same list. Only the folder moves: what has already been copied stays
+// beside it, so a project CertFlow files and a project filed by hand sit
+// in the same list. Only the folder moves: what has already been copied stays
 // where it was sent, so a change made halfway leaves the earlier jobs in
 // the old folder rather than silently re-copying gigabytes.
 export type BackupFolderState = { error?: string; saved?: string } | undefined;
@@ -42,7 +42,7 @@ export type BackupFolderState = { error?: string; saved?: string } | undefined;
 export async function setBackupFolder(_prev: BackupFolderState, formData: FormData): Promise<BackupFolderState> {
   const { profile } = await requireProfile("certifier");
   const folder = remotePath(String(formData.get("root_folder") || ""));
-  if (folder === "/") return { error: "Type the folder to back up into, such as /BCS/Office." };
+  if (folder === "/") return { error: "Type the folder to back up into, such as /CertFlow." };
 
   const admin = createAdminClient();
   const { error } = await admin
