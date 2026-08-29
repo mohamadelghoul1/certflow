@@ -331,15 +331,23 @@ export function ItemStatusActions({
     // site, or simply not apply to this job. Without this, the only way
     // to finish such an item was to upload something for the sake of it,
     // which put a meaningless file into the approved set.
+    //
+    // Says "Approve", because that is exactly what it does — the same
+    // action, the same approved state, as approving an uploaded
+    // document. An item approved this way carries no file, and the
+    // portal shows it as approved with nothing uploaded against it.
     return (
-      <button
-        type="button"
-        onClick={approve}
-        title="Mark this item done without a document — already sighted, supplied another way, or not applicable to this job"
-        className="flex items-center gap-1.5 text-sm font-medium text-muted border border-line rounded-full px-4 py-1.5 hover:bg-hover"
-      >
-        <CheckCircle2 size={13} /> Mark satisfied without a document
-      </button>
+      <>
+        <button
+          type="button"
+          onClick={approve}
+          title="Approve without a document — already sighted, supplied another way, or not applicable to this job"
+          className="flex items-center gap-1.5 text-sm font-medium text-white bg-primary hover:opacity-90 px-4 py-1.5 rounded-full"
+        >
+          <CheckCircle2 size={13} /> Approve
+        </button>
+        <span className="text-xs text-placeholder">Nothing uploaded — approving marks it done anyway.</span>
+      </>
     );
   }
 
