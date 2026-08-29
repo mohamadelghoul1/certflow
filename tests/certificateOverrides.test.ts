@@ -66,8 +66,8 @@ describe("a correction typed on the certificate screen", () => {
   test("with nothing corrected, every row still comes from the job", () => {
     const v = values({});
     assert.equal(v.devAddress, "21 Coquet Way Green Valley");
-    assert.ok(v.determinationDate.length > 0 || v.determinationDate === "");
-    assert.equal(v.applicant.length > 0, true);
+    assert.equal(v.applicant, "Mr Mark Zukerberg");
+    assert.equal(typeof v.determinationDate, "string", "a row with no value in the job is blank, never missing");
   });
 });
 
