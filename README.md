@@ -72,6 +72,29 @@ partially-failed script.
 
 You now have one working certifier login tied to your firm.
 
+## Adding another firm later
+
+`supabase/add_firm.sql` sets up a second firm in one run — the firm, its
+first certifier, the login, and a document library copied from the firm
+that has the fullest one.
+
+1. **Authentication → Users → Add user → Create new user.** Their email
+   and a password, "Auto Confirm User" left on. Click the new user and
+   copy their **User UID**.
+2. Open `supabase/add_firm.sql`, paste that UID and fill in the seven
+   values at the top.
+3. Paste the whole file into the SQL editor and Run. It prints how many
+   library items the new firm got.
+
+They can sign in immediately. Row security keeps the two firms apart:
+neither can see the other's projects, documents or clients, even asking
+for them by id.
+
+Do not set a firm up by hand instead. The standard document library is
+seeded by a migration, which only ran for the firms that existed when it
+was run — a firm created any other way has none, and every CDC, NOC and
+OC checklist on their projects comes out empty with nothing to say why.
+
 ## Step 5 — Get your API keys
 
 1. In Supabase, click the gear icon (**Project Settings**) → **API**.
