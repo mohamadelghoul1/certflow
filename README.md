@@ -106,7 +106,7 @@ OC checklist on their projects comes out empty with nothing to say why.
 ## Step 6 — Deploy to Vercel
 
 1. Go to [vercel.com](https://vercel.com) and sign up (GitHub sign-in is easiest — use the same GitHub account this repository is under).
-2. Click **Add New** → **Project**, and import this GitHub repository (`certlyn`).
+2. Click **Add New** → **Project**, and import this GitHub repository (`certflow`).
 3. Before clicking Deploy, open **Environment Variables** and add these four (values from Step 5, plus your Vercel URL once you know it — you can add/edit the last one after the first deploy):
 
    | Name | Value |
@@ -306,34 +306,56 @@ works.
 
 ### Certlyn's own web address
 
-The site answers on the address Vercel generated
-(`certlyn-drab.vercel.app`). It works, and the certificate that secures
-it is real — but it is the address a client sees on every invoice and
-portal link, and an auto-generated one invites hesitation before a
-builder clicks it.
+`certlyn.com.au` is registered (VentraIP) and nothing points at it yet.
+The site still answers on the address Vercel generated
+(`certflow-drab.vercel.app`), which is what a client sees on every
+invoice and portal link — an auto-generated address invites hesitation
+before a builder clicks it, and it carries the old name.
 
-Suggested: `portal.qpcertifiers.com.au`. A subdomain leaves the existing
-website alone and reads as the firm's own.
-
-1. Vercel -> the Certlyn project -> Settings -> Domains -> add
-   `portal.qpcertifiers.com.au`. Vercel then names one DNS record to
-   create — use the value it gives, they vary.
-2. At whoever manages `qpcertifiers.com.au` (the same place the Resend
-   verification records were added), create that record. Usually a CNAME
-   on the name `portal`. Default TTL.
+1. Vercel -> the project -> Settings -> Domains -> add `certlyn.com.au`
+   and `portal.certlyn.com.au`. Vercel names the DNS records to create;
+   use the values it gives, they vary.
+2. VentraIP -> the domain's DNS -> create those records. Default TTL.
 3. Wait for Vercel's Domains page to read "Valid Configuration". It
    issues the HTTPS certificate itself.
 4. Vercel -> Settings -> Environment Variables -> set
-   `NEXT_PUBLIC_SITE_URL` to `https://portal.qpcertifiers.com.au`, then
-   Deployments -> Redeploy. It is read when the app is built, so saving
-   alone does not take effect.
+   `NEXT_PUBLIC_SITE_URL` to the new address, then Deployments ->
+   Redeploy. It is read when the app is built, so saving alone does not
+   take effect.
 
 Step 4 only matters for the overnight reminder sweep: everything a
 certifier triggers builds its links from the address they are actually
 on. Do it anyway so the nightly chasers agree with the rest.
 
-The Vercel address keeps working afterwards, so any link a client has
-already been sent still resolves.
+The Vercel address keeps working afterwards, so any link already sent to
+a client still resolves.
+
+### Certlyn's own sending domain
+
+Verify `certlyn.com.au` in Resend -> Domains, alongside
+qpcertifiers.com.au.
+
+This is what lets a firm with no domain of its own send as itself:
+Resend will only send from a domain verified in the account whose key is
+used, so such a firm sets its sending address to
+`Their Firm Pty Ltd <notifications@certlyn.com.au>` with its own inbox as
+the reply-to. Their client sees their name; replies reach them. Without
+it, a firm without a domain has to send under another firm's name, which
+is the thing the per-firm work was for.
+
+### Also worth doing
+
+- Register `certlin.com.au` and point it at the same place. It catches
+  the misspelling everyone will make on the phone, forever.
+- Put Certlyn through IP Australia's trade mark search. A domain being
+  free does not mean the name is.
+
+### An open question, for the owner's accountant
+
+Whether the domain and the software belong in QP Certifiers Pty Ltd or a
+separate entity. Selling software to other certifiers is a different
+business from certifying, and separating it is much easier before firms
+are using it than after.
 
 ### Two things noticed while testing, for the firm to decide
 
