@@ -15,6 +15,7 @@ import type { ActionState } from "@/lib/actions/auth";
 import type { Invoice, InvoiceLine } from "@/types/db";
 import { escapeHtml } from "@/lib/html";
 import { buildInvoiceFile } from "@/lib/invoices/invoiceDocument";
+import { invoiceEmailHtml } from "@/lib/invoices/invoiceEmail";
 import { siteUrl } from "@/lib/siteUrl";
 
 // Due in 14 days unless the certifier says otherwise — the trade
@@ -275,33 +276,22 @@ export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: F
   if (!client?.email) return { error: "That client has no email address on file — add one in their record." };
 
   const typed = invoice as Invoice;
-  const { subtotal, gst, total } = invoiceTotals((lines || []) as InvoiceLine[]);
+  const { total } = invoiceTotals((lines || []) as InvoiceLine[]);
   const number = invoiceNumberOf(typed);
-  const rows = ((lines || []) as InvoiceLine[])
-    .map((l) => `<tr><td style="padding:6px 12px 6px 0">${escapeHtml(l.description)}</td><td style="padding:6px 0;text-align:right">${formatMoney(Number(l.amount) || 0)}</td></tr>`)
-    .join("");
 
-  const portal = await siteUrl();
-  const html = [
-    `<p>Hi ${escapeHtml(client.name || "there")},</p>`,
-    `<p>Please find our invoice <strong>${escapeHtml(number)}</strong>${typed.reference ? ` for <strong>${escapeHtml(typed.reference)}</strong>` : ""} below.</p>`,
-    `<table style="border-collapse:collapse;font-size:14px">${rows}`,
-    `<tr><td style="padding:6px 12px 6px 0;border-top:1px solid #ddd">Subtotal</td><td style="padding:6px 0;text-align:right;border-top:1px solid #ddd">${formatMoney(subtotal)}</td></tr>`,
-    `<tr><td style="padding:6px 12px 6px 0">GST (10%)</td><td style="padding:6px 0;text-align:right">${formatMoney(gst)}</td></tr>`,
-    `<tr><td style="padding:6px 12px 6px 0;font-weight:bold">Total due</td><td style="padding:6px 0;text-align:right;font-weight:bold">${formatMoney(total)}</td></tr></table>`,
-    typed.due_date ? `<p>Payment is due by <strong>${typed.due_date}</strong>.</p>` : "",
-    typed.stripe_payment_link_url
-      ? `<p><a href="${typed.stripe_payment_link_url}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">Pay online by card</a>${
-          typed.card_surcharge
-            ? `<br/><span style="font-size:12px;color:#64748b">Card payments carry a ${formatMoney(Number(typed.card_surcharge))} processing surcharge (total ${formatMoney(total + Number(typed.card_surcharge))}); paying by bank transfer avoids it.</span>`
-            : ""
-        }</p>`
-      : "",
-    typed.payment_details ? `<p style="padding:10px 12px;background:#f8fafc;border-radius:6px;white-space:pre-line">${escapeHtml(typed.payment_details)}</p>` : "",
-    typed.notes ? `<p>${escapeHtml(typed.notes)}</p>` : "",
-    `<p>A PDF copy is attached. You can also view, download and pay this invoice at any time in your client portal: <a href="${portal}/portal">${portal}/portal</a>.</p>`,
-    `<p>Kind regards,<br/>${escapeHtml(firm?.name || "")}</p>`,
-  ].join("");
+  const html = invoiceEmailHtml({
+    clientName: client.name ?? null,
+    invoiceNumber: number,
+    reference: typed.reference ?? null,
+    lines: (lines || []) as InvoiceLine[],
+    dueDate: typed.due_date ?? null,
+    paymentLinkUrl: typed.stripe_payment_link_url || null,
+    cardSurcharge: typed.card_surcharge ?? null,
+    paymentDetails: typed.payment_details ?? null,
+    notes: typed.notes ?? null,
+    portalUrl: await siteUrl(),
+    firmName: firm?.name ?? null,
+  });
 
   // The invoice travels as a PDF as well as in the body, so the client
   // can file it or forward it to their accountant without logging in
