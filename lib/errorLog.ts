@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail, emailConfigured } from "@/lib/email";
+import { sendEmail, emailConfigured, firmSender } from "@/lib/email";
 import { escapeHtml } from "@/lib/html";
 
 // The app noticing its own failures.
@@ -116,7 +116,11 @@ export async function recordError(report: ErrorReport, siteUrl?: string): Promis
     // First sighting. Tell someone, if there is anyone to tell.
     const recipient = await alertRecipient(report.firmId ?? null);
     if (!recipient || !emailConfigured()) return;
-    await sendEmail(recipient, `CertFlow problem: ${shortMessage(report.message, 80)}`, alertHtml(report, siteUrl || ""));
+    // A fault on a firm's own work is reported to that firm under its
+    // own name. Only a fault with no firm attached — one on the login
+    // page — falls back to the deployment's address.
+    const sender = report.firmId ? await firmSender(admin, report.firmId, admin) : undefined;
+    await sendEmail(recipient, `CertFlow problem: ${shortMessage(report.message, 80)}`, alertHtml(report, siteUrl || ""), undefined, sender);
   } catch (err) {
     console.error("[certflow] could not record the error above", err);
   }

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { withinLimit, loginBucket, LOGIN_LIMIT } from "@/lib/rateLimit";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail, emailConfigured } from "@/lib/email";
+import { sendEmail, emailConfigured, firmSender } from "@/lib/email";
 import { siteUrl } from "@/lib/siteUrl";
 
 const TOO_MANY = "Too many sign-in attempts for this email address. Wait a minute and try again.";
@@ -79,6 +79,16 @@ export async function sendPasswordReset(_prev: ResetState, formData: FormData): 
   if (error || !data?.properties?.hashed_token) return settled;
   const link = `${site}/auth/confirm?token_hash=${data.properties.hashed_token}&type=recovery&next=${encodeURIComponent(next)}`;
 
+  // Whose firm this login belongs to, so the reset arrives from them
+  // rather than from whoever this deployment belongs to. Nobody is
+  // logged in yet, so it is looked up with the service-role client —
+  // and the reply is the same either way, so this reveals nothing about
+  // whether the address is known.
+  const { data: profile } = data.user?.id
+    ? await admin.from("profiles").select("firm_id").eq("id", data.user.id).maybeSingle()
+    : { data: null };
+  const sender = profile?.firm_id ? await firmSender(admin, profile.firm_id, admin) : undefined;
+
   await sendEmail(
     email,
     "Reset your CertFlow password",
@@ -87,7 +97,9 @@ export async function sendPasswordReset(_prev: ResetState, formData: FormData): 
       `<p>Here's the link to set a new password for your CertFlow ${kind === "certifier" ? "certifier" : "client portal"} login:</p>`,
       `<p><a href="${link}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">Set a new password</a></p>`,
       `<p>If you didn't ask for this, you can ignore this email — your password stays as it is.</p>`,
-    ].join("")
+    ].join(""),
+    undefined,
+    sender
   );
   return settled;
 }
