@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isUnknownColumn } from "@/lib/softDelete";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { emailConfigured } from "@/lib/email";
 import { portalConfigured } from "@/lib/portal/config";
 import { storageLimitBytes } from "@/lib/storageUsage";
@@ -377,6 +378,19 @@ export function runEnvChecks(): EnvCheck[] {
 // — while there is still time to fix them.
 export type NotificationCheck = { label: string; detail: string; ok: boolean };
 
+// How many firms this deployment is running, or null when it cannot be
+// asked. Null is treated as one: a check that cannot see the answer
+// should stay quiet rather than raise a warning it cannot support.
+async function firmCount(): Promise<number | null> {
+  try {
+    const { count, error } = await createAdminClient().from("firms").select("id", { count: "exact", head: true });
+    if (error) return null;
+    return count ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function runNotificationChecks(supabase: SupabaseClient, firmId: string): Promise<NotificationCheck[]> {
   const [{ data: jobs }, { data: certifiers }, { data: firm }] = await Promise.all([
     supabase.from("jobs").select("id, assigned_certifier_id, deleted_at").eq("firm_id", firmId),
@@ -392,6 +406,17 @@ export async function runNotificationChecks(supabase: SupabaseClient, firmId: st
   // The same order notifyJobCertifier tries, minus the login address,
   // which isn't readable from here.
   const ownSender = ((firm as { from_email?: string | null } | null)?.from_email || "").trim();
+  // Whether this deployment is running more than one firm. On a
+  // deployment with one firm the address set in Vercel *is* that firm's
+  // own, so warning about it would be a nag about nothing; the moment a
+  // second firm exists, one of them is sending under the other's name
+  // and that is worth saying.
+  //
+  // Counted with the service-role client because row-level security
+  // shows a certifier only their own firm, which would always count one.
+  const firms = await firmCount();
+  const deploymentSender = emailSenderSettings();
+  const sharedDeployment = firms !== null && firms > 1;
 
   const withoutEmail = (certifiers || []).filter(
     (c) => !((c as { email?: string | null }).email || c.portal_email || (c as { practice_email?: string | null }).practice_email)
@@ -420,8 +445,10 @@ export async function runNotificationChecks(supabase: SupabaseClient, firmId: st
       label: "Your email goes out under your own name",
       detail: ownSender
         ? `Certificates, invoices and reminders are sent as ${ownSender}.`
-        : "No sending address of your own is set, so your clients see whichever address this deployment was set up with — not yours. Set it on Settings → Email sending.",
-      ok: !!ownSender,
+        : sharedDeployment
+          ? `Your clients see ${deploymentSender.from}, which belongs to another firm on this deployment rather than to you. Set your own on Settings → Email sending.`
+          : `Certificates, invoices and reminders are sent as ${deploymentSender.from}. You can move that setting into Settings → Email sending, where you can change it yourself.`,
+      ok: !!ownSender || !sharedDeployment,
     },
   ];
 }
