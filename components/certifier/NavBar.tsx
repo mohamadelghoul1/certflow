@@ -51,8 +51,11 @@ export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmN
         />
         <NavLink href="/calendar">Calendar</NavLink>
         {/* One entry for both: they answer the same question, and an
-            overdue invoice used to appear under each of them. */}
-        <NavLink href="/invoices">Invoices &amp; compliance</NavLink>
+            overdue invoice used to appear under each of them. Named
+            broadly on purpose — the business side of the practice, with
+            room for a complaints register or conflict declarations later
+            without renaming it again. */}
+        <NavLink href="/invoices">Admin</NavLink>
         <NavLink href="/audit">Audit</NavLink>
         <NavLink href="/settings">Settings</NavLink>
         </div>

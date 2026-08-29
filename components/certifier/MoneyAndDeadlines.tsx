@@ -24,7 +24,7 @@ export function MoneyAndDeadlines({ firmId, tab }: { firmId: string; tab: MoneyT
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-primary mb-4">Invoices &amp; compliance</h1>
+      <h1 className="text-xl font-bold text-primary mb-4">Admin</h1>
 
       <div className="flex items-center gap-1 border-b border-line mb-6">
         {tabs.map((t) => (
