@@ -321,6 +321,21 @@ export const INSPECTION_OUTCOME_TEXT: Record<string, string> = {
   pending: "Pending",
 };
 
+// The same three outcomes as a badge.
+//
+// INSPECTION_OUTCOME_TEXT above is the wording for a document, where a
+// full sentence belongs. A badge sits beside a heading in a card barely
+// wider than a phone, and the long form ran off the side of the screen
+// and squeezed the inspection's own name into a column one word wide.
+// The full wording is still what prints, and is still what the outcome
+// dropdown offers — this is only the label.
+export const INSPECTION_OUTCOME_BADGE: Record<string, string> = {
+  passed: "Passed",
+  passed_subject_to: "Satisfactory — minor issues",
+  failed: "Failed",
+  pending: "Not yet inspected",
+};
+
 // The re-inspection column. A satisfactory result needs no re-inspection,
 // and saying so plainly is the whole content of the cell: the condition
 // it used to trail — "subject to documents/conditions being provided" —

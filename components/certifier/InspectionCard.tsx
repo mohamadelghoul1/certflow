@@ -8,6 +8,7 @@ import { useInspectionList } from "@/components/certifier/InspectionOrder";
 import { useInspectionSigning } from "@/components/certifier/SignInspectionReportButton";
 import { DateField, todayISO } from "@/components/DateField";
 import { inspectionFinished, fallsOnWeekend } from "@/lib/business";
+import { INSPECTION_OUTCOME_BADGE, INSPECTION_OUTCOME_TEXT } from "@/lib/constants";
 import { issuesSection } from "@/lib/inspectionIssues";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Defect } from "@/types/db";
@@ -24,14 +25,15 @@ import type { Defect } from "@/types/db";
 
 type Outcome = "pending" | "passed" | "failed" | "passed_subject_to";
 
+// The badge wording is shared with the client's portal so the two agree;
+// only the colours differ. Not an outcome but a state, "pending" is
+// deliberately not offered in the dropdown — you record what was found,
+// you don't set something back to un-inspected.
 export const OUTCOME_META: Record<Outcome, { label: string; style: string }> = {
-  // Not an outcome, a state: the inspection hasn't happened yet. It is
-  // deliberately not offered in the dropdown — you record what was found,
-  // you don't set something back to un-inspected.
-  pending: { label: "Not yet inspected", style: "bg-surface text-muted" },
-  passed: { label: "Passed", style: "bg-success-bg text-accent" },
-  failed: { label: "Failed", style: "bg-error-bg text-error" },
-  passed_subject_to: { label: "Satisfactory (minor issues) subject to documents being provided", style: "bg-warning-bg text-warning-text" },
+  pending: { label: INSPECTION_OUTCOME_BADGE.pending, style: "bg-surface text-muted" },
+  passed: { label: INSPECTION_OUTCOME_BADGE.passed, style: "bg-success-bg text-accent" },
+  failed: { label: INSPECTION_OUTCOME_BADGE.failed, style: "bg-error-bg text-error" },
+  passed_subject_to: { label: INSPECTION_OUTCOME_BADGE.passed_subject_to, style: "bg-warning-bg text-warning-text" },
 };
 
 function OutcomeIcon({ outcome, size }: { outcome: Outcome; size: number }) {
@@ -134,8 +136,18 @@ export function OutcomeBadge() {
   const { outcome } = useCard();
   const meta = OUTCOME_META[outcome];
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${meta.style}`}>
-      <OutcomeIcon outcome={outcome} size={12} /> {meta.label}
+    // Wraps rather than running off the side of the card: on a phone
+    // there is no room beside the inspection's name for a full sentence,
+    // and a badge that will not wrap pushes the name into a column one
+    // word wide. The full wording is on hover, and is what prints.
+    <span
+      title={INSPECTION_OUTCOME_TEXT[outcome] || meta.label}
+      className={`inline-flex items-start gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-left min-w-0 ${meta.style}`}
+    >
+      <span className="shrink-0 mt-0.5">
+        <OutcomeIcon outcome={outcome} size={12} />
+      </span>
+      <span className="min-w-0">{meta.label}</span>
     </span>
   );
 }

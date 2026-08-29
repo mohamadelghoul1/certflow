@@ -74,14 +74,20 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
     <InspectionSigning jobId={jobId} inspectionId={insp.id} signedAt={insp.report_signed_at}>
       <InspectionCardState inspectionId={insp.id} jobId={jobId} outcome={insp.outcome} date={insp.date || ""} portalReported={!!insp.portal_reported}>
         <InspectionCardShell>
+          {/* min-w-0 on the name and no shrink-0 on the badge: without
+              both, a long outcome ran off the side of the card on a phone
+              and squeezed the inspection's name into a column one word
+              wide. */}
           <div className="flex items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <div className="text-base font-semibold text-heading">{insp.title}</div>
               <div className="text-sm text-muted mt-0.5">{insp.description}</div>
             </div>
-            <div className="flex items-start gap-2 shrink-0">
+            <div className="flex items-start gap-2 min-w-0">
               <OutcomeBadge />
-              <InspectionMoveButtons inspectionId={insp.id} />
+              <div className="shrink-0">
+                <InspectionMoveButtons inspectionId={insp.id} />
+              </div>
             </div>
           </div>
 

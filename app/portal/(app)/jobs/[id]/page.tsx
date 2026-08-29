@@ -1,4 +1,5 @@
 import { pathwayLabel } from "@/lib/business";
+import { INSPECTION_OUTCOME_BADGE } from "@/lib/constants";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -19,11 +20,13 @@ import type { ChecklistItem, Amendment, ChecklistItemFile, Certifier, Inspection
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[]; checklist_item_files?: ChecklistItemFile[] | null };
 
+// Short enough to sit beside the inspection's name on a phone. The full
+// wording is what prints on the report.
 const OUTCOME_META: Record<string, { label: string; style: string }> = {
-  pending: { label: "Pending", style: "bg-surface text-muted" },
-  passed: { label: "Passed", style: "bg-success-bg text-success" },
-  failed: { label: "Failed", style: "bg-error-bg text-error" },
-  passed_subject_to: { label: "Satisfactory (minor issues) subject to documents being provided", style: "bg-warning-bg text-warning-text" },
+  pending: { label: INSPECTION_OUTCOME_BADGE.pending, style: "bg-surface text-muted" },
+  passed: { label: INSPECTION_OUTCOME_BADGE.passed, style: "bg-success-bg text-success" },
+  failed: { label: INSPECTION_OUTCOME_BADGE.failed, style: "bg-error-bg text-error" },
+  passed_subject_to: { label: INSPECTION_OUTCOME_BADGE.passed_subject_to, style: "bg-warning-bg text-warning-text" },
 };
 
 export default async function PortalJobPage({
@@ -517,7 +520,7 @@ async function InspectionCard({
           {insp.date && <div className="text-xs text-muted mt-1">Scheduled: {formatISODate(insp.date)}</div>}
           {inspectorName && <div className="text-xs text-placeholder">Inspector: {inspectorName}</div>}
         </div>
-        <span className={`px-2 py-0.5 rounded text-[11px] font-semibold shrink-0 ${meta.style}`}>{meta.label}</span>
+        <span className={`px-2 py-0.5 rounded text-[11px] font-semibold min-w-0 text-right ${meta.style}`}>{meta.label}</span>
       </div>
 
       {insp.defects.length > 0 && (
