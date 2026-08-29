@@ -253,6 +253,15 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: hasTable(supabase, "certificate_templates"),
     },
     {
+      migration: "0059",
+      label: "Each firm's own Stripe account",
+      detail: "Sends a firm's card payments to its own bank account instead of whichever Stripe account this deployment was set up with.",
+      // The table has no read policy by design, so probing it would
+      // report "not applied" on a database where it exists. The status
+      // function is safe to call and answers the same question.
+      probe: hasFunction(supabase, "firm_stripe_status", {}),
+    },
+    {
       migration: "0058",
       label: "Each firm's own sending address",
       detail: "Lets a second firm send from its own address instead of this deployment's, so its clients never see another firm's name.",
@@ -329,8 +338,12 @@ export function runEnvChecks(): EnvCheck[] {
       configured: storageLimitBytes() !== null,
     },
     {
-      label: "Card payments",
-      detail: "Stripe, for the Pay-online button on invoices. Both the secret key and the webhook secret are needed.",
+      // Only the fallback since migration 0059: a firm that connects its
+      // own Stripe on Settings → Payment details takes its payments into
+      // its own account and never touches these.
+      label: "Card payments — deployment fallback",
+      detail:
+        "The Stripe keys in Vercel, used by any firm that hasn't connected its own account. Both the secret key and the webhook secret are needed.",
       configured: !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET),
     },
     {

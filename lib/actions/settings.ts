@@ -10,6 +10,10 @@ import type { ActionState } from "@/lib/actions/auth";
 
 export type InviteState = { error?: string; success?: string } | undefined;
 
+// What PostgREST says when the database has not had the migration run
+// that creates the function being called.
+const MISSING_FUNCTION = ["PGRST202", "42883"];
+
 export async function updateFirm(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
@@ -79,6 +83,54 @@ export async function updateFirmPayments(_prev: ActionState, formData: FormData)
     if (!error) break;
     if (!isUnknown(error.code)) return { error: error.message };
     if (index === attempts.length - 1) return { error: "Run database updates 0035–0038 first (System check shows what's been run)." };
+  }
+  revalidatePath("/settings");
+  return undefined;
+}
+
+// Connecting a firm's own Stripe account.
+//
+// The keys are written through a database function and never read back:
+// migration 0059 gives the table no read policy, so a certifier can set
+// a key and be told it is set, but nothing holding a login — theirs
+// included — can select the value. That is what keeps a Stripe secret
+// key off a page that is sent to a browser.
+//
+// A blank box means "leave what is stored alone", so the webhook secret
+// can be filled in a week after the key without retyping the key.
+export async function saveFirmStripe(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const secretKey = String(formData.get("stripe_secret_key") || "").trim();
+  const webhookSecret = String(formData.get("stripe_webhook_secret") || "").trim();
+  if (!secretKey && !webhookSecret) return { error: "Nothing to save — paste a key or a signing secret first." };
+
+  // Caught early and by shape only, so a mistyped box says so here
+  // rather than as a Stripe error on the first client who tries to pay.
+  if (secretKey && !/^(sk|rk)_(test|live)_/.test(secretKey)) {
+    return { error: "That doesn't look like a Stripe secret key — they start with sk_live_ or sk_test_." };
+  }
+  if (webhookSecret && !webhookSecret.startsWith("whsec_")) {
+    return { error: "That doesn't look like a Stripe signing secret — they start with whsec_." };
+  }
+
+  const { error } = await supabase.rpc("set_firm_stripe_credentials", {
+    p_secret_key: secretKey || null,
+    p_webhook_secret: webhookSecret || null,
+  });
+  if (error) {
+    return { error: MISSING_FUNCTION.includes(error.code) ? "Run database update 0059 first (Settings → System check)." : error.message };
+  }
+  revalidatePath("/settings");
+  return undefined;
+}
+
+export async function disconnectFirmStripe(_prev: ActionState, _formData: FormData): Promise<ActionState> {
+  await requireProfile("certifier");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("clear_firm_stripe_credentials");
+  if (error) {
+    return { error: MISSING_FUNCTION.includes(error.code) ? "Run database update 0059 first (Settings → System check)." : error.message };
   }
   revalidatePath("/settings");
   return undefined;

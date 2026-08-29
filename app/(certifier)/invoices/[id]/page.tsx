@@ -8,7 +8,7 @@ import { setInvoiceStatus, deleteInvoice, toggleInvoiceReminders } from "@/lib/a
 import { InvoiceEditForm } from "@/components/certifier/InvoiceEditForm";
 import { EmailInvoiceButton } from "@/components/certifier/EmailInvoiceButton";
 import { CardPaymentButton } from "@/components/certifier/CardPaymentButton";
-import { stripeConfigured } from "@/lib/payments/stripe";
+import { cardPaymentsAvailable } from "@/lib/payments/stripe";
 import { isOverdue } from "@/lib/invoices/invoiceLogic";
 import type { Invoice, InvoiceLine } from "@/types/db";
 
@@ -17,10 +17,11 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
 
-  const [{ data: rawInvoice }, { data: lines }, { data: clients }] = await Promise.all([
+  const [{ data: rawInvoice }, { data: lines }, { data: clients }, cardPayments] = await Promise.all([
     supabase.from("invoices").select("*").eq("id", id).eq("firm_id", profile.firm_id).single(),
     supabase.from("invoice_lines").select("*").eq("invoice_id", id).order("sort_order"),
     supabase.from("clients").select("id, name").eq("firm_id", profile.firm_id).order("name"),
+    cardPaymentsAvailable(supabase),
   ]);
   if (!rawInvoice) notFound();
   const invoice = rawInvoice as Invoice;
@@ -47,7 +48,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <a href={`/api/invoices/${id}/pdf`} className="px-3.5 py-2 rounded-md border border-line text-sm text-primary font-medium hover:bg-hover">
             Download PDF
           </a>
-          {stripeConfigured() && invoice.status !== "paid" && invoice.status !== "void" && (
+          {cardPayments && invoice.status !== "paid" && invoice.status !== "void" && (
             <CardPaymentButton invoiceId={id} existingUrl={invoice.stripe_payment_link_url || null} />
           )}
           {invoice.status === "draft" && <EmailInvoiceButton invoiceId={id} />}

@@ -8,7 +8,8 @@ import { todayISO } from "@/lib/business";
 import { firmSender, sendEmail, emailConfigured } from "@/lib/email";
 import { recordAuditEvent } from "@/lib/audit";
 import { invoiceTotals, invoiceNumberOf, nextInvoiceNumber, formatMoney } from "@/lib/invoices/invoiceLogic";
-import { stripeConfigured, createInvoicePaymentLink } from "@/lib/payments/stripe";
+import { firmStripeCredentials, createInvoicePaymentLink } from "@/lib/payments/stripe";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { cardSurchargeFor } from "@/lib/payments/surcharge";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Invoice, InvoiceLine } from "@/types/db";
@@ -185,12 +186,16 @@ export async function deleteInvoice(formData: FormData) {
 
 // A card-payment link for this invoice, created once on the certifier's
 // click and reused from then on — in the email, and on the printed
-// invoice. Needs the firm's Stripe account connected in Vercel first.
+// invoice. Created against this firm's own Stripe account, so the money
+// arrives in this firm's bank account and no other.
 export async function createCardPaymentLink(_prev: InvoiceEmailState, formData: FormData): Promise<InvoiceEmailState> {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const invoiceId = String(formData.get("invoice_id"));
-  if (!stripeConfigured()) return { error: "Card payments aren't connected yet (STRIPE_SECRET_KEY in Vercel)." };
+  // Read with the service-role client: the credentials table has no read
+  // policy, so a certifier's own session cannot select from it.
+  const credentials = await firmStripeCredentials(createAdminClient(), profile.firm_id);
+  if (!credentials.secretKey) return { error: "Card payments aren't connected yet — add your Stripe keys in Settings → Payment details." };
 
   const [{ data: invoice }, { data: lines }, { data: firmRow }] = await Promise.all([
     supabase.from("invoices").select("*").eq("id", invoiceId).eq("firm_id", profile.firm_id).single(),
@@ -214,6 +219,7 @@ export async function createCardPaymentLink(_prev: InvoiceEmailState, formData: 
     invoiceNumber: invoiceNumberOf(typed),
     reference: surcharged ? `${typed.reference || ""} (incl. ${formatMoney(surcharged.surcharge)} card surcharge)`.trim() : typed.reference,
     totalIncGst: chargeTotal,
+    secretKey: credentials.secretKey,
   });
   if ("error" in link) return { error: link.error };
 

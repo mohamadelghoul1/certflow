@@ -1,6 +1,8 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { FirmForm, CertifierList, ClientList, ReminderSettingsForm, PaymentSettingsForm } from "@/components/certifier/SettingsForms";
+import { FirmForm, CertifierList, ClientList, ReminderSettingsForm, PaymentSettingsForm, StripeConnectionForm } from "@/components/certifier/SettingsForms";
+import { firmStripeStatus, deploymentStripeConfigured } from "@/lib/payments/stripe";
+import { siteUrl } from "@/lib/siteUrl";
 import { CloudBackupSection } from "@/components/certifier/CloudBackupSection";
 import { CertificateLayoutEditor } from "@/components/certifier/CertificateLayoutEditor";
 import { certificateTemplatesForFirm } from "@/lib/actions/certificateTemplates";
@@ -22,7 +24,7 @@ import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, A
 
 const SECTIONS: { key: string; label: string; icon: LucideIcon; blurb: string }[] = [
   { key: "firm", label: "Firm details", icon: Building2, blurb: "Name, addresses, logo, stamp and Portal account" },
-  { key: "payments", label: "Payment details", icon: Landmark, blurb: "Bank details on invoices, card surcharge" },
+  { key: "payments", label: "Payment details", icon: Landmark, blurb: "Bank details on invoices, card surcharge, your Stripe account" },
   { key: "reminders", label: "Client reminders", icon: BellRing, blurb: "Automatic chasing of outstanding documents" },
   { key: "certifiers", label: "Certifiers", icon: Users, blurb: "The team, signatures and registrations" },
   { key: "clients", label: "Clients & portal access", icon: KeyRound, blurb: "Contacts and their portal logins" },
@@ -48,7 +50,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       const stampUrl = firm?.stamp_url ? (await signedUrl(firm.stamp_url)) || undefined : undefined;
       content = <FirmForm firm={firm} logoUrl={logoUrl} stampUrl={stampUrl} />;
     } else if (active.key === "payments") {
-      content = <PaymentSettingsForm firm={firm} />;
+      const [stripeStatus, base] = await Promise.all([firmStripeStatus(supabase), siteUrl()]);
+      content = (
+        <>
+          <PaymentSettingsForm firm={firm} />
+          <StripeConnectionForm status={stripeStatus} webhookUrl={`${base}/api/stripe/webhook`} deploymentConfigured={deploymentStripeConfigured()} />
+        </>
+      );
     } else {
       content = <ReminderSettingsForm firm={firm} />;
     }

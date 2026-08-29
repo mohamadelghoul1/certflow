@@ -20,6 +20,8 @@ import {
   updateClient,
   removeClient,
   inviteClient,
+  saveFirmStripe,
+  disconnectFirmStripe,
 } from "@/lib/actions/settings";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Firm, Certifier, ClientContact } from "@/types/db";
@@ -218,6 +220,139 @@ export function PaymentSettingsForm({ firm }: { firm: Firm | null }) {
         {pending ? "Saving…" : "Save payment settings"}
       </button>
     </form>
+  );
+}
+
+// This firm's own Stripe account.
+//
+// Card payments used to be one account for the whole deployment, which
+// is right for one firm and wrong the moment there are two: a second
+// firm's client would press "Pay online" and the money would arrive in
+// the first firm's bank account. Each firm connects its own here.
+//
+// The keys are write-only. Nothing on this page has ever held one — the
+// server is told whether each is set and nothing more — because
+// everything a form like this is given is serialised into the page and
+// readable in the browser.
+export function StripeConnectionForm({
+  status,
+  webhookUrl,
+  deploymentConfigured,
+}: {
+  status: { secretKeySet: boolean; webhookSecretSet: boolean; updatedAt: string | null; installed: boolean };
+  webhookUrl: string;
+  deploymentConfigured: boolean;
+}) {
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(saveFirmStripe, undefined);
+  const [disconnectState, disconnectAction, disconnecting] = useActionState<ActionState, FormData>(disconnectFirmStripe, undefined);
+  const [showKeys, setShowKeys] = useState(false);
+
+  const connected = status.secretKeySet;
+  const dot = (on: boolean) => (on ? "bg-success" : "bg-line");
+
+  return (
+    <div className="pt-4 mt-4 border-t border-line space-y-3">
+      <div className="font-semibold text-primary text-sm">Card payments (Stripe)</div>
+
+      {!status.installed ? (
+        <p className="text-[11px] text-warning-text">
+          Run database update 0059 first — Settings → System check shows what&rsquo;s been run. Until then, card payments use whichever Stripe account
+          is set up for this deployment.
+        </p>
+      ) : (
+        <>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <span className={`inline-block w-2 h-2 rounded-full ${dot(status.secretKeySet)}`} />
+              Secret key — {status.secretKeySet ? "set" : "not set"}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <span className={`inline-block w-2 h-2 rounded-full ${dot(status.webhookSecretSet)}`} />
+              Webhook signing secret — {status.webhookSecretSet ? "set" : "not set"}
+            </div>
+          </div>
+
+          {connected && !status.webhookSecretSet && (
+            <p className="text-[11px] text-warning-text">
+              Clients can pay, but CertFlow won&rsquo;t hear about it — an invoice paid by card will stay showing as unpaid until the signing secret
+              below is filled in.
+            </p>
+          )}
+          {!connected && (
+            <p className="text-[11px] text-muted">
+              {deploymentConfigured
+                ? "Not connected — card payments are going to the Stripe account set up for this deployment. Connect your own below and every payment from here on lands in your account instead."
+                : "Not connected — the Pay online button won't appear on invoices until you connect a Stripe account."}
+            </p>
+          )}
+
+          <form action={formAction} className="space-y-3">
+            <div>
+              <label className={labelCls}>Secret key {status.secretKeySet && <span className="font-normal text-muted">(leave blank to keep the one stored)</span>}</label>
+              <input
+                name="stripe_secret_key"
+                type={showKeys ? "text" : "password"}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="sk_live_…"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>
+                Webhook signing secret {status.webhookSecretSet && <span className="font-normal text-muted">(leave blank to keep the one stored)</span>}
+              </label>
+              <input
+                name="stripe_webhook_secret"
+                type={showKeys ? "text" : "password"}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="whsec_…"
+                className={inputCls}
+              />
+            </div>
+            <label className="flex items-center gap-2 text-[11px] text-muted">
+              <input type="checkbox" checked={showKeys} onChange={(e) => setShowKeys(e.target.checked)} className="accent-icon" />
+              Show what I&rsquo;m typing
+            </label>
+            {state?.error && <div className="text-sm text-error">{state.error}</div>}
+            <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
+              {pending ? "Saving…" : connected ? "Update Stripe keys" : "Connect Stripe"}
+            </button>
+          </form>
+
+          <div className="rounded-md bg-surface border border-line p-3 space-y-1">
+            <div className="text-[11px] font-semibold text-placeholder">Where these come from</div>
+            <ol className="text-[11px] text-muted list-decimal ml-4 space-y-0.5">
+              <li>
+                In Stripe, go to Developers → API keys and copy the <strong>secret key</strong>.
+              </li>
+              <li>
+                Then Developers → Webhooks → Add endpoint. The URL is <code className="break-all">{webhookUrl}</code>, and the one event to send is{" "}
+                <code>checkout.session.completed</code>.
+              </li>
+              <li>Stripe then shows that endpoint&rsquo;s signing secret — that is the second box above.</li>
+            </ol>
+            <p className="text-[11px] text-muted">
+              Once saved, neither can be read back out of CertFlow — not by us, not by anyone logged in. Replace one by pasting a new one; if you
+              think a key has got out, roll it in Stripe and paste the new one here.
+            </p>
+          </div>
+
+          {connected && (
+            <form action={disconnectAction}>
+              {disconnectState?.error && <div className="text-sm text-error mb-1">{disconnectState.error}</div>}
+              <button disabled={disconnecting} className="text-xs text-error hover:underline disabled:opacity-60">
+                {disconnecting ? "Disconnecting…" : "Disconnect Stripe"}
+              </button>
+              <p className="text-[11px] text-muted mt-1">
+                Removes both keys. Payment links already sent keep working in Stripe, but CertFlow will no longer mark those invoices paid on its own.
+              </p>
+            </form>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
