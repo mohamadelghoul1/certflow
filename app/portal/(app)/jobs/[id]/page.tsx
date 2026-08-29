@@ -75,6 +75,8 @@ export default async function PortalJobPage({
   // client — telling someone to ring without giving them the number is
   // how a change of date becomes a missed inspection.
   const { data: firmRow } = await createAdminClient().from("firms").select("phone, email").eq("id", job.firm_id).maybeSingle();
+  // The office line is the fallback. The inspector's own mobile is
+  // preferred where migration 0054 has been run and one is on file.
   const firmContact = (firmRow as { phone?: string | null; email?: string | null } | null) || null;
 
   // Which of this project's documents the firm has a blank form for.
@@ -418,7 +420,13 @@ async function InspectionsSection({
         <div className="p-5 space-y-3">
           {inspections.map((insp) => {
             const inspector = certifiers.find((c) => c.id === insp.inspector_certifier_id);
-            return <InspectionCard key={insp.id} insp={insp} jobId={jobId} inspectorName={inspector?.name} bookingOpen={bookingOpen} contact={contact} />;
+            // The person actually attending, where one is assigned and
+            // has a mobile on file. A builder whose slab is not ready
+            // wants them, not the office.
+            const reach = inspector?.mobile?.trim()
+              ? { phone: inspector.mobile, email: contact?.email ?? null }
+              : contact;
+            return <InspectionCard key={insp.id} insp={insp} jobId={jobId} inspectorName={inspector?.name} bookingOpen={bookingOpen} contact={reach} />;
           })}
           {inspections.length === 0 && (
             <div className="py-6 text-center text-sm text-muted">Your certifier hasn&rsquo;t scheduled any inspections for this project yet.</div>

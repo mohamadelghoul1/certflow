@@ -44,6 +44,9 @@ export type Certifier = {
   name: string;
   registration_no: string | null;
   registration_body: string | null;
+  // Shown to clients in the portal for changing a booked inspection —
+  // not the firm's office line that prints on certificates.
+  mobile?: string | null;
   signature_url: string | null;
   pi_insurance_expiry: string | null;
   registration_expiry: string | null;

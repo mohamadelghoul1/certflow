@@ -232,10 +232,17 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       migration: "0052",
       label: "Inspection calendar feed",
       detail: "Gives each certifier a private address their phone's calendar can subscribe to, and a way to replace it.",
-      // The column alone would say "applied" on a database that has it
-      // but not the lookup the feed actually depends on, so what is
-      // probed is the function the route calls.
-      probe: hasFunction(supabase, "certifier_for_calendar_token", { p_token: null }),
+      // The lookup function existed in an earlier draft that kept the
+      // token on certifiers, where a client could read it — so probing
+      // the function would report "applied" for the version this one
+      // exists to replace. The table is only in the safe version.
+      probe: hasTable(supabase, "certifier_calendar_feeds"),
+    },
+    {
+      migration: "0054",
+      label: "Certifier mobile",
+      detail: "The number a client rings to move a booked inspection — kept apart from the office line that prints on certificates.",
+      probe: hasColumn(supabase, "certifiers", "mobile"),
     },
     {
       migration: "0053",

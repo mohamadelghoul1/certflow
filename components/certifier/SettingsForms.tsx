@@ -240,6 +240,10 @@ export function CertifierList({ certifiers, firmId, signatureUrls, practiceLogoU
               <input name="email" type="email" placeholder="where client uploads and bookings are sent" className={inputCls} />
             </div>
             <div>
+              <label className={labelCls}>Mobile</label>
+              <input name="mobile" type="tel" placeholder="shown to clients for changing a booking" className={inputCls} />
+            </div>
+            <div>
               <label className={labelCls}>PI insurance expiry</label>
               <DateField name="pi_insurance_expiry" className={inputCls} />
             </div>
@@ -376,6 +380,14 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
         <div>
           <label className={labelCls}>Email for notifications</label>
           <input name="email" type="email" defaultValue={certifier.email || ""} placeholder="where client uploads and bookings are sent" className={inputCls} />
+        </div>
+        {/* Deliberately not the firm's phone above: that one is the
+            office line printed on every certificate, letterhead, quote
+            and invoice. This is the number a builder rings when the slab
+            will not be ready. */}
+        <div>
+          <label className={labelCls}>Mobile</label>
+          <input name="mobile" type="tel" defaultValue={certifier.mobile || ""} placeholder="shown to clients for changing a booking" className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>PI insurance expiry</label>

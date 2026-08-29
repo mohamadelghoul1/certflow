@@ -46,8 +46,15 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   const weekendUsed = days.slice(5).some((d) => d.inspections.length > 0);
   const shown = weekendUsed ? days : days.slice(0, 5);
 
-  const { data: me } = await supabase.from("certifiers").select("calendar_token").eq("id", profile.certifier_id || "").maybeSingle();
-  const token = (me as { calendar_token?: string } | null)?.calendar_token || null;
+  // In its own table, not on certifiers: a client with a portal login
+  // can read every column of their firm's certifiers row, and a token
+  // there would hand them the firm's whole diary. See migration 0052.
+  const { data: feed } = await supabase
+    .from("certifier_calendar_feeds")
+    .select("token")
+    .eq("certifier_id", profile.certifier_id || "")
+    .maybeSingle();
+  const token = (feed as { token?: string } | null)?.token || null;
 
   return (
     <div>

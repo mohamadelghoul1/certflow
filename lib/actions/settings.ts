@@ -91,10 +91,12 @@ export async function addCertifier(_prev: ActionState, formData: FormData): Prom
     registration_expiry: formData.get("registration_expiry") || null,
   };
   const email = String(formData.get("email") || "").trim() || null;
-  const { error } = await supabase.from("certifiers").insert({ ...base, email });
+  const mobile = String(formData.get("mobile") || "").trim() || null;
+  const { error } = await supabase.from("certifiers").insert({ ...base, email, mobile });
   if (error) {
-    // A database that hasn't run migration 0040 has no email column —
-    // save the certifier without it rather than failing the whole form.
+    // A database that hasn't run migration 0040 has no email column, or
+    // 0054 no mobile — save the certifier without them rather than
+    // failing the whole form.
     if (error.code !== "PGRST204" && error.code !== "42703") return { error: error.message };
     const { error: retryError } = await supabase.from("certifiers").insert(base);
     if (retryError) return { error: retryError.message };
@@ -132,6 +134,10 @@ export async function updateCertifier(_prev: ActionState, formData: FormData): P
       portal_email: text("portal_email"),
       // Where CertFlow's own notifications to them go. Added by 0040.
       email: text("email"),
+      // The mobile a client rings to move a booked inspection. Kept
+      // apart from the firm's office line, which is what prints on
+      // certificates. Added by 0054.
+      mobile: text("mobile"),
     })
     .eq("id", id)
     .eq("firm_id", profile.firm_id);
