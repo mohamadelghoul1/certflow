@@ -16,6 +16,25 @@ export function certificateFieldValues(data: PathwayCertificateData): FieldValue
   // the generated one, so the approved set says what the screen says.
   const ov = (key: string, value?: string | null) => (docOverrides || {})[`cert.${key}`] ?? value ?? "";
 
+  // Nine rows on the certificate screen were saved under a key of their
+  // own that no document ever read: a certifier could correct the date of
+  // determination, the lapse date, the Portal reference or any of the
+  // consent fields, watch the screen change, and hand over a PDF still
+  // carrying the original. The screen's keys are honoured here rather
+  // than renamed, so every correction already typed on a live job now
+  // reaches the document instead of being thrown away.
+  //
+  // An override is taken exactly as typed. These rows display a
+  // formatted date, so the correction is already the words the certifier
+  // wants on the page and formatting it again would rewrite them.
+  const from = (keys: string[], value?: string | null) => {
+    for (const key of keys) {
+      const written = (docOverrides || {})[key];
+      if (written !== undefined) return written;
+    }
+    return value ?? "";
+  };
+
   return {
     applicant: ov("applicant", applicantName),
     applicantAddress: ov("applicantAddress", formatAddress(d.applicantAddress)),
@@ -23,18 +42,18 @@ export function certificateFieldValues(data: PathwayCertificateData): FieldValue
     owner: ov("owner", ownerName),
     ownerAddress: ov("ownerAddress", ownerAddress),
     ownerPhone: ov("ownerPhone", ownerPhone),
-    planningPortalRef: cd.planningPortalRef || "",
-    lga: d.council?.lga || "",
+    planningPortalRef: from(["cert.planningPortalRef", "cert.portalRef"], cd.planningPortalRef),
+    lga: from(["cert.lga", "cert.consentAuthority"], d.council?.lga),
     epi: ov("epi", cd.relevantInstrument),
     partOfCode: ov("partOfCode", cd.relevantPartOfCode),
-    determinationDate: formatISODate(cd.determinationDate),
+    determinationDate: from(["cert.determinationDate", "cert.determination"], formatISODate(cd.determinationDate)),
     // A lapse date can be a sentence rather than a date — a CDC that has
     // been acted upon has none — so only a real date is formatted.
-    lapseDate: /^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate,
-    developmentConsentNumber: cd.developmentConsentNumber || "",
-    developmentConsentDate: formatISODate(cd.developmentConsentDate),
-    certificateNumber: ref,
-    issuedDate,
+    lapseDate: from(["cert.lapseDate", "cert.lapse"], /^\d{4}-\d{2}-\d{2}$/.test(lapseDate) ? formatISODate(lapseDate) : lapseDate),
+    developmentConsentNumber: from(["cert.developmentConsentNumber", "cert.consentNumber"], cd.developmentConsentNumber),
+    developmentConsentDate: from(["cert.developmentConsentDate", "cert.consentDate"], formatISODate(cd.developmentConsentDate)),
+    certificateNumber: from(["cert.certificateNumber", "cert.ccNumber"], ref),
+    issuedDate: from(["cert.issuedDate", "cert.ccIssueDate"], issuedDate),
     devAddress: ov("devAddress", job.address),
     lotDp: ov("lotDp", cd.lotSectionDp),
     zone: ov("zone", d.zoning),

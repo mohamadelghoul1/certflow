@@ -409,7 +409,7 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
                 <CertRow label="Consent Authority / Local Government Area:" value={d.council?.lga} jobId={job.id} docKey="cert.consentAuthority" overrides={docOverrides} />
                 <CertRow label="Development Consent Number:" value={cd.developmentConsentNumber} jobId={job.id} docKey="cert.consentNumber" overrides={docOverrides} />
                 <CertRow label="Development Consent Date:" value={formatISODate(cd.developmentConsentDate)} jobId={job.id} docKey="cert.consentDate" overrides={docOverrides} />
-                <CertRow label="NSW Planning Portal Ref Number:" value={cd.planningPortalRef} />
+                <CertRow label="NSW Planning Portal Ref Number:" value={cd.planningPortalRef} jobId={job.id} docKey="cert.portalRef" overrides={docOverrides} />
                 <CertRow label="Construction Certificate Number:" value={ref} jobId={job.id} docKey="cert.ccNumber" overrides={docOverrides} />
                 <CertRow label="Date of Issue of Construction Certificate:" value={issuedDate} jobId={job.id} docKey="cert.ccIssueDate" overrides={docOverrides} />
               </>
