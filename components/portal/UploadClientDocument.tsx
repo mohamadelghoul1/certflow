@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { submitClientDocument } from "@/lib/actions/portal";
 import { UploadCloud } from "lucide-react";
-import { uploadProblem } from "@/lib/uploads";
+import { uploadProblem, UPLOAD_HINT } from "@/lib/uploads";
 
 // Uploading a document against a checklist item.
 //
@@ -101,7 +101,11 @@ export function UploadClientDocument({
           disabled={working}
         />
       </label>
-      {error && <div className="text-xs text-error mt-1">{error}</div>}
+      {/* Said before the file is chosen, not after it is refused: a
+          builder on a phone with a 40 MB drawing set should find that
+          out now rather than after the upload. Hidden while an error is
+          showing, which says the same thing more specifically. */}
+      {error ? <div className="text-xs text-error mt-1">{error}</div> : <div className="text-[11px] text-placeholder mt-1">{UPLOAD_HINT}</div>}
     </div>
   );
 }

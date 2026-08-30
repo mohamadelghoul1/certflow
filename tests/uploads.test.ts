@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { uploadProblem, MAX_UPLOAD_BYTES } from "@/lib/uploads";
+import { uploadProblem, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, UPLOAD_HINT } from "@/lib/uploads";
 
 const ok = (name: string, size = 1000) => uploadProblem({ name, size });
 
@@ -33,8 +33,19 @@ describe("what a client may send their certifier", () => {
 
   test("an oversized file says how big it is and what to do", () => {
     const problem = ok("plans.pdf", MAX_UPLOAD_BYTES + 1) || "";
-    assert.match(problem, /51 MB/);
-    assert.match(problem, /50 MB/);
+    assert.match(problem, new RegExp(`${MAX_UPLOAD_MB + 1} MB`));
+    assert.match(problem, new RegExp(`${MAX_UPLOAD_MB} MB`));
+  });
+
+  test("a file at exactly the limit is accepted, not rounded away", () => {
+    assert.equal(ok("plans.pdf", MAX_UPLOAD_BYTES), null);
+  });
+
+  // The note on the portal and the refusal have to agree, or a client is
+  // told one thing and then another.
+  test("the note a client reads names the same limit that is enforced", () => {
+    assert.match(UPLOAD_HINT, new RegExp(`${MAX_UPLOAD_MB} MB`));
+    assert.equal(MAX_UPLOAD_MB, 20);
   });
 
   test("an empty file is caught, since it usually means a half-finished save", () => {

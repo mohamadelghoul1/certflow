@@ -9,6 +9,7 @@ import { requireProfile } from "@/lib/auth";
 import { formatISODate } from "@/lib/business";
 import { escapeHtml } from "@/lib/html";
 import { currentDocuments } from "@/lib/checklistDocuments";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/uploads";
 
 // A client sending a document in from the portal. The file itself is
 // uploaded straight from their browser to storage; this records it
@@ -44,6 +45,22 @@ export async function submitClientDocument({
     if (alreadySent && !changesRequested) {
       return { error: "This document is with your certifier for review. You'll be able to send another once they ask for changes." };
     }
+  }
+
+  // The file's real size, asked of storage rather than taken from the
+  // browser, which reports whatever it likes. This is the only place a
+  // client's limit can be applied: a check in the upload component is
+  // advice, and a limit on the bucket would cap the certifier too, who
+  // is deliberately not capped.
+  //
+  // Over the limit, the file is removed rather than left orphaned —
+  // it was written before this ran, and nothing else would ever point
+  // at it.
+  const { data: uploaded } = await supabase.storage.from("certflow-files").info(filePath);
+  const uploadedSize = (uploaded as { size?: number } | null)?.size;
+  if (typeof uploadedSize === "number" && uploadedSize > MAX_UPLOAD_BYTES) {
+    await supabase.storage.from("certflow-files").remove([filePath]);
+    return { error: `That file is ${Math.ceil(uploadedSize / (1024 * 1024))} MB and the limit is ${MAX_UPLOAD_MB} MB. Send it as a PDF, or split it into parts.` };
   }
 
   // Runs as the signed-in client, and the function itself refuses any

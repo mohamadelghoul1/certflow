@@ -58,21 +58,27 @@ create policy "client upload own job storage" on storage.objects for insert
     and allowed_upload_name(name)
   );
 
--- Storage enforces this itself, whoever is uploading and whatever the
--- app forgot to check. Generous on purpose: an architectural set is
--- large, and a client who has to split a drawing will email it instead.
+-- No bucket-wide size limit, deliberately.
 --
--- Guarded because the column belongs to Supabase's own storage schema
--- rather than to this app: a platform without it should leave the rest
--- of this migration applied rather than failing the lot.
+-- A limit set on the bucket applies to whoever is uploading, and the
+-- certifier is not capped: they are putting their own work into their
+-- own storage, they can see what it costs them on the Storage page, and
+-- a ceiling there would only get in the way of a certificate that
+-- happens to be large.
+--
+-- The client's limit is a client's limit, so it is applied where the
+-- client's upload is recorded — the server checks the file's real size
+-- after it lands and removes anything over, which the browser cannot be
+-- trusted to do and a bucket setting cannot do selectively.
+--
+-- Set explicitly to null rather than left alone, so running this after
+-- an earlier version that did set a bucket limit clears it.
 do $$
 begin
   if exists (
     select 1 from information_schema.columns
     where table_schema = 'storage' and table_name = 'buckets' and column_name = 'file_size_limit'
   ) then
-    update storage.buckets set file_size_limit = 52428800 where id = 'certflow-files';
-  else
-    raise notice 'storage.buckets has no file_size_limit column here; the size cap was not set.';
+    update storage.buckets set file_size_limit = null where id = 'certflow-files';
   end if;
 end $$;
