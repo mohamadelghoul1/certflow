@@ -275,6 +275,19 @@ export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: F
   const { data: client } = await supabase.from("clients").select("name, email").eq("id", invoice.client_id).single();
   if (!client?.email) return { error: "That client has no email address on file — add one in their record." };
 
+  // An invoice with no fee lines on it is an invoice nobody finished
+  // writing, and it reaches the client reading "Total due $0.00".
+  // Creating a card payment link has always refused this; sending the
+  // invoice itself did not, which was the wrong way round — the link is
+  // ours to retry, the email is the client's to receive.
+  //
+  // The test is "no lines", not "totals zero": an invoice deliberately
+  // written to nil — a warranty visit, a job done as a favour — is a
+  // decision, and still goes.
+  if ((lines || []).length === 0) {
+    return { error: "This invoice has no fees on it yet — add them first, or your client receives an invoice for $0.00." };
+  }
+
   const typed = invoice as Invoice;
   const { total } = invoiceTotals((lines || []) as InvoiceLine[]);
   const number = invoiceNumberOf(typed);
