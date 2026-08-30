@@ -254,6 +254,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: hasTable(supabase, "certificate_templates"),
     },
     {
+      migration: "0062",
+      label: "Only documents can be uploaded",
+      detail: "Refuses programs and archives at the point of upload. Not virus scanning — a bad PDF is still a PDF — but a certifier is never sent a .exe.",
+      probe: hasFunction(supabase, "allowed_upload_name", { p_name: "x.pdf" }),
+    },
+    {
       migration: "0061",
       label: "Uploads land in the right firm's folder",
       detail: "A client picks their upload's folder in the browser. This makes the database check it is their certifier's, not just their job's.",

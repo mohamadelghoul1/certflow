@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { submitClientDocument } from "@/lib/actions/portal";
 import { UploadCloud } from "lucide-react";
+import { uploadProblem } from "@/lib/uploads";
 
 // The whole checklist-item card as a drop target, not just the little
 // upload link inside it — dragging a file "onto the item" is what people
@@ -42,6 +43,15 @@ export function ItemDropCard({
 
   async function handleFile(file: File | undefined | null) {
     if (!file || working) return;
+    // Checked here so the person is told plainly and before the file
+    // leaves their phone. The database refuses the same thing anyway —
+    // this upload goes straight from the browser to storage, so what is
+    // written here is a courtesy, not the control.
+    const problem = uploadProblem(file);
+    if (problem) {
+      setError(problem);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
