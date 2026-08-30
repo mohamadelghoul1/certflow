@@ -366,30 +366,31 @@ and Resend credential tables, which no login can read at all; and every
 server action that writes a row named by the browser — all but the two
 found go through the caller's own session, where row security applies.
 
+**Second pass** covered the token links and the upload path, and found
+two more, both fixed: a link scheme that failed open without its secret,
+and an upload folder the database was not checking. Migration 0061 goes
+with the second. The calendar feed's firm scoping moved from JavaScript
+into the query while it was open — it was right, but it was one careless
+edit from handing over every firm's diary.
+
 **Not yet looked at.** In rough order of what would worry me most:
 
-1. The token links. `/api/portal-files/[token]/[filename]` and
-   `/api/calendar/[token]` both authorise on a bare token in the URL.
-   Worth checking what each token grants, whether it expires, whether it
-   can be guessed or widened, and what happens when a job is deleted or
-   a client's access is removed.
-2. The portal upload path. A client picks their own storage path in the
-   browser before `submitClientDocument` records it. Worth proving a
-   client cannot write outside their own job's folder — the storage
-   policies are the guard, and they have not been tested the way the
-   table policies have.
-3. The rest of the job API routes: archive, stamp, approval-bundle,
+1. The rest of the job API routes: archive, stamp, approval-bundle,
    neighbour-letter, the inspection report PDF and Word, and
-   `/api/forms/[itemId]`. Each takes an id from the URL; each needs the
-   same question asked of it as the two actions above.
-4. `/api/search` and the report exports, which read across a firm's whole
+   `/api/forms/[itemId]`. Each takes an id from the URL and needs the
+   same question asked of it as the actions in the first pass.
+2. `/api/search` and the report exports, which read across a firm's whole
    dataset and would be the widest single leak if scoped wrongly.
-5. The ePlanning inbound endpoint, which is Basic Auth only and serves
-   documents by a derived id.
-6. Rate limiting: which routes are actually behind it, rather than which
+3. The ePlanning inbound endpoint, which is Basic Auth only.
+4. Rate limiting: which routes are actually behind it, rather than which
    were meant to be.
-7. Password reset and `/auth/confirm` — token lifetime, reuse, and
+5. Password reset and `/auth/confirm` — token lifetime, reuse, and
    whether a link works after the address it was sent to has changed.
+6. The local Postgres harness had row security switched off on
+   `storage.objects`, which made the first storage test pass when it
+   should have failed. Supabase enables it on the platform, so this was
+   the harness lying rather than the app — but any future storage test
+   must enable it first, or it proves nothing.
 
 ### An open question, for the owner's accountant
 

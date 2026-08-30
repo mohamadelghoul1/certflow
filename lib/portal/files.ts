@@ -10,22 +10,31 @@ import crypto from "node:crypto";
 // only the server holds, so the link serves exactly one file for a
 // limited time and nothing else.
 
-function secret(): string {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+// The key these links are sealed with. Absent, an HMAC still computes —
+// over the empty string — and the signature it produces is one anybody
+// can work out for a path of their choosing. That is a sealed link
+// scheme quietly becoming an open one, with no error to notice it by, so
+// a missing secret refuses rather than signs.
+function secret(): string | null {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY || null;
 }
 
 export function portalFileToken(storagePath: string, ttlSeconds = 3600): string {
+  const key = secret();
+  if (!key) throw new Error("Cannot sign a document link: SUPABASE_SERVICE_ROLE_KEY is not set.");
   const payload = Buffer.from(JSON.stringify({ p: storagePath, e: Math.floor(Date.now() / 1000) + ttlSeconds })).toString("base64url");
-  const signature = crypto.createHmac("sha256", secret()).update(payload).digest("base64url");
+  const signature = crypto.createHmac("sha256", key).update(payload).digest("base64url");
   return `${payload}.${signature}`;
 }
 
 // The storage path the token names, or null for anything tampered with
 // or expired.
 export function verifyPortalFileToken(token: string): string | null {
+  const key = secret();
+  if (!key) return null;
   const [payload, signature] = token.split(".");
   if (!payload || !signature) return null;
-  const expected = crypto.createHmac("sha256", secret()).update(payload).digest("base64url");
+  const expected = crypto.createHmac("sha256", key).update(payload).digest("base64url");
   const a = Buffer.from(signature);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
@@ -51,15 +60,22 @@ export function portalFileUrl(storagePath: string, fileName: string): string {
 // expiry: the gateway may fetch hours after the submission, and the
 // Basic Auth wall is the standing gate.
 export function eplanningDocId(storagePath: string): string {
+  const key = secret();
+  if (!key) throw new Error("Cannot seal a document id: SUPABASE_SERVICE_ROLE_KEY is not set.");
   const payload = Buffer.from(JSON.stringify({ p: storagePath })).toString("base64url");
-  const signature = crypto.createHmac("sha256", secret()).update(payload).digest("base64url");
+  const signature = crypto.createHmac("sha256", key).update(payload).digest("base64url");
   return `${payload}.${signature}`;
 }
 
 export function verifyEplanningDocId(docId: string): string | null {
+  // These ids carry no expiry — the gateway may fetch hours later — so
+  // the seal is the only thing standing between a made-up id and a
+  // file. Without a key there is no seal.
+  const key = secret();
+  if (!key) return null;
   const [payload, signature] = docId.split(".");
   if (!payload || !signature) return null;
-  const expected = crypto.createHmac("sha256", secret()).update(payload).digest("base64url");
+  const expected = crypto.createHmac("sha256", key).update(payload).digest("base64url");
   const a = Buffer.from(signature);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;

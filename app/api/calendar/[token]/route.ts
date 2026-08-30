@@ -33,9 +33,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // Everything still to come, plus the recent past — a diary that
   // forgets last week is a diary that cannot show what was attended.
   const from = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  // Scoped in the query, not after it. This reads with the service role,
+  // which row security does not constrain, so without the firm on the
+  // query the database hands back every firm's diary and one line of
+  // JavaScript is all that keeps them apart — a line a later edit could
+  // drop without anything failing.
   const { data } = await admin
     .from("inspections")
     .select("id, title, date, outcome, confirmed, booked_by_client, jobs!inner(address, firm_id, deleted_at)")
+    .eq("jobs.firm_id", owner.firm_id)
+    .is("jobs.deleted_at", null)
     .gte("date", from)
     .order("date");
 
@@ -48,6 +55,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     booked_by_client: boolean;
     jobs: { address: string; firm_id: string; deleted_at: string | null } | null;
   }[]).filter((row) => row.jobs && row.jobs.firm_id === owner.firm_id && !row.jobs.deleted_at && row.date);
+
 
   const origin = new URL(request.url).origin;
   const events: CalendarEvent[] = rows.map((row) => ({

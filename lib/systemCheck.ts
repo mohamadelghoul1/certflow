@@ -254,6 +254,14 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: hasTable(supabase, "certificate_templates"),
     },
     {
+      migration: "0061",
+      label: "Uploads land in the right firm's folder",
+      detail: "A client picks their upload's folder in the browser. This makes the database check it is their certifier's, not just their job's.",
+      // Storage policies cannot be read back through the API, so the
+      // migration leaves a marker to be asked instead.
+      probe: hasFunction(supabase, "storage_firm_folder_enforced", {}),
+    },
+    {
       migration: "0060",
       label: "Each firm's own email account",
       detail: "Lets a firm send through its own Resend account, so its mail leaves under its own name rather than this deployment's.",
