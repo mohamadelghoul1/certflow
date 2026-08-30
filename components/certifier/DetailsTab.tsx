@@ -33,6 +33,7 @@ import { AddressSameAsSiteFields } from "@/components/certifier/AddressSameAsSit
 import { ContractorFields } from "@/components/certifier/ContractorFields";
 import type { Contractor } from "@/types/db";
 import { SaveButton } from "@/components/certifier/SaveButton";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -582,7 +583,7 @@ export function DetailsTab({
                   <form action={removeSharedAccess}>
                     <input type="hidden" name="job_id" value={job.id} />
                     <input type="hidden" name="client_id" value={c.id} />
-                    <button className="text-xs text-error hover:underline">Remove</button>
+                    <SubmitButton className="text-xs text-error hover:underline">Remove</SubmitButton>
                   </form>
                 }
               />

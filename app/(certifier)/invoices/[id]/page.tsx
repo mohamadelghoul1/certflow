@@ -11,6 +11,7 @@ import { CardPaymentButton } from "@/components/certifier/CardPaymentButton";
 import { cardPaymentsAvailable } from "@/lib/payments/stripe";
 import { isOverdue } from "@/lib/invoices/invoiceLogic";
 import type { Invoice, InvoiceLine } from "@/types/db";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -56,7 +57,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             <form action={setInvoiceStatus}>
               <input type="hidden" name="invoice_id" value={id} />
               <input type="hidden" name="status" value="sent" />
-              <button className="px-3.5 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">Mark issued</button>
+              <SubmitButton className="px-3.5 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">Mark issued</SubmitButton>
             </form>
           )}
           {invoice.status === "sent" && (
@@ -65,12 +66,12 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <form action={setInvoiceStatus}>
                 <input type="hidden" name="invoice_id" value={id} />
                 <input type="hidden" name="status" value="paid" />
-                <button className="px-3.5 py-2 rounded-md border border-success/40 text-sm text-success font-medium hover:bg-success-bg">Mark as paid</button>
+                <SubmitButton className="px-3.5 py-2 rounded-md border border-success/40 text-sm text-success font-medium hover:bg-success-bg">Mark as paid</SubmitButton>
               </form>
               <form action={setInvoiceStatus}>
                 <input type="hidden" name="invoice_id" value={id} />
                 <input type="hidden" name="status" value="void" />
-                <button className="px-3.5 py-2 rounded-md border border-error/40 text-sm text-error font-medium hover:bg-error-bg">Void</button>
+                <SubmitButton className="px-3.5 py-2 rounded-md border border-error/40 text-sm text-error font-medium hover:bg-error-bg">Void</SubmitButton>
               </form>
             </>
           )}
@@ -78,7 +79,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             <form action={setInvoiceStatus}>
               <input type="hidden" name="invoice_id" value={id} />
               <input type="hidden" name="status" value="sent" />
-              <button className="px-3.5 py-2 rounded-md border border-line text-sm text-muted font-medium hover:bg-hover">Undo paid</button>
+              <SubmitButton className="px-3.5 py-2 rounded-md border border-line text-sm text-muted font-medium hover:bg-hover">Undo paid</SubmitButton>
             </form>
           )}
         </div>
@@ -98,9 +99,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <form action={toggleInvoiceReminders}>
             <input type="hidden" name="invoice_id" value={id} />
             <input type="hidden" name="paused" value={invoice.reminders_paused ? "false" : "true"} />
-            <button className="text-placeholder hover:text-secondary hover:underline">
+            <SubmitButton className="text-placeholder hover:text-secondary hover:underline">
               {invoice.reminders_paused ? "Resume reminders" : "Pause reminders for this invoice"}
-            </button>
+            </SubmitButton>
           </form>
         </div>
       )}
@@ -117,7 +118,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         <div className="mt-8 pt-4 border-t border-line">
           <form action={deleteInvoice}>
             <input type="hidden" name="invoice_id" value={id} />
-            <button className="text-sm text-error hover:underline">Delete this draft</button>
+            <SubmitButton className="text-sm text-error hover:underline">Delete this draft</SubmitButton>
           </form>
         </div>
       )}

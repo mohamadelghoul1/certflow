@@ -1,6 +1,7 @@
 import { resolveFault } from "@/lib/actions/faults";
 import { faultTone, type FaultRow } from "@/lib/faults";
 import { AlertTriangle, CheckCircle2, Repeat } from "lucide-react";
+import { SubmitButton } from "@/components/SubmitButton";
 
 // What has gone wrong, and whether anyone has looked at it.
 //
@@ -81,9 +82,9 @@ export function FaultsView({ faults, ready }: { faults: FaultRow[]; ready: boole
                 <form action={resolveFault} className="shrink-0">
                   <input type="hidden" name="fault_id" value={fault.id} />
                   <input type="hidden" name="reopen" value={fault.resolved_at ? "true" : "false"} />
-                  <button className="px-3 py-1.5 rounded-md border border-line text-xs text-muted font-medium hover:bg-hover">
+                  <SubmitButton className="px-3 py-1.5 rounded-md border border-line text-xs text-muted font-medium hover:bg-hover">
                     {fault.resolved_at ? "Reopen" : "Mark handled"}
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
 

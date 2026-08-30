@@ -9,6 +9,7 @@ import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import { Download } from "lucide-react";
 import { EditableCertRef } from "@/components/certifier/EditableCertRef";
 import type { Job, Certifier, OcRecord, ChecklistItem, Amendment } from "@/types/db";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
 type LibItem = { id: string; title: string; description: string | null; category: string | null; template_file_path: string | null };
@@ -63,13 +64,13 @@ export async function OcPanel({
       {hasWhole && job.status !== "complete" && (
         <form action={markJobComplete}>
           <input type="hidden" name="job_id" value={job.id} />
-          <button className="text-sm font-medium text-white bg-secondary hover:opacity-90 px-4 py-1.5 rounded-full">Mark project complete</button>
+          <SubmitButton className="text-sm font-medium text-white bg-secondary hover:opacity-90 px-4 py-1.5 rounded-full">Mark project complete</SubmitButton>
         </form>
       )}
       {job.status === "complete" && (
         <form action={reopenJob}>
           <input type="hidden" name="job_id" value={job.id} />
-          <button className="text-xs text-muted hover:underline">Reopen project</button>
+          <SubmitButton className="text-xs text-muted hover:underline">Reopen project</SubmitButton>
         </form>
       )}
     </div>

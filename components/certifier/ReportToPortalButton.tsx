@@ -5,6 +5,7 @@ import { Loader2, Send, X } from "lucide-react";
 import { reportToPortal, reportInspectionToPortalLive, unreportFromPortal } from "@/lib/actions/inspections";
 import { formatISODate } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
+import { SubmitButton } from "@/components/SubmitButton";
 
 // Reporting an inspection to the NSW Planning Portal.
 //
@@ -68,7 +69,7 @@ export function ReportToPortalButton({
       <form action={reportToPortal}>
         <input type="hidden" name="inspection_id" value={inspectionId} />
         <input type="hidden" name="job_id" value={jobId} />
-        <button className="text-xs font-semibold text-muted hover:underline">Mark as reported to Portal</button>
+        <SubmitButton className="text-xs font-semibold text-muted hover:underline">Mark as reported to Portal</SubmitButton>
       </form>
     );
   }

@@ -7,6 +7,7 @@ import { financialYearStart } from "@/lib/issuanceRegister";
 import { Download } from "lucide-react";
 import Link from "next/link";
 import type { Invoice, InvoiceLine } from "@/types/db";
+import { SubmitButton } from "@/components/SubmitButton";
 
 // What has been billed, what is owed, and what is late — the last of
 // those first, because it is the one that needs a phone call.
@@ -49,7 +50,7 @@ export async function InvoicesList({ firmId }: { firmId: string }) {
     <div>
       <div className="flex items-center justify-end mb-6">
         <form action={createInvoice}>
-          <button className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">+ New invoice</button>
+          <SubmitButton className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">+ New invoice</SubmitButton>
         </form>
       </div>
 

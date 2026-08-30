@@ -15,6 +15,7 @@ import { ApprovalSigningProvider, VersionCard, VersionSignedLabel, VersionSigned
 import Link from "next/link";
 import { ChevronDown, Download, FileText } from "lucide-react";
 import type { Job, Certifier, Modification, ChecklistItem, Amendment, PathwayCertificateVersion } from "@/types/db";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[] };
 type ModificationWithChecklist = Modification & { checklistId: string | null; items: ItemWithAmendments[] };
@@ -174,7 +175,7 @@ export async function CertificatesPanel({
             <form action={startModification} className="flex items-center gap-2">
               <input type="hidden" name="job_id" value={job.id} />
               <input name="reason" placeholder="Reason for modification…" className="flex-1 px-2 py-1.5 rounded border border-line text-xs" />
-              <button className="text-xs font-semibold text-secondary hover:underline">Start a modified {job.pathway}</button>
+              <SubmitButton className="text-xs font-semibold text-secondary hover:underline">Start a modified {job.pathway}</SubmitButton>
             </form>
           </div>
         </div>
@@ -214,7 +215,7 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
             <form action={setVisiblePathwayVersion}>
               <input type="hidden" name="job_id" value={job.id} />
               <input type="hidden" name="version_id" value={version.id} />
-              <button className="text-[11px] font-semibold text-secondary hover:underline">Make this the active version</button>
+              <SubmitButton className="text-[11px] font-semibold text-secondary hover:underline">Make this the active version</SubmitButton>
             </form>
           )}
         </div>

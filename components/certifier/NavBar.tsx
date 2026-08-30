@@ -4,6 +4,7 @@ import { signOut } from "@/lib/actions/auth";
 import { NavDropdown } from "@/components/certifier/NavDropdown";
 import { SearchEverywhere } from "@/components/certifier/SearchEverywhere";
 import { LogOut } from "lucide-react";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type Item = { id: string; title: string; subtitle: string };
 
@@ -70,9 +71,9 @@ export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmN
           {initialsOf(userName)}
         </span>
         <form action={signOut}>
-          <button aria-label="Sign out" title="Sign out" className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10">
+          <SubmitButton aria-label="Sign out" title="Sign out" className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10">
             <LogOut size={15} />
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </div>

@@ -9,6 +9,7 @@ import { QuoteEditForm } from "@/components/certifier/QuoteEditForm";
 import { DeleteQuoteButton } from "@/components/certifier/DeleteQuoteButton";
 import { Check } from "lucide-react";
 import type { Quote, QuoteFeeLine } from "@/types/db";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -48,14 +49,14 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             <form action={setQuoteStatus}>
               <input type="hidden" name="quote_id" value={id} />
               <input type="hidden" name="status" value="sent" />
-              <button className="px-3.5 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">Issue quote to client</button>
+              <SubmitButton className="px-3.5 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">Issue quote to client</SubmitButton>
             </form>
           )}
           {quote.status === "sent" && (
             <form action={setQuoteStatus}>
               <input type="hidden" name="quote_id" value={id} />
               <input type="hidden" name="status" value="declined" />
-              <button className="px-3.5 py-2 rounded-md border border-error/40 text-sm text-error font-medium hover:bg-error-bg">Mark declined</button>
+              <SubmitButton className="px-3.5 py-2 rounded-md border border-error/40 text-sm text-error font-medium hover:bg-error-bg">Mark declined</SubmitButton>
             </form>
           )}
           {/* Accepting is offered from draft as well as sent — plenty of
@@ -66,25 +67,25 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             <form action={setQuoteStatus}>
               <input type="hidden" name="quote_id" value={id} />
               <input type="hidden" name="status" value="accepted" />
-              <button className="px-3.5 py-2 rounded-md border border-success/40 text-sm text-success font-medium hover:bg-success-bg">Mark accepted</button>
+              <SubmitButton className="px-3.5 py-2 rounded-md border border-success/40 text-sm text-success font-medium hover:bg-success-bg">Mark accepted</SubmitButton>
             </form>
           )}
           {quote.status === "accepted" && !quote.linked_job_id && (
             <form action={generateJobFromQuote}>
               <input type="hidden" name="quote_id" value={id} />
-              <button className="px-3.5 py-2 rounded-md bg-success text-white text-sm font-semibold hover:bg-success">Generate project from quote</button>
+              <SubmitButton className="px-3.5 py-2 rounded-md bg-success text-white text-sm font-semibold hover:bg-success">Generate project from quote</SubmitButton>
             </form>
           )}
           {quote.status === "accepted" && (
             <form action={createInvoice}>
               <input type="hidden" name="quote_id" value={id} />
-              <button className="px-3.5 py-2 rounded-md border border-primary text-sm text-primary font-medium hover:bg-hover">Create invoice</button>
+              <SubmitButton className="px-3.5 py-2 rounded-md border border-primary text-sm text-primary font-medium hover:bg-hover">Create invoice</SubmitButton>
             </form>
           )}
           {quote.status !== "draft" && quote.payment_status !== "paid" && (
             <form action={markQuotePaid}>
               <input type="hidden" name="quote_id" value={id} />
-              <button className="px-3.5 py-2 rounded-md border border-success/40 text-sm text-success font-medium hover:bg-success-bg">Mark as paid</button>
+              <SubmitButton className="px-3.5 py-2 rounded-md border border-success/40 text-sm text-success font-medium hover:bg-success-bg">Mark as paid</SubmitButton>
             </form>
           )}
           {quote.linked_job_id && (

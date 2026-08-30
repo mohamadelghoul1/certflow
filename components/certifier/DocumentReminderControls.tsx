@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { sendDocumentReminderNow, toggleDocumentReminders, type ReminderActionState } from "@/lib/actions/jobs";
 import { BellRing, BellOff } from "lucide-react";
+import { SubmitButton } from "@/components/SubmitButton";
 
 // The chasing controls, kept small because on a healthy job there is
 // nothing to do here: the morning sweep reminds the client by itself.
@@ -53,9 +54,9 @@ export function DocumentReminderControls({
       <form action={toggleDocumentReminders}>
         <input type="hidden" name="job_id" value={jobId} />
         <input type="hidden" name="paused" value={paused ? "false" : "true"} />
-        <button type="submit" className="text-placeholder hover:text-secondary hover:underline">
+        <SubmitButton type="submit" className="text-placeholder hover:text-secondary hover:underline">
           {paused ? "Resume reminders" : "Pause for this project"}
-        </button>
+        </SubmitButton>
       </form>
 
       {state?.error && <span className="text-error">{state.error}</span>}

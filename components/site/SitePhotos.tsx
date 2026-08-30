@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { addPhoto, removePhoto } from "@/lib/actions/inspections";
 import { downscaleForUpload } from "@/lib/images/browserDownscale";
 import { MAX_INSPECTION_PHOTOS, photoSlotsRemaining } from "@/lib/constants";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type Pending = { key: string; file: File; failed: boolean };
 
@@ -101,9 +102,9 @@ export function SitePhotos({
               <form action={removePhoto} className="absolute top-1 right-1">
                 <input type="hidden" name="photo_id" value={photo.id} />
                 <input type="hidden" name="job_id" value={jobId} />
-                <button aria-label="Remove photo" className="w-7 h-7 rounded-full bg-black/55 text-white flex items-center justify-center">
+                <SubmitButton aria-label="Remove photo" className="w-7 h-7 rounded-full bg-black/55 text-white flex items-center justify-center">
                   <X size={15} />
-                </button>
+                </SubmitButton>
               </form>
             </div>
           ))}

@@ -6,6 +6,7 @@ import { confirmBooking, rescheduleBooking } from "@/lib/actions/inspections";
 import { formatISODate, fallsOnWeekend, suggestedInspectionBookingDate } from "@/lib/business";
 import { DateField } from "@/components/DateField";
 import type { ActionState } from "@/lib/actions/auth";
+import { SubmitButton } from "@/components/SubmitButton";
 
 // A booking the client asked for and the certifier has not answered.
 //
@@ -32,9 +33,9 @@ export function BookingDecision({ inspectionId, jobId, requestedDate }: { inspec
           <form action={confirmBooking}>
             <input type="hidden" name="inspection_id" value={inspectionId} />
             <input type="hidden" name="job_id" value={jobId} />
-            <button className="inline-flex items-center gap-1.5 bg-accent text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:opacity-90">
+            <SubmitButton className="inline-flex items-center gap-1.5 bg-accent text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:opacity-90">
               <Check size={13} /> Accept this date
-            </button>
+            </SubmitButton>
           </form>
           <button
             type="button"

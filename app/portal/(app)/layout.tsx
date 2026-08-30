@@ -1,6 +1,7 @@
 import { requireProfile } from "@/lib/auth";
 import { signOut } from "@/lib/actions/auth";
 import Link from "next/link";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireProfile("client");
@@ -14,7 +15,7 @@ export default async function PortalLayout({ children }: { children: React.React
         <div className="flex items-center gap-4">
           <span className="text-icon-300 text-sm hidden sm:inline">{profile.full_name || profile.email}</span>
           <form action={signOut}>
-            <button className="text-xs text-icon-300 hover:text-white">Sign out</button>
+            <SubmitButton className="text-xs text-icon-300 hover:text-white">Sign out</SubmitButton>
           </form>
         </div>
       </div>

@@ -7,6 +7,7 @@ import { ItemDocumentDetails } from "@/components/certifier/ItemDocumentDetails"
 import { ItemMetaDetails } from "@/components/certifier/ItemMetaDetails";
 import { CertifierDocumentUpload } from "@/components/certifier/CertifierDocumentUpload";
 import type { ChecklistItem, ChecklistItemFile } from "@/types/db";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type ItemWithFiles = ChecklistItem & { checklist_item_files?: ChecklistItemFile[] | null };
 
@@ -51,7 +52,7 @@ export async function ItemDocuments({ item, jobId, firmId }: { item: ItemWithFil
                         <form action={removeItemDocumentVersion}>
                           <input type="hidden" name="file_id" value={v.id} />
                           <input type="hidden" name="job_id" value={jobId} />
-                          <button className="text-error hover:underline">Delete</button>
+                          <SubmitButton className="text-error hover:underline">Delete</SubmitButton>
                         </form>
                       )}
                     </li>

@@ -33,6 +33,7 @@ import { CLIENT_TYPES } from "@/lib/constants";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { SaveButton } from "@/components/certifier/SaveButton";
 import { DateField } from "@/components/DateField";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -53,7 +54,7 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
           <ActionUpload action={updateFirmLogo} fields={{}} pathPrefix={`${firm?.id || "firm"}/logo`} label={logoUrl ? "Replace logo" : "Upload logo"} />
           {logoUrl && (
             <form action={removeFirmLogo}>
-              <button className="text-xs text-error hover:underline">Remove</button>
+              <SubmitButton className="text-xs text-error hover:underline">Remove</SubmitButton>
             </form>
           )}
         </div>
@@ -73,7 +74,7 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
           <ActionUpload action={updateFirmStamp} fields={{}} pathPrefix={`${firm?.id || "firm"}/stamp`} label={stampUrl ? "Replace stamp" : "Upload stamp"} />
           {stampUrl && (
             <form action={removeFirmStamp}>
-              <button className="text-xs text-error hover:underline">Remove</button>
+              <SubmitButton className="text-xs text-error hover:underline">Remove</SubmitButton>
             </form>
           )}
         </div>
@@ -616,7 +617,7 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
             {signatureUrl && (
               <form action={removeCertifierSignature}>
                 <input type="hidden" name="id" value={certifier.id} />
-                <button className="text-xs text-error hover:underline">Remove</button>
+                <SubmitButton className="text-xs text-error hover:underline">Remove</SubmitButton>
               </form>
             )}
           </div>
@@ -639,7 +640,7 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
               {practiceLogoUrl && (
                 <form action={removeCertifierPracticeLogo}>
                   <input type="hidden" name="id" value={certifier.id} />
-                  <button className="text-xs text-error hover:underline">Remove</button>
+                  <SubmitButton className="text-xs text-error hover:underline">Remove</SubmitButton>
                 </form>
               )}
             </div>
@@ -651,7 +652,7 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
           </button>
           <form action={removeCertifier}>
             <input type="hidden" name="id" value={certifier.id} />
-            <button className="text-xs text-error hover:underline">Remove</button>
+            <SubmitButton className="text-xs text-error hover:underline">Remove</SubmitButton>
           </form>
         </div>
       </div>
@@ -886,7 +887,7 @@ function ClientRow({ client }: { client: ClientContact }) {
           </button>
           <form action={removeClient}>
             <input type="hidden" name="id" value={client.id} />
-            <button className="text-xs text-error hover:underline">Remove</button>
+            <SubmitButton className="text-xs text-error hover:underline">Remove</SubmitButton>
           </form>
         </div>
       </div>

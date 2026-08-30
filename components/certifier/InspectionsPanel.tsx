@@ -23,6 +23,7 @@ import { AddInspectionForm } from "@/components/certifier/AddInspectionForm";
 import { BookingDecision } from "@/components/certifier/BookingDecision";
 import { AutoSubmitSelect } from "@/components/certifier/AutoSubmitSelect";
 import type { Inspection, Defect, InspectionPhoto, Certifier } from "@/types/db";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type InspectionWithDefects = Inspection & { defects: Defect[]; inspection_photos: InspectionPhoto[] };
 
@@ -135,12 +136,12 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
                       <input type="hidden" name="photo_id" value={p.id} />
                       <input type="hidden" name="job_id" value={jobId} />
                       <input name="caption" defaultValue={p.caption || ""} placeholder="Caption" className="flex-1 min-w-0 px-1.5 py-1 rounded border border-line text-[11px]" />
-                      <button className="text-[11px] text-secondary hover:underline shrink-0">Save</button>
+                      <SubmitButton className="text-[11px] text-secondary hover:underline shrink-0">Save</SubmitButton>
                     </form>
                     <form action={removePhoto}>
                       <input type="hidden" name="photo_id" value={p.id} />
                       <input type="hidden" name="job_id" value={jobId} />
-                      <button className="text-[11px] text-error hover:underline">Remove</button>
+                      <SubmitButton className="text-[11px] text-error hover:underline">Remove</SubmitButton>
                     </form>
                   </div>
                 ))}

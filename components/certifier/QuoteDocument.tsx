@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Mail, Pencil } from "lucide-react";
 import { updateQuoteTerms } from "@/lib/actions/quotes";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export function QuoteDocument({
   backHref,
@@ -72,7 +73,7 @@ export function QuoteTermsEditor({ quoteId, activeTerms, hasOverride }: { quoteI
           className="w-full px-3 py-2 rounded-md border border-line text-sm font-sans outline-none focus:ring-2 focus:ring-icon"
         />
         <div className="flex gap-2 mt-2 print:hidden">
-          <button className="px-3 py-1.5 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-700">Save</button>
+          <SubmitButton className="px-3 py-1.5 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-700">Save</SubmitButton>
           <button type="button" onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-md text-xs text-placeholder hover:bg-hover">
             Cancel
           </button>
@@ -91,7 +92,7 @@ export function QuoteTermsEditor({ quoteId, activeTerms, hasOverride }: { quoteI
           <form action={updateQuoteTerms}>
             <input type="hidden" name="quote_id" value={quoteId} />
             <input type="hidden" name="terms_override" value="" />
-            <button className="text-xs text-placeholder hover:underline">Reset to auto-generated</button>
+            <SubmitButton className="text-xs text-placeholder hover:underline">Reset to auto-generated</SubmitButton>
           </form>
         )}
       </div>

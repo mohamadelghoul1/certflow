@@ -7,6 +7,7 @@ import type { ActionState } from "@/lib/actions/auth";
 import type { Invoice, InvoiceLine } from "@/types/db";
 import { X } from "lucide-react";
 import { SaveButton } from "@/components/certifier/SaveButton";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -98,9 +99,9 @@ export function InvoiceEditForm({
               <form action={removeInvoiceLine}>
                 <input type="hidden" name="invoice_id" value={invoice.id} />
                 <input type="hidden" name="line_id" value={line.id} />
-                <button className="text-placeholder hover:text-error" aria-label="Remove line">
+                <SubmitButton className="text-placeholder hover:text-error" aria-label="Remove line">
                   <X size={14} />
-                </button>
+                </SubmitButton>
               </form>
             )}
           </div>
@@ -127,7 +128,7 @@ export function InvoiceEditForm({
               placeholder="$ ex GST"
               className="w-28 shrink-0 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
             />
-            <button className="shrink-0 px-3.5 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">Add</button>
+            <SubmitButton className="shrink-0 px-3.5 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">Add</SubmitButton>
           </form>
         )}
 

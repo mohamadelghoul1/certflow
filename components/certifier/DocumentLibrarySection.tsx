@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Download, Paperclip, GripVertical } from "lucide-react";
 import { addLibraryItem, removeLibraryItem, reorderLibraryItems, copyLibraryItem, updateLibraryItem, setLibraryTemplate, clearLibraryTemplate } from "@/lib/actions/library";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type LibItem = {
   id: string;
@@ -200,14 +201,14 @@ export function DocumentLibrarySection({
                       <form action={copyLibraryItem}>
                         <input type="hidden" name="id" value={item.id} />
                         <input type="hidden" name="target" value={active === "CDC" ? "CC" : "CDC"} />
-                        <button className="text-xs font-semibold text-secondary hover:underline whitespace-nowrap">
+                        <SubmitButton className="text-xs font-semibold text-secondary hover:underline whitespace-nowrap">
                           Copy to {active === "CDC" ? "CC" : "CDC"}
-                        </button>
+                        </SubmitButton>
                       </form>
                     )}
                     <form action={removeLibraryItem}>
                       <input type="hidden" name="id" value={item.id} />
-                      <button className="text-xs text-error hover:underline">Remove</button>
+                      <SubmitButton className="text-xs text-error hover:underline">Remove</SubmitButton>
                     </form>
                   </div>
                 </div>
@@ -237,7 +238,7 @@ export function DocumentLibrarySection({
                       />
                       <form action={clearLibraryTemplate}>
                         <input type="hidden" name="id" value={item.id} />
-                        <button className="text-xs text-error hover:underline">Remove form</button>
+                        <SubmitButton className="text-xs text-error hover:underline">Remove form</SubmitButton>
                       </form>
                     </>
                   ) : (
@@ -257,7 +258,7 @@ export function DocumentLibrarySection({
             <input type="hidden" name="pathway" value={active} />
             <input name="title" placeholder="Document title" required className="flex-1 px-3 py-2 rounded-md border border-line text-sm" />
             <input name="description" placeholder="Description (optional)" className="flex-1 px-3 py-2 rounded-md border border-line text-sm" />
-            <button className="px-3 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 shrink-0">Add</button>
+            <SubmitButton className="px-3 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 shrink-0">Add</SubmitButton>
           </form>
         </>
       )}
