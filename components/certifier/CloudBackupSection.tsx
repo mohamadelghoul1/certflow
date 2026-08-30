@@ -1,12 +1,44 @@
 "use client";
 
 import { useActionState } from "react";
-import { Cloud, CloudOff, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Cloud, CloudOff, CheckCircle2, AlertTriangle, DatabaseBackup } from "lucide-react";
 import { disconnectBackup, setBackupFolder, type BackupFolderState } from "@/lib/actions/backup";
 import { formatISODate } from "@/lib/business";
 import type { ConnectionStatus } from "@/lib/backup/connection";
 import type { ProviderId } from "@/lib/backup/providers";
 import type { ActionState } from "@/lib/actions/auth";
+
+
+// The record itself, as opposed to the documents.
+//
+// The two are different things and the difference only becomes obvious
+// on the day it matters: the documents are the certificates, and this is
+// the register of which ones were issued, against which jobs, on what
+// dates, with which inspection outcomes. Without it a firm has a folder
+// of PDFs and no way to say what it certified.
+//
+// Sent to the firm's cloud storage nightly as well, for the firms that
+// would rather not remember. This is for the day somebody wants a copy
+// in their own hands.
+function RecordBackup() {
+  return (
+    <div className="border border-line rounded-md p-4 space-y-2 bg-surface">
+      <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+        <DatabaseBackup size={15} /> Your records
+      </div>
+      <p className="text-[11px] text-muted">
+        Every project, certificate, inspection outcome and invoice as one file — the register behind the documents. Copied to your cloud storage
+        each night once one is connected, and downloadable here whenever you want a copy in your own hands.
+      </p>
+      <a href="/api/backup/database" className="inline-block text-xs font-semibold text-secondary hover:underline">
+        Download a copy now
+      </a>
+      <p className="text-[11px] text-placeholder">
+        Your Stripe and Resend keys are deliberately left out of it — paste those back in from Stripe and Resend if you ever restore.
+      </p>
+    </div>
+  );
+}
 
 const LABELS: Record<ProviderId, string> = { dropbox: "Dropbox", onedrive: "OneDrive" };
 
@@ -21,10 +53,13 @@ export function CloudBackupSection({ configured, connections }: { configured: Pr
 
   if (configured.length === 0) {
     return (
-      <p className="text-sm text-muted">
-        Cloud backup isn&rsquo;t set up on this deployment yet. It needs a Dropbox or Microsoft app to be registered and its keys added to the
-        environment — see the README.
-      </p>
+      <div className="space-y-4">
+        <p className="text-sm text-muted">
+          Cloud backup isn&rsquo;t set up on this deployment yet. It needs a Dropbox or Microsoft app to be registered and its keys added to the
+          environment — see the README.
+        </p>
+        <RecordBackup />
+      </div>
     );
   }
 
@@ -34,6 +69,7 @@ export function CloudBackupSection({ configured, connections }: { configured: Pr
         Keeps a copy of every document in your own cloud storage, in the same folders as the job archive download. Your files stay yours, readable
         without Certlyn.
       </p>
+      <RecordBackup />
       {configured.map((provider) => {
         const connection = connected.get(provider);
         return connection ? (

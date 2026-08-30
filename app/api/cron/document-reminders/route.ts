@@ -4,6 +4,7 @@ import { runDocumentReminders } from "@/lib/documentReminders";
 import { runInvoiceReminders } from "@/lib/invoiceReminders";
 import { runUploadDigests } from "@/lib/uploadDigest";
 import { runReviewDigests } from "@/lib/reviewDigest";
+import { runDatabaseBackups } from "@/lib/backup/database";
 
 // The morning sweep, called by Vercel's scheduler (vercel.json) rather
 // than by anyone's click. Vercel proves it is the scheduler by sending
@@ -21,10 +22,15 @@ export async function GET(request: NextRequest) {
   const admin = createAdminClient();
   const documents = await runDocumentReminders(admin);
   const invoices = await runInvoiceReminders(admin);
+  // And a copy of the record itself to each firm's own cloud storage.
+  // The documents have been copied as they were issued; this is the
+  // register that says what they were — and it is the half nobody
+  // notices is missing until they need it.
+  const records = await runDatabaseBackups(admin);
   // Also mops up the batched notifications still waiting on a summary
   // email — the tail of a burst nothing else came along to flush:
   // client uploads (to the certifier) and review outcomes (to the client).
   const uploads = await runUploadDigests(admin);
   const reviews = await runReviewDigests(admin);
-  return NextResponse.json({ documents, invoices, uploads, reviews });
+  return NextResponse.json({ documents, invoices, records, uploads, reviews });
 }

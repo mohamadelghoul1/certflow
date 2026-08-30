@@ -254,6 +254,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: hasTable(supabase, "certificate_templates"),
     },
     {
+      migration: "0063",
+      label: "Your records can be backed up",
+      detail: "Copies the register behind the documents — every project, certificate, inspection outcome and invoice — to your own cloud storage nightly.",
+      probe: hasFunction(supabase, "export_firm_data", { p_firm_id: "00000000-0000-0000-0000-000000000000" }),
+    },
+    {
       migration: "0062",
       label: "Only documents can be uploaded",
       detail: "Refuses programs and archives at the point of upload. Not virus scanning — a bad PDF is still a PDF — but a certifier is never sent a .exe.",
