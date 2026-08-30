@@ -350,6 +350,47 @@ is the thing the per-firm work was for.
 - Put Certlyn through IP Australia's trade mark search. A domain being
   free does not mean the name is.
 
+### Security review — finished the first pass, not the whole app
+
+Run before letting a second firm in, because from that point one firm's
+mistake or malice reaches another's clients. Two findings, both fixed:
+an unauthenticated endpoint that emailed any certifier with
+caller-supplied content, and two actions that handed browser-supplied
+ids to the service role, which row security does not constrain.
+
+**Already covered, and clean:** the four client-portal document routes
+(they gate on the caller's own session before the service role does the
+assembly); firm isolation on jobs, clients, invoices, quotes and
+checklist items, proved against Postgres in both directions; the Stripe
+and Resend credential tables, which no login can read at all; and every
+server action that writes a row named by the browser — all but the two
+found go through the caller's own session, where row security applies.
+
+**Not yet looked at.** In rough order of what would worry me most:
+
+1. The token links. `/api/portal-files/[token]/[filename]` and
+   `/api/calendar/[token]` both authorise on a bare token in the URL.
+   Worth checking what each token grants, whether it expires, whether it
+   can be guessed or widened, and what happens when a job is deleted or
+   a client's access is removed.
+2. The portal upload path. A client picks their own storage path in the
+   browser before `submitClientDocument` records it. Worth proving a
+   client cannot write outside their own job's folder — the storage
+   policies are the guard, and they have not been tested the way the
+   table policies have.
+3. The rest of the job API routes: archive, stamp, approval-bundle,
+   neighbour-letter, the inspection report PDF and Word, and
+   `/api/forms/[itemId]`. Each takes an id from the URL; each needs the
+   same question asked of it as the two actions above.
+4. `/api/search` and the report exports, which read across a firm's whole
+   dataset and would be the widest single leak if scoped wrongly.
+5. The ePlanning inbound endpoint, which is Basic Auth only and serves
+   documents by a derived id.
+6. Rate limiting: which routes are actually behind it, rather than which
+   were meant to be.
+7. Password reset and `/auth/confirm` — token lifetime, reuse, and
+   whether a link works after the address it was sent to has changed.
+
 ### An open question, for the owner's accountant
 
 Whether the domain and the software belong in QP Certifiers Pty Ltd or a
