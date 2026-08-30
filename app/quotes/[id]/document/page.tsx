@@ -62,7 +62,7 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
             <div className="text-xl font-black tracking-tight">{firmData?.name}</div>
           </div>
           <div className="text-right text-xs text-muted leading-relaxed">
-            <div className="font-bold">{firmData?.name} Pty Ltd</div>
+            <div className="font-bold">{firmData?.name}</div>
             <div>{firmData?.office_address}</div>
             <div className="mt-1">Phone: {firmData?.phone}</div>
             <div className="text-info underline">{firmData?.email}</div>
@@ -136,7 +136,7 @@ export default async function QuoteDocumentPage({ params }: { params: Promise<{ 
 
         <div className="text-sm mt-6">
           <div>Kind Regards</div>
-          <div>{firmData?.name} Pty Ltd</div>
+          <div>{firmData?.name}</div>
         </div>
       </div>
     </QuoteDocument>

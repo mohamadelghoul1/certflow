@@ -22,7 +22,7 @@ export function certificateFixture(overrides: Record<string, unknown> = {}): Pat
       pathway_version: 1,
     },
     firm: {
-      name: "Quality Private Certifiers",
+      name: "Quality Private Certifiers Pty Ltd",
       abn: "41 630 945 416",
       office_address: "Suite 2/F1 101 Rookwood Road, Yagoona NSW 2199",
       postal_address: "PO BOX 195, Blaxcell NSW 2142",
@@ -82,7 +82,7 @@ export function certificateFixture(overrides: Record<string, unknown> = {}): Pat
   } as unknown as PathwayCertificateData;
 }
 
-const preInspectionFirm = { name: "Quality Private Certifiers", abn: "41 630 945 416", postal_address: "PO BOX 195", office_address: "Yagoona NSW 2199", phone: "0404 940 898", email: "info@example.com", website: "www.example.com" } as unknown as Firm;
+const preInspectionFirm = { name: "Quality Private Certifiers Pty Ltd", abn: "41 630 945 416", postal_address: "PO BOX 195", office_address: "Yagoona NSW 2199", phone: "0404 940 898", email: "info@example.com", website: "www.example.com" } as unknown as Firm;
 
 // The same job as certificateFixture's, filled in the way the firm's own
 // s139 and s16 reports are.
@@ -118,7 +118,7 @@ export function preInspectionFixture(isCdc: boolean): PreInspectionData {
   };
 }
 
-const neighbourFirm = { name: "Quality Private Certifiers", abn: "41 630 945 416", postal_address: "PO BOX 195", office_address: "Yagoona NSW 2199", phone: "02 8772 4022", email: "info@example.com", website: "www.example.com" } as unknown as Firm;
+const neighbourFirm = { name: "Quality Private Certifiers Pty Ltd", abn: "41 630 945 416", postal_address: "PO BOX 195", office_address: "Yagoona NSW 2199", phone: "02 8772 4022", email: "info@example.com", website: "www.example.com" } as unknown as Firm;
 const neighbourCertifier = { name: "Mohamad El Ghoul", registration_no: "BDC2961" } as unknown as Certifier;
 
 // The neighbour notification for one job, varying only the planning

@@ -74,7 +74,7 @@ export async function buildNeighbourLetterPdf(data: NeighbourLetterData, images:
   l.ensure(78);
   if (images.signature) await l.image(images.signature.bytes, images.signature.type, 42);
   else l.gap(34);
-  l.signatory(certifier?.name || "—", ["Registered Certifier", `${firm?.name || ""} Pty Ltd`], { size: LETTER_BODY_SIZE, nameSize: LETTER_SIGNATURE_NAME_SIZE });
+  l.signatory(certifier?.name || "—", ["Registered Certifier", `${firm?.name || ""}`], { size: LETTER_BODY_SIZE, nameSize: LETTER_SIGNATURE_NAME_SIZE });
 
   return l.save();
 }

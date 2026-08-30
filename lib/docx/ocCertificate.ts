@@ -66,12 +66,12 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
     // The consent number goes in the letter, its dates do not — the
     // council files against the number.
     p(
-      `${firm?.name || ""} Pty Ltd has issued a ${typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on ${consentLabel} No. ${consentRef}${daNumber ? `, issued under Development Consent No. ${daNumber}` : ""}. Please find enclosed a copy for your records.`
+      `${firm?.name || ""} has issued a ${typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on ${consentLabel} No. ${consentRef}${daNumber ? `, issued under Development Consent No. ${daNumber}` : ""}. Please find enclosed a copy for your records.`
     ),
     signatureRule(),
     p("Yours sincerely,", { spacingBefore: 120 }),
     ...signatureBlock(images.signature),
-    ...signatory(issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
+    ...signatory(issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""}`)
   );
 
   // 2. Applicant/owner letter
@@ -89,7 +89,7 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
     signatureRule(),
     p("Yours sincerely,", { spacingBefore: 120 }),
     ...signatureBlock(images.signature),
-    ...signatory(issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
+    ...signatory(issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""}`)
   );
 
   // 3. Occupation Certificate & schedule

@@ -112,7 +112,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
               </div>
             </div>
             <div>
-              {firm?.name} Pty Ltd has issued a {typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for
+              {firm?.name} has issued a {typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for
               the above premises, relying on {consentLabel} No. {consentRef}
               {/* The consent the CC itself was issued under — the reference
                   the council files the certificate against. Its number only:
@@ -123,7 +123,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
             <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
             <div>{issuedBy?.name || "—"}</div>
             <div className="text-xs text-placeholder">Registered Certifier / {issuedBy?.registration_no}</div>
-            <div className="text-xs text-placeholder">{firm?.name} Pty Ltd</div>
+            <div className="text-xs text-placeholder">{firm?.name}</div>
           </div>
           <DocFooter projRef={projRef} website={firm?.website} />
         </Section>
@@ -163,7 +163,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
             <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
             <div>{issuedBy?.name || "—"}</div>
             <div className="text-xs text-placeholder">Registered Certifier / {issuedBy?.registration_no}</div>
-            <div className="text-xs text-placeholder">{firm?.name} Pty Ltd</div>
+            <div className="text-xs text-placeholder">{firm?.name}</div>
           </div>
           <DocFooter projRef={projRef} website={firm?.website} />
         </Section>

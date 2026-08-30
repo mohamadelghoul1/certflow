@@ -48,7 +48,7 @@ export async function buildOcPackagePdf(data: OcCertificateData, images: Package
     l.signatureRule();
     l.text("Yours sincerely,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
     await signature();
-    l.signatory(issuedBy?.name || "—", [`Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`], {
+    l.signatory(issuedBy?.name || "—", [`Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""}`], {
       size: LETTER_BODY_SIZE,
       nameSize: LETTER_SIGNATURE_NAME_SIZE,
     });
@@ -65,7 +65,7 @@ export async function buildOcPackagePdf(data: OcCertificateData, images: Package
   l.fieldRow(`${typeLabel} No.:`, ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
   l.gap(4);
   body(
-    `${firm?.name || ""} Pty Ltd has issued a ${typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on ${consentLabel} No. ${consentRef}${
+    `${firm?.name || ""} has issued a ${typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on ${consentLabel} No. ${consentRef}${
       daNumber ? `, issued under Development Consent No. ${daNumber}` : ""
     }. Please find enclosed a copy for your records.`
   );

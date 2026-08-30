@@ -36,7 +36,7 @@ export async function buildQuoteDocx(data: QuoteDocumentData, images: { logo: Im
     p(firm?.name || "", { bold: true, size: TITLE_SIZE, spacingAfter: 0 }),
   ];
   const right: Paragraph[] = [
-    p(`${firm?.name || ""} Pty Ltd`, { bold: true, size: SMALL_SIZE, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
+    p(`${firm?.name || ""}`, { bold: true, size: SMALL_SIZE, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
     ...(firm?.office_address ? [p(firm.office_address, { size: SMALL_SIZE, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 })] : []),
     p(`Phone: ${firm?.phone || "—"}`, { size: SMALL_SIZE, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
     p(firm?.email || "", { size: SMALL_SIZE, color: MUTED_COLOR, align: AlignmentType.RIGHT, spacingAfter: 0 }),
@@ -76,7 +76,7 @@ export async function buildQuoteDocx(data: QuoteDocumentData, images: { logo: Im
     ...activeTerms.split("\n\n").map((para) => p(para, { size: LETTER_BODY_SIZE, justify: true, spacingAfter: LETTER_PARA_AFTER * 2, lineSpacing: LETTER_LINE_SPACING })),
 
     p("Kind Regards", { size: LETTER_BODY_SIZE, spacingBefore: SECTION_GAP, spacingAfter: 0 }),
-    p(`${firm?.name || ""} Pty Ltd`, { size: LETTER_BODY_SIZE, spacingAfter: 0 }),
+    p(`${firm?.name || ""}`, { size: LETTER_BODY_SIZE, spacingAfter: 0 }),
   ];
 
   const doc = new Document({

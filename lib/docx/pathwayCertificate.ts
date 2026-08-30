@@ -104,7 +104,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     signatureRule(),
     p("Yours sincerely,", { size: LETTER_BODY_SIZE, spacingBefore: 120 }),
     ...signatureBlock(images.signature),
-    ...signatory({ size: LETTER_BODY_SIZE, nameSize: LETTER_SIGNATURE_NAME_SIZE }, issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
+    ...signatory({ size: LETTER_BODY_SIZE, nameSize: LETTER_SIGNATURE_NAME_SIZE }, issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""}`)
   );
 
   // 2. Applicant letter
@@ -125,7 +125,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     signatureRule(),
     p(closingApplicant, { size: LETTER_BODY_SIZE, spacingBefore: 120 }),
     ...signatureBlock(images.signature),
-    ...signatory({ size: LETTER_BODY_SIZE, nameSize: LETTER_SIGNATURE_NAME_SIZE }, issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""} Pty Ltd`)
+    ...signatory({ size: LETTER_BODY_SIZE, nameSize: LETTER_SIGNATURE_NAME_SIZE }, issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""}`)
   );
 
   // 3. Certificate
@@ -244,7 +244,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       { kind: "row", label: "Registration Number:", value: issuedBy ? `${issuedBy.registration_body || ""} / ${issuedBy.registration_no || ""}` : null },
     ]),
     p(
-      `I, ${issuedBy?.name || "—"} of ${firm?.name || ""} Pty Ltd, located at ${firm?.office_address || "—"}, acting as the principal certifier, hereby give notice in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in Schedule 1 are to be carried out in respect of the building work.`,
+      `I, ${issuedBy?.name || "—"} of ${firm?.name || ""}, located at ${firm?.office_address || "—"}, acting as the principal certifier, hereby give notice in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in Schedule 1 are to be carried out in respect of the building work.`,
       { spacingBefore: 120 }
     ),
     p(

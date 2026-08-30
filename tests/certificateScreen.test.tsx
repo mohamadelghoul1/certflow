@@ -24,6 +24,17 @@ describe("the certificate on screen", () => {
     }
   });
 
+  // The firm's name used to have " Pty Ltd" appended to it in code, in
+  // twenty-seven places. A firm whose record already carried its full
+  // legal name — as it must, now that anything but a Pty Ltd can use
+  // Certlyn — would have had it printed twice on every certificate,
+  // letter, quote and invoice.
+  test("the firm's name is printed as the firm recorded it, once", () => {
+    const text = screen(DEFAULT_TEMPLATES.CDC);
+    assert.ok(text.includes("Quality Private Certifiers Pty Ltd"), "the firm's name is missing from the certificate");
+    assert.equal(text.includes("Pty Ltd Pty Ltd"), false, "the entity type was appended to a name that already carried it");
+  });
+
   test("a row the firm dropped is off the screen, as it is off the PDF", () => {
     const without: CertificateTemplate = {
       ...DEFAULT_TEMPLATES.CDC,

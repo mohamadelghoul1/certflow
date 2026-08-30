@@ -79,7 +79,7 @@ export async function buildNeighbourLetterDocx(data: NeighbourLetterData, images
       letterOpts
     ),
     ...signatureBlock(images.signature),
-    ...signatory({ size: LETTER_BODY_SIZE, nameSize: LETTER_SIGNATURE_NAME_SIZE }, certifier?.name, "Registered Certifier", `${firm?.name || ""} Pty Ltd`),
+    ...signatory({ size: LETTER_BODY_SIZE, nameSize: LETTER_SIGNATURE_NAME_SIZE }, certifier?.name, "Registered Certifier", `${firm?.name || ""}`),
   ];
 
   const doc = new Document({

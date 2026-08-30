@@ -271,7 +271,7 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
           <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
           <div>{issuedBy?.name || "—"}</div>
           <div className="text-xs text-placeholder">Registered Certifier / {issuedBy?.registration_no}</div>
-          <div className="text-xs text-placeholder">{firm?.name} Pty Ltd</div>
+          <div className="text-xs text-placeholder">{firm?.name}</div>
         </div>
         <DocFooter projRef={projRef} website={firm?.website} />
       </Section>
@@ -350,7 +350,7 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
           <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
           <div>{issuedBy?.name || "—"}</div>
           <div className="text-xs text-placeholder">Registered Certifier / {issuedBy?.registration_no}</div>
-          <div className="text-xs text-placeholder">{firm?.name} Pty Ltd</div>
+          <div className="text-xs text-placeholder">{firm?.name}</div>
         </div>
         <DocFooter projRef={projRef} website={firm?.website} />
       </Section>
@@ -554,7 +554,7 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
           </table>
 
           <div className="pt-2">
-            I, {issuedBy?.name || "—"} of {firm?.name} Pty Ltd, located at {firm?.office_address}, acting as the principal certifier, hereby give notice
+            I, {issuedBy?.name || "—"} of {firm?.name}, located at {firm?.office_address}, acting as the principal certifier, hereby give notice
             in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety)
             Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in
             Schedule 1 are to be carried out in respect of the building work.
