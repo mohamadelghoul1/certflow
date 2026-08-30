@@ -418,6 +418,29 @@ edit from handing over every firm's diary.
    the harness lying rather than the app — but any future storage test
    must enable it first, or it proves nothing.
 
+### The promotional page — written, held back deliberately
+
+https://claude.ai/code/artifact/d1143407-eb10-40e5-984b-652373e92561
+
+A one-page pitch to NSW certifiers, structured around the certification
+pathway itself. Private until shared. The owner's decision is to hold it
+until the software has been proven on real jobs, which is the right way
+round — advertising early wins a first customer and a first complaint in
+the same week.
+
+To change it, publish to that URL rather than creating a new one, or the
+link goes stale. Two placeholders are waiting on a decision:
+
+- `hello@certlyn.com.au` appears in three links and is invented.
+- There is no pricing on it, because none has been set. Leaving price
+  off is a legitimate choice — it starts a conversation rather than
+  ending one — but it should be a choice.
+
+Every claim on it was checked against the code before it was written,
+which is what turned up that the feature list above had gone stale. Do
+the same before changing it: the page is only worth anything while
+everything on it is true.
+
 ### An open question, for the owner's accountant
 
 Whether the domain and the software belong in QP Certifiers Pty Ltd or a
