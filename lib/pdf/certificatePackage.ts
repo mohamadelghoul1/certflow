@@ -268,10 +268,8 @@ export async function buildCertificatePackagePdf(
   l.fieldRow("Registration Number:", issuedBy ? `${issuedBy.registration_body || ""} / ${issuedBy.registration_no || ""}` : "");
 
   l.gap(4);
-  l.text(
-    `I, ${issuedBy?.name || "—"} of ${firm?.name || ""}, located at ${firm?.office_address || "—"}, acting as the principal certifier, hereby give notice in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in Schedule 1 are to be carried out in respect of the building work.`,
-    { justify: true }
-  );
+  // From pathwayData, so a firm's own wording reaches the Word file too.
+  for (const paragraph of data.inspectionsNotice) l.text(paragraph, { justify: true });
   l.text(
     "The applicant, being the person having benefit of the development consent, is required under Section 58 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to notify the principal contractor (if not an owner-builder) of the applicable mandatory critical stage inspections specified under this notice.",
     { justify: true }

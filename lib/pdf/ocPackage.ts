@@ -64,11 +64,9 @@ export async function buildOcPackagePdf(data: OcCertificateData, images: Package
   l.documentTitle(`RE: ${(job.address || "").toUpperCase()}`);
   l.fieldRow(`${typeLabel} No.:`, ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
   l.gap(4);
-  body(
-    `${firm?.name || ""} has issued a ${typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on ${consentLabel} No. ${consentRef}${
-      daNumber ? `, issued under Development Consent No. ${daNumber}` : ""
-    }. Please find enclosed a copy for your records.`
-  );
+  // From ocData, so the firm's own wording reaches the PDF, the Word
+  // file and the screen alike.
+  for (const paragraph of data.councilBody) body(paragraph);
   await closing();
 
   // 2. Applicant / owner letter
@@ -79,12 +77,7 @@ export async function buildOcPackagePdf(data: OcCertificateData, images: Package
   l.documentTitle(`RE: ${(job.address || "").toUpperCase()}`);
   l.fieldRow(`${typeLabel} No.:`, ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
   l.gap(4);
-  body(`Enclosed is a copy of the issued ${typeLabel} for the subject development. One copy has been forwarded directly to ${d.council?.lga || "Council"} for their records.`);
-  body(
-    `Please retain this certificate, as it authorises ${
-      record.type === "whole" ? "occupation and use of the building" : "occupation and use of the part of the building described below"
-    }.`
-  );
+  for (const paragraph of data.applicantBody) body(paragraph);
   await closing();
 
   // 3. The certificate itself

@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { loadFirmWording } from "@/lib/certificates/loadWording";
+import { firmWording } from "@/lib/certificates/documentWording";
 import { scheduleRows } from "@/lib/checklistDocuments";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { signedUrl } from "@/lib/storage";
@@ -74,6 +76,9 @@ export type PathwayCertificateData = {
   ownerPhone?: string;
   councilBody: string[];
   applicantBody: string[];
+  // The Section 58 paragraph above Schedule 1, resolved once so the PDF
+  // and the Word file cannot disagree about what notice was given.
+  inspectionsNotice: string[];
   requiredDocsList: string[];
   // Per-job wording overrides, and the letter lines with them applied.
   docOverrides: Record<string, string>;
@@ -167,9 +172,34 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
   const ownerPhone = d.ownerSameAsApplicant ? applicantPhone : d.owner?.phone;
   const selectedInspections = (job.critical_stage_inspections || []).filter((r) => r.enabled);
 
+  // The firm's own wording, if they have written any. Empty for a firm
+  // that has not, and for a database that has not run migration 0064.
+  const wording = await loadFirmWording(supabase, firmId);
+
+  // What this job says, then what this firm says, then what Certlyn
+  // says. A firm that has written nothing falls through to the third,
+  // which is the same text it has always been.
+  const wordingValues = {
+    FIRM: firm?.name,
+    CERTIFIER: issuedBy?.name,
+    ADDRESS: job.address,
+    PATHWAY: pathwayFull,
+    COUNCIL: d.council?.lga || "Council",
+    APPLICANT: applicantName,
+    "CERTIFICATE NO": ref,
+    "FIRM ADDRESS": firm?.office_address,
+  };
+
+  // The Section 58 paragraph above Schedule 1. Written out in the PDF
+  // and in the Word file before this, which is two places for a firm's
+  // own wording to reach and one of them to be forgotten.
+  const inspectionsNotice = firmWording(wording, "inspections.notice", wordingValues) ?? [
+    `I, ${issuedBy?.name || "—"} of ${firm?.name || ""}, located at ${firm?.office_address || "—"}, acting as the principal certifier, hereby give notice in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in Schedule 1 are to be carried out in respect of the building work.`,
+  ];
+
   const councilBody = job.council_letter_override
     ? job.council_letter_override.split("\n\n")
-    : [
+    : firmWording(wording, "council.body", wordingValues) ?? [
         `${firm?.name} has issued a ${pathwayFull} under ${isCdc ? "Part 4" : "Sections 6.3, 6.4, 6.16"} of the Environmental Planning and Assessment Act 1979 for the above premises.`,
         ...(isCdc ? ["The applicant / owner has been advised to submit the Notice of Intention to commence works on the NSW Planning Portal at least 48 hours prior to any works commencing on site."] : []),
         `Should you need to discuss any issues, please do not hesitate to contact the Registered Building Surveyor ${issuedBy?.name || "—"}.`,
@@ -177,7 +207,7 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
 
   const applicantBody = job.applicant_letter_override
     ? job.applicant_letter_override.split("\n\n")
-    : [
+    : firmWording(wording, "applicant.body", wordingValues) ?? [
         `One copy of each has been forwarded directly to ${d.council?.lga || "Council"} for their records.`,
         `The Applicant / Owner is required to lodge the Appointment of a Principal Certifier to us through the NSW Planning Portal.`,
         ...(isCdc ? [`Please note that no works can commence on site less than 7 days from the date of issuance of ${job.pathway}.`] : []),
@@ -214,6 +244,7 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
   return {
     template,
     templateProblems: problems,
+    inspectionsNotice,
     job,
     firm: firm || null,
     issuedBy: issuedBy || null,

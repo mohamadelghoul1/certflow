@@ -5,6 +5,8 @@ import { formatISODate, resolvePathwayCertRef, resolveOcCertRef, governingApprov
 import type { Job, Firm, OcRecord, JobDetails } from "@/types/db";
 import { loadCertificateTemplate } from "@/lib/certificates/loadTemplate";
 import type { CertificateTemplate } from "@/lib/certificates/certificateTemplate";
+import { loadFirmWording } from "@/lib/certificates/loadWording";
+import { firmWording } from "@/lib/certificates/documentWording";
 
 // drawing_number is the stored column name; it holds any document
 // reference, not only a drawing number.
@@ -38,6 +40,14 @@ export type OcCertificateData = {
   // The layout this certificate is drawn from: the firm's own where they
   // have saved one, Certlyn's otherwise.
   template: CertificateTemplate;
+  // The two letters, resolved once here.
+  //
+  // They used to be written out separately in the screen, the PDF and
+  // the Word file — the same sentence three times, which is three places
+  // to change and three chances for one to say something different from
+  // the certificate travelling with it.
+  councilBody: string[];
+  applicantBody: string[];
 };
 
 // Single source of truth for the OC certificate package's content — used
@@ -92,5 +102,33 @@ export async function getOcCertificateData(jobId: string, ocId: string, firmId: 
 
   const { template } = await loadCertificateTemplate(supabase, firmId, "OC");
 
-  return { template, job, firm: firm || null, record, issuedBy: issuedBy || null, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, consentLabel, daNumber, daDate, d, issuedDate, applicantName };
+  // The firm's own wording where they have written some, Certlyn's
+  // otherwise — the same three layers as the CDC and CC letters.
+  const wording = await loadFirmWording(supabase, firmId);
+  const wordingValues = {
+    FIRM: firm?.name,
+    CERTIFIER: issuedBy?.name,
+    ADDRESS: job.address,
+    PATHWAY: typeLabel,
+    COUNCIL: d.council?.lga || "Council",
+    APPLICANT: applicantName,
+    CONSENT: consentLabel,
+    "CONSENT NO": consentRef,
+    "DA NO": daNumber,
+    "CERTIFICATE NO": ref,
+    "FIRM ADDRESS": firm?.office_address,
+  };
+
+  const councilBody = firmWording(wording, "oc.council.body", wordingValues) ?? [
+    `${firm?.name} has issued a ${typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on ${consentLabel} No. ${consentRef}${
+      daNumber ? `, issued under Development Consent No. ${daNumber}` : ""
+    }. Please find enclosed a copy for your records.`,
+  ];
+
+  const applicantBody = firmWording(wording, "oc.applicant.body", wordingValues) ?? [
+    `Enclosed is a copy of the issued ${typeLabel} for the subject development. One copy has been forwarded directly to ${d.council?.lga || "Council"} for their records.`,
+    `Please retain this certificate, as it authorises ${record.type === "whole" ? "occupation and use of the building" : "occupation and use of the part of the building described below"}.`,
+  ];
+
+  return { template, job, firm: firm || null, record, issuedBy: issuedBy || null, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, consentLabel, daNumber, daDate, d, issuedDate, applicantName, councilBody, applicantBody };
 }

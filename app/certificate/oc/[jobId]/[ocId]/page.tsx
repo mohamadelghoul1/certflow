@@ -111,14 +111,12 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
                 <strong>{typeLabel} No.</strong>&nbsp;&nbsp;{ref}
               </div>
             </div>
-            <div>
-              {firm?.name} has issued a {typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for
-              the above premises, relying on {consentLabel} No. {consentRef}
-              {/* The consent the CC itself was issued under — the reference
-                  the council files the certificate against. Its number only:
-                  a letter is not the place for the consent's dates. */}
-              {daNumber ? `, issued under Development Consent No. ${daNumber}` : ""}. Please find enclosed a copy for your records.
-            </div>
+            {/* From ocData, which the PDF and the Word export read too —
+                so the letter cannot say one thing here and another in
+                the file that is handed over. */}
+            {data.councilBody.map((paragraph, i) => (
+              <div key={i}>{paragraph}</div>
+            ))}
             <div className="pt-4">Yours sincerely,</div>
             <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
             <div>{issuedBy?.name || "—"}</div>
@@ -154,11 +152,9 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
                 <strong>{typeLabel} No.:</strong>&nbsp;&nbsp;{ref}
               </div>
             </div>
-            <div>
-              Enclosed is a copy of the issued {typeLabel} for the subject development. One copy has been forwarded directly to {d.council?.lga || "Council"}{" "}
-              for their records.
-            </div>
-            <div>Please retain this certificate, as it authorises {record.type === "whole" ? "occupation and use of the building" : "occupation and use of the part of the building described below"}.</div>
+            {data.applicantBody.map((paragraph, i) => (
+              <div key={i}>{paragraph}</div>
+            ))}
             <div className="pt-4">Yours sincerely,</div>
             <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
             <div>{issuedBy?.name || "—"}</div>

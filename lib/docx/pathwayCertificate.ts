@@ -243,10 +243,8 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       { kind: "row", label: "Certifying Authority:", value: issuedBy?.name },
       { kind: "row", label: "Registration Number:", value: issuedBy ? `${issuedBy.registration_body || ""} / ${issuedBy.registration_no || ""}` : null },
     ]),
-    p(
-      `I, ${issuedBy?.name || "—"} of ${firm?.name || ""}, located at ${firm?.office_address || "—"}, acting as the principal certifier, hereby give notice in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in Schedule 1 are to be carried out in respect of the building work.`,
-      { spacingBefore: 120 }
-    ),
+    // From pathwayData, so this and the PDF cannot say different things.
+    ...data.inspectionsNotice.map((paragraph, i) => p(paragraph, i === 0 ? { spacingBefore: 120 } : {})),
     p(
       "The applicant, being the person having benefit of the development consent, is required under Section 58 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to notify the principal contractor (if not an owner-builder) of the applicable mandatory critical stage inspections specified under this notice."
     ),

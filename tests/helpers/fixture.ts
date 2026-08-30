@@ -74,6 +74,12 @@ export function certificateFixture(overrides: Record<string, unknown> = {}): Pat
     councilBody: ["Quality Private Certifiers Pty Ltd has issued a Complying Development Certificate under Part 4 of the Act for the above premises."],
     applicantBody: ["Quality Private Certifiers Pty Ltd has issued a Complying Development Certificate under Part 4 of the Act for the above premises."],
     requiredDocsList: ["Receipt of the Council Contribution Fee.", "Receipt of the Council Bond."],
+    // The Section 58 paragraph, as getPathwayCertificateData resolves
+    // it. Present because this fixture is cast: a field missing here is
+    // not a type error, it is a crash in whatever reads it.
+    inspectionsNotice: [
+      "I, Mohamad El Ghoul of Quality Private Certifiers Pty Ltd, located at Yagoona NSW 2199, acting as the principal certifier, hereby give notice in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in Schedule 1 are to be carried out in respect of the building work.",
+    ],
     // The layout the certificate is drawn from. A fixture without one
     // would test a certificate no firm can ever be issued.
     template: DEFAULT_TEMPLATES.CDC,
@@ -181,7 +187,25 @@ export function inspectionReportFixture(overrides: Record<string, unknown> = {})
 // package from. Overrides let a test vary only what it cares about — a
 // partial OC, a job with a development consent behind it.
 export function ocCertificateFixture(overrides: Record<string, unknown> = {}): OcCertificateData {
+  // A partial OC's letter says which part it covers, exactly as
+  // getOcCertificateData works it out. Derived here rather than fixed,
+  // so a test that makes the OC partial gets the letter that goes with
+  // it instead of one quietly describing a different certificate.
+  const partial = (overrides.record as { type?: string } | undefined)?.type === "partial";
+  const typeLabel = (overrides.typeLabel as string | undefined) || "Occupation Certificate";
+
   return {
+    // The two letters, as getOcCertificateData resolves them. Ahead of
+    // the spread so a test can still put its own words in — and present
+    // at all because this fixture is cast, so a missing field is not a
+    // type error here but a crash in whatever reads it.
+    councilBody: [
+      "Quality Private Certifiers Pty Ltd has issued an occupation certificate under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on CDC No. CDC-26091/01. Please find enclosed a copy for your records.",
+    ],
+    applicantBody: [
+      `Enclosed is a copy of the issued ${typeLabel} for the subject development. One copy has been forwarded directly to Liverpool for their records.`,
+      `Please retain this certificate, as it authorises ${partial ? "occupation and use of the part of the building described below" : "occupation and use of the building"}.`,
+    ],
     job: {
       id: "job-1",
       address: "21 Coquet Way Green Valley",

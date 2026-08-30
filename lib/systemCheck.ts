@@ -254,6 +254,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: hasTable(supabase, "certificate_templates"),
     },
     {
+      migration: "0064",
+      label: "Your own approval wording",
+      detail: "Lets a firm write its own council and applicant letters and its own inspections notice. Every firm keeps Certlyn's wording until it does.",
+      probe: hasTable(supabase, "firm_document_wording"),
+    },
+    {
       migration: "0063",
       label: "Your records can be backed up",
       detail: "Copies the register behind the documents — every project, certificate, inspection outcome and invoice — to your own cloud storage nightly.",

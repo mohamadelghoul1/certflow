@@ -65,9 +65,8 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
     mixed([{ text: `${typeLabel} No.  `, bold: true }, { text: ref }]),
     // The consent number goes in the letter, its dates do not — the
     // council files against the number.
-    p(
-      `${firm?.name || ""} has issued a ${typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on ${consentLabel} No. ${consentRef}${daNumber ? `, issued under Development Consent No. ${daNumber}` : ""}. Please find enclosed a copy for your records.`
-    ),
+    // From ocData, like the PDF and the screen.
+    ...data.councilBody.map((paragraph) => p(paragraph)),
     signatureRule(),
     p("Yours sincerely,", { spacingBefore: 120 }),
     ...signatureBlock(images.signature),
@@ -84,8 +83,7 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
     p("Dear Sir/Madam,"),
     mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }]),
     mixed([{ text: `${typeLabel} No.:  `, bold: true }, { text: ref }]),
-    p(`Enclosed is a copy of the issued ${typeLabel} for the subject development. One copy has been forwarded directly to ${d.council?.lga || "Council"} for their records.`),
-    p(`Please retain this certificate, as it authorises ${record.type === "whole" ? "occupation and use of the building" : "occupation and use of the part of the building described below"}.`),
+    ...data.applicantBody.map((paragraph) => p(paragraph)),
     signatureRule(),
     p("Yours sincerely,", { spacingBefore: 120 }),
     ...signatureBlock(images.signature),
