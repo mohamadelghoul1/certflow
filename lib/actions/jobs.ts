@@ -466,11 +466,29 @@ export async function toggleItemInternal(formData: FormData) {
   revalidatePath(`/jobs/${jobId}`);
 }
 
+// Whether this checklist item is the caller's to act on, and whether it
+// really belongs to the job named alongside it.
+//
+// Both ids arrive from the browser and can name any row in the database.
+// The work that follows in these two actions runs with the service role,
+// which row security does not constrain — so the caller's own session is
+// asked first. Row security answers "is this item yours"; comparing the
+// item's own job to the one posted answers "and is this the job you said
+// it was", so one firm's item cannot be filed against another's job.
+async function itemBelongsToJob(supabase: Awaited<ReturnType<typeof createClient>>, itemId: string, jobId: string): Promise<boolean> {
+  const { data } = await supabase.from("checklist_items").select("id, checklists(job_id)").eq("id", itemId).maybeSingle();
+  if (!data) return false;
+  const related = (data as { checklists?: { job_id?: string } | { job_id?: string }[] | null }).checklists;
+  const ownJobId = Array.isArray(related) ? related[0]?.job_id : related?.job_id;
+  return !!ownJobId && ownJobId === jobId;
+}
+
 export async function approveItem(formData: FormData) {
   await requireProfile("certifier");
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
+  if (!(await itemBelongsToJob(supabase, itemId, jobId))) return;
   await supabase.from("checklist_items").update({ status: "approved", updated_at: new Date().toISOString() }).eq("id", itemId);
   // The client hears automatically, but batched — approvals come in
   // runs, so the first of a burst emails at once and the rest ride
@@ -714,6 +732,7 @@ export async function addAmendment(formData: FormData) {
   const jobId = String(formData.get("job_id"));
   const text = String(formData.get("text") || "").trim();
   if (!text) return;
+  if (!(await itemBelongsToJob(supabase, itemId, jobId))) return;
   await supabase.from("amendments").insert({ checklist_item_id: itemId, text });
   // Batched the same way as approvals — see the note in approveItem.
   after(async () => {

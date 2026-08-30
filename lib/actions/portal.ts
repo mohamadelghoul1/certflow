@@ -5,6 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { flushJobUploads, digestEmail } from "@/lib/uploadDigest";
 import { notifyJobCertifier } from "@/lib/email";
+import { requireProfile } from "@/lib/auth";
+import { formatISODate } from "@/lib/business";
+import { escapeHtml } from "@/lib/html";
 import { currentDocuments } from "@/lib/checklistDocuments";
 
 // A client sending a document in from the portal. The file itself is
@@ -95,4 +98,39 @@ export async function submitClientDocument({
   });
 
   return {};
+}
+
+// Telling the certifier their client has booked an inspection.
+//
+// This used to be a public API route: no session, the service role, and
+// the inspection id, job id and date all taken from whoever posted. So
+// anyone on the internet could email any certifier in the system about
+// any inspection, learn its title from the reply, and — because a date
+// that will not parse is printed back verbatim — put their own markup
+// in the body of it. Unmetered, through the firm's own mail account.
+//
+// Now it is a server action: the caller must be a signed-in client, the
+// inspection must be one row security lets them see, and the job and the
+// date are read from the database rather than accepted from the caller.
+// Nothing the browser sends reaches the email.
+export async function notifyInspectionBooked(inspectionId: string): Promise<void> {
+  await requireProfile("client");
+  const supabase = await createClient();
+
+  // Read through the client's own session: "client read inspections" is
+  // scoped to the jobs they can see, so a row coming back at all is the
+  // proof that this booking is theirs.
+  const { data: inspection } = await supabase
+    .from("inspections")
+    .select("id, job_id, title, date")
+    .eq("id", inspectionId)
+    .maybeSingle();
+  if (!inspection) return;
+
+  await notifyJobCertifier(
+    createAdminClient(),
+    inspection.job_id,
+    "Client booked an inspection",
+    `<p>Your client has booked the <strong>${escapeHtml(inspection.title || "an")}</strong> inspection for <strong>${formatISODate(inspection.date)}</strong>. Please confirm it in Certlyn.</p>`
+  );
 }

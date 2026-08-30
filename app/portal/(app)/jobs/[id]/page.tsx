@@ -535,7 +535,7 @@ async function InspectionCard({
 
       {canBook && (
         <div className="mt-3">
-          <BookInspectionForm inspectionId={insp.id} jobId={jobId} />
+          <BookInspectionForm inspectionId={insp.id} />
           <div className="text-[11px] text-placeholder mt-1">{BOOKING_RULE_NOTE}</div>
         </div>
       )}
