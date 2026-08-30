@@ -9,7 +9,10 @@ import { siteUrl } from "@/lib/siteUrl";
 
 const TOO_MANY = "Too many sign-in attempts for this email address. Wait a minute and try again.";
 
-export type ActionState = { error?: string } | undefined;
+// What a form gets back. An error to show, or the moment the save
+// landed — a timestamp rather than a flag so that saving twice is two
+// events, and the confirmation appears again the second time.
+export type ActionState = { error?: string; savedAt?: number } | undefined;
 
 export async function signInCertifier(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const email = String(formData.get("email") || "");

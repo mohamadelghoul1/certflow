@@ -31,6 +31,7 @@ import type { Firm, Certifier, ClientContact } from "@/types/db";
 import type { InviteState } from "@/lib/actions/settings";
 import { CLIENT_TYPES } from "@/lib/constants";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
+import { SaveButton } from "@/components/certifier/SaveButton";
 import { DateField } from "@/components/DateField";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
@@ -119,9 +120,9 @@ export function FirmForm({ firm, logoUrl, stampUrl }: { firm: Firm | null; logoU
         </div>
       </div>
       {state?.error && <div className="text-sm text-error">{state.error}</div>}
-      <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
-        {pending ? "Saving…" : "Save firm details"}
-      </button>
+      <SaveButton pending={pending} savedAt={state?.savedAt}>
+        Save firm details
+      </SaveButton>
       </form>
     </div>
   );
@@ -153,9 +154,9 @@ export function ReminderSettingsForm({ firm }: { firm: Firm | null }) {
         Only clients who still owe documents are emailed, listing exactly what&rsquo;s missing with a link to their portal. Any project can be paused individually from its own page.
       </p>
       {state?.error && <div className="text-sm text-error">{state.error}</div>}
-      <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
-        {pending ? "Saving…" : "Save reminder settings"}
-      </button>
+      <SaveButton pending={pending} savedAt={state?.savedAt}>
+        Save reminder settings
+      </SaveButton>
     </form>
   );
 }
@@ -207,9 +208,9 @@ export function PaymentSettingsForm({ firm }: { firm: Firm | null }) {
         its reminders immediately. Any single invoice can be paused from its own page.
       </p>
       {state?.error && <div className="text-sm text-error">{state.error}</div>}
-      <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
-        {pending ? "Saving…" : "Save payment settings"}
-      </button>
+      <SaveButton pending={pending} savedAt={state?.savedAt}>
+        Save payment settings
+      </SaveButton>
     </form>
   );
 }
@@ -304,9 +305,9 @@ export function EmailSenderForm({
           </p>
         </div>
         {state?.error && <div className="text-sm text-error">{state.error}</div>}
-        <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
-          {pending ? "Saving…" : "Save sending address"}
-        </button>
+        <SaveButton pending={pending} savedAt={state?.savedAt}>
+          Save sending address
+        </SaveButton>
       </form>
 
       <div className="pt-4 border-t border-line space-y-3">
@@ -336,9 +337,9 @@ export function EmailSenderForm({
                 Show what I&rsquo;m typing
               </label>
               {keyState?.error && <div className="text-sm text-error">{keyState.error}</div>}
-              <button disabled={keyPending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
-                {keyPending ? "Saving…" : status.apiKeySet ? "Replace key" : "Connect Resend"}
-              </button>
+              <SaveButton pending={keyPending} savedAt={keyState?.savedAt}>
+                {status.apiKeySet ? "Replace key" : "Connect Resend"}
+              </SaveButton>
             </form>
 
             <div className="rounded-md bg-surface border border-line p-3 space-y-1">
@@ -465,9 +466,9 @@ export function StripeConnectionForm({
               Show what I&rsquo;m typing
             </label>
             {state?.error && <div className="text-sm text-error">{state.error}</div>}
-            <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
-              {pending ? "Saving…" : connected ? "Update Stripe keys" : "Connect Stripe"}
-            </button>
+            <SaveButton pending={pending} savedAt={state?.savedAt}>
+              {connected ? "Update Stripe keys" : "Connect Stripe"}
+            </SaveButton>
           </form>
 
           <div className="rounded-md bg-surface border border-line p-3 space-y-1">

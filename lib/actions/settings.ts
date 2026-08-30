@@ -42,7 +42,7 @@ export async function updateFirm(_prev: ActionState, formData: FormData): Promis
     if (retryError) return { error: retryError.message };
   }
   revalidatePath("/settings");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 // Each Settings section saves only its own columns, so pressing Save on
@@ -60,7 +60,7 @@ export async function updateFirmReminders(_prev: ActionState, formData: FormData
     return { error: error.message };
   }
   revalidatePath("/settings");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function updateFirmPayments(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -84,7 +84,7 @@ export async function updateFirmPayments(_prev: ActionState, formData: FormData)
     if (index === attempts.length - 1) return { error: "Run database updates 0035–0038 first (System check shows what's been run)." };
   }
   revalidatePath("/settings");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 // The address this firm's clients see, and where their replies land.
@@ -128,7 +128,7 @@ export async function updateFirmSender(_prev: ActionState, formData: FormData): 
     return { error: error.code === "PGRST204" || error.code === "42703" ? "Run database update 0058 first (Settings → System check)." : error.message };
   }
   revalidatePath("/settings");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 // Connecting a firm's own Resend account.
@@ -148,7 +148,7 @@ export async function saveFirmEmailKey(_prev: ActionState, formData: FormData): 
     return { error: MISSING_FUNCTION.includes(error.code) ? "Run database update 0060 first (Settings → System check)." : error.message };
   }
   revalidatePath("/settings");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function disconnectFirmEmailKey(_prev: ActionState, _formData: FormData): Promise<ActionState> {
@@ -159,7 +159,7 @@ export async function disconnectFirmEmailKey(_prev: ActionState, _formData: Form
     return { error: MISSING_FUNCTION.includes(error.code) ? "Run database update 0060 first (Settings → System check)." : error.message };
   }
   revalidatePath("/settings");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 // Connecting a firm's own Stripe account.
@@ -196,7 +196,7 @@ export async function saveFirmStripe(_prev: ActionState, formData: FormData): Pr
     return { error: MISSING_FUNCTION.includes(error.code) ? "Run database update 0059 first (Settings → System check)." : error.message };
   }
   revalidatePath("/settings");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function disconnectFirmStripe(_prev: ActionState, _formData: FormData): Promise<ActionState> {
@@ -207,7 +207,7 @@ export async function disconnectFirmStripe(_prev: ActionState, _formData: FormDa
     return { error: MISSING_FUNCTION.includes(error.code) ? "Run database update 0059 first (Settings → System check)." : error.message };
   }
   revalidatePath("/settings");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function addCertifier(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -233,7 +233,7 @@ export async function addCertifier(_prev: ActionState, formData: FormData): Prom
     if (retryError) return { error: retryError.message };
   }
   revalidatePath("/settings");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function updateCertifier(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -300,7 +300,7 @@ export async function updateCertifier(_prev: ActionState, formData: FormData): P
     }
   }
   revalidatePath("/settings");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function updateCertifierPracticeLogo(formData: FormData) {
@@ -388,7 +388,7 @@ export async function addClient(_prev: ActionState, formData: FormData): Promise
   });
   if (error) return { error: error.message };
   revalidatePath("/settings");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function updateClient(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -408,7 +408,7 @@ export async function updateClient(_prev: ActionState, formData: FormData): Prom
     .eq("firm_id", profile.firm_id);
   if (error) return { error: error.message };
   revalidatePath("/settings");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function removeClient(formData: FormData) {
