@@ -65,8 +65,28 @@ begin
   --
   -- Copied from the firm that has the fullest library rather than from a
   -- list repeated here, so a new firm starts from one that is known to
-  -- work. Their own blank forms are not copied — those are files
-  -- belonging to another firm, and each firm attaches its own.
+  -- work rather than from an empty page.
+  --
+  -- A copy, and the word is exact: these are new rows carrying the new
+  -- firm's id, not a reference to anybody else's. Two guarantees follow
+  -- from that, and both were asked for explicitly:
+  --
+  --   * Deleting, renaming or reordering an item in one firm's library
+  --     does nothing to any other firm's. There is no shared row to
+  --     delete. If this is ever rewritten to point at a common list to
+  --     save space, that guarantee goes with it — do not.
+  --
+  --   * template_file_path is deliberately absent from the column list
+  --     below, so every item arrives with no blank form attached. Those
+  --     files are the other firm's contract, CDC form, CC form, NOC and
+  --     OC forms, sitting in the other firm's storage folder. Copying
+  --     the path would hand a firm somebody else's contract to give
+  --     their clients, and would not even work: storage refuses a folder
+  --     that is not yours (migration 0061). Each firm attaches its own.
+  --
+  -- Both were proved against a real database before this was written:
+  -- the new firm receives the list with none of the forms, and a delete
+  -- on one side leaves the other side whole.
   select firm_id into v_template
     from document_library_items
    group by firm_id
