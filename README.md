@@ -142,48 +142,74 @@ to click.
 
 ## What's real vs. what's still ahead
 
-**Real and working now:** certifier login, client login, the full job
-workflow (quotes → jobs → CDC/CC/NOC/OC checklists → amendments →
-inspections → certificates → modifications → Partial/Whole OC → job
-completion), real file uploads and downloads via Supabase Storage, and the
-brand-new client portal (view job status, see amendment notes, upload
-documents, book inspections under the exact lead-time/weekend rules in the
-brief, view issued certificates and inspection reports once released). The
-database is multi-tenant-ready (every row carries a `firm_id`, enforced by
-Postgres Row Level Security) per the brief's Section 12 guidance, even
-though only one firm uses it today.
+Kept honest deliberately: this section is what gets read when deciding
+whether something is worth asking for, and a stale list of "not built
+yet" items that were built months ago is worse than no list.
 
-**Automatic Lot/Section/Plan and council from the address** — working.
-Typing a development address (on New Job or the Details tab) suggests
-matching NSW addresses, and picking one fills in the Lot/Section/Plan and
-the council. A property across several parcels lists them all as
-tickboxes so you can choose which the job covers. It reads NSW Spatial
-Services, a free public government service that needs no account or key,
-and every field stays an ordinary box you can type into.
+**Working now.** The whole job, end to end: quotes, and an accepted quote
+turned into a job carrying its client, address and fees; CDC, CC, Notice
+of Commencement and Occupation Certificate checklists drawn from the
+firm's own document library; amendments raised against individual
+documents; certificates issued as PDF and Word on the firm's letterhead
+with its signature and stamp, positioned where the firm wants it;
+modifications; partial and whole OC; job completion.
 
-Land zoning is **not** filled in automatically. It isn't part of the
-parcel data, and no public endpoint serving it could be found, so it
-stays a field you fill in — the "Find a property on the NSW Planning
-Portal" link beside the address opens the official search, which shows
-the zoning for an address.
+Critical stage inspections: booked by the client from the portal under
+the firm's lead-time and weekend rules, confirmed or rescheduled by the
+certifier, carried out from a screen built for the van, with photos and
+defects, and a report that is generated, signed and released. A calendar
+feed each certifier can subscribe to from their phone.
 
-**Deliberately not built yet** — these all need a paid third-party account
-with an API key only you can obtain, exactly as the build brief describes:
+The client portal: outstanding documents, upload, what has been approved
+and what needs changes, inspection dates, released certificates and
+reports, invoices, and paying by card.
 
-- **Real email sending** for status-change notifications (brief §10) — currently only the client-invite email exists, via Supabase's basic default sender.
-- **Real payment collection via Stripe** (§16) — the "Mark as paid" button is real and manual; actual card charging isn't wired up.
-- **NSW Planning Portal reporting** (§9) — this is a **legal requirement** for the firm to report certificates/inspections within 2 business days; it needs the firm's own API subscription key from the NSW Planning Portal team before it can be built.
-- **Combined stamped PDF bundle** (§11) — merging approved documents into one stamped PDF (the per-document "requires stamping" toggle is already in place, ready for this).
-- **Multi-certifier-firm billing/signup** (§13) — this is intentionally a later phase, once the certifier side is proven on this firm's real jobs.
-- **Offline inspection capture** (§14) — a mobile-specific, offline-first rebuild.
-- **Live-editing generated documents via OneDrive/Word Online** — instead of downloading a plain Word file, register Certlyn with Microsoft, let each firm connect their Microsoft 365/OneDrive account, and create the letters/certificate there directly. Editing in desktop Word (or Word Online embedded right in the page) would then autosave back to that same file with no download/re-upload step, which is what a proper "edit and it's just saved" experience actually requires. Needs a Microsoft developer/Azure app registration and an OAuth connect flow per firm before it can be built — today's Export as Word → edit → "Upload edited/signed copy" is the interim workflow.
-- Reports and Audit screens from the prototype haven't been ported yet (all the underlying data is there — this is a next-iteration UI task, not a data-model gap).
+Invoicing: raised from a job or a quote, emailed with the PDF attached,
+paid by card through the firm's own Stripe, chased automatically when
+overdue, exported to Xero.
 
-Tell me when you're ready for any of these and I'll wire it up — most of
-them just need you to paste in an API key once you've signed up for that
-service.
+Around all of that: an audit log, an issuance register over any date
+range, a deadlines screen, storage usage, cloud backup to the firm's own
+Dropbox or OneDrive, importing existing jobs from a spreadsheet, address
+autofill from NSW Spatial Services, a combined stamped approval bundle,
+recoverable deletion, rate limiting, and an error log that emails a fault
+the first time it is seen.
 
----
+**Multi-firm.** Every row carries a firm_id enforced by row-level
+security, and a second firm brings its own sending address, its own
+Resend account, its own Stripe, its own certificate layouts and its own
+document library. Onboarding is `supabase/add_firm.sql` plus the firm
+filling in its own Settings.
+
+**Still ahead**, in the order they are worth doing:
+
+- **NSW Planning Portal reporting.** The foundation is built against the
+  PCC API specs; it needs the firm's own API subscription from ePlanning
+  before it can be switched on. Until then, certificates and inspections
+  are reported the way they always were.
+- **Two-factor login.** For a login that issues statutory certificates,
+  a stolen password should not be enough on its own.
+- **Per-firm portal branding.** A second firm's clients see the Certlyn
+  front door rather than that firm's, and its overnight reminders carry
+  this deployment's address. One setting per firm — a portal address —
+  fixes both. Only worth building when a second firm signs.
+- **Copying the back catalogue to Dropbox.** Cloud backup copies
+  everything issued from the moment it is connected; what was issued
+  before it is not copied.
+- **Offline inspection capture**, for a site with no signal.
+- **Live editing of generated documents** through OneDrive or Word
+  Online, instead of download, edit, re-upload.
+
+**Decided against, so nobody re-proposes them:**
+
+- **Virus scanning of uploads.** It would mean a paid service in front of
+  every upload, delay before a document appears, and another thing to
+  fail. Migration 0062 refuses the file types that are only ever an
+  attack instead; the certifier's own antivirus does the rest. A
+  malicious PDF is still a PDF — that is understood and accepted.
+- **SMS notifications** — judged not worth the cost or the setup.
+- **Linking the SEPP code to the CDC assessment.**
+- **A complaints register and conflict-of-interest declarations.**
 
 ## For future reference (technical)
 
