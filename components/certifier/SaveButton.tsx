@@ -20,12 +20,16 @@ export function SaveButton({
   children,
   savingLabel = "Saving…",
   className = "px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60",
+  form,
 }: {
   pending: boolean;
   savedAt?: number;
   children: React.ReactNode;
   savingLabel?: string;
   className?: string;
+  // For a button that sits outside the form it submits — the Details
+  // tab's, which floats at the bottom of a long page.
+  form?: string;
 }) {
   // Which save has already had its moment. Derived rather than mirrored:
   // the tick is on whenever the latest save is not the one already
@@ -42,7 +46,7 @@ export function SaveButton({
 
   return (
     <div className="flex items-center gap-2.5 flex-wrap">
-      <button disabled={pending} className={className}>
+      <button form={form} disabled={pending} className={className}>
         {pending ? savingLabel : children}
       </button>
       {/* role="status" so a screen reader announces it without the

@@ -354,7 +354,7 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
   revalidatePath(`/certificate/pathway/${jobId}`);
   revalidatePath("/certificate/oc/[jobId]/[ocId]", "page");
   revalidatePath("/jobs/[jobId]/inspections/[inspectionId]/report", "page");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function removeChecklistItem(formData: FormData) {
@@ -993,7 +993,7 @@ export async function setPlanningPortalRef(_prev: ActionState, formData: FormDat
 
   await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { certificateDetails: { planningPortalRef: ref } });
   revalidatePath(`/jobs/${jobId}`);
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 // The two dates the pre-inspection report needs that the job doesn't
@@ -1012,7 +1012,7 @@ export async function setPreInspectionDates(_prev: ActionState, formData: FormDa
 
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pre-inspection/${jobId}`);
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function issuePathwayCertificate(_prev: ActionState, formData: FormData): Promise<ActionState> {

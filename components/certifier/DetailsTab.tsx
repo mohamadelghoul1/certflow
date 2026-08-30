@@ -32,6 +32,7 @@ import { PriorApprovalFields } from "@/components/certifier/PriorApprovalFields"
 import { AddressSameAsSiteFields } from "@/components/certifier/AddressSameAsSiteFields";
 import { ContractorFields } from "@/components/certifier/ContractorFields";
 import type { Contractor } from "@/types/db";
+import { SaveButton } from "@/components/certifier/SaveButton";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -669,9 +670,9 @@ export function DetailsTab({
           working down the whole page. `form` ties it back to the details
           form it submits, which is allowed to live anywhere on the page. */}
       <div className="flex items-center gap-3 bg-white rounded-lg border border-line p-5">
-        <button form={detailsFormId} disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
-          {pending ? "Saving…" : "Save details"}
-        </button>
+        <SaveButton pending={pending} savedAt={state?.savedAt} form={detailsFormId}>
+          Save details
+        </SaveButton>
         {showSaved && <span className="text-sm font-medium text-success">Saved ✓</span>}
         {state?.error && <span className="text-sm text-error">{state.error}</span>}
       </div>

@@ -5,6 +5,7 @@ import { Pencil } from "lucide-react";
 import { setPlanningPortalRef } from "@/lib/actions/jobs";
 import type { ActionState } from "@/lib/actions/auth";
 import { portalRefPlaceholder, portalRefPrefix, type PortalRefKind } from "@/lib/business";
+import { SaveButton } from "@/components/certifier/SaveButton";
 
 // The NSW Planning Portal reference, entered right where the certificate
 // is issued.
@@ -53,9 +54,13 @@ export function PlanningPortalRefField({ jobId, value, kind }: { jobId: string; 
           className="px-2 py-1.5 rounded border border-line text-xs w-56"
         />
       </label>
-      <button disabled={pending} className="text-xs font-semibold text-white bg-secondary hover:opacity-90 px-3 py-1.5 rounded-md disabled:opacity-60">
-        {pending ? "Saving…" : "Save"}
-      </button>
+      <SaveButton
+        pending={pending}
+        savedAt={state?.savedAt}
+        className="text-xs font-semibold text-white bg-secondary hover:opacity-90 px-3 py-1.5 rounded-md disabled:opacity-60"
+      >
+        Save
+      </SaveButton>
       {editing && (
         <button type="button" onClick={() => setEditing(false)} className="text-xs text-muted hover:underline px-1 py-1.5">
           Cancel

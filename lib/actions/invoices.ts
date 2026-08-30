@@ -118,7 +118,7 @@ export async function updateInvoice(_prev: ActionState, formData: FormData): Pro
     .eq("firm_id", profile.firm_id);
   if (error) return { error: error.message };
   revalidatePath(`/invoices/${invoiceId}`);
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function addInvoiceLine(formData: FormData) {

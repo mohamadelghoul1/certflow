@@ -7,6 +7,7 @@ import { setPreInspectionDates } from "@/lib/actions/jobs";
 import { DateField } from "@/components/DateField";
 import { formatISODate } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
+import { SaveButton } from "@/components/certifier/SaveButton";
 
 // The pre-inspection report — s139 of the EP&A Regulation 2021 for a CDC,
 // s16 of the EP&A (Development Certification and Fire Safety) Regulation
@@ -61,9 +62,13 @@ export function PreInspectionField({
         <span className="text-xs font-medium text-heading">Inspection date</span>
         <DateField name="inspectionDate" noFuture defaultValue={inspectionDate} autoFocus={editing} className="px-2 py-1.5 rounded border border-line text-xs" />
       </label>
-      <button disabled={pending} className="text-xs font-semibold text-white bg-secondary hover:opacity-90 px-3 py-1.5 rounded-md disabled:opacity-60">
-        {pending ? "Saving…" : "Save"}
-      </button>
+      <SaveButton
+        pending={pending}
+        savedAt={state?.savedAt}
+        className="text-xs font-semibold text-white bg-secondary hover:opacity-90 px-3 py-1.5 rounded-md disabled:opacity-60"
+      >
+        Save
+      </SaveButton>
       {editing && (
         <button type="button" onClick={() => setEditing(false)} className="text-xs text-muted hover:underline px-1 py-1.5">
           Cancel

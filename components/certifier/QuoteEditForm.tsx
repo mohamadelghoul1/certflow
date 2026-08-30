@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useState } from "react";
 import { updateQuote } from "@/lib/actions/quotes";
 import type { ActionState } from "@/lib/actions/auth";
 import { NSW_STATE, JOB_TYPES, BUILDING_CLASSIFICATIONS } from "@/lib/constants";
@@ -10,6 +10,7 @@ import type { Quote, QuoteFeeLine } from "@/types/db";
 import { pathwayServiceLabel, type Pathway } from "@/lib/business";
 import { X, Plus } from "lucide-react";
 import { DateField, todayISO } from "@/components/DateField";
+import { SaveButton } from "@/components/certifier/SaveButton";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -37,8 +38,6 @@ export function QuoteEditForm({
   clients: { id: string; name: string; type: string }[];
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateQuote, undefined);
-  const [showSaved, setShowSaved] = useState(false);
-  const wasPending = useRef(false);
 
   const applicant = (quote.applicant || {}) as { name?: string; email?: string; phone?: string; address?: Record<string, string> };
   const owner = (quote.owner || {}) as { name?: string; phone?: string; email?: string };
@@ -55,15 +54,6 @@ export function QuoteEditForm({
       : [{ description: `${quote.pathway}/PC/OC`, amount: "2500" }]
   );
 
-  useEffect(() => {
-    if (wasPending.current && !pending && !state?.error) {
-      setShowSaved(true);
-      const t = setTimeout(() => setShowSaved(false), 2500);
-      return () => clearTimeout(t);
-    }
-    wasPending.current = pending;
-  }, [pending, state]);
-
   const subtotal = feeLines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
   const gst = subtotal * 0.1;
   const total = subtotal + gst;
@@ -73,11 +63,10 @@ export function QuoteEditForm({
       <input type="hidden" name="quote_id" value={quote.id} />
       <input type="hidden" name="pathway" value={pathway} />
 
-      <div className="flex items-center justify-end gap-2 mb-6">
-        {showSaved && <span className="text-sm font-medium text-success">Saved ✓</span>}
-        <button className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60" disabled={pending}>
-          {pending ? "Saving…" : "Save changes"}
-        </button>
+      <div className="flex items-center justify-end mb-6">
+        <SaveButton pending={pending} savedAt={state?.savedAt}>
+          Save changes
+        </SaveButton>
       </div>
 
       <Section title="Quote details">

@@ -6,6 +6,7 @@ import { invoiceTotals, formatMoney } from "@/lib/invoices/invoiceLogic";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Invoice, InvoiceLine } from "@/types/db";
 import { X } from "lucide-react";
+import { SaveButton } from "@/components/certifier/SaveButton";
 
 const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon";
 const labelCls = "block text-xs font-semibold text-placeholder mb-1";
@@ -81,9 +82,9 @@ export function InvoiceEditForm({
         </div>
         {state?.error && <div className="text-sm text-error">{state.error}</div>}
         {!locked && (
-          <button disabled={pending} className="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-60">
-            {pending ? "Saving…" : "Save invoice details"}
-          </button>
+          <SaveButton pending={pending} savedAt={state?.savedAt}>
+            Save invoice details
+          </SaveButton>
         )}
       </form>
 

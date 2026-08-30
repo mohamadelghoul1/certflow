@@ -118,7 +118,7 @@ export async function updateQuote(_prev: ActionState, formData: FormData): Promi
   }
 
   revalidatePath(`/quotes/${quoteId}`);
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function addFeeLine(formData: FormData) {
