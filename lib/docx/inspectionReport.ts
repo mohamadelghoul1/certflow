@@ -20,7 +20,7 @@ function rows(...items: (FieldRow | null)[]): FieldRow[] {
 }
 
 export async function buildInspectionReportDocx(data: InspectionReportData, images: { logo: ImageAsset | null; signature: ImageAsset | null; photos: (ImageAsset | null)[] }): Promise<Buffer> {
-  const { job, firm, inspection, inspector, d, applicantName, certRef, certNumbers, certTypeLabel, consentRefLines, introText, notes } = data;
+  const { job, firm, inspection, inspector, d, applicantName, certRef, certNumbers, titleRefs, certTypeLabel, consentRefLines, introText, notes } = data;
 
   const header = letterheadHeader(firm, images.logo);
   const footer = projectFooter(certRef, firm?.website);
@@ -28,7 +28,7 @@ export async function buildInspectionReportDocx(data: InspectionReportData, imag
   const push = (...items: FileChild[]) => children.push(...items);
 
   push(
-    ...documentTitle(`INSPECTION REPORT – ${certRef} – ${inspection.title}`, { subtitle: job.address || "" }),
+    ...documentTitle(`INSPECTION REPORT – ${titleRefs} – ${inspection.title}`, { subtitle: job.address || "" }),
 
     headingRule("APPLICANT DETAILS"),
     fieldTable(rows({ kind: "row", label: "Applicant:", value: applicantName }, { kind: "row", label: "Address:", value: formatAddress(d.applicantAddress) }, { kind: "row", label: "Phone:", value: d.contact?.phone || d.contact?.mobile }, { kind: "row", label: "Email:", value: d.contact?.email })),

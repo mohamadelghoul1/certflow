@@ -22,7 +22,7 @@ export async function buildInspectionReportPdf(
   data: InspectionReportData,
   images: PackageImages & { photos: ReportPhoto[] }
 ): Promise<Uint8Array> {
-  const { job, firm, inspection, inspector, d, applicantName, certRef, certNumbers, certTypeLabel, consentRefLines, introText, notes } = data;
+  const { job, firm, inspection, inspector, d, applicantName, certRef, certNumbers, titleRefs, certTypeLabel, consentRefLines, introText, notes } = data;
 
   const l = await Layout.create();
   const logo = images.logo ? await (images.logo.type === "png" ? l.doc.embedPng(images.logo.bytes) : l.doc.embedJpg(images.logo.bytes)) : null;
@@ -38,7 +38,7 @@ export async function buildInspectionReportPdf(
   };
 
   l.newPage();
-  l.documentTitle(`INSPECTION REPORT – ${certRef} – ${inspection.title}`, { subtitle: job.address || "" });
+  l.documentTitle(`INSPECTION REPORT – ${titleRefs} – ${inspection.title}`, { subtitle: job.address || "" });
 
   l.heading("APPLICANT DETAILS", { rule: true });
   row("Applicant:", applicantName);

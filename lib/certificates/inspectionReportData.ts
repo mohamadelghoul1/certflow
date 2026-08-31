@@ -37,6 +37,10 @@ export type InspectionReportData = {
   applicantName: string;
   certRef: string;
   certNumbers: string;
+  // What the report's title line carries: every certificate issued for
+  // the job — the original and each modified one ("CDC-26001/01,
+  // CDC-26001/02") — since the inspection stands under all of them.
+  titleRefs: string;
   certTypeLabel: string;
   consentRefLines: string[];
   introText: string;
@@ -112,5 +116,10 @@ export async function getInspectionReportData(jobId: string, inspectionId: strin
     "We have attended the above property and completed an inspection. The areas inspected and the overall outcome of the inspection are listed below, together with any specific defects noted or documents required.";
   const notes = inspection.report_notes?.trim() || "";
 
-  return { job, firm: letterhead, inspection, inspector: inspector || null, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, certTypeLabel, consentRefLines, introText, notes };
+  // The title names every certificate, like the CDC/CC Number row does;
+  // certRef (the active version alone) stays for the page footer and the
+  // photo page's continuation label, where a list would not fit.
+  const titleRefs = certNumbers || certRef;
+
+  return { job, firm: letterhead, inspection, inspector: inspector || null, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, titleRefs, certTypeLabel, consentRefLines, introText, notes };
 }

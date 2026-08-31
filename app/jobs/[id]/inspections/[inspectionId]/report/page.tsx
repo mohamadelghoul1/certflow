@@ -59,7 +59,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
 
   const data = await getInspectionReportData(jobId, inspectionId, profile.firm_id);
   if (!data) notFound();
-  const { job, firm: firmData, inspection, inspector, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, certTypeLabel, consentRefLines, introText, notes } = data;
+  const { job, firm: firmData, inspection, inspector, signatureUrl, logoUrl, photoUrls, d, applicantName, certRef, certNumbers, titleRefs, certTypeLabel, consentRefLines, introText, notes } = data;
 
   // The results table is built from an array so a future report covering
   // several inspection areas in one visit just means feeding in more rows —
@@ -89,7 +89,7 @@ export default async function InspectionReportPage({ params }: { params: Promise
 
           <div className="border-b border-line pb-1.5 mb-3">
             <div className="text-base font-bold uppercase text-doc-heading">
-              INSPECTION REPORT – {certRef} – {inspection.title}
+              INSPECTION REPORT – {titleRefs} – {inspection.title}
             </div>
             <div className="text-xs text-muted mt-0.5">{job.address}</div>
           </div>

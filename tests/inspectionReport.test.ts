@@ -17,6 +17,15 @@ async function docx(overrides: Record<string, unknown> = {}) {
 }
 
 describe("the inspection report", () => {
+  // An inspection on a job with a modified certificate stands under both
+  // certificates, so the title names them all — the original and each
+  // modification — the way the CDC/CC Number row always has.
+  test("the title carries every certificate issued for the job", async () => {
+    const both = { titleRefs: "CDC-26001/01, CDC-26001/02", certNumbers: "CDC-26001/01, CDC-26001/02" };
+    assert.ok((await pdf(both)).text.includes("INSPECTION REPORT – CDC-26001/01, CDC-26001/02"));
+    assert.ok((await docx(both)).includes("INSPECTION REPORT – CDC-26001/01, CDC-26001/02"));
+  });
+
   // It used to read "Not yet scheduled" — the wording an inspection list
   // uses for a visit not yet booked, which on a report of a visit that has
   // already happened is nonsense. It appeared in two places.
