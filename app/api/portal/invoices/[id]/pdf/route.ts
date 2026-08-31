@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { withinLimit, downloadBucket, HEAVY_DOWNLOAD_LIMIT } from "@/lib/rateLimit";
 import { buildInvoiceFile } from "@/lib/invoices/invoiceDocument";
 
 // The client's own copy of an invoice.
@@ -18,7 +20,14 @@ import { buildInvoiceFile } from "@/lib/invoices/invoiceDocument";
 // for it.
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { profile } = await requireProfile("client");
+  const { profile, userId } = await requireProfile("client");
+
+  // The same ceiling the certifier's own downloads sit behind: the
+  // invoice PDF is built from scratch on every request.
+  const supabase = await createClient();
+  if (!(await withinLimit(supabase, downloadBucket(userId), HEAVY_DOWNLOAD_LIMIT))) {
+    return NextResponse.json({ error: "That is a lot of downloads in a short time. Give it a few minutes and try again." }, { status: 429 });
+  }
   if (!profile.client_id) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   const admin = createAdminClient();

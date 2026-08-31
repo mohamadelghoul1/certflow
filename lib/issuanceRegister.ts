@@ -1,3 +1,4 @@
+import { csvRow } from "@/lib/csv";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { JobDetails } from "@/types/db";
 import { formatClassifications, resolvePathwayCertRef, resolveOcCertRef, type Pathway } from "@/lib/business";
@@ -157,11 +158,11 @@ export const REGISTER_COLUMNS: { key: keyof RegisterRow; label: string }[] = [
 ];
 
 // A field with a comma, a quote or a line break must arrive in Excel as
-// one cell, not three.
+// one cell, not three — and one that starts like a formula must arrive
+// as text rather than being run. See lib/csv.
 export function registerCsv(rows: RegisterRow[]): string {
-  const escape = (value: string) => (/[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
-  const lines = [REGISTER_COLUMNS.map((c) => escape(c.label)).join(",")];
-  for (const row of rows) lines.push(REGISTER_COLUMNS.map((c) => escape(String(row[c.key] ?? ""))).join(","));
+  const lines = [csvRow(REGISTER_COLUMNS.map((c) => c.label))];
+  for (const row of rows) lines.push(csvRow(REGISTER_COLUMNS.map((c) => row[c.key] ?? "")));
   return lines.join("\r\n");
 }
 

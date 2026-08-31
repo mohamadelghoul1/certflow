@@ -19,7 +19,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (error || !data) return new NextResponse("Not found.", { status: 404 });
 
   const name = decodeURIComponent(filename);
-  const contentType = name.endsWith(".pdf") ? "application/pdf" : name.endsWith(".png") ? "image/png" : "image/jpeg";
+  // Taken from the sealed path, not the filename in the URL: the token
+  // decides what is served, so it should decide what it is called as
+  // well. A caller could otherwise ask for a PDF under a .png name and
+  // have it labelled as an image.
+  const contentType = storagePath.endsWith(".pdf") ? "application/pdf" : storagePath.endsWith(".png") ? "image/png" : "image/jpeg";
   return new NextResponse(await data.arrayBuffer(), {
     headers: {
       "Content-Type": contentType,

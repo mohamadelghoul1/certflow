@@ -1,4 +1,5 @@
 import { formatISODate } from "@/lib/business";
+import { escapeHtml } from "@/lib/html";
 
 // What the client is told when a certifier books, or moves, an
 // inspection themselves.
@@ -12,9 +13,12 @@ export type BookingEmail = { subject: string; html: string };
 
 export function inspectionBookingEmail(title: string, date: string, rebooking: boolean): BookingEmail {
   const when = formatISODate(date);
+  // The inspection's name is typed by a certifier; escaped anyway, so no
+  // email body can be reshaped by what someone put in a field.
+  const named = escapeHtml(title);
   const opening = rebooking
-    ? `<p>Your <strong>${title}</strong> inspection has been moved to <strong>${when}</strong>.</p>`
-    : `<p>We have booked your <strong>${title}</strong> inspection for <strong>${when}</strong>.</p>`;
+    ? `<p>Your <strong>${named}</strong> inspection has been moved to <strong>${when}</strong>.</p>`
+    : `<p>We have booked your <strong>${named}</strong> inspection for <strong>${when}</strong>.</p>`;
 
   return {
     subject: `Inspection ${rebooking ? "rescheduled" : "booked"} — ${title}`,

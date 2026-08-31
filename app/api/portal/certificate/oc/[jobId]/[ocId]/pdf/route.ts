@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireProfile } from "@/lib/auth";
+import { withinLimit, downloadBucket, HEAVY_DOWNLOAD_LIMIT } from "@/lib/rateLimit";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOcCertificateData } from "@/lib/certificates/ocData";
@@ -15,9 +16,14 @@ import { attachmentHeader, jobDocumentName } from "@/lib/downloadName";
 // released to them, before the admin client assembles anything.
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ jobId: string; ocId: string }> }) {
   const { jobId, ocId } = await params;
-  await requireProfile("client");
+  const { userId } = await requireProfile("client");
 
   const supabase = await createClient();
+  // The same ceiling the certifier's own downloads sit behind — this
+  // builds the certificate from scratch on every request.
+  if (!(await withinLimit(supabase, downloadBucket(userId), HEAVY_DOWNLOAD_LIMIT))) {
+    return NextResponse.json({ error: "That is a lot of downloads in a short time. Give it a few minutes and try again." }, { status: 429 });
+  }
   const { data: job } = await supabase.from("jobs").select("id, firm_id").eq("id", jobId).single();
   if (!job) return NextResponse.json({ error: "not found" }, { status: 404 });
 

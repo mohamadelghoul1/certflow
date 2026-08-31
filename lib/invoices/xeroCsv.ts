@@ -1,3 +1,4 @@
+import { csvCell, csvRow } from "@/lib/csv";
 import { invoiceNumberOf } from "@/lib/invoices/invoiceLogic";
 import type { Invoice, InvoiceLine } from "@/types/db";
 
@@ -71,8 +72,10 @@ export function contactNameFor(invoice: XeroInvoice): string {
 }
 
 export function xeroInvoiceCsv(invoices: XeroInvoice[], options: XeroCsvOptions): string {
-  const escape = (value: string) => (/[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
-  const lines: string[] = [XERO_COLUMNS.join(",")];
+  // Quoted, and anything that starts like a formula neutralised: a
+  // contact name or a line description is typed by a person, and this
+  // file is opened in a spreadsheet. See lib/csv.
+  const lines: string[] = [csvRow(XERO_COLUMNS)];
 
   for (const invoice of invoices) {
     const number = invoiceNumberOf(invoice);
@@ -104,7 +107,7 @@ export function xeroInvoiceCsv(invoices: XeroInvoice[], options: XeroCsvOptions)
           options.taxType,
           "AUD",
         ]
-          .map((value) => escape(String(value)))
+          .map((value) => csvCell(value))
           .join(",")
       );
     }

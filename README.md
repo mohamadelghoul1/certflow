@@ -367,10 +367,11 @@ the reply-to. Their client sees their name; replies reach them.
 - Put Certlyn through IP Australia's trade mark search. A domain being
   free does not mean the name is.
 
-### Security review — finished the first pass, not the whole app
+### Security review — three passes, the listed work finished
 
 Run before letting a second firm in, because from that point one firm's
-mistake or malice reaches another's clients. Two findings, both fixed:
+mistake or malice reaches another's clients. First pass, two findings,
+both fixed:
 an unauthenticated endpoint that emailed any certifier with
 caller-supplied content, and two actions that handed browser-supplied
 ids to the service role, which row security does not constrain.
@@ -390,24 +391,51 @@ with the second. The calendar feed's firm scoping moved from JavaScript
 into the query while it was open — it was right, but it was one careless
 edit from handing over every firm's diary.
 
-**Not yet looked at.** In rough order of what would worry me most:
+**Third pass** went through everything on that list. Three findings,
+all fixed:
 
-1. The rest of the job API routes: archive, stamp, approval-bundle,
-   neighbour-letter, the inspection report PDF and Word, and
-   `/api/forms/[itemId]`. Each takes an id from the URL and needs the
-   same question asked of it as the actions in the first pass.
-2. `/api/search` and the report exports, which read across a firm's whole
-   dataset and would be the widest single leak if scoped wrongly.
-3. The ePlanning inbound endpoint, which is Basic Auth only.
-4. Rate limiting: which routes are actually behind it, rather than which
-   were meant to be.
-5. Password reset and `/auth/confirm` — token lifetime, reuse, and
-   whether a link works after the address it was sent to has changed.
-6. The local Postgres harness had row security switched off on
-   `storage.objects`, which made the first storage test pass when it
-   should have failed. Supabase enables it on the platform, so this was
-   the harness lying rather than the app — but any future storage test
-   must enable it first, or it proves nothing.
+1. **Spreadsheet formula injection in the CSV exports.** The issuance
+   register and the Xero invoice export quoted their fields correctly
+   but did not neutralise them. A value beginning `=`, `+`, `-`, `@` or
+   a tab is run as a formula by Excel, Google Sheets and LibreOffice —
+   and some of those fields are typed by clients through the portal. A
+   client could have written a live formula into a register a certifier
+   later opens. Both exports now go through `lib/csv`, which prefixes
+   such a value so it is stored as text. Plain numbers are exempt: a
+   credit line arriving as the text "'-50.00" is an import Xero rejects.
+2. **The client-facing PDF routes had no rate limit** while the
+   certifier's equivalents did. Each builds a certificate or an invoice
+   from scratch on every request, so a signed-in client — or a stolen
+   session — could loop them. All three now sit behind the same ceiling.
+3. **A served file's content type came from the filename in the URL**
+   rather than from the sealed token that decides what is served. Now
+   taken from the storage path.
+
+**Checked and clean:** every job document route (archive, stamp,
+approval bundle, neighbour letter, inspection report PDF and Word, the
+OC set) scopes the job to the caller's firm before building anything;
+`/api/forms/[itemId]` reads the item through the caller's own session
+and only then resolves the file behind it; `/api/search` is firm-scoped
+on all four tables and strips PostgREST's own operators out of the
+search text; the report exports are firm-scoped; `/api/uploads/recent`
+checks the role and joins on the firm; the ePlanning endpoint fails
+closed without its credentials and compares them in constant time; the
+cron endpoint refuses without `CRON_SECRET`; the backup OAuth callback
+checks the state cookie *and* that it belongs to the caller's firm; the
+portal file token names one file and expires; password reset is rate
+limited per address, says the same thing whether or not the address is
+known, and signs the browser out before verifying; `/auth/confirm`
+cannot be turned into an open redirect; `client_book_inspection` — the
+one function a client's browser calls directly — enforces role, job
+visibility, outcome, double-booking, the NOC gate, weekends and the
+notice period in the database itself; no `dangerouslySetInnerHTML`
+anywhere in the app; and every digest email escapes what people typed.
+
+**Still open, and deliberately:** the local Postgres harness had row
+security switched off on `storage.objects`, which made the first storage
+test pass when it should have failed. Supabase enables it on the
+platform, so this was the harness lying rather than the app — but any
+future storage test must enable it first, or it proves nothing.
 
 ### The promotional page — written, held back deliberately
 
