@@ -95,7 +95,7 @@ export async function buildCertificatePackagePdf(
   // own title and fields — a ruled heading, then right-aligned labels
   // against their values.
   l.documentTitle(`RE: ${(job.address || "").toUpperCase()}`);
-  l.fieldRow(data.councilCertLabel, ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
+  l.fieldRow(data.letterCertLabel, ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
   l.fieldRow(
     isCdc ? "Planning Instrument Decision Made Under:" : "Development Application No.:",
     (isCdc ? cd.relevantInstrument : cd.developmentConsentNumber) || "—",
@@ -119,7 +119,7 @@ export async function buildCertificatePackagePdf(
   l.addressBlock([applicantName || "", ...formatAddressLines(d.applicantAddress)], { size: LETTER_BODY_SIZE });
   l.text(applicantSalutation || "Dear Sir/Madam,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
   l.documentTitle(`RE: ${(job.address || "").toUpperCase()}`);
-  l.fieldRow(`${pathwayFull} No.:`, ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
+  l.fieldRow(data.letterCertLabel, ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
   l.gap(4);
   l.text(applicantIntro || `Enclosed is a copy of the approved ${pathwayFull} for the subject development, and a copy of the stamped plans.`, { bold: true, size: LETTER_BODY_SIZE, letter: true, gapAfter: 3 });
   applicantBody.forEach((line) => l.text(line, { size: LETTER_BODY_SIZE, justify: true, letter: true, gapAfter: LETTER_PARA_AFTER }));

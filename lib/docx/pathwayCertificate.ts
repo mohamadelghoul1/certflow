@@ -88,7 +88,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     ...documentTitle(`RE: ${job.address || ""}`, { uppercase: true }),
     fieldTable(
       [
-        { kind: "row", label: data.councilCertLabel, value: ref },
+        { kind: "row", label: data.letterCertLabel, value: ref },
         isCdc
           ? { kind: "row" as const, label: "Planning Instrument Decision Made Under:", value: cd.relevantInstrument || "—" }
           : { kind: "row" as const, label: "Development Application No.:", value: cd.developmentConsentNumber || "—" },
@@ -114,7 +114,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     ...addressBlock([applicantName, ...formatAddressLines(d.applicantAddress)], { size: LETTER_BODY_SIZE }),
     p(salutationApplicant, { size: LETTER_BODY_SIZE, spacingAfter: 60 }),
     ...documentTitle(`RE: ${job.address || ""}`, { uppercase: true }),
-    fieldTable([{ kind: "row", label: `${pathwayFull} No.:`, value: ref }], { labelPct: LETTER_LABEL_PCT, size: LETTER_BODY_SIZE }),
+    fieldTable([{ kind: "row", label: data.letterCertLabel, value: ref }], { labelPct: LETTER_LABEL_PCT, size: LETTER_BODY_SIZE }),
     p("", { size: 10, spacingAfter: 0 }),
     p(introApplicant, { bold: true, size: LETTER_BODY_SIZE, lineSpacing: LETTER_LINE_SPACING }),
     ...applicantBody.map((para) => p(para, { size: LETTER_BODY_SIZE, justify: true, spacingAfter: LETTER_PARA_AFTER, lineSpacing: LETTER_LINE_SPACING })),

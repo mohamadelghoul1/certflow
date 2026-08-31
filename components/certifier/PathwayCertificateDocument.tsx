@@ -195,7 +195,7 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
     projRef,
     isCdc,
     pathwayFull,
-    councilCertLabel,
+    letterCertLabel,
     d,
     cd,
     issuedDate,
@@ -251,7 +251,7 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
           <div>
             <LetterHeading>Re: {job.address}</LetterHeading>
             <LetterFields>
-              <CertRow label={councilCertLabel} value={ref} wideLabel />
+              <CertRow label={letterCertLabel} value={ref} wideLabel />
               {isCdc ? (
                 <CertRow label="Planning Instrument Decision Made Under:" value={cd.relevantInstrument} wideLabel />
               ) : (
@@ -299,7 +299,7 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
           <div>
             <LetterHeading>Re: {job.address}</LetterHeading>
             <LetterFields>
-              <CertRow label={`${pathwayFull} No.:`} value={ref} wideLabel />
+              <CertRow label={letterCertLabel} value={ref} wideLabel />
             </LetterFields>
           </div>
           <EditableDocText

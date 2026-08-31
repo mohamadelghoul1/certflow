@@ -1,6 +1,6 @@
 import { test, before, describe } from "node:test";
 import assert from "node:assert/strict";
-import { modificationReasonSentence, councilCertLabelFor } from "@/lib/certificates/pathwayData";
+import { modificationReasonSentence, letterCertLabelFor } from "@/lib/certificates/pathwayData";
 import { buildCertificatePackagePdf } from "@/lib/pdf/certificatePackage";
 import { buildPathwayCertificateDocx } from "@/lib/docx/pathwayCertificate";
 import { certificateFixture } from "./helpers/fixture";
@@ -16,7 +16,7 @@ function modifiedFixture() {
     ref: "CDC-26001/02",
     isModification: true,
     modificationReason: "This modification reflects changes to the floor plan layout and window schedule.",
-    councilCertLabel: "Section 4.30 Modification – Complying Development Certificate No.:",
+    letterCertLabel: "Section 4.30 Modification – Complying Development Certificate No.:",
     councilBody: [
       "Quality Private Certifiers Pty Ltd has issued a Modified Complying Development Certificate under Part 4 of the Environmental Planning and Assessment Act 1979 for the above premises.",
       "This modification reflects changes to the floor plan layout and window schedule.",
@@ -29,16 +29,16 @@ function modifiedFixture() {
 // reads them before anything else on the page.
 describe("the reference line above the council letter's body", () => {
   test("a modified CDC is a section 4.30 modification", () => {
-    assert.equal(councilCertLabelFor(true, true, "Complying Development Certificate"), "Section 4.30 Modification – Complying Development Certificate No.:");
+    assert.equal(letterCertLabelFor(true, true, "Complying Development Certificate"), "Section 4.30 Modification – Complying Development Certificate No.:");
   });
 
   test("a modified CC is a section 6.33(1) modification", () => {
-    assert.equal(councilCertLabelFor(true, false, "Construction Certificate"), "Section 6.33(1) Modification – Construction Certificate No.:");
+    assert.equal(letterCertLabelFor(true, false, "Construction Certificate"), "Section 6.33(1) Modification – Construction Certificate No.:");
   });
 
   test("a first issue is just the certificate's own name", () => {
-    assert.equal(councilCertLabelFor(false, true, "Complying Development Certificate"), "Complying Development Certificate No.:");
-    assert.equal(councilCertLabelFor(false, false, "Construction Certificate"), "Construction Certificate No.:");
+    assert.equal(letterCertLabelFor(false, true, "Complying Development Certificate"), "Complying Development Certificate No.:");
+    assert.equal(letterCertLabelFor(false, false, "Construction Certificate"), "Construction Certificate No.:");
   });
 });
 
@@ -82,6 +82,11 @@ describe("a modified certificate's council letter", () => {
   test("the reference line names the section 4.30 modification", () => {
     assert.ok(pdf.pages[0].includes("Section 4.30 Modification"), "on the council letter's reference line");
     assert.ok(pdf.pages[0].includes("CDC-26001/02"), "with the modified certificate's number");
+  });
+
+  test("the applicant letter carries the same reference line", () => {
+    assert.ok(pdf.pages[1].includes("Section 4.30 Modification"), "on the applicant letter's page too");
+    assert.ok(pdf.pages[1].includes("CDC-26001/02"));
   });
 
   test("the body says a Modified certificate was issued, and why", () => {
