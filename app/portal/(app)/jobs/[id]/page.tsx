@@ -493,12 +493,12 @@ async function InspectionCard({
   bookingOpen: boolean;
   contact: { phone?: string | null; email?: string | null } | null;
 }) {
-  // The signed report the certifier produced on site comes first; an
-  // uploaded file is the fallback for a report done outside Certlyn.
-  // Reading only the uploaded path is why a report signed in the app
-  // never appeared here at all.
-  const reportUrl = await signedUrl(insp.report_pdf_path || insp.report_file_path);
   const stage = bookingStage(insp);
+  // What was found is shown once the visit has happened and only then.
+  // An inspection still to be carried out has no result to report, and a
+  // half-filled one is the certifier's working note rather than an
+  // answer the client should be reading.
+  const carriedOut = stage === "carried_out";
   // The badge says where the booking is until there is an outcome, and
   // what was found after that.
   const meta =
@@ -523,7 +523,7 @@ async function InspectionCard({
         <span className={`px-2 py-0.5 rounded text-[11px] font-semibold min-w-0 text-right ${meta.style}`}>{meta.label}</span>
       </div>
 
-      {insp.defects.length > 0 && (
+      {carriedOut && insp.defects.length > 0 && (
         <div className="mt-2 space-y-1.5">
           {insp.defects.map((d) => (
             <div key={d.id} className={`text-xs rounded-md px-3 py-2 ${d.resolved ? "bg-surface text-placeholder line-through" : "bg-warning-bg text-warning-text"}`}>
@@ -551,11 +551,14 @@ async function InspectionCard({
         </div>
       )}
 
-      {insp.report_sent && reportUrl && (
-        <a href={reportUrl} target="_blank" rel="noreferrer" className="inline-block mt-3 text-xs text-primary font-semibold hover:underline">
-          View inspection report
-        </a>
-      )}
+      {/* The report itself is not offered here. It is the certifier's
+          signed record of the visit, and it is emailed when they choose
+          to send it — a copy sitting behind a portal login invites it to
+          be circulated as though it were an approval. Nor does this page
+          say anything about the NSW Planning Portal: reporting an
+          inspection to the regulator is between the certifier and the
+          regulator, and a client reading "not yet reported" has no way
+          to act on it and every reason to worry. */}
     </div>
   );
 }

@@ -138,7 +138,7 @@ export function InspectionCardShell({ children }: { children: React.ReactNode })
   return (
     <div className={`card-lift rounded-xl border shadow-sm p-6 ${finished ? "border-accent/40 bg-success-bg" : "border-line bg-white"}`}>
       {children}
-      {unsigned && <div className="mt-3 text-[11px] text-warning-text">Reported to the Portal — the report itself is still to be signed.</div>}
+      {unsigned && <div className="mt-3 text-[11px] text-warning-text">Reported to the NSW Planning Portal — the report itself is still to be signed.</div>}
     </div>
   );
 }
@@ -254,7 +254,7 @@ export function RemoveInspectionButton({ inspectionId, jobId, portalReported }: 
   const list = useInspectionList();
 
   if (portalReported) {
-    return <span className="ml-auto text-[11px] text-muted">Reported to the Portal — cannot be removed</span>;
+    return <span className="ml-auto text-[11px] text-muted">Reported to the NSW Planning Portal — cannot be removed</span>;
   }
 
   const remove = () =>

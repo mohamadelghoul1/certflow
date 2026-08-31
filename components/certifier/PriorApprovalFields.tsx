@@ -75,7 +75,7 @@ export function PriorApprovalFields({
           className={inputCls}
         />
         <p className="text-[11px] text-placeholder mt-1">
-          The Portal case the original {type} was lodged under. It links this job to that case — inspections reported to the Portal are filed against it.
+          The NSW Planning Portal case the original {type} was lodged under. It links this job to that case — inspections reported to the NSW Planning Portal are filed against it.
         </p>
       </div>
       {/* A construction certificate is granted under a development

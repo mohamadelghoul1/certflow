@@ -101,7 +101,7 @@ function CompletedInspections({ inspections, total }: { inspections: InspectionW
                     inspection, so an outstanding one is worth seeing here
                     rather than only on the card. */}
                 <div className={`mt-0.5 ${i.portal_reported ? "text-accent" : "text-warning-text"}`}>
-                  {i.portal_reported ? "✓ Reported to the Portal" : "Not yet reported to the Portal"}
+                  {i.portal_reported ? "✓ Reported to the NSW Planning Portal" : "Not yet reported to the NSW Planning Portal"}
                 </div>
               </li>
             ))}

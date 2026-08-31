@@ -47,7 +47,7 @@ export function ReportToPortalButton({
   if (reported) {
     return (
       <span className="inline-flex items-center gap-2 text-xs text-placeholder">
-        Reported to Portal {formatISODate(reportedDate)}
+        Reported to the NSW Planning Portal {formatISODate(reportedDate)}
         {/* A mark made by hand can be undone; a real API submission cannot. */}
         {!sentByApi && live && (
           <form action={undoAction} className="inline-flex items-center gap-2">
@@ -69,7 +69,7 @@ export function ReportToPortalButton({
       <form action={reportToPortal}>
         <input type="hidden" name="inspection_id" value={inspectionId} />
         <input type="hidden" name="job_id" value={jobId} />
-        <SubmitButton className="text-xs font-semibold text-muted hover:underline">Mark as reported to Portal</SubmitButton>
+        <SubmitButton className="text-xs font-semibold text-muted hover:underline">Mark as reported to the NSW Planning Portal</SubmitButton>
       </form>
     );
   }
@@ -126,7 +126,7 @@ export function ReportToPortalButton({
           type="email"
           value={portalEmail}
           onChange={(e) => setPortalEmail(e.target.value)}
-          placeholder="the email you sign into the Portal website with"
+          placeholder="the email you sign into the NSW Planning Portal with"
           className="w-full sm:w-80 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
         />
         <p className="text-[11px] text-placeholder mt-1">
@@ -151,14 +151,14 @@ export function ReportToPortalButton({
       <details>
         <summary className="text-[11px] text-placeholder cursor-pointer hover:text-muted">The Portal already opened this inspection? (from an earlier attempt)</summary>
         <div className="mt-2">
-          <label className="block text-xs font-semibold text-placeholder mb-1">Inspection case number the Portal already holds</label>
+          <label className="block text-xs font-semibold text-placeholder mb-1">Inspection case number the NSW Planning Portal already holds</label>
           <input
             name="existing_child_case_id"
-            placeholder="the inspection case's own number, from the Portal"
+            placeholder="the inspection case's own number, from the NSW Planning Portal"
             className="w-full sm:w-80 px-3 py-2 rounded-md border border-line text-sm outline-none focus:ring-2 focus:ring-icon"
           />
           <p className="text-[11px] text-placeholder mt-1">
-            Only for an inspection a previous attempt already created on the Portal: the visit is recorded onto that case instead of opening a second one.
+            Only for an inspection a previous attempt already created on the NSW Planning Portal: the visit is recorded onto that case instead of opening a second one.
           </p>
         </div>
       </details>
@@ -171,7 +171,7 @@ export function ReportToPortalButton({
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-40"
         >
           {pending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-          {pending ? "Sending to the Portal…" : "Send to the Portal"}
+          {pending ? "Sending to the NSW Planning Portal…" : "Send to the NSW Planning Portal"}
         </button>
         <button type="button" onClick={() => setOpen(false)} className="px-3 py-2 rounded-md text-sm text-muted hover:bg-hover">
           Cancel

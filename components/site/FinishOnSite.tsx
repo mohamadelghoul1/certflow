@@ -5,12 +5,13 @@ import { PenLine, Send, CheckCircle2 } from "lucide-react";
 import { signInspectionReport, sendReport } from "@/lib/actions/inspections";
 import type { ActionState } from "@/lib/actions/auth";
 
-// The last two presses: sign it, then send it.
+// The last two presses: sign it, then — if you want to — tell the client.
 //
 // Kept apart deliberately. Signing is the certifier putting their name
-// to what was found; sending is the client hearing about it. A single
-// button doing both would mean a mistyped issue reaching the client
-// before it could be corrected.
+// to what was found; telling the client is a separate decision, and not
+// every inspection is one they need an email about. A single button
+// doing both would mean a mistyped issue reaching the client before it
+// could be corrected.
 export function FinishOnSite({
   inspectionId,
   jobId,
@@ -49,14 +50,14 @@ export function FinishOnSite({
         </form>
       ) : sentAt ? (
         <div className="flex items-center justify-center gap-2 rounded-xl bg-success-bg border border-success/40 py-4 font-semibold text-success">
-          <CheckCircle2 size={18} /> Sent to the client
+          <CheckCircle2 size={18} /> Emailed to the client
         </div>
       ) : (
         <form action={send}>
           <input type="hidden" name="inspection_id" value={inspectionId} />
           <input type="hidden" name="job_id" value={jobId} />
           <button disabled={sending} className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-success text-white py-4 font-semibold disabled:opacity-50">
-            <Send size={18} /> {sending ? "Sending…" : "Send to the client"}
+            <Send size={18} /> {sending ? "Sending…" : "Email the report to the client"}
           </button>
         </form>
       )}
@@ -64,7 +65,10 @@ export function FinishOnSite({
       {signState?.error && <div className="text-sm text-error text-center">{signState.error}</div>}
       {sendState?.error && <div className="text-sm text-error text-center">{sendState.error}</div>}
       {signedAt && !sentAt && (
-        <p className="text-xs text-placeholder text-center">Signed. Sending emails the report to the client and puts it in their portal.</p>
+        <p className="text-xs text-placeholder text-center">
+          Signed, and that is the record made. Emailing it to the client is optional — their portal shows the inspection and what was found either
+          way, but never the report itself.
+        </p>
       )}
     </div>
   );
