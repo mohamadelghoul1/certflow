@@ -174,56 +174,12 @@ export async function buildApprovalBundle(input: BundleInput): Promise<Uint8Arra
     notes.push({ title: doc.title, detail, included });
   }
 
-  // Nothing to flag: the set is exactly the approval and its documents.
-  const missing = notes.filter((n) => !n.included);
-  if (missing.length === 0) {
-    drawFooters();
-    return bundle.save();
-  }
-
-  // Wraps a value into the width it has, so a long note doesn't run off
-  // the edge of the sheet.
-  function fit(text: string, width: number, size: number, font = regular) {
-    const lines: string[] = [];
-    let current = "";
-    for (const word of text.split(/\s+/)) {
-      const candidate = current ? `${current} ${word}` : word;
-      if (font.widthOfTextAtSize(candidate, size) > width && current) {
-        lines.push(current);
-        current = word;
-      } else {
-        current = candidate;
-      }
-    }
-    if (current) lines.push(current);
-    return lines.length ? lines : [""];
-  }
-
-  const page = bundle.addPage(A4);
-  const width = A4[0] - MARGIN * 2;
-  let y = A4[1] - MARGIN;
-
-  page.drawText("Not included in this set", { x: MARGIN, y: y - 16, size: 16, font: bold, color: INK });
-  y -= 32;
-  fit(`${input.heading} · ${input.subheading}`, width, 9).forEach((line, i) => {
-    page.drawText(line, { x: MARGIN, y: y - 10 - i * 11, size: 9, font: regular, color: MUTED });
-    y -= i > 0 ? 11 : 0;
-  });
-  y -= 30;
-  page.drawLine({ start: { x: MARGIN, y }, end: { x: A4[0] - MARGIN, y }, thickness: 1, color: LINE });
-  y -= 24;
-
-  for (const note of missing) {
-    const detailLines = fit(note.detail, width - 10, 8);
-    if (y - (detailLines.length + 1) * 11 < MARGIN) break;
-    page.drawText(note.title, { x: MARGIN, y, size: 9, font: bold, color: INK });
-    y -= 12;
-    detailLines.forEach((line, i) => {
-      page.drawText(line, { x: MARGIN + 10, y: y - i * 10, size: 8, font: regular, color: MUTED });
-    });
-    y -= detailLines.length * 10 + 10;
-  }
-
+  // The set ends with the last approved document. It used to close with a
+  // "Not included in this set" page listing what could not be merged — a
+  // note to the certifier about their own uploads, which has no place in
+  // a document handed to a council or a client. What is missing is
+  // visible where it can be acted on: on the checklist itself, where an
+  // item with no file, or one carrying a Word document, says so.
   drawFooters();
   return bundle.save();
 }

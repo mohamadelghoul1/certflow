@@ -23,7 +23,13 @@ import { SaveButton } from "@/components/certifier/SaveButton";
 export function PlanningPortalRefField({ jobId, value, kind, modificationId }: { jobId: string; value: string; kind: PortalRefKind; modificationId?: string }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setPlanningPortalRef, undefined);
   const [editing, setEditing] = useState(false);
-  const recorded = value.trim();
+  // What was just typed, shown the moment Save is pressed rather than
+  // after the whole job page has been rebuilt and streamed back. The
+  // reference is saved with one small update; everything else in that
+  // wait is the page redrawing around it, which the certifier should not
+  // have to watch. Cleared by the server's own value arriving as `value`.
+  const [justSaved, setJustSaved] = useState("");
+  const recorded = (justSaved || value).trim();
   // A construction certificate is lodged on the Portal as a certificate
   // application, so it carries a CFT number rather than the CDC number a
   // complying development application gets.
@@ -43,7 +49,20 @@ export function PlanningPortalRefField({ jobId, value, kind, modificationId }: {
   }
 
   return (
-    <form action={formAction} className="mt-3 flex items-end gap-2 flex-wrap">
+    <form
+      action={(fd) => {
+        // Collapses to the saved line straight away. normalizePortalRef on
+        // the server may tidy what was typed (adding the prefix, say), and
+        // its version replaces this one when the page comes back.
+        const typed = String(fd.get("planningPortalRef") || "").trim();
+        if (typed) {
+          setJustSaved(typed);
+          setEditing(false);
+        }
+        formAction(fd);
+      }}
+      className="mt-3 flex items-end gap-2 flex-wrap"
+    >
       <input type="hidden" name="job_id" value={jobId} />
       <input type="hidden" name="kind" value={kind} />
       {modificationId && <input type="hidden" name="modification_id" value={modificationId} />}

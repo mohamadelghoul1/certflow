@@ -95,10 +95,25 @@ export function stampGeometry(lines: StampLine[], regular: PDFFont, bold: PDFFon
 // The text half's size, measured without needing the artwork — what the
 // job screen hands the positioner. The positioner works the artwork out
 // for itself from the image it loads.
+// Measuring needs a pair of embedded fonts and nothing else, and the
+// standard fonts never change — so one throwaway document is built once
+// for the life of the server rather than on every measurement. A job
+// screen showing several stamp previews was building one PDF and
+// embedding two fonts per preview, which is most of what made saving a
+// field on that screen feel slow: saving rebuilds the page.
+let measuringFonts: Promise<{ regular: PDFFont; bold: PDFFont }> | null = null;
+function fontsForMeasuring() {
+  if (!measuringFonts) {
+    measuringFonts = (async () => {
+      const pdf = await PDFDocument.create();
+      return { regular: await pdf.embedFont(StandardFonts.Helvetica), bold: await pdf.embedFont(StandardFonts.HelveticaBold) };
+    })();
+  }
+  return measuringFonts;
+}
+
 export async function measureStampText(details: StampDetails): Promise<{ textWidth: number; textHeight: number }> {
-  const pdf = await PDFDocument.create();
-  const regular = await pdf.embedFont(StandardFonts.Helvetica);
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const { regular, bold } = await fontsForMeasuring();
   const { textWidth, textHeight } = stampGeometry(stampLines(details), regular, bold, null);
   return { textWidth, textHeight };
 }

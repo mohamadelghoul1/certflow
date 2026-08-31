@@ -1,6 +1,7 @@
 import { resolvePathwayCertRef, governingApproval, formatISODate, todayISO } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { fetchStampImage, measureStampText, type StampDetails } from "@/lib/pdf/stamp";
+import { cache } from "react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Job, Firm, Certifier, Profile } from "@/types/db";
@@ -50,12 +51,34 @@ export async function buildStampDetails(supabase: SupabaseClient, job: Job, prof
 // an image server-side just to draw a button.
 export type StampPreview = { details: StampDetails; textWidth: number; textHeight: number; imageUrl: string | null };
 
-export async function buildStampPreview(job: Job, certRefOverride?: string | null): Promise<StampPreview | null> {
+// The half of a stamp preview that does not depend on the certificate
+// number: who is signing, the firm on it, and a link to the artwork.
+//
+// Wrapped in React's per-request cache and keyed on the two certifier ids
+// the answer actually depends on, so a job screen showing several
+// previews — the approval checklist and each modification's — looks them
+// up once between them instead of once each. Saving a field on that
+// screen rebuilds the whole page, and this was several database round
+// trips of that rebuild.
+const stampContext = cache(async (issuedById: string, assignedCertifierId: string) => {
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
   const { data: firm } = await supabase.from("firms").select("*").eq("id", profile.firm_id).single();
   const typedFirm = (firm || null) as Firm | null;
-  const certifier = await resolveStampCertifier(supabase, job, profile);
+  const candidates = [issuedById, assignedCertifierId, profile.certifier_id].filter(Boolean) as string[];
+  let certifier: Certifier | null = null;
+  for (const id of candidates) {
+    const { data } = await supabase.from("certifiers").select("*").eq("id", id).eq("firm_id", profile.firm_id).single();
+    if (data) {
+      certifier = data as Certifier;
+      break;
+    }
+  }
+  return { firm: typedFirm, certifier, stampImageUrl: await signedUrl(typedFirm?.stamp_url) };
+});
+
+export async function buildStampPreview(job: Job, certRefOverride?: string | null): Promise<StampPreview | null> {
+  const { firm: typedFirm, certifier, stampImageUrl } = await stampContext(job.pathway_issued_by || "", job.assigned_certifier_id || "");
   const d = job.details || {};
   const previewApproval = governingApproval(job.pathway, d.priorApproval, resolvePathwayCertRef(certRefOverride, job.pathway, d.projectNumber || job.id.slice(0, 8), job.pathway_version));
   const details: StampDetails = {
@@ -68,5 +91,5 @@ export async function buildStampPreview(job: Job, certRefOverride?: string | nul
     image: null,
   };
   const { textWidth, textHeight } = await measureStampText(details);
-  return { details, textWidth, textHeight, imageUrl: await signedUrl(typedFirm?.stamp_url) };
+  return { details, textWidth, textHeight, imageUrl: stampImageUrl };
 }

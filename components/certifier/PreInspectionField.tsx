@@ -36,7 +36,14 @@ export function PreInspectionField({
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setPreInspectionDates, undefined);
   const [editing, setEditing] = useState(false);
-  const recorded = applicationDate.trim() && inspectionDate.trim();
+  // The dates just typed, shown the moment Save is pressed rather than
+  // after the whole job page has been rebuilt and streamed back — the
+  // save itself is one small update; the rest of that wait is the page
+  // redrawing around it. Replaced by the server's own values on arrival.
+  const [justSaved, setJustSaved] = useState<{ applied: string; inspected: string } | null>(null);
+  const applied = justSaved?.applied ?? applicationDate;
+  const inspected = justSaved?.inspected ?? inspectionDate;
+  const recorded = applied.trim() && inspected.trim();
   const label = isCdc ? "s139 inspection report" : "s16 inspection report";
   const reportHref = modificationId ? `/certificate/pre-inspection/${jobId}?mod=${modificationId}` : `/certificate/pre-inspection/${jobId}`;
 
@@ -44,8 +51,8 @@ export function PreInspectionField({
     return (
       <div className="mt-3 flex items-center gap-3 flex-wrap text-xs text-muted">
         <span>
-          {label}: applied <span className="font-semibold text-heading">{formatISODate(applicationDate)}</span>, inspected{" "}
-          <span className="font-semibold text-heading">{formatISODate(inspectionDate)}</span>
+          {label}: applied <span className="font-semibold text-heading">{formatISODate(applied)}</span>, inspected{" "}
+          <span className="font-semibold text-heading">{formatISODate(inspected)}</span>
         </span>
         <Link href={reportHref} target="_blank" className="inline-flex items-center gap-1 font-semibold text-secondary hover:underline">
           <FileSearch size={12} /> Open report
@@ -58,16 +65,27 @@ export function PreInspectionField({
   }
 
   return (
-    <form action={formAction} className="mt-3 flex items-end gap-2 flex-wrap">
+    <form
+      action={(fd) => {
+        const a = String(fd.get("applicationDate") || "").trim();
+        const i = String(fd.get("inspectionDate") || "").trim();
+        if (a && i) {
+          setJustSaved({ applied: a, inspected: i });
+          setEditing(false);
+        }
+        formAction(fd);
+      }}
+      className="mt-3 flex items-end gap-2 flex-wrap"
+    >
       <input type="hidden" name="job_id" value={jobId} />
       {modificationId && <input type="hidden" name="modification_id" value={modificationId} />}
       <label className="flex flex-col gap-1">
         <span className="text-xs font-medium text-heading">Application date</span>
-        <DateField name="applicationDate" noFuture defaultValue={applicationDate} className="px-2 py-1.5 rounded border border-line text-xs" />
+        <DateField name="applicationDate" noFuture defaultValue={applied} className="px-2 py-1.5 rounded border border-line text-xs" />
       </label>
       <label className="flex flex-col gap-1">
         <span className="text-xs font-medium text-heading">Inspection date</span>
-        <DateField name="inspectionDate" noFuture defaultValue={inspectionDate} autoFocus={editing} className="px-2 py-1.5 rounded border border-line text-xs" />
+        <DateField name="inspectionDate" noFuture defaultValue={inspected} autoFocus={editing} className="px-2 py-1.5 rounded border border-line text-xs" />
       </label>
       <SaveButton
         pending={pending}
