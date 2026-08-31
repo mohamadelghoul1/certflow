@@ -4,6 +4,17 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { UploadCloud } from "lucide-react";
 
+// The storage half of an upload, shared with anything else that takes a
+// dropped file — the whole checklist item card, say — so a file lands in
+// exactly the same place however it arrives.
+export async function uploadToStorage(pathPrefix: string, file: File): Promise<string> {
+  const supabase = createClient();
+  const path = `${pathPrefix}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+  const { error } = await supabase.storage.from("certflow-files").upload(path, file);
+  if (error) throw error;
+  return path;
+}
+
 export function FileUpload({
   pathPrefix,
   onUploaded,
@@ -31,11 +42,7 @@ export function FileUpload({
     setError("");
     onStart?.();
     try {
-      const supabase = createClient();
-      const path = `${pathPrefix}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-      const { error: uploadError } = await supabase.storage.from("certflow-files").upload(path, file);
-      if (uploadError) throw uploadError;
-      await onUploaded(path);
+      await onUploaded(await uploadToStorage(pathPrefix, file));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
       onFailed?.();

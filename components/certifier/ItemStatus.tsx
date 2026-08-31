@@ -4,7 +4,7 @@ import { createContext, useContext, useOptimistic, useState, useTransition } fro
 import { CheckCircle2, Clock, AlertTriangle, Circle, EyeOff, RotateCcw, UploadCloud, Lock } from "lucide-react";
 import { displayStatus, unresolvedCount } from "@/lib/business";
 import { approveItem, reopenItem, certifierUploadItem, toggleStamping, toggleApprovalInclusion, toggleItemInternal } from "@/lib/actions/jobs";
-import { FileUpload } from "@/components/certifier/FileUpload";
+import { FileUpload, uploadToStorage } from "@/components/certifier/FileUpload";
 import { StampToggle } from "@/components/certifier/StampToggle";
 import type { Amendment, ChecklistItem } from "@/types/db";
 
@@ -133,9 +133,33 @@ export function ItemStatusProvider({
 // Reading each badge individually was the only way to tell; a whole-card
 // cue makes it obvious while scanning a long checklist, and it flips
 // instantly with the optimistic status like the badge and buttons do.
-export function ItemCard({ children }: { children: React.ReactNode }) {
-  const { status, amendments } = useItemStatus();
+export function ItemCard({ children, uploadPathPrefix }: { children: React.ReactNode; uploadPathPrefix?: string }) {
+  const { status, amendments, uploading, setUploading, uploadOnBehalf } = useItemStatus();
   const unresolved = unresolvedCount({ status, amendments });
+
+  // The whole card takes a dropped file, not just the upload button — a
+  // document dragged from the desktop lands wherever it is let go on the
+  // item it belongs to. Same path as "Upload on client's behalf". A
+  // counter rather than a boolean, because dragging across the card's
+  // children fires leave/enter pairs that would flicker the highlight.
+  const [dragDepth, setDragDepth] = useState(0);
+  const [dropError, setDropError] = useState("");
+  const droppable = !!uploadPathPrefix;
+
+  async function handleDrop(file: File | undefined | null) {
+    if (!file || !uploadPathPrefix || uploading) return;
+    setDropError("");
+    setUploading(true);
+    try {
+      const path = await uploadToStorage(uploadPathPrefix, file);
+      setUploading(false);
+      uploadOnBehalf(path);
+    } catch (err) {
+      setUploading(false);
+      setDropError(err instanceof Error ? err.message : "Upload failed.");
+    }
+  }
+
   const tone =
     status === "approved"
       ? "border-accent/40 bg-success-bg"
@@ -145,7 +169,34 @@ export function ItemCard({ children }: { children: React.ReactNode }) {
         : status === "submitted"
           ? "border-info/40 bg-info-bg"
           : "border-line bg-white";
-  return <div className={`card-lift rounded-xl border shadow-sm p-6 ${tone}`}>{children}</div>;
+  return (
+    <div
+      className={`card-lift relative rounded-xl border shadow-sm p-6 ${tone}`}
+      onDragEnter={(e) => {
+        if (droppable && e.dataTransfer.types.includes("Files")) setDragDepth((d) => d + 1);
+      }}
+      onDragLeave={() => droppable && setDragDepth((d) => Math.max(d - 1, 0))}
+      onDragOver={(e) => {
+        if (droppable && e.dataTransfer.types.includes("Files")) e.preventDefault();
+      }}
+      onDrop={(e) => {
+        if (!droppable) return;
+        e.preventDefault();
+        setDragDepth(0);
+        void handleDrop(e.dataTransfer.files?.[0]);
+      }}
+    >
+      {children}
+      {dropError && <div className="text-xs text-error mt-2">{dropError}</div>}
+      {droppable && dragDepth > 0 && (
+        <div className="absolute inset-0 z-10 rounded-xl border-2 border-dashed border-icon bg-info-bg/90 flex items-center justify-center pointer-events-none">
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-secondary">
+            <UploadCloud size={18} /> Drop to upload to this item
+          </span>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ItemStatusBadge() {
