@@ -416,7 +416,13 @@ export function formatClassifications(classifications: string[] | undefined | nu
 // the NSW Planning Portal. Recording the outcome is the start of that
 // work, not the end of it, so choosing "Passed" on its own leaves the card
 // looking exactly as unfinished as it is.
-export function inspectionFinished(signedAt: string | null | undefined, portalReported: boolean) {
+export function inspectionFinished(signedAt: string | null | undefined, portalReported: boolean, outcome?: string) {
+  // Carried out and the regulator told: those are the two steps that
+  // finish an inspection, and green says so. Signing the report is the
+  // remaining piece of paperwork and the card says when it is missing —
+  // it used to hold the whole card grey, which made a reported
+  // inspection read as though nothing had been done.
+  if (outcome !== undefined) return outcome !== "pending" && portalReported;
   return !!signedAt && portalReported;
 }
 

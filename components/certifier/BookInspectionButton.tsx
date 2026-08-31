@@ -32,6 +32,10 @@ export function BookInspectionButton({
   confirmed: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  // Ticked by default: a date the builder does not know about is not a
+  // booking. Cleared for the ones they already know — a day agreed on
+  // the phone, or a correction to a date already sent.
+  const [tellClient, setTellClient] = useState(true);
   const [date, setDate] = useState(() => suggestedInspectionBookingDate(""));
   const [state, book, pending] = useActionState<ActionState, FormData>(bookInspection, undefined);
 
@@ -65,6 +69,7 @@ export function BookInspectionButton({
       <input type="hidden" name="inspection_id" value={inspectionId} />
       <input type="hidden" name="job_id" value={jobId} />
       <input type="hidden" name="date" value={date} />
+      <input type="hidden" name="notify" value={tellClient ? "yes" : "no"} />
       <label className="block text-[11px] font-semibold text-heading mb-1">
         {booked ? `Currently booked for ${formatISODate(bookedDate)}. Move it to` : "Inspect on"}
       </label>
@@ -76,12 +81,16 @@ export function BookInspectionButton({
           disabled={pending}
           className="bg-primary text-white rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-primary-700 disabled:opacity-60 whitespace-nowrap"
         >
-          {pending ? "Booking…" : "Book it and tell the client"}
+          {pending ? "Booking…" : tellClient ? "Book it and tell the client" : "Book it quietly"}
         </button>
         <button type="button" onClick={() => setOpen(false)} className="text-xs text-muted hover:underline">
           Cancel
         </button>
       </div>
+      <label className="flex items-center gap-2 mt-2 text-[11px] text-muted cursor-pointer">
+        <input type="checkbox" checked={tellClient} onChange={(e) => setTellClient(e.target.checked)} className="accent-icon" />
+        Email the client about this booking
+      </label>
       {fallsOnWeekend(date) && <div className="text-[11px] text-warning-text mt-1">⚠ falls on a weekend</div>}
       {state?.error && <div className="text-[11px] text-error mt-1">{state.error}</div>}
     </form>

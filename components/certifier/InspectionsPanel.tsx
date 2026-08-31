@@ -11,7 +11,7 @@ import {
 } from "@/lib/actions/inspections";
 import { ReportToPortalButton } from "@/components/certifier/ReportToPortalButton";
 import { portalConfigured } from "@/lib/portal/config";
-import { INSPECTION_OUTCOME_TEXT } from "@/lib/constants";
+import { INSPECTION_OUTCOME_TEXT, INSPECTION_OUTCOME_BADGE } from "@/lib/constants";
 import { notifyClientMessage } from "@/lib/actions/jobs";
 import { NotifyClientButton } from "@/components/certifier/NotifyClientButton";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
@@ -52,17 +52,63 @@ export async function InspectionsPanel({
   // column that doesn't exist fails the whole request and empties the tab.
   const ordered = [...inspections].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
+  const carriedOut = ordered.filter((i) => i.outcome !== "pending");
+
   return (
-    <div className="space-y-4">
-      <InspectionOrderProvider
-        jobId={jobId}
-        rows={ordered.map((insp) => ({
-          id: insp.id,
-          node: <InspectionRow insp={insp} jobId={jobId} firmId={firmId} certifiers={certifiers} portalCaseRef={portalCaseRef} submitterEmail={submitterEmail} />,
-        }))}
-      />
-      <AddInspectionForm jobId={jobId} />
+    // Two columns on a wide screen: the inspections to work through, and
+    // beside them what has already been done. Stacks on a phone, where
+    // the summary sits under the list rather than squeezing it.
+    <div className="lg:flex lg:items-start lg:gap-6">
+      <div className="space-y-4 lg:flex-1 lg:min-w-0">
+        <InspectionOrderProvider
+          jobId={jobId}
+          rows={ordered.map((insp) => ({
+            id: insp.id,
+            node: <InspectionRow insp={insp} jobId={jobId} firmId={firmId} certifiers={certifiers} portalCaseRef={portalCaseRef} submitterEmail={submitterEmail} />,
+          }))}
+        />
+        <AddInspectionForm jobId={jobId} />
+      </div>
+      <CompletedInspections inspections={carriedOut} total={ordered.length} />
     </div>
+  );
+}
+
+// What has been carried out, at a glance: which stages, on what day, how
+// they went, and whether the Portal has been told. The cards below hold
+// all of this, but a job with a dozen inspections answers "where are we
+// up to?" only by scrolling through every one of them.
+function CompletedInspections({ inspections, total }: { inspections: InspectionWithDefects[]; total: number }) {
+  return (
+    <aside className="mt-6 lg:mt-0 lg:w-72 lg:shrink-0">
+      <div className="border border-line rounded-xl bg-white shadow-sm p-4 lg:sticky lg:top-4">
+        <div className="text-sm font-semibold text-heading">Carried out</div>
+        <div className="text-xs text-muted mt-0.5 mb-3">
+          {inspections.length} of {total} {total === 1 ? "inspection" : "inspections"}
+        </div>
+
+        {inspections.length === 0 ? (
+          <p className="text-xs text-muted">None yet. An inspection appears here once its outcome is recorded.</p>
+        ) : (
+          <ul className="space-y-2.5">
+            {inspections.map((i) => (
+              <li key={i.id} className="text-xs">
+                <div className="font-semibold text-heading leading-snug">{i.title}</div>
+                <div className="text-muted mt-0.5">
+                  {i.date ? formatISODate(i.date) : "no date recorded"} · {INSPECTION_OUTCOME_BADGE[i.outcome] || i.outcome}
+                </div>
+                {/* The Portal must be told within two business days of the
+                    inspection, so an outstanding one is worth seeing here
+                    rather than only on the card. */}
+                <div className={`mt-0.5 ${i.portal_reported ? "text-accent" : "text-warning-text"}`}>
+                  {i.portal_reported ? "✓ Reported to the Portal" : "Not yet reported to the Portal"}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </aside>
   );
 }
 

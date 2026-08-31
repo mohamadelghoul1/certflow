@@ -117,20 +117,30 @@ export function InspectionCardState({
   );
 }
 
-// Green only when the inspection is genuinely finished: the report
-// signed and the NSW Planning Portal told about it.
+// Green once the inspection has been carried out and the NSW Planning
+// Portal told about it — the two steps that finish one.
 //
-// It used to go green the moment an outcome was picked, which is the
-// start of the work rather than the end of it — a card that reads as
-// done while its report is unsigned and the Portal has not been told is
-// a card that invites both to be forgotten. The badge still carries the
-// outcome from the moment it is recorded, so nothing is hidden; only the
-// "this one is finished" cue waits for the two steps that finish it.
+// It does not go green the moment an outcome is picked: that is the
+// start of the work rather than the end of it, and a card that reads as
+// done while the regulator has not been told is a card that invites the
+// two-day deadline to be missed. The report's signature is the piece
+// that can still be outstanding on a green card, so it is named there
+// rather than holding the whole card grey.
 export function InspectionCardShell({ children }: { children: React.ReactNode }) {
-  const { portalReported } = useCard();
+  const { portalReported, outcome } = useCard();
   const signing = useInspectionSigning();
-  const finished = inspectionFinished(signing?.signedAt, portalReported);
-  return <div className={`card-lift rounded-xl border shadow-sm p-6 ${finished ? "border-accent/40 bg-success-bg" : "border-line bg-white"}`}>{children}</div>;
+  const finished = inspectionFinished(signing?.signedAt, portalReported, outcome);
+  // Green once the visit has been carried out and the Portal told. The
+  // report's signature is the piece that can still be outstanding on a
+  // green card, so it is called out rather than left to be inferred from
+  // a card that stayed grey.
+  const unsigned = finished && !signing?.signedAt;
+  return (
+    <div className={`card-lift rounded-xl border shadow-sm p-6 ${finished ? "border-accent/40 bg-success-bg" : "border-line bg-white"}`}>
+      {children}
+      {unsigned && <div className="mt-3 text-[11px] text-warning-text">Reported to the Portal — the report itself is still to be signed.</div>}
+    </div>
+  );
 }
 
 export function OutcomeBadge() {

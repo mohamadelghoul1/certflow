@@ -60,6 +60,12 @@ export function AddInspectionForm({ jobId }: { jobId: string }) {
             </option>
           ))}
         </datalist>
+        <label className="flex items-center gap-2 pb-2 text-[11px] text-muted cursor-pointer">
+          {/* Only means anything alongside a date. Ticked by default: a
+              booking the builder does not know about is not a booking. */}
+          <input type="checkbox" name="notify" value="yes" defaultChecked className="accent-icon" />
+          Email the client
+        </label>
         <button
           disabled={pending}
           className="flex items-center gap-1 text-xs font-semibold text-white bg-secondary hover:opacity-90 px-3 py-1.5 rounded-md disabled:opacity-60"

@@ -1,10 +1,11 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight, MapPin, Route } from "lucide-react";
+import { AlertTriangle, CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, MapPin, Route } from "lucide-react";
 import { todayInNsw, formatISODate } from "@/lib/business";
 import { diaryWeek, overdueInspections, startOfWeek, addDays, type DiaryInspection } from "@/lib/calendar/week";
 import { CalendarSubscribe } from "@/components/certifier/CalendarSubscribe";
+import { BookInspectionButton } from "@/components/certifier/BookInspectionButton";
 
 // The inspection week.
 //
@@ -29,6 +30,20 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     .select("id, job_id, title, date, outcome, confirmed, booked_by_client, certifiers(name), jobs!inner(address, deleted_at)")
     .not("date", "is", null)
     .order("date");
+
+  // Everything still waiting for a day, across every live job — so a week
+  // can be filled in from here rather than by opening each job in turn to
+  // hunt for the inspection that needs booking. Row security keeps it to
+  // the firm, like the query above.
+  const { data: unbookedRows } = await supabase
+    .from("inspections")
+    .select("id, job_id, title, jobs!inner(address, deleted_at)")
+    .is("date", null)
+    .eq("outcome", "pending")
+    .order("created_at");
+  const unbooked = ((unbookedRows || []) as unknown as { id: string; job_id: string; title: string; jobs: { address: string; deleted_at: string | null } | null }[])
+    .filter((row) => row.jobs && !row.jobs.deleted_at)
+    .map((row) => ({ id: row.id, jobId: row.job_id, title: row.title, address: row.jobs!.address || "" }));
 
   const inspections: DiaryInspection[] = ((data || []) as unknown as (DiaryInspection & {
     jobs: { address: string; deleted_at: string | null } | null;
@@ -100,6 +115,29 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
             {overdue.length > 6 && <div className="text-xs text-placeholder">and {overdue.length - 6} more.</div>}
           </div>
         </div>
+      )}
+
+      {unbooked.length > 0 && (
+        <details className="border border-line rounded-lg bg-white mb-4">
+          <summary className="flex items-center gap-2 p-4 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden text-sm font-semibold text-heading">
+            <CalendarPlus size={15} className="text-secondary" />
+            {unbooked.length} inspection{unbooked.length === 1 ? "" : "s"} with no day booked
+            <span className="ml-auto text-xs font-normal text-muted">Book from here</span>
+          </summary>
+          <div className="px-4 pb-4 space-y-3 border-t border-line pt-3">
+            {unbooked.map((i) => (
+              <div key={i.id} className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <Link href={`/jobs/${i.jobId}?tab=inspections`} className="text-sm font-medium text-heading hover:text-primary">
+                    {i.title}
+                  </Link>
+                  <div className="text-xs text-muted">{i.address}</div>
+                </div>
+                <BookInspectionButton inspectionId={i.id} jobId={i.jobId} bookedDate={null} confirmed={false} />
+              </div>
+            ))}
+          </div>
+        </details>
       )}
 
       {/* One column per day on a wide screen, one row per day on a

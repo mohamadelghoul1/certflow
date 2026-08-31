@@ -330,10 +330,19 @@ export async function bookInspection(_prev: ActionState, formData: FormData): Pr
     .eq("job_id", jobId);
   if (error) return { error: "That date could not be saved. Please try again." };
 
-  const mail = inspectionBookingEmail(previous.title, date, rebooking);
-  await notifyJobClient(supabase, jobId, mail.subject, mail.html);
+  // Telling the client is the default and the point of booking here, but
+  // not every booking is theirs to hear about — a date pencilled in with
+  // the builder on the phone, or a correction to one already agreed.
+  if (String(formData.get("notify") || "") !== "no") {
+    const mail = inspectionBookingEmail(previous.title, date, rebooking);
+    await notifyJobClient(supabase, jobId, mail.subject, mail.html);
+  }
 
   revalidatePath(`/jobs/${jobId}`);
+  // Bookings can be made from the diary as well as from the job, so the
+  // week has to be rebuilt too — otherwise an inspection booked there
+  // stays in the "no day booked" list until the page is reloaded by hand.
+  revalidatePath("/calendar");
   return { savedAt: Date.now() };
 }
 
@@ -386,7 +395,9 @@ export async function addInspection(_prev: ActionState, formData: FormData): Pro
   // Told the same way a booking made on the card is: a date in the
   // certifier's diary that the builder does not know about is not a
   // booking.
-  if (bookedDate) {
+  // An unticked checkbox sends nothing at all, so silence means "do not
+  // email" here — the form always sends "yes" when it is ticked.
+  if (bookedDate && String(formData.get("notify") || "") === "yes") {
     const mail = inspectionBookingEmail(title, bookedDate, false);
     await notifyJobClient(supabase, jobId, mail.subject, mail.html);
   }
