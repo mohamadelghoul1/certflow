@@ -64,7 +64,11 @@ export function preInspectionRows(isCdc: boolean): PreInspectionRow[] {
   ];
 }
 
-export async function getPreInspectionData(jobId: string, profile: Profile, client?: SupabaseClient): Promise<PreInspectionData | null> {
+// `modificationId` makes this the modification's own report: the dates
+// come from the modification row, and the certificate number is the
+// modified certificate's — the version it produced, or the version it is
+// about to produce when it has not yet been issued.
+export async function getPreInspectionData(jobId: string, profile: Profile, client?: SupabaseClient, modificationId?: string | null): Promise<PreInspectionData | null> {
   const supabase = client ?? (await createClient());
 
   const { data: rawJob } = await supabase.from("jobs").select("*").eq("id", jobId).eq("firm_id", profile.firm_id).single();
@@ -75,10 +79,15 @@ export async function getPreInspectionData(jobId: string, profile: Profile, clie
   // pre-inspection of this kind to report on.
   if (job.pathway !== "CDC" && job.pathway !== "CC") return null;
 
-  const [{ data: firm }, { data: activeVersion }] = await Promise.all([
+  const [{ data: firm }, { data: activeVersion }, { data: modification }] = await Promise.all([
     supabase.from("firms").select("*").eq("id", profile.firm_id).single(),
     supabase.from("pathway_certificate_versions").select("cert_ref").eq("job_id", jobId).eq("version", job.pathway_version).single(),
+    modificationId
+      ? supabase.from("modifications").select("*").eq("id", modificationId).eq("job_id", jobId).single()
+      : Promise.resolve({ data: null }),
   ]);
+  if (modificationId && !modification) return null;
+  const mod = modification as { generated: boolean; pre_application_date: string | null; pre_inspection_date: string | null } | null;
   const typedFirm = (firm || null) as Firm | null;
   const inspector = await resolveStampCertifier(supabase, job, profile);
 
@@ -86,7 +95,13 @@ export async function getPreInspectionData(jobId: string, profile: Profile, clie
   const cd = d.certificateDetails || {};
   const isCdc = job.pathway === "CDC";
   const projRef = d.projectNumber || job.id.slice(0, 8);
-  const ref = resolvePathwayCertRef(activeVersion?.cert_ref, job.pathway, projRef, job.pathway_version);
+  let ref = resolvePathwayCertRef(activeVersion?.cert_ref, job.pathway, projRef, job.pathway_version);
+  if (mod && !mod.generated) {
+    // The modification has not been issued yet, so its certificate does
+    // not exist — the report shows the number the next version will get.
+    const { data: newest } = await supabase.from("pathway_certificate_versions").select("version").eq("job_id", jobId).order("version", { ascending: false }).limit(1);
+    ref = resolvePathwayCertRef(null, job.pathway, projRef, (newest?.[0]?.version || 0) + 1);
+  }
   const regulationTitle = isCdc ? CDC_REGULATION : CC_REGULATION;
 
   const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "";
@@ -109,8 +124,20 @@ export async function getPreInspectionData(jobId: string, profile: Profile, clie
     lga: d.council?.lga || "",
     developmentConsentNumber: cd.developmentConsentNumber || "",
     certificateLabel: isCdc ? "CDC Number" : "Construction Certificate Number",
-    applicationDate: d.preInspection?.applicationDate ? formatISODate(d.preInspection.applicationDate) : "",
-    inspectionDate: d.preInspection?.inspectionDate ? formatISODate(d.preInspection.inspectionDate) : "",
+    applicationDate: mod
+      ? mod.pre_application_date
+        ? formatISODate(mod.pre_application_date)
+        : ""
+      : d.preInspection?.applicationDate
+        ? formatISODate(d.preInspection.applicationDate)
+        : "",
+    inspectionDate: mod
+      ? mod.pre_inspection_date
+        ? formatISODate(mod.pre_inspection_date)
+        : ""
+      : d.preInspection?.inspectionDate
+        ? formatISODate(d.preInspection.inspectionDate)
+        : "",
     lotSectionDp: cd.lotSectionDp || "",
     zoning: d.zoning || "",
     scopeOfWorks: job.description || "",

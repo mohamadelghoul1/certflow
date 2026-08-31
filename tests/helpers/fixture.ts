@@ -54,6 +54,7 @@ export function certificateFixture(overrides: Record<string, unknown> = {}): Pat
     isModification: false,
     modificationReason: null,
     modificationLabel: null,
+    modificationId: null,
     letterCertLabel: "Complying Development Certificate No.:",
     d: {
       council: { lga: "Liverpool City Council", address: { streetNumber: "50", street: "Scott Street", suburb: "Liverpool", state: "NSW", postcode: "2170" } },

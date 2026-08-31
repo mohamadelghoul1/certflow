@@ -17,6 +17,7 @@ function modifiedFixture() {
     isModification: true,
     modificationReason: "This modification reflects changes to the floor plan layout and window schedule.",
     modificationLabel: "Section 4.30 Modification",
+    modificationId: "mod-1",
     letterCertLabel: "Section 4.30 Modification – Complying Development Certificate No.:",
     councilBody: [
       "Quality Private Certifiers Pty Ltd has issued a Modified Complying Development Certificate under Part 4 of the Environmental Planning and Assessment Act 1979 for the above premises.",

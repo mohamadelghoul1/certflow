@@ -336,26 +336,34 @@ async function ModificationCard({
           <ChecklistSection jobId={job.id} firmId={firmId} checklistId={mod.checklistId} label={`Modification${mod.reason ? ` — ${mod.reason}` : ""}`} library={library} items={mod.items} />
         )}
 
-        {complete && !mod.generated && (
+        {complete && (
           <>
-            <PlanningPortalRefField jobId={job.id} value={job.details?.certificateDetails?.planningPortalRef || ""} kind={portalRefKindFor(job.pathway)} />
-            {/* The pre-inspection report the modified certificate is issued
-                with — s139 for a CDC, s16 for a CC, same as a first issue. */}
+            {/* The modification's own Portal reference and its own s139
+                (CDC) / s16 (CC) pre-inspection — each modification is its
+                own Portal application with its own inspection, so these
+                save to the modification, and the original certificate's
+                stay untouched. Kept visible after issuing so the report
+                stays a click away. */}
+            <PlanningPortalRefField jobId={job.id} value={mod.portal_ref || ""} kind={portalRefKindFor(job.pathway)} modificationId={mod.id} />
             <PreInspectionField
               jobId={job.id}
               isCdc={job.pathway === "CDC"}
-              applicationDate={job.details?.preInspection?.applicationDate || ""}
-              inspectionDate={job.details?.preInspection?.inspectionDate || ""}
-            />
-            <IssueModificationForm
-              jobId={job.id}
+              applicationDate={mod.pre_application_date || ""}
+              inspectionDate={mod.pre_inspection_date || ""}
               modificationId={mod.id}
-              assignedCertifierId={job.assigned_certifier_id}
-              certifiers={certifiers}
-              hasPortalRef={(job.details?.certificateDetails?.planningPortalRef || "").trim().length > 0}
-              pathway={job.pathway}
             />
           </>
+        )}
+
+        {complete && !mod.generated && (
+          <IssueModificationForm
+            jobId={job.id}
+            modificationId={mod.id}
+            assignedCertifierId={job.assigned_certifier_id}
+            certifiers={certifiers}
+            hasPortalRef={(mod.portal_ref || "").trim().length > 0}
+            pathway={job.pathway}
+          />
         )}
 
         {/* The modified certificate this modification produced, with the

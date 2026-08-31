@@ -411,6 +411,13 @@ export type Modification = {
   id: string;
   job_id: string;
   reason: string | null;
+  // The modification's own NSW Planning Portal reference and
+  // pre-inspection dates — a modification is its own Portal application
+  // with its own s139/s16 inspection, distinct from the original
+  // certificate's. Undefined until migration 0065 has been run.
+  portal_ref?: string | null;
+  pre_application_date?: string | null;
+  pre_inspection_date?: string | null;
   generated: boolean;
   generated_date: string | null;
   issued_by: string | null;

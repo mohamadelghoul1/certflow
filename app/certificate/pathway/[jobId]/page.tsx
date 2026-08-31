@@ -16,8 +16,9 @@ export default async function PathwayCertificatePage({ params }: { params: Promi
 
   // Shown as a page of the approval only once both dates are recorded,
   // which is the same test the downloaded set applies — so what is
-  // reviewed here is what is handed over.
-  const preInspection = await getPreInspectionData(jobId, profile);
+  // reviewed here is what is handed over. A modified certificate carries
+  // its modification's own pre-inspection report, not the original's.
+  const preInspection = await getPreInspectionData(jobId, profile, undefined, data.modificationId);
   const withReport = preInspection?.applicationDate && preInspection?.inspectionDate ? preInspection : null;
 
   // Only what framing the document needs — the document itself takes the

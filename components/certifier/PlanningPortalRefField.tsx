@@ -18,7 +18,9 @@ import { SaveButton } from "@/components/certifier/SaveButton";
 // it. Once it is recorded it collapses to a line of text with an Edit
 // button, so a wrong one can still be corrected here.
 
-export function PlanningPortalRefField({ jobId, value, kind }: { jobId: string; value: string; kind: PortalRefKind }) {
+// Given a modificationId, the reference saves to that modification —
+// each modification is its own Portal application — instead of the job.
+export function PlanningPortalRefField({ jobId, value, kind, modificationId }: { jobId: string; value: string; kind: PortalRefKind; modificationId?: string }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setPlanningPortalRef, undefined);
   const [editing, setEditing] = useState(false);
   const recorded = value.trim();
@@ -44,6 +46,7 @@ export function PlanningPortalRefField({ jobId, value, kind }: { jobId: string; 
     <form action={formAction} className="mt-3 flex items-end gap-2 flex-wrap">
       <input type="hidden" name="job_id" value={jobId} />
       <input type="hidden" name="kind" value={kind} />
+      {modificationId && <input type="hidden" name="modification_id" value={modificationId} />}
       <label className="flex flex-col gap-1">
         <span className="text-xs font-medium text-heading">NSW Planning Portal reference</span>
         <input

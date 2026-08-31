@@ -7,11 +7,13 @@ import { attachmentHeader, jobDocumentName } from "@/lib/downloadName";
 
 // The pre-inspection report as an editable Word file — s139 for a CDC,
 // s16 for a CC.
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params;
   const { profile } = await requireProfile("certifier");
 
-  const data = await getPreInspectionData(jobId, profile);
+  // ?mod= exports the modification's own report — its dates, and the
+  // modified certificate's number.
+  const data = await getPreInspectionData(jobId, profile, undefined, request.nextUrl.searchParams.get("mod"));
   if (!data) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   const [logo, signature] = await Promise.all([fetchImageAsset(data.logoUrl, 64, 190), fetchImageAsset(data.signatureUrl, 68, 240)]);

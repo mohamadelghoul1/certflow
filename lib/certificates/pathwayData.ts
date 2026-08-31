@@ -106,6 +106,10 @@ export type PathwayCertificateData = {
   // "Section 4.30 Modification" / "Section 6.33(1) Modification", null
   // on a first issue — the prefix the certificate's title carries.
   modificationLabel: string | null;
+  // The issued modification this certificate version came from, so the
+  // approval set and the certificate screen can include that
+  // modification's own pre-inspection report rather than the original's.
+  modificationId: string | null;
   letterCertLabel: string;
   d: JobDetails;
   cd: NonNullable<JobDetails["certificateDetails"]>;
@@ -162,9 +166,11 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
       .order("created_at", { referencedTable: "checklist_items" }),
     supabase.from("inspections").select("outcome").eq("job_id", jobId),
     supabase.from("pathway_certificate_versions").select("id, cert_ref").eq("job_id", jobId).eq("version", job.pathway_version).single(),
-    // Only a re-issued certificate needs the modification's reason.
+    // Only a re-issued certificate needs the modification's details.
+    // select * rather than named columns, so a database that has not run
+    // migration 0065 (no portal_ref yet) still answers instead of erroring.
     job.pathway_version > 1
-      ? supabase.from("modifications").select("reason, generated").eq("job_id", jobId).order("created_at", { ascending: false })
+      ? supabase.from("modifications").select("*").eq("job_id", jobId).order("created_at", { ascending: false })
       : Promise.resolve({ data: null }),
   ]);
   const signatureUrl = job.pathway_signed_at && issuedBy?.signature_url ? await signedUrl(issuedBy.signature_url, 3600, client) : null;
@@ -208,7 +214,26 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
   const isCdc = job.pathway === "CDC";
   const pathwayFull = isCdc ? "Complying Development Certificate" : "Construction Certificate";
   const d = job.details || {};
-  const cd = d.certificateDetails || {};
+
+  // A certificate version beyond the first is a modification — provided a
+  // modification has actually been issued. A regeneration that only fixed
+  // a typo also moves the version on, and must not dress the certificate
+  // up as a section 4.30 modification. The letters carry the reason typed
+  // when the latest issued modification was started.
+  const mods = ((modifications || []) as { id: string; reason: string | null; generated: boolean; portal_ref?: string | null }[]);
+  const latestMod = mods.find((m) => m.generated);
+  const isModification = job.pathway_version > 1 && !!latestMod;
+  const modificationReason = isModification ? modificationReasonSentence(latestMod?.reason) : null;
+  const modificationLabel = isModification ? modificationLabelFor(isCdc) : null;
+  const letterCertLabel = letterCertLabelFor(isModification, isCdc, pathwayFull);
+
+  // A modification is its own Planning Portal application, so the
+  // modified certificate prints the modification's reference where it has
+  // one — the original's stays on the job for its own record.
+  const cd = {
+    ...(d.certificateDetails || {}),
+    ...(isModification && latestMod?.portal_ref?.trim() ? { planningPortalRef: latestMod.portal_ref } : {}),
+  };
   const issuedDate = formatISODate(job.pathway_generated_date);
   const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "Applicant";
   const applicantPhone = d.contact?.phone || d.contact?.mobile;
@@ -241,18 +266,6 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
   const inspectionsNotice = firmWording(wording, "inspections.notice", wordingValues) ?? [
     `I, ${issuedBy?.name || "—"} of ${firm?.name || ""}, located at ${firm?.office_address || "—"}, acting as the principal certifier, hereby give notice in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in Schedule 1 are to be carried out in respect of the building work.`,
   ];
-
-  // A certificate version beyond the first is a modification — provided a
-  // modification has actually been issued. A regeneration that only fixed
-  // a typo also moves the version on, and must not dress the certificate
-  // up as a section 4.30 modification. The letters carry the reason typed
-  // when the latest issued modification was started.
-  const mods = ((modifications || []) as { reason: string | null; generated: boolean }[]);
-  const latestMod = mods.find((m) => m.generated);
-  const isModification = job.pathway_version > 1 && !!latestMod;
-  const modificationReason = isModification ? modificationReasonSentence(latestMod?.reason) : null;
-  const modificationLabel = isModification ? modificationLabelFor(isCdc) : null;
-  const letterCertLabel = letterCertLabelFor(isModification, isCdc, pathwayFull);
 
   const councilBody = job.council_letter_override
     ? job.council_letter_override.split("\n\n")
@@ -331,6 +344,7 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
     isModification,
     modificationReason,
     modificationLabel,
+    modificationId: isModification ? latestMod?.id || null : null,
     letterCertLabel,
     d,
     cd,

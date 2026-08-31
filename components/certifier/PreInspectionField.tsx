@@ -23,16 +23,22 @@ export function PreInspectionField({
   isCdc,
   applicationDate,
   inspectionDate,
+  modificationId,
 }: {
   jobId: string;
   isCdc: boolean;
   applicationDate: string;
   inspectionDate: string;
+  // Given, the dates save to that modification and the report link opens
+  // the modification's own report — each modification carries its own
+  // pre-inspection, distinct from the original certificate's.
+  modificationId?: string;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setPreInspectionDates, undefined);
   const [editing, setEditing] = useState(false);
   const recorded = applicationDate.trim() && inspectionDate.trim();
   const label = isCdc ? "s139 inspection report" : "s16 inspection report";
+  const reportHref = modificationId ? `/certificate/pre-inspection/${jobId}?mod=${modificationId}` : `/certificate/pre-inspection/${jobId}`;
 
   if (recorded && !editing) {
     return (
@@ -41,7 +47,7 @@ export function PreInspectionField({
           {label}: applied <span className="font-semibold text-heading">{formatISODate(applicationDate)}</span>, inspected{" "}
           <span className="font-semibold text-heading">{formatISODate(inspectionDate)}</span>
         </span>
-        <Link href={`/certificate/pre-inspection/${jobId}`} target="_blank" className="inline-flex items-center gap-1 font-semibold text-secondary hover:underline">
+        <Link href={reportHref} target="_blank" className="inline-flex items-center gap-1 font-semibold text-secondary hover:underline">
           <FileSearch size={12} /> Open report
         </Link>
         <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-1 text-secondary hover:underline">
@@ -54,6 +60,7 @@ export function PreInspectionField({
   return (
     <form action={formAction} className="mt-3 flex items-end gap-2 flex-wrap">
       <input type="hidden" name="job_id" value={jobId} />
+      {modificationId && <input type="hidden" name="modification_id" value={modificationId} />}
       <label className="flex flex-col gap-1">
         <span className="text-xs font-medium text-heading">Application date</span>
         <DateField name="applicationDate" noFuture defaultValue={applicationDate} className="px-2 py-1.5 rounded border border-line text-xs" />

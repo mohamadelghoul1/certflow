@@ -95,9 +95,14 @@ export async function buildApprovalSet(jobId: string, profile: Profile): Promise
   let approvalLabel = "Signed approval (uploaded)";
 
   // The pre-inspection report, once the certifier has recorded the
-  // application and inspection dates against the job. Null before then,
-  // and for a job that issues no certificate of its own.
-  const preInspection = await getPreInspectionData(jobId, profile);
+  // application and inspection dates. Null before then, and for a job
+  // that issues no certificate of its own. A modified certificate's set
+  // carries its modification's own report, not the original's.
+  const { data: latestMod } =
+    job.pathway_version > 1
+      ? await supabase.from("modifications").select("id").eq("job_id", jobId).eq("generated", true).order("created_at", { ascending: false }).limit(1)
+      : { data: null };
+  const preInspection = await getPreInspectionData(jobId, profile, undefined, latestMod?.[0]?.id || null);
   const hasPreInspection = Boolean(preInspection?.applicationDate && preInspection?.inspectionDate);
   let supplement: { bytes: Uint8Array; label: string } | null = null;
 

@@ -1010,7 +1010,16 @@ export async function setPlanningPortalRef(_prev: ActionState, formData: FormDat
   const ref = normalizePortalRef(String(formData.get("planningPortalRef") || ""), kind);
   if (!ref) return { error: "Enter the Planning Portal reference number." };
 
-  await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { certificateDetails: { planningPortalRef: ref } });
+  // A modification is its own Portal application, so its reference lives
+  // on the modification rather than the job — the original certificate
+  // keeps its own. Row security scopes the update to this firm's rows.
+  const modificationId = String(formData.get("modification_id") || "");
+  if (modificationId) {
+    const { error } = await supabase.from("modifications").update({ portal_ref: ref }).eq("id", modificationId).eq("job_id", jobId);
+    if (error) return { error: error.message.includes("portal_ref") ? "Run database update 0065 first — see Settings → System check." : error.message };
+  } else {
+    await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { certificateDetails: { planningPortalRef: ref } });
+  }
   revalidatePath(`/jobs/${jobId}`);
   return { savedAt: Date.now() };
 }
@@ -1027,7 +1036,20 @@ export async function setPreInspectionDates(_prev: ActionState, formData: FormDa
   const applicationDate = String(formData.get("applicationDate") || "");
   const inspectionDate = String(formData.get("inspectionDate") || "");
 
-  await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { preInspection: { applicationDate, inspectionDate } });
+  // A modification's pre-inspection is its own — dates on the
+  // modification row, so the original certificate's report keeps its own
+  // dates untouched.
+  const modificationId = String(formData.get("modification_id") || "");
+  if (modificationId) {
+    const { error } = await supabase
+      .from("modifications")
+      .update({ pre_application_date: applicationDate || null, pre_inspection_date: inspectionDate || null })
+      .eq("id", modificationId)
+      .eq("job_id", jobId);
+    if (error) return { error: error.message.includes("pre_") ? "Run database update 0065 first — see Settings → System check." : error.message };
+  } else {
+    await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { preInspection: { applicationDate, inspectionDate } });
+  }
 
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pre-inspection/${jobId}`);
@@ -1361,12 +1383,15 @@ export async function issueModification(_prev: ActionState, formData: FormData):
   const certifierId = String(formData.get("certifier_id") || "");
   if (!certifierId) return { error: "Select a certifier before issuing." };
 
-  // A modified certificate carries the same Planning Portal reference the
-  // original does, and prints it, so it is gated the same way.
-  const { data: modJob } = await supabase.from("jobs").select("details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  // A modification is its own Planning Portal application, and the
+  // modified certificate prints its reference — so it is gated on the
+  // modification's own number, not the original certificate's.
+  const { data: modJob } = await supabase.from("jobs").select("id").eq("id", jobId).eq("firm_id", profile.firm_id).single();
   if (!modJob) return { error: "Project not found." };
-  if (!((modJob.details || {}) as JobDetails).certificateDetails?.planningPortalRef?.trim()) {
-    return { error: "Enter the NSW Planning Portal reference number before issuing." };
+  const { data: modRow } = await supabase.from("modifications").select("portal_ref").eq("id", modificationId).eq("job_id", jobId).single();
+  if (!modRow) return { error: "Modification not found." };
+  if (!modRow.portal_ref?.trim()) {
+    return { error: "Enter this modification's NSW Planning Portal reference before issuing." };
   }
 
   // Issuing the modification issues the modified certificate in the same

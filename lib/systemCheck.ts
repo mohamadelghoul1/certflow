@@ -254,6 +254,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: hasTable(supabase, "certificate_templates"),
     },
     {
+      migration: "0065",
+      label: "Each modification's own Portal reference and inspection",
+      detail: "A modification records its own NSW Planning Portal number and its own s139/s16 pre-inspection dates, instead of reusing the original certificate's.",
+      probe: hasColumn(supabase, "modifications", "portal_ref"),
+    },
+    {
       migration: "0064",
       label: "Your own approval wording",
       detail: "Lets a firm write its own council and applicant letters and its own inspections notice. Every firm keeps Certlyn's wording until it does.",
