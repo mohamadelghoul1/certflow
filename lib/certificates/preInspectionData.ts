@@ -96,11 +96,14 @@ export async function getPreInspectionData(jobId: string, profile: Profile, clie
   const isCdc = job.pathway === "CDC";
   const projRef = d.projectNumber || job.id.slice(0, 8);
   let ref = resolvePathwayCertRef(activeVersion?.cert_ref, job.pathway, projRef, job.pathway_version);
-  if (mod && !mod.generated) {
-    // The modification has not been issued yet, so its certificate does
-    // not exist — the report shows the number the next version will get.
+  if (mod && (!mod.generated || job.pathway_version <= 1)) {
+    // A modification's certificate is never the /01 — its report shows
+    // the number the modified certificate will carry. Projected from the
+    // newest version when the modification has not been issued yet (or
+    // was issued before issuing created the new version, so none exists):
+    // the next version, and never lower than /02.
     const { data: newest } = await supabase.from("pathway_certificate_versions").select("version").eq("job_id", jobId).order("version", { ascending: false }).limit(1);
-    ref = resolvePathwayCertRef(null, job.pathway, projRef, (newest?.[0]?.version || 0) + 1);
+    ref = resolvePathwayCertRef(null, job.pathway, projRef, Math.max((newest?.[0]?.version || 0) + 1, 2));
   }
   const regulationTitle = isCdc ? CDC_REGULATION : CC_REGULATION;
 
