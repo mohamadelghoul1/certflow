@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef } from "react";
 import { Plus } from "lucide-react";
 import { addInspection } from "@/lib/actions/inspections";
 import { INSPECTION_SUGGESTIONS } from "@/lib/constants";
+import { DateField } from "@/components/DateField";
 import type { ActionState } from "@/lib/actions/auth";
 
 // Adding an inspection the standard set doesn't cover — a pool steel or
@@ -30,7 +31,8 @@ export function AddInspectionForm({ jobId }: { jobId: string }) {
     <div className="border border-dashed border-line rounded-xl p-4 bg-white">
       <div className="text-sm font-semibold text-heading mb-1">Add an inspection</div>
       <p className="text-xs text-muted mb-3">
-        For a stage this job needs beyond the standard set, or one that has to be carried out again. Pick from the list or type any name.
+        For a stage this job needs beyond the standard set, or one that has to be carried out again. Pick from the list or type any name. Give it a
+        day and the client is told it has been booked.
       </p>
       <form action={formAction} className="flex items-end gap-2 flex-wrap">
         <input type="hidden" name="job_id" value={jobId} />
@@ -43,6 +45,13 @@ export function AddInspectionForm({ jobId }: { jobId: string }) {
             placeholder="e.g. Pool Steel"
             className="px-2 py-1.5 rounded border border-line text-xs w-72"
           />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-heading">Book it for (optional)</span>
+          {/* No future limit: this is a day being booked, not a visit
+              being recorded. Left blank the inspection is simply added to
+              the list, and a day can be booked on its card later. */}
+          <DateField name="date" className="px-2 py-1.5 rounded border border-line text-xs" />
         </label>
         <datalist id="inspection-suggestions">
           {INSPECTION_SUGGESTIONS.map((i) => (

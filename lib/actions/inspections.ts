@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { inspectionBookingEmail } from "@/lib/inspections/bookingEmail";
 import { todayISO, todayInNsw, formatISODate } from "@/lib/business";
 import type { ActionState } from "@/lib/actions/auth";
 import { inspectionDescriptionFor, MAX_INSPECTION_PHOTOS } from "@/lib/constants";
@@ -296,6 +297,46 @@ export async function rescheduleBooking(_prev: ActionState, formData: FormData):
   return undefined;
 }
 
+// The certifier booking an inspection themselves, rather than answering
+// one the client asked for.
+//
+// A booking is a day in the future, so it cannot go through the date box
+// beside it: that box records when a visit happened and refuses a future
+// date. The client is told, because a certifier turning up on a day the
+// builder is not expecting is the whole problem this is here to avoid.
+// Rebooking an already-booked inspection goes through this too — the
+// wording says which it is.
+export async function bookInspection(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const inspectionId = String(formData.get("inspection_id"));
+  const jobId = String(formData.get("job_id"));
+  const date = String(formData.get("date") || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Pick the day you want to inspect." };
+
+  // Scoped to the firm, like every other action that writes against a job.
+  const { data: job } = await supabase.from("jobs").select("id").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return { error: "Project not found." };
+
+  const { data: before } = await supabase.from("inspections").select("title, date, confirmed").eq("id", inspectionId).eq("job_id", jobId).maybeSingle();
+  if (!before) return { error: "Inspection not found." };
+  const previous = before as { title: string; date: string | null; confirmed: boolean };
+  const rebooking = !!previous.date && previous.confirmed;
+
+  const { error } = await supabase
+    .from("inspections")
+    .update({ date, confirmed: true, booked_by_client: false, updated_at: new Date().toISOString() })
+    .eq("id", inspectionId)
+    .eq("job_id", jobId);
+  if (error) return { error: "That date could not be saved. Please try again." };
+
+  const mail = inspectionBookingEmail(previous.title, date, rebooking);
+  await notifyJobClient(supabase, jobId, mail.subject, mail.html);
+
+  revalidatePath(`/jobs/${jobId}`);
+  return { savedAt: Date.now() };
+}
+
 // An inspection the job needs beyond the standard set: an occasional one
 // (pool steel, a suspended slab, an OSD system, a fire rated wall), or a
 // stage that has to be carried out a second time. Free text rather than a
@@ -313,6 +354,12 @@ export async function addInspection(_prev: ActionState, formData: FormData): Pro
   const { data: job } = await supabase.from("jobs").select("id, assigned_certifier_id").eq("id", jobId).eq("firm_id", profile.firm_id).single();
   if (!job) return { error: "Project not found." };
 
+  // A day can be booked as the inspection is added, so scheduling a visit
+  // is one press rather than add-then-book. Optional: an inspection added
+  // to the list without a day yet is still the common case.
+  const bookedDate = String(formData.get("date") || "").trim();
+  if (bookedDate && !/^\d{4}-\d{2}-\d{2}$/.test(bookedDate)) return { error: "That date could not be read." };
+
   const description = inspectionDescriptionFor(title);
   const row = {
     job_id: jobId,
@@ -321,6 +368,7 @@ export async function addInspection(_prev: ActionState, formData: FormData): Pro
     // Whoever the job is assigned to, as the starter inspections are —
     // it can be changed on the card like any other.
     inspector_certifier_id: job.assigned_certifier_id,
+    ...(bookedDate ? { date: bookedDate, confirmed: true } : {}),
   };
 
   // At the bottom of the list. Retried without the column for a database
@@ -333,6 +381,14 @@ export async function addInspection(_prev: ActionState, formData: FormData): Pro
     if (retry.error) return { error: retry.error.message };
   } else if (error) {
     return { error: error.message };
+  }
+
+  // Told the same way a booking made on the card is: a date in the
+  // certifier's diary that the builder does not know about is not a
+  // booking.
+  if (bookedDate) {
+    const mail = inspectionBookingEmail(title, bookedDate, false);
+    await notifyJobClient(supabase, jobId, mail.subject, mail.html);
   }
 
   revalidatePath(`/jobs/${jobId}`);

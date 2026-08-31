@@ -21,6 +21,7 @@ import { InspectionOrderProvider, InspectionMoveButtons } from "@/components/cer
 import { InspectionCardState, InspectionCardShell, OutcomeBadge, OutcomeSelect, InspectionDateBox, IssuesWhenNeeded, RemoveInspectionButton } from "@/components/certifier/InspectionCard";
 import { AddInspectionForm } from "@/components/certifier/AddInspectionForm";
 import { BookingDecision } from "@/components/certifier/BookingDecision";
+import { BookInspectionButton } from "@/components/certifier/BookInspectionButton";
 import { AutoSubmitSelect } from "@/components/certifier/AutoSubmitSelect";
 import type { Inspection, Defect, InspectionPhoto, Certifier } from "@/types/db";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -118,7 +119,20 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
             </div>
           </div>
 
-          {insp.booked_by_client && !insp.confirmed && <BookingDecision inspectionId={insp.id} jobId={jobId} requestedDate={insp.date} />}
+          {insp.booked_by_client && !insp.confirmed ? (
+            <BookingDecision inspectionId={insp.id} jobId={jobId} requestedDate={insp.date} />
+          ) : (
+            // The certifier booking the day themselves, rather than
+            // waiting for the client to ask. Gone once the inspection has
+            // been carried out: an outcome is on the record, and a
+            // "book this" button beside it invites a visit that already
+            // happened to be given a future date.
+            insp.outcome === "pending" && (
+              <div className="mt-3">
+                <BookInspectionButton inspectionId={insp.id} jobId={jobId} bookedDate={insp.date} confirmed={!!insp.confirmed} />
+              </div>
+            )
+          )}
 
           <IssuesWhenNeeded inspectionId={insp.id} jobId={jobId} defects={insp.defects} title={insp.title} />
 
