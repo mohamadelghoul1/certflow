@@ -14,6 +14,12 @@ import { certificateFieldValues, conditionParagraphs } from "@/lib/certificates/
 // "Applicant:", so they get a wider column to sit in.
 const LETTER_LABEL_FRACTION = 0.42;
 
+// The measured height of the declaration block that closes the
+// certificate — the paragraph, the date, the signature image, the name
+// and the N.B. line beneath it. Reserved with the certificate's last
+// section so the two are never split across a page.
+const DECLARATION_SPACE = 230;
+
 // applicant letter, certificate, mandatory inspections notice, Schedule 1
 // and the documents-requested table.
 //
@@ -171,7 +177,11 @@ export async function buildCertificatePackagePdf(
     // heading left behind on one page with its rows on the next is what
     // the first version of this did. 71 is the measured cost of the
     // block, and the 6pt lead-in on the sections above is what makes the
-    // room for it.
+    // room for it. Deliberately not reserved together with the
+    // declaration below: that would push this block onto a page of its
+    // own on a full certificate, which is the very thing keeping it here
+    // is for. The declaration joins it when the page has room and takes
+    // the next page when it does not.
     const last = index === sections.length - 1;
     if (last) l.ensure(71);
     l.heading(section.heading, { rule: true, gapBefore: last ? 0 : 6 });
@@ -198,8 +208,14 @@ export async function buildCertificatePackagePdf(
     conditionParas.slice(1).forEach((para) => l.text(para, { x: valueX, width: valueWidth, justify: true, gapAfter: 3 }));
   }
 
-  // The declaration and signature keep their own page.
-  l.pageBreak();
+  // The declaration and signature follow straight on from the Registered
+  // Certifier block rather than opening a page of their own — one page
+  // fewer, and the signature sits under the certificate it signs. Room
+  // for it was reserved with that block above, so this only catches the
+  // case of a certificate long enough that even the reservation could
+  // not be met.
+  l.ensure(DECLARATION_SPACE);
+  l.gap(8);
   l.text(
     isCdc
       ? `I, ${issuedBy?.name || "—"}, certify that the development is complying development and (if carried out as specified in the certificate) will comply with all development standards applicable to the development and with such other requirements prescribed by this regulation concerning the issue of the certificate.`

@@ -187,15 +187,18 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
       ],
       { keepTogether: true }
     ),
-    pageBreak(),
+    // The declaration and signature follow straight on from the
+    // Registered Certifier block rather than opening a page of their own.
+    // keepNext down the chain holds the block together: if it cannot fit
+    // under the certificate, Word moves all of it to the next page.
     p(
       isCdc
         ? `I, ${issuedBy?.name || "—"}, certify that the development is complying development and (if carried out as specified in the certificate) will comply with all development standards applicable to the development and with such other requirements prescribed by this regulation concerning the issue of the certificate.`
         : "I certify that building work completed in accordance with the documents accompanying the application for the certificate, including modifications verified by the certifier shown on the documents, will comply with the requirements referred to in the Act, Part 6.",
-      { justify: true, spacingBefore: 150, keepNext: true }
+      { justify: true, spacingBefore: 260, keepNext: true }
     ),
-    mixed([{ text: "Dated:  " }, { text: issuedDate }], { spacingBefore: 150 }),
-    ...signatureBlock(images.signature),
+    mixed([{ text: "Dated:  " }, { text: issuedDate }], { spacingBefore: 150, keepNext: true }),
+    ...signatureBlock(images.signature, { keepNext: true }),
     ...signatory(issuedBy?.name),
     p(
       isCdc

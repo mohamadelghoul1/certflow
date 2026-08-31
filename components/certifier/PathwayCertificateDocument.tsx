@@ -434,16 +434,11 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
             ))}
           </tbody>
         </table>
-        <DocFooter projRef={projRef} website={firm?.website} />
-      </Section>
-
-      {/* 3b. Certificate — declaration & signature */}
-      <Section>
-        <DocumentHeader firm={firm} logoUrl={logoUrl} />
-        <div className="text-xs text-placeholder mb-3">
-          {pathwayFull} {ref} — continued
-        </div>
-        <p className="text-sm text-justify">
+        {/* The declaration and signature follow straight on from the
+            Registered Certifier block rather than opening a page of their
+            own — one page fewer, and the signature sits under the
+            certificate it signs. */}
+        <p className="text-sm text-justify mt-6">
           {isCdc ? (
             <>
               I, {issuedBy?.name || "—"}, certify that the development is complying development and (if carried out as specified in the certificate)

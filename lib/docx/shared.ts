@@ -164,10 +164,14 @@ export function addressBlock(lines: string[], opts: { size?: number } = {}) {
 }
 
 // A paragraph built from mixed runs, e.g. "Re: <bold>123 Main St</bold>".
-export function mixed(parts: { text: string; bold?: boolean; color?: string }[], opts: { spacingBefore?: number; spacingAfter?: number; lineSpacing?: number; size?: number } = {}) {
+export function mixed(
+  parts: { text: string; bold?: boolean; color?: string }[],
+  opts: { spacingBefore?: number; spacingAfter?: number; lineSpacing?: number; size?: number; keepNext?: boolean } = {}
+) {
   return new Paragraph({
     children: parts.map((part) => run(part.text, { bold: part.bold, color: part.color, size: opts.size })),
     spacing: { before: opts.spacingBefore ?? 0, after: opts.spacingAfter ?? SPACE_AFTER, line: opts.lineSpacing ?? LINE_SPACING },
+    keepNext: opts.keepNext,
   });
 }
 
@@ -500,9 +504,11 @@ export function calloutBox(children: Paragraph[]) {
 // signature stroke looks like an unfinished form field, not a finished
 // document) — removed everywhere this is used: every certificate, letter,
 // and inspection report.
-export function signatureBlock(signature: ImageAsset | null) {
+export function signatureBlock(signature: ImageAsset | null, opts: { keepNext?: boolean } = {}) {
   if (signature) {
-    return [new Paragraph({ children: [image(signature.buffer, signature.type, signature.width, signature.height)], spacing: { before: 40, after: 40 } })];
+    return [
+      new Paragraph({ children: [image(signature.buffer, signature.type, signature.width, signature.height)], spacing: { before: 40, after: 40 }, keepNext: opts.keepNext }),
+    ];
   }
-  return [new Paragraph({ spacing: { before: 180, after: 60 } })];
+  return [new Paragraph({ spacing: { before: 180, after: 60 }, keepNext: opts.keepNext })];
 }

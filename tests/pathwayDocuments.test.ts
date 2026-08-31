@@ -17,7 +17,7 @@ describe("the approved-set PDF", () => {
     pdf = await readPdf(await buildCertificatePackagePdf(certificateFixture(), { logo: null, signature: null }));
   });
 
-  test("runs to seven pages: two letters, certificate, declaration, notice, two schedules", () => {
+  test("runs to seven pages: two letters, certificate over two, notice, two schedules", () => {
     assert.equal(pdf.pageCount, 7);
   });
 
@@ -33,10 +33,25 @@ describe("the approved-set PDF", () => {
     assert.ok(certPage.includes("BDC2961"));
   });
 
-  test("the declaration keeps its own page", () => {
-    const declaration = pdf.pages.findIndex((p) => p.includes("certify that the development"));
-    const certificate = pdf.pages.findIndex((p) => p.includes("APPLICANT DETAILS"));
-    assert.ok(declaration > certificate, "the declaration follows the certificate rather than sharing it");
+  // The declaration used to be given a page of its own unconditionally,
+  // which on a job whose certificate ran long meant the Registered
+  // Certifier block alone on one page and the signature alone on the
+  // next. It now follows on where the page has room — shown here on a
+  // short certificate — and still takes the next page where it does not,
+  // which is the full fixture above.
+  test("the declaration follows the Registered Certifier where the page has room", async () => {
+    const short = certificateFixture({
+      template: { sections: DEFAULT_TEMPLATES.CDC.sections.slice(-1) },
+    });
+    const { pages } = await readPdf(await buildCertificatePackagePdf(short, { logo: null, signature: null }));
+    const declaration = pages.find((p) => p.includes("certify that the development")) || "";
+    assert.ok(declaration.includes("REGISTERED CERTIFIER"), "the signature sits under the certificate it signs");
+  });
+
+  test("the declaration is never split from the certifier's name above it", () => {
+    const declaration = pdf.pages.find((p) => p.includes("certify that the development")) || "";
+    assert.ok(declaration.includes("Dated:"), "the date stays with the declaration");
+    assert.ok(declaration.includes("N.B."), "and so does the note beneath the signature");
   });
 
   test("a document with no date reads as a dash", () => {
@@ -73,7 +88,7 @@ describe("the Word export", () => {
   });
 
   test("breaks into the same sections as the PDF", () => {
-    assert.equal(docxPageBreaks(docx.xml), 6, "six breaks make seven sections");
+    assert.equal(docxPageBreaks(docx.xml), 5, "five breaks make six sections");
   });
 
   test("carries the certifier, the classification and the instrument", () => {
