@@ -254,6 +254,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       probe: hasTable(supabase, "certificate_templates"),
     },
     {
+      migration: "0066",
+      label: "A modification knows its own certificate",
+      detail: "Links each modification to the certificate version it produced, so its card shows and deletes only that version - never the original.",
+      probe: hasColumn(supabase, "modifications", "certificate_version_id"),
+    },
+    {
       migration: "0065",
       label: "Each modification's own Portal reference and inspection",
       detail: "A modification records its own NSW Planning Portal number and its own s139/s16 pre-inspection dates, instead of reusing the original certificate's.",

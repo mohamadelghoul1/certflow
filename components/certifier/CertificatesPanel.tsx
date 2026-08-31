@@ -177,8 +177,7 @@ export async function CertificatesPanel({
                 firmId={firmId}
                 certifiers={certifiers}
                 library={library}
-                isNewest={i === modifications.length - 1}
-                activeVersion={activeVersion}
+                linkedVersion={versions.find((v) => v.id === m.certificate_version_id)}
                 maxVersion={versions.reduce((max, v) => Math.max(max, v.version), 0)}
               />
             ))}
@@ -294,8 +293,7 @@ async function ModificationCard({
   firmId,
   certifiers,
   library,
-  isNewest,
-  activeVersion,
+  linkedVersion,
   maxVersion,
 }: {
   mod: ModificationWithChecklist;
@@ -303,8 +301,11 @@ async function ModificationCard({
   firmId: string;
   certifiers: Certifier[];
   library: LibItem[];
-  isNewest: boolean;
-  activeVersion: PathwayCertificateVersion | undefined;
+  // The certificate version this modification produced (migration 0066's
+  // link). Never approximated from "whichever version is active": that
+  // once put the ORIGINAL certificate on this card behind a "Modified
+  // certificate" label, where its Delete button deleted the original.
+  linkedVersion: PathwayCertificateVersion | undefined;
   maxVersion: number;
 }) {
   const complete = stageComplete(mod.items);
@@ -313,13 +314,11 @@ async function ModificationCard({
 
   // The stamp for this modification's documents carries the modified
   // certificate's number: the version it produced, or — while it is
-  // unissued (or was issued under the old flow that created no version) —
-  // the number the next version will get, never lower than /02.
+  // unissued — the number the next version will get, never lower than /02.
   const projRef = job.details?.projectNumber || job.id.slice(0, 8);
-  const modCertRef =
-    mod.generated && job.pathway_version > 1 && isNewest
-      ? resolvePathwayCertRef(activeVersion?.cert_ref, job.pathway, projRef, job.pathway_version)
-      : resolvePathwayCertRef(null, job.pathway, projRef, Math.max(maxVersion + 1, 2));
+  const modCertRef = linkedVersion
+    ? resolvePathwayCertRef(linkedVersion.cert_ref, job.pathway, projRef, linkedVersion.version)
+    : resolvePathwayCertRef(null, job.pathway, projRef, Math.max(maxVersion + 1, 2));
   const stamp = await buildStampPreview(job, modCertRef);
 
   return (
@@ -390,17 +389,17 @@ async function ModificationCard({
           />
         )}
 
-        {/* The modified certificate this modification produced, with the
-            same review / export / sign / upload actions the main panel
-            offers — issuing and finishing the approval stay on one card.
-            Only the newest issued modification shows it: the actions below
-            always speak for the job's active version, and an older
-            modification's certificate is no longer that version. */}
-        {mod.generated && isNewest && activeVersion && (
+        {/* The modified certificate this modification produced — the
+            linked version and only the linked version — with the same
+            review / export / sign / upload actions the main panel offers,
+            so issuing and finishing the approval stay on one card.
+            Deleting it puts this modification back to draft; the original
+            certificate is never on this card. */}
+        {mod.generated && linkedVersion && (
           <div className="mt-4">
             <div className="text-xs font-semibold text-muted mb-2">Modified certificate</div>
             <ApprovalSigningProvider jobId={job.id} signedAt={job.pathway_signed_at}>
-              <PathwayVersionCard version={activeVersion} job={job} firmId={firmId} certifiers={certifiers} />
+              <PathwayVersionCard version={linkedVersion} job={job} firmId={firmId} certifiers={certifiers} />
             </ApprovalSigningProvider>
           </div>
         )}

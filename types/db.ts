@@ -418,6 +418,10 @@ export type Modification = {
   portal_ref?: string | null;
   pre_application_date?: string | null;
   pre_inspection_date?: string | null;
+  // The certificate version this modification produced when it was
+  // issued. Undefined until migration 0066; null for a modification not
+  // yet issued, or whose version has since been deleted.
+  certificate_version_id?: string | null;
   generated: boolean;
   generated_date: string | null;
   issued_by: string | null;
