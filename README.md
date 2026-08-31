@@ -330,44 +330,35 @@ Things decided on and deliberately left for later. Nothing here is
 broken; each is a step that makes Certlyn better without which it still
 works.
 
-### Certlyn's own web address
+### Certlyn's own web address — done 31 Aug 2026, one setting left
 
-`certlyn.com.au` is registered (VentraIP) and nothing points at it yet.
-The site still answers on the address Vercel generated
-(`certflow-drab.vercel.app`), which is what a client sees on every
-invoice and portal link — an auto-generated address invites hesitation
-before a builder clicks it, and it carries the old name.
+The site answers at `https://www.certlyn.com.au`; the bare
+`certlyn.com.au` redirects to it. The A and CNAME records live in
+VentraIP's DNS zone for the domain (a leftover parked-page A record had
+to be deleted — two answers for one name kept Vercel's check failing).
+The old `certflow-drab.vercel.app` address still works, so every link
+already sent to a client keeps resolving.
 
-1. Vercel -> the project -> Settings -> Domains -> add `certlyn.com.au`
-   and `portal.certlyn.com.au`. Vercel names the DNS records to create;
-   use the values it gives, they vary.
-2. VentraIP -> the domain's DNS -> create those records. Default TTL.
-3. Wait for Vercel's Domains page to read "Valid Configuration". It
-   issues the HTTPS certificate itself.
-4. Vercel -> Settings -> Environment Variables -> set
-   `NEXT_PUBLIC_SITE_URL` to the new address, then Deployments ->
-   Redeploy. It is read when the app is built, so saving alone does not
-   take effect.
+Still to do: Vercel -> Settings -> Environment Variables -> set
+`NEXT_PUBLIC_SITE_URL` to `https://www.certlyn.com.au`, then Deployments
+-> Redeploy. Only the overnight reminder sweep reads it — everything a
+certifier triggers builds links from the address they are actually on —
+but until it is set the nightly chasers take whatever production address
+Vercel reports.
 
-Step 4 only matters for the overnight reminder sweep: everything a
-certifier triggers builds its links from the address they are actually
-on. Do it anyway so the nightly chasers agree with the rest.
+### Certlyn's own sending domain — done 31 Aug 2026
 
-The Vercel address keeps working afterwards, so any link already sent to
-a client still resolves.
+`certlyn.com.au` is verified in Resend (DKIM, the two sending CNAMEs,
+and DMARC all sit in VentraIP's DNS). Mail goes out as
+`Quality Private Certifiers <notifications@certlyn.com.au>` with replies
+directed to the firm's own inbox — `RESEND_FROM_EMAIL` and
+`RESEND_REPLY_TO` in Vercel.
 
-### Certlyn's own sending domain
-
-Verify `certlyn.com.au` in Resend -> Domains, alongside
-qpcertifiers.com.au.
-
-This is what lets a firm with no domain of its own send as itself:
-Resend will only send from a domain verified in the account whose key is
-used, so such a firm sets its sending address to
+This is also what lets a future firm with no domain of its own send as
+itself: Resend will only send from a domain verified in the account
+whose key is used, so such a firm sets its sending address to
 `Their Firm Pty Ltd <notifications@certlyn.com.au>` with its own inbox as
-the reply-to. Their client sees their name; replies reach them. Without
-it, a firm without a domain has to send under another firm's name, which
-is the thing the per-firm work was for.
+the reply-to. Their client sees their name; replies reach them.
 
 ### Also worth doing
 
