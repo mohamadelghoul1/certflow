@@ -174,7 +174,9 @@ export async function CertificatesPanel({
             ))}
             <form action={startModification} className="flex items-center gap-2">
               <input type="hidden" name="job_id" value={job.id} />
-              <input name="reason" placeholder="Reason for modification…" className="flex-1 px-2 py-1.5 rounded border border-line text-xs" />
+              {/* Printed on the letters as "This modification reflects …",
+                  so the placeholder shows the shape that reads well. */}
+              <input name="reason" placeholder="Reason, e.g. changes to the floor plan layout and window schedule" className="flex-1 px-2 py-1.5 rounded border border-line text-xs" />
               <SubmitButton className="text-xs font-semibold text-secondary hover:underline">Start a modified {job.pathway}</SubmitButton>
             </form>
           </div>

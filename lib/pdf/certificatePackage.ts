@@ -95,7 +95,7 @@ export async function buildCertificatePackagePdf(
   // own title and fields — a ruled heading, then right-aligned labels
   // against their values.
   l.documentTitle(`RE: ${(job.address || "").toUpperCase()}`);
-  l.fieldRow(`${pathwayFull} No.:`, ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
+  l.fieldRow(data.councilCertLabel, ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
   l.fieldRow(
     isCdc ? "Planning Instrument Decision Made Under:" : "Development Application No.:",
     (isCdc ? cd.relevantInstrument : cd.developmentConsentNumber) || "—",

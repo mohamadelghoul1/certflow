@@ -88,7 +88,7 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
     ...documentTitle(`RE: ${job.address || ""}`, { uppercase: true }),
     fieldTable(
       [
-        { kind: "row", label: `${pathwayFull} No.:`, value: ref },
+        { kind: "row", label: data.councilCertLabel, value: ref },
         isCdc
           ? { kind: "row" as const, label: "Planning Instrument Decision Made Under:", value: cd.relevantInstrument || "—" }
           : { kind: "row" as const, label: "Development Application No.:", value: cd.developmentConsentNumber || "—" },

@@ -47,6 +47,22 @@ export function formatCurrency(value?: string | null) {
   return Number.isFinite(parsed) && parsed > 0 ? `$${parsed.toLocaleString("en-AU", { minimumFractionDigits: 2 })}` : value;
 }
 
+// The sentence the letters carry about why a certificate was modified,
+// built from the reason typed when the modification was started.
+// "changes to the floor plan layout and window schedule" becomes "This
+// modification reflects changes to the floor plan layout and window
+// schedule." A reason already written as that sentence is kept as
+// typed, and the leading letter is only lowered when it starts an
+// ordinary word — "BASIX" stays "BASIX".
+export function modificationReasonSentence(reason: string | null | undefined): string | null {
+  const r = (reason || "").trim();
+  if (!r) return null;
+  const period = r.endsWith(".") ? "" : ".";
+  if (/^this modification/i.test(r)) return r + period;
+  const lead = r.length > 1 && /[A-Z]/.test(r[0]) && r[1] === r[1].toLowerCase() ? r[0].toLowerCase() + r.slice(1) : r;
+  return `This modification reflects ${lead}${period}`;
+}
+
 export type PathwayCertificateData = {
   job: Job;
   firm: Firm | null;
@@ -66,6 +82,13 @@ export type PathwayCertificateData = {
   projRef: string;
   isCdc: boolean;
   pathwayFull: string;
+  // A version beyond the first is a modified certificate — issued under
+  // section 4.30 for a CDC — and the letters say so: in the reference
+  // line above the body, and in a sentence carrying the reason typed
+  // when the modification was started (null when none was given).
+  isModification: boolean;
+  modificationReason: string | null;
+  councilCertLabel: string;
   d: JobDetails;
   cd: NonNullable<JobDetails["certificateDetails"]>;
   issuedDate: string;
@@ -107,7 +130,7 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
   if (!rawJob || !rawJob.pathway_generated) return null;
   const job = rawJob as Job;
 
-  const [{ data: firm }, { data: conditions }, { data: issuedBy }, { data: checklists }, { data: inspections }, { data: activeVersion }] = await Promise.all([
+  const [{ data: firm }, { data: conditions }, { data: issuedBy }, { data: checklists }, { data: inspections }, { data: activeVersion }, { data: modifications }] = await Promise.all([
     supabase.from("firms").select("*").eq("id", firmId).single(),
     supabase.from("conditions_of_consent").select("*").eq("job_id", jobId).order("created_at"),
     job.pathway_issued_by ? supabase.from("certifiers").select("*").eq("id", job.pathway_issued_by).single() : Promise.resolve({ data: null }),
@@ -121,6 +144,10 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
       .order("created_at", { referencedTable: "checklist_items" }),
     supabase.from("inspections").select("outcome").eq("job_id", jobId),
     supabase.from("pathway_certificate_versions").select("id, cert_ref").eq("job_id", jobId).eq("version", job.pathway_version).single(),
+    // Only a re-issued certificate needs the modification's reason.
+    job.pathway_version > 1
+      ? supabase.from("modifications").select("reason, generated").eq("job_id", jobId).order("created_at", { ascending: false })
+      : Promise.resolve({ data: null }),
   ]);
   const signatureUrl = job.pathway_signed_at && issuedBy?.signature_url ? await signedUrl(issuedBy.signature_url, 3600, client) : null;
   const uploadedApprovalUrl = job.pathway_approval_uploaded ? await signedUrl(job.pathway_approval_file_path, 3600, client) : null;
@@ -197,13 +224,38 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
     `I, ${issuedBy?.name || "—"} of ${firm?.name || ""}, located at ${firm?.office_address || "—"}, acting as the principal certifier, hereby give notice in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in Schedule 1 are to be carried out in respect of the building work.`,
   ];
 
+  // A certificate version beyond the first is a modification. The
+  // letters name it as one — issued under section 4.30 for a CDC — and
+  // carry the reason typed when the modification was started, preferring
+  // the one that has actually been issued when several exist.
+  const isModification = job.pathway_version > 1;
+  const mods = ((modifications || []) as { reason: string | null; generated: boolean }[]);
+  const latestMod = mods.find((m) => m.generated) || mods[0];
+  const modificationReason = isModification ? modificationReasonSentence(latestMod?.reason) : null;
+  const councilCertLabel = isModification
+    ? isCdc
+      ? `Section 4.30 Modification – ${pathwayFull} No.:`
+      : `Modified ${pathwayFull} No.:`
+    : `${pathwayFull} No.:`;
+
   const councilBody = job.council_letter_override
     ? job.council_letter_override.split("\n\n")
-    : firmWording(wording, "council.body", wordingValues) ?? [
-        `${firm?.name} has issued a ${pathwayFull} under ${isCdc ? "Part 4" : "Sections 6.3, 6.4, 6.16"} of the Environmental Planning and Assessment Act 1979 for the above premises.`,
-        ...(isCdc ? ["The applicant / owner has been advised to submit the Notice of Intention to commence works on the NSW Planning Portal at least 48 hours prior to any works commencing on site."] : []),
-        `Should you need to discuss any issues, please do not hesitate to contact the Registered Building Surveyor ${issuedBy?.name || "—"}.`,
-      ];
+    : firmWording(wording, "council.body", wordingValues) ??
+      (isModification
+        ? // The modification letter is the approval letter with the work
+          // already under way: it says the certificate is a modified one
+          // and why, and drops the notice-of-intention reminder that only
+          // belongs before works commence.
+          [
+            `${firm?.name} has issued a Modified ${pathwayFull} under ${isCdc ? "Part 4" : "Sections 6.3, 6.4, 6.16"} of the Environmental Planning and Assessment Act 1979 for the above premises.`,
+            ...(modificationReason ? [modificationReason] : []),
+            `Should you need to discuss any issues, please do not hesitate to contact the Registered Building Surveyor ${issuedBy?.name || "—"}.`,
+          ]
+        : [
+            `${firm?.name} has issued a ${pathwayFull} under ${isCdc ? "Part 4" : "Sections 6.3, 6.4, 6.16"} of the Environmental Planning and Assessment Act 1979 for the above premises.`,
+            ...(isCdc ? ["The applicant / owner has been advised to submit the Notice of Intention to commence works on the NSW Planning Portal at least 48 hours prior to any works commencing on site."] : []),
+            `Should you need to discuss any issues, please do not hesitate to contact the Registered Building Surveyor ${issuedBy?.name || "—"}.`,
+          ]);
 
   const applicantBody = job.applicant_letter_override
     ? job.applicant_letter_override.split("\n\n")
@@ -260,6 +312,9 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
     projRef,
     isCdc,
     pathwayFull,
+    isModification,
+    modificationReason,
+    councilCertLabel,
     d,
     cd,
     issuedDate,

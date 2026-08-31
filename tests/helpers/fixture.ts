@@ -49,6 +49,11 @@ export function certificateFixture(overrides: Record<string, unknown> = {}): Pat
     projRef: "CDC-26001",
     isCdc: true,
     pathwayFull: "Complying Development Certificate",
+    // As getPathwayCertificateData resolves them for an ordinary first
+    // issue. Ahead of the spread so a modification test can override.
+    isModification: false,
+    modificationReason: null,
+    councilCertLabel: "Complying Development Certificate No.:",
     d: {
       council: { lga: "Liverpool City Council", address: { streetNumber: "50", street: "Scott Street", suburb: "Liverpool", state: "NSW", postcode: "2170" } },
       applicantAddress: { streetNumber: "21", street: "Coquet Way", suburb: "Green Valley", state: "NSW", postcode: "2168" },
