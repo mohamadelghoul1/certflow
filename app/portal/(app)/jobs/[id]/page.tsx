@@ -16,7 +16,7 @@ import { PortalInvoices } from "@/components/portal/PortalInvoices";
 import { signedUrl } from "@/lib/storage";
 import { ClientItemDocuments } from "@/components/portal/ClientItemDocuments";
 import { BookInspectionForm } from "@/components/portal/BookInspectionForm";
-import type { ChecklistItem, Amendment, ChecklistItemFile, Certifier, Inspection, Defect, OcRecord } from "@/types/db";
+import type { ChecklistItem, Amendment, ChecklistItemFile, Certifier, Inspection, Defect, OcRecord, PathwayCertificateVersion } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[]; checklist_item_files?: ChecklistItemFile[] | null };
 
@@ -64,7 +64,36 @@ export default async function PortalJobPage({
   const ocChecklist = (checklists || []).find((c) => c.kind === "oc");
   const modChecklists = new Map((checklists || []).filter((c) => c.kind === "modification").map((c) => [c.modification_id, c]));
 
-  const pathwayApprovalUrl = await signedUrl(job.pathway_approval_file_path);
+  // The certificate this client was actually given.
+  //
+  // The job's own pathway_* columns mirror whichever version is active,
+  // so issuing a new one — a modification, or a correction — turned
+  // "sent to client" back off and took the client's certificate off this
+  // page with it. They had been issued a CDC; from their side it simply
+  // vanished. So the release is read from the versions themselves: the
+  // newest one actually sent stays downloadable while the next is
+  // prepared, and a newer unsent version is never handed over as though
+  // it had been issued to them.
+  //
+  // Admin client: pathway_certificate_versions is the firm's record and
+  // client RLS grants nothing on it. Scoped to this job, which their own
+  // session has already proved is theirs.
+  const { data: sentVersions } = await createAdminClient()
+    .from("pathway_certificate_versions")
+    .select("*")
+    .eq("job_id", id)
+    .eq("sent_to_client", true)
+    .order("version", { ascending: false })
+    .limit(1);
+  const sentVersion = (sentVersions?.[0] as PathwayCertificateVersion | undefined) || null;
+  // The exact file the certifier uploaded for that version, when there is
+  // one; it is the copy they signed off.
+  const pathwayApprovalUrl = sentVersion?.approval_uploaded ? await signedUrl(sentVersion.approval_file_path) : null;
+  // Generating the certificate builds it from the job as it stands, so it
+  // only speaks for the version that is currently active. When a newer
+  // version is waiting to be sent, the generated copy would carry the new
+  // certificate's number and wording under the old one's name.
+  const canGenerateSent = !!sentVersion && sentVersion.version === job.pathway_version;
 
   // This project's invoices, for the client actually billed. Read with
   // the admin client because invoices are the firm's records and client
@@ -136,7 +165,7 @@ export default async function PortalJobPage({
   const tabs: { key: string; label: string; done: boolean; locked?: boolean }[] = [
     // Green once there is nothing left for the client to do here: every
     // document approved, or the certificate already in their hands.
-    { key: "approval", label: approvalLabel, done: !!job.pathway_sent_to_client || (pathwayItems.length > 0 && pathwayItems.every((i) => i.status === "approved")) },
+    { key: "approval", label: approvalLabel, done: !!sentVersion || (pathwayItems.length > 0 && pathwayItems.every((i) => i.status === "approved")) },
     { key: "noc", label: "PC — Notice of Commencement", done: nocComplete },
     // Done once every inspection has an outcome — nothing left to attend.
     { key: "inspections", label: "Inspections", done: jobInspections.length > 0 && jobInspections.every((i) => i.outcome !== "pending") },
@@ -146,12 +175,12 @@ export default async function PortalJobPage({
   const approvalPanel = (
         <div className="space-y-6">
           <StageSection title={`${approvalLabel} — checklist`} items={pathwayItems} jobId={id} firmId={job.firm_id} formIds={formIds} />
-          {pathwayItems.length === 0 && !job.pathway_sent_to_client && <EmptyStage label={approvalLabel} />}
+          {pathwayItems.length === 0 && !sentVersion && <EmptyStage label={approvalLabel} />}
 
-          {job.pathway_sent_to_client && (
+          {sentVersion && (
             <div className="bg-white rounded-lg border border-line p-5">
               <div className="font-bold text-primary mb-1">{pathwayLabel(job.pathway)} certificate issued</div>
-              <div className="text-xs text-placeholder mb-3">Issued {formatISODate(job.pathway_generated_date)}</div>
+              <div className="text-xs text-placeholder mb-3">Issued {formatISODate(sentVersion.generated_date)}</div>
               {/* The certifier's own uploaded copy wins when there is one — it's
                   the version they actually edited and signed off. Falling back to
                   the generated certificate means a released certificate is always
@@ -160,14 +189,23 @@ export default async function PortalJobPage({
                   had been issued and sent. */}
               {!canDownloadCertificates ? (
                 <div className="text-sm text-muted">{closedNotice}</div>
-              ) : job.pathway_approval_uploaded && pathwayApprovalUrl ? (
+              ) : pathwayApprovalUrl ? (
                 <a href={pathwayApprovalUrl} target="_blank" rel="noreferrer" className="text-sm text-primary font-semibold hover:underline">
                   Download certificate
                 </a>
-              ) : (
+              ) : canGenerateSent ? (
                 <a href={`/api/portal/certificate/pathway/${job.id}/pdf`} className="text-sm text-primary font-semibold hover:underline">
                   Download certificate
                 </a>
+              ) : (
+                // A newer certificate is being prepared and this one was
+                // only ever generated, never uploaded — so there is no
+                // stored copy of what they were sent, and generating now
+                // would produce the newer one under the old one's name.
+                <div className="text-sm text-muted">
+                  An updated certificate is being prepared. It will be available here once it is issued to you — please contact us if you need a copy of
+                  the current one in the meantime.
+                </div>
               )}
             </div>
           )}

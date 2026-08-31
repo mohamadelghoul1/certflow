@@ -25,13 +25,27 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   await requireProfile("client");
 
   const supabase = await createClient();
-  const { data: job } = await supabase.from("jobs").select("id, firm_id, pathway_sent_to_client").eq("id", jobId).single();
-  if (!job || !job.pathway_sent_to_client) return NextResponse.json({ error: "not found" }, { status: 404 });
+  const { data: job } = await supabase.from("jobs").select("id, firm_id, pathway_version, pathway_sent_to_client").eq("id", jobId).single();
+  if (!job) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  // The certificate is generated from the job as it stands, so it only
+  // speaks for the version that is currently active. It is handed over
+  // only when that active version is one actually sent to this client —
+  // otherwise a newer certificate, still being prepared, would go out
+  // under the number of the one they were issued.
+  const admin = createAdminClient();
+  const { data: activeVersion } = await admin
+    .from("pathway_certificate_versions")
+    .select("sent_to_client")
+    .eq("job_id", jobId)
+    .eq("version", job.pathway_version)
+    .maybeSingle();
+  const released = (activeVersion as { sent_to_client?: boolean } | null)?.sent_to_client ?? job.pathway_sent_to_client;
+  if (!released) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   const { data: ocRecords } = await supabase.from("oc_records").select("type, generated_date, created_at").eq("job_id", jobId);
   if (!certificatesDownloadable(ocRecords || [])) return NextResponse.json({ error: "the download window for this project has closed" }, { status: 410 });
 
-  const admin = createAdminClient();
   const data = await getPathwayCertificateData(jobId, job.firm_id, admin);
   if (!data) return NextResponse.json({ error: "not found" }, { status: 404 });
 
