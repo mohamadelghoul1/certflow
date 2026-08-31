@@ -169,8 +169,17 @@ export async function CertificatesPanel({
         <div>
           <div className="text-sm font-semibold text-heading mb-2">Modifications</div>
           <div className="space-y-4">
-            {modifications.map((m) => (
-              <ModificationCard key={m.id} mod={m} job={job} firmId={firmId} certifiers={certifiers} library={library} />
+            {modifications.map((m, i) => (
+              <ModificationCard
+                key={m.id}
+                mod={m}
+                job={job}
+                firmId={firmId}
+                certifiers={certifiers}
+                library={library}
+                isNewest={i === modifications.length - 1}
+                activeVersion={activeVersion}
+              />
             ))}
             {/* One modification at a time: the next can start once the one
                 under way has been issued. Two open at once means two
@@ -278,7 +287,23 @@ async function PathwayVersionCard({ version, job, firmId, certifiers }: { versio
   );
 }
 
-async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod: ModificationWithChecklist; job: Job; firmId: string; certifiers: Certifier[]; library: LibItem[] }) {
+async function ModificationCard({
+  mod,
+  job,
+  firmId,
+  certifiers,
+  library,
+  isNewest,
+  activeVersion,
+}: {
+  mod: ModificationWithChecklist;
+  job: Job;
+  firmId: string;
+  certifiers: Certifier[];
+  library: LibItem[];
+  isNewest: boolean;
+  activeVersion: PathwayCertificateVersion | undefined;
+}) {
   const complete = stageComplete(mod.items);
   const issuedBy = certifiers.find((c) => c.id === mod.issued_by);
   const approvalUrl = await signedUrl(mod.approval_file_path);
@@ -314,14 +339,38 @@ async function ModificationCard({ mod, job, firmId, certifiers, library }: { mod
         {complete && !mod.generated && (
           <>
             <PlanningPortalRefField jobId={job.id} value={job.details?.certificateDetails?.planningPortalRef || ""} kind={portalRefKindFor(job.pathway)} />
+            {/* The pre-inspection report the modified certificate is issued
+                with — s139 for a CDC, s16 for a CC, same as a first issue. */}
+            <PreInspectionField
+              jobId={job.id}
+              isCdc={job.pathway === "CDC"}
+              applicationDate={job.details?.preInspection?.applicationDate || ""}
+              inspectionDate={job.details?.preInspection?.inspectionDate || ""}
+            />
             <IssueModificationForm
               jobId={job.id}
               modificationId={mod.id}
               assignedCertifierId={job.assigned_certifier_id}
               certifiers={certifiers}
               hasPortalRef={(job.details?.certificateDetails?.planningPortalRef || "").trim().length > 0}
+              pathway={job.pathway}
             />
           </>
+        )}
+
+        {/* The modified certificate this modification produced, with the
+            same review / export / sign / upload actions the main panel
+            offers — issuing and finishing the approval stay on one card.
+            Only the newest issued modification shows it: the actions below
+            always speak for the job's active version, and an older
+            modification's certificate is no longer that version. */}
+        {mod.generated && isNewest && activeVersion && (
+          <div className="mt-4">
+            <div className="text-xs font-semibold text-muted mb-2">Modified certificate</div>
+            <ApprovalSigningProvider jobId={job.id} signedAt={job.pathway_signed_at}>
+              <PathwayVersionCard version={activeVersion} job={job} firmId={firmId} certifiers={certifiers} />
+            </ApprovalSigningProvider>
+          </div>
         )}
 
         {mod.generated && (

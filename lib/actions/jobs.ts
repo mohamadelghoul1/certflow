@@ -1052,6 +1052,18 @@ export async function issuePathwayCertificate(_prev: ActionState, formData: Form
     return { error: "Enter the NSW Planning Portal reference number before issuing." };
   }
 
+  const issueError = await issueNextPathwayVersion(supabase, jobId, certifierId, profile.firm_id);
+  if (issueError) return { error: issueError };
+  revalidatePath(`/jobs/${jobId}`);
+  return undefined;
+}
+
+// Issues the next certificate version: the new row becomes the active
+// version, the job mirrors it, and the date of determination moves to
+// today. Shared by the first issue, a regeneration, and issuing a
+// modification — a modified certificate is a new version of the same
+// certificate, so all three must do exactly the same thing.
+async function issueNextPathwayVersion(supabase: SupabaseClient, jobId: string, certifierId: string, firmId: string): Promise<string | null> {
   const { data: existing } = await supabase.from("pathway_certificate_versions").select("version").eq("job_id", jobId).order("version", { ascending: false }).limit(1);
   const nextVersion = (existing?.[0]?.version || 0) + 1;
   const generatedDate = todayISO();
@@ -1062,18 +1074,17 @@ export async function issuePathwayCertificate(_prev: ActionState, formData: Form
     .insert({ job_id: jobId, version: nextVersion, generated_date: generatedDate, issued_by: certifierId, visible_to_client: true })
     .select()
     .single();
-  if (error || !newVersion) return { error: error?.message || "Could not issue certificate." };
+  if (error || !newVersion) return error?.message || "Could not issue certificate.";
 
   await mirrorVisiblePathwayVersion(supabase, jobId, newVersion);
 
   // Date of determination = the date this (or the latest re-issued)
   // certificate is generated — no separate manual entry needed.
-  await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { certificateDetails: { determinationDate: generatedDate } });
+  await mergeJobDetailsInDb(supabase, jobId, firmId, { certificateDetails: { determinationDate: generatedDate } });
 
   // The approval is out; the drafts that led to it are dead weight.
-  after(() => pruneAfterIssue({ jobId, kind: "pathway", firmId: profile.firm_id }));
-  revalidatePath(`/jobs/${jobId}`);
-  return undefined;
+  after(() => pruneAfterIssue({ jobId, kind: "pathway", firmId }));
+  return null;
 }
 
 async function pruneNocIfComplete(jobId: string, itemId: string) {
@@ -1357,6 +1368,14 @@ export async function issueModification(_prev: ActionState, formData: FormData):
   if (!((modJob.details || {}) as JobDetails).certificateDetails?.planningPortalRef?.trim()) {
     return { error: "Enter the NSW Planning Portal reference number before issuing." };
   }
+
+  // Issuing the modification issues the modified certificate in the same
+  // press: a new certificate version is created — which is what makes the
+  // documents say "Section 4.30 Modification" and carry the /02 number —
+  // rather than leaving "Regenerate certificate" as a separate step in
+  // another panel that was easy to miss.
+  const issueError = await issueNextPathwayVersion(supabase, jobId, certifierId, profile.firm_id);
+  if (issueError) return { error: issueError };
 
   const { data: mod } = await supabase.from("modifications").select("version").eq("id", modificationId).single();
   const { error } = await supabase

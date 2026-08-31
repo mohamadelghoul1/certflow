@@ -53,6 +53,7 @@ export function IssueModificationForm({
   assignedCertifierId,
   certifiers,
   hasPortalRef,
+  pathway,
 }: {
   jobId: string;
   modificationId: string;
@@ -61,6 +62,7 @@ export function IssueModificationForm({
   // A modified certificate prints the same Planning Portal reference the
   // original does, so it is gated the same way.
   hasPortalRef: boolean;
+  pathway: string;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(issueModification, undefined);
   return (
@@ -80,7 +82,7 @@ export function IssueModificationForm({
         title={hasPortalRef ? undefined : "Enter the NSW Planning Portal reference first"}
         className="text-xs font-semibold text-white bg-success hover:bg-success px-3 py-1.5 rounded-md disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        {pending ? "Issuing…" : "Issue modification"}
+        {pending ? "Issuing…" : `Issue modified ${pathway}`}
       </button>
       {state?.error && <span className="text-xs text-error">{state.error}</span>}
     </form>

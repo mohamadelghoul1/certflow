@@ -242,13 +242,14 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
     `I, ${issuedBy?.name || "—"} of ${firm?.name || ""}, located at ${firm?.office_address || "—"}, acting as the principal certifier, hereby give notice in accordance with Section 58 of the Part 7 of the Environmental Planning and Assessment (Development Certification and Fire Safety) Regulation 2021 to the person having the benefit of the development consent that the mandatory critical stage inspections identified in Schedule 1 are to be carried out in respect of the building work.`,
   ];
 
-  // A certificate version beyond the first is a modification. The
-  // letters name it as one — issued under section 4.30 for a CDC — and
-  // carry the reason typed when the modification was started, preferring
-  // the one that has actually been issued when several exist.
-  const isModification = job.pathway_version > 1;
+  // A certificate version beyond the first is a modification — provided a
+  // modification has actually been issued. A regeneration that only fixed
+  // a typo also moves the version on, and must not dress the certificate
+  // up as a section 4.30 modification. The letters carry the reason typed
+  // when the latest issued modification was started.
   const mods = ((modifications || []) as { reason: string | null; generated: boolean }[]);
-  const latestMod = mods.find((m) => m.generated) || mods[0];
+  const latestMod = mods.find((m) => m.generated);
+  const isModification = job.pathway_version > 1 && !!latestMod;
   const modificationReason = isModification ? modificationReasonSentence(latestMod?.reason) : null;
   const modificationLabel = isModification ? modificationLabelFor(isCdc) : null;
   const letterCertLabel = letterCertLabelFor(isModification, isCdc, pathwayFull);
