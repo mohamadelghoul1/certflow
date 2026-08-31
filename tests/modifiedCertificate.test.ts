@@ -1,6 +1,6 @@
 import { test, before, describe } from "node:test";
 import assert from "node:assert/strict";
-import { modificationReasonSentence } from "@/lib/certificates/pathwayData";
+import { modificationReasonSentence, councilCertLabelFor } from "@/lib/certificates/pathwayData";
 import { buildCertificatePackagePdf } from "@/lib/pdf/certificatePackage";
 import { buildPathwayCertificateDocx } from "@/lib/docx/pathwayCertificate";
 import { certificateFixture } from "./helpers/fixture";
@@ -24,6 +24,23 @@ function modifiedFixture() {
     ],
   });
 }
+
+// The statutory references are the point of these labels: a council
+// reads them before anything else on the page.
+describe("the reference line above the council letter's body", () => {
+  test("a modified CDC is a section 4.30 modification", () => {
+    assert.equal(councilCertLabelFor(true, true, "Complying Development Certificate"), "Section 4.30 Modification – Complying Development Certificate No.:");
+  });
+
+  test("a modified CC is a section 6.33(1) modification", () => {
+    assert.equal(councilCertLabelFor(true, false, "Construction Certificate"), "Section 6.33(1) Modification – Construction Certificate No.:");
+  });
+
+  test("a first issue is just the certificate's own name", () => {
+    assert.equal(councilCertLabelFor(false, true, "Complying Development Certificate"), "Complying Development Certificate No.:");
+    assert.equal(councilCertLabelFor(false, false, "Construction Certificate"), "Construction Certificate No.:");
+  });
+});
 
 describe("the sentence built from a modification's reason", () => {
   test("a typed phrase becomes the letter's sentence", () => {

@@ -63,6 +63,14 @@ export function modificationReasonSentence(reason: string | null | undefined): s
   return `This modification reflects ${lead}${period}`;
 }
 
+// The reference line above the council letter's body. A modified CDC is
+// issued under section 4.30 of the Act, a modified CC under section
+// 6.33(1), and the line names the right one; a first issue is just the
+// certificate's own name.
+export function councilCertLabelFor(isModification: boolean, isCdc: boolean, pathwayFull: string): string {
+  return isModification ? `Section ${isCdc ? "4.30" : "6.33(1)"} Modification – ${pathwayFull} No.:` : `${pathwayFull} No.:`;
+}
+
 export type PathwayCertificateData = {
   job: Job;
   firm: Firm | null;
@@ -83,9 +91,10 @@ export type PathwayCertificateData = {
   isCdc: boolean;
   pathwayFull: string;
   // A version beyond the first is a modified certificate — issued under
-  // section 4.30 for a CDC — and the letters say so: in the reference
-  // line above the body, and in a sentence carrying the reason typed
-  // when the modification was started (null when none was given).
+  // section 4.30 for a CDC, section 6.33(1) for a CC — and the letters
+  // say so: in the reference line above the body, and in a sentence
+  // carrying the reason typed when the modification was started (null
+  // when none was given).
   isModification: boolean;
   modificationReason: string | null;
   councilCertLabel: string;
@@ -232,11 +241,7 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
   const mods = ((modifications || []) as { reason: string | null; generated: boolean }[]);
   const latestMod = mods.find((m) => m.generated) || mods[0];
   const modificationReason = isModification ? modificationReasonSentence(latestMod?.reason) : null;
-  const councilCertLabel = isModification
-    ? isCdc
-      ? `Section 4.30 Modification – ${pathwayFull} No.:`
-      : `Modified ${pathwayFull} No.:`
-    : `${pathwayFull} No.:`;
+  const councilCertLabel = councilCertLabelFor(isModification, isCdc, pathwayFull);
 
   const councilBody = job.council_letter_override
     ? job.council_letter_override.split("\n\n")
