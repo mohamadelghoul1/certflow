@@ -172,13 +172,21 @@ export async function CertificatesPanel({
             {modifications.map((m) => (
               <ModificationCard key={m.id} mod={m} job={job} firmId={firmId} certifiers={certifiers} library={library} />
             ))}
-            <form action={startModification} className="flex items-center gap-2">
-              <input type="hidden" name="job_id" value={job.id} />
-              {/* Printed on the letters as "This modification reflects …",
-                  so the placeholder shows the shape that reads well. */}
-              <input name="reason" placeholder="Reason, e.g. changes to the floor plan layout and window schedule" className="flex-1 px-2 py-1.5 rounded border border-line text-xs" />
-              <SubmitButton className="text-xs font-semibold text-secondary hover:underline">Start a modified {job.pathway}</SubmitButton>
-            </form>
+            {/* One modification at a time: the next can start once the one
+                under way has been issued. Two open at once means two
+                checklists both claiming to be "the" modification, and a
+                certificate that cannot say which reason it reflects. */}
+            {modifications.every((m) => m.generated) ? (
+              <form action={startModification} className="flex items-center gap-2">
+                <input type="hidden" name="job_id" value={job.id} />
+                {/* Printed on the letters as "This modification reflects …",
+                    so the placeholder shows the shape that reads well. */}
+                <input name="reason" placeholder="Reason, e.g. changes to the floor plan layout and window schedule" className="flex-1 px-2 py-1.5 rounded border border-line text-xs" />
+                <SubmitButton className="text-xs font-semibold text-secondary hover:underline">Start a modified {job.pathway}</SubmitButton>
+              </form>
+            ) : (
+              <p className="text-xs text-muted">Another modification can be started once the one above has been issued.</p>
+            )}
           </div>
         </div>
       )}

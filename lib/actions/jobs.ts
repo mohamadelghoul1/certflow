@@ -1319,6 +1319,16 @@ export async function startModification(formData: FormData) {
   const jobId = String(formData.get("job_id"));
   const reason = String(formData.get("reason") || "");
 
+  // One modification at a time. The panel hides the form while one is
+  // under way, but a stale page can still submit — refused here so two
+  // half-done modifications cannot exist, each with a checklist claiming
+  // to be "the" modification.
+  const { data: open } = await supabase.from("modifications").select("id").eq("job_id", jobId).eq("generated", false).limit(1);
+  if (open && open.length > 0) {
+    revalidatePath(`/jobs/${jobId}`);
+    return;
+  }
+
   // Deliberately creates an EMPTY checklist. Unlike the initial CDC/CC
   // assessment — where the full firm library is the right starting point,
   // since every one of those documents is genuinely needed — a modification
