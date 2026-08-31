@@ -1,18 +1,31 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useOptimistic, useRef, useState, useTransition } from "react";
 import { Plus, X } from "lucide-react";
 import { addDefect, removeDefect } from "@/lib/actions/inspections";
 import { issuesSection } from "@/lib/inspectionIssues";
 import { quickItemsFor, isQuickItem } from "@/lib/inspectionQuickItems";
 import { useSiteOutcome } from "@/components/site/SiteOutcome";
 
+type Issue = { id: string; text: string };
+type Action = { type: "add"; issue: Issue } | { type: "remove"; id: string };
+
+function reducer(state: Issue[], action: Action): Issue[] {
+  return action.type === "add" ? [...state, action.issue] : state.filter((i) => i.id !== action.id);
+}
+
 // What was wrong, typed one item at a time.
 //
-// Each issue is saved the moment it is added rather than held in a form
-// until the end: on a site with poor signal, a page that loses six typed
-// issues at once is a page nobody uses twice. If the save fails the text
-// stays in the box, so nothing typed is ever thrown away.
+// Every press lands on the screen at once and the save travels behind
+// it. It used to wait: a tick box stayed unticked, and a typed item
+// stayed in the box, until the server had answered — which on a slab
+// with one bar of signal is a second or two of a screen that looks
+// broken, and a person pressing again. The list is held optimistically
+// now, the same way the outcome buttons above it already were.
+//
+// Nothing typed is ever thrown away. A save that fails puts the item
+// back in the box with the reason, so the words are still there to send
+// again once there is signal.
 export function SiteIssues({
   inspectionId,
   jobId,
@@ -22,75 +35,78 @@ export function SiteIssues({
   inspectionId: string;
   jobId: string;
   title: string;
-  issues: { id: string; text: string }[];
+  issues: Issue[];
 }) {
   // A satisfactory inspection is waiting on documents, not defects, so
   // the box asks for the right thing — see lib/inspectionIssues.
   const { outcome } = useSiteOutcome();
-  const { placeholder, addLabel } = issuesSection(outcome, issues.length > 0);
+  const [list, dispatch] = useOptimistic(issues, reducer);
+  const { placeholder, addLabel } = issuesSection(outcome, list.length > 0);
   const [text, setText] = useState("");
   const [error, setError] = useState("");
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // The standard document lines for this stage, offered as tick boxes so
   // they need not be typed on a phone — see lib/inspectionQuickItems.
-  // Like everything on this screen there is no optimistic state: the box
-  // ticks once the server has it, and stays as it was if the save fails.
   const quickItems = quickItemsFor(title);
-  const quickRowFor = (item: string) => issues.find((i) => i.text.trim().toLowerCase() === item.trim().toLowerCase());
-  const typedIssues = issues.filter((i) => !isQuickItem(i.text, quickItems));
+  const quickRowFor = (item: string) => list.find((i) => i.text.trim().toLowerCase() === item.trim().toLowerCase());
+  const typedIssues = list.filter((i) => !isQuickItem(i.text, quickItems));
 
-  function toggleQuickItem(item: string, ticked: boolean) {
-    if (pending) return;
+  function add(value: string, onFail?: () => void) {
+    const trimmed = value.trim();
+    if (!trimmed) return;
     setError("");
     startTransition(async () => {
-      try {
-        const fd = new FormData();
-        fd.set("job_id", jobId);
-        if (ticked) {
-          if (quickRowFor(item)) return;
-          fd.set("inspection_id", inspectionId);
-          fd.set("text", item);
-          await addDefect(fd);
-        } else {
-          const row = quickRowFor(item);
-          if (!row) return;
-          fd.set("defect_id", row.id);
-          await removeDefect(fd);
-        }
-      } catch {
-        setError("That didn't save — check your signal and tap it again.");
-      }
-    });
-  }
-
-  function add() {
-    const value = text.trim();
-    if (!value || pending) return;
-    setError("");
-    startTransition(async () => {
+      // A stand-in id until the server hands back the real row, so the
+      // item is on screen the instant it is added.
+      dispatch({ type: "add", issue: { id: `temp-${Math.random().toString(36).slice(2)}`, text: trimmed } });
       try {
         const fd = new FormData();
         fd.set("inspection_id", inspectionId);
         fd.set("job_id", jobId);
-        fd.set("text", value);
+        fd.set("text", trimmed);
         await addDefect(fd);
-        // Cleared only once the server has it.
-        setText("");
-        inputRef.current?.focus();
       } catch {
-        setError("That didn't save — check your signal and press Add again. What you typed is still here.");
+        setError("That didn't save — check your signal and try again.");
+        onFail?.();
       }
     });
   }
 
   function remove(id: string) {
+    setError("");
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("defect_id", id);
-      fd.set("job_id", jobId);
-      await removeDefect(fd);
+      dispatch({ type: "remove", id });
+      try {
+        const fd = new FormData();
+        fd.set("defect_id", id);
+        fd.set("job_id", jobId);
+        await removeDefect(fd);
+      } catch {
+        setError("That didn't save — check your signal and try again.");
+      }
+    });
+  }
+
+  function toggleQuickItem(item: string, ticked: boolean) {
+    if (ticked) {
+      if (quickRowFor(item)) return;
+      add(item);
+    } else {
+      const row = quickRowFor(item);
+      if (row) remove(row.id);
+    }
+  }
+
+  function addTyped() {
+    const value = text;
+    // Cleared on the press, and put back if the save fails — waiting for
+    // the server to clear it is most of what made this screen feel slow.
+    setText("");
+    add(value, () => {
+      setText((current) => current || value);
+      inputRef.current?.focus();
     });
   }
 
@@ -104,7 +120,6 @@ export function SiteIssues({
                 type="checkbox"
                 checked={!!quickRowFor(item)}
                 onChange={(e) => toggleQuickItem(item, e.target.checked)}
-                disabled={pending}
                 className="mt-0.5 h-5 w-5 accent-icon shrink-0"
               />
               <span>{item}</span>
@@ -140,11 +155,11 @@ export function SiteIssues({
       />
       <button
         type="button"
-        onClick={add}
-        disabled={pending || !text.trim()}
+        onClick={addTyped}
+        disabled={!text.trim()}
         className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-white py-3 font-semibold disabled:opacity-40"
       >
-        <Plus size={18} /> {pending ? "Adding…" : addLabel}
+        <Plus size={18} /> {addLabel}
       </button>
       {error && <div className="text-xs text-error mt-2">{error}</div>}
     </div>
