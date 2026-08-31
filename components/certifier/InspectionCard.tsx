@@ -10,6 +10,7 @@ import { DateField, todayISO } from "@/components/DateField";
 import { inspectionFinished, fallsOnWeekend } from "@/lib/business";
 import { INSPECTION_OUTCOME_BADGE, INSPECTION_OUTCOME_TEXT } from "@/lib/constants";
 import { issuesSection } from "@/lib/inspectionIssues";
+import { quickItemsFor, isQuickItem } from "@/lib/inspectionQuickItems";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Defect } from "@/types/db";
 
@@ -196,21 +197,39 @@ export function InspectionDateBox() {
   );
 }
 
-export function IssuesWhenNeeded({ inspectionId, jobId, defects }: { inspectionId: string; jobId: string; defects: Defect[] }) {
+export function IssuesWhenNeeded({ inspectionId, jobId, defects, title }: { inspectionId: string; jobId: string; defects: Defect[]; title: string }) {
   const { outcome } = useCard();
   // A passed inspection has nothing to record, and what a satisfactory
   // one is waiting on is a document rather than a defect. One rule,
   // shared with the on-site screen — see lib/inspectionIssues.
   const section = issuesSection(outcome, defects.length > 0);
-  if (!section.show) return null;
+  const quickItems = quickItemsFor(title);
+
+  // The standard document lines for this stage are legitimate on any
+  // outcome — a passed piers inspection still owes the engineer's
+  // certificate — so when this stage has them, the section shows even on
+  // a pass, called what it is, and the "passed inspections normally have
+  // none" warning is kept for hand-typed defects only.
+  let { show, title: heading, placeholder, hint } = section;
+  if (outcome === "passed" && quickItems.length > 0) {
+    show = true;
+    if (defects.every((d) => isQuickItem(d.text, quickItems))) {
+      heading = "Items to be provided";
+      placeholder = "What is still to be provided? One item at a time.";
+      hint = undefined;
+    }
+  }
+
+  if (!show) return null;
   return (
     <InspectionIssues
       inspectionId={inspectionId}
       jobId={jobId}
       defects={defects}
-      title={section.title}
-      placeholder={section.placeholder}
-      hint={section.hint}
+      title={heading}
+      placeholder={placeholder}
+      hint={hint}
+      quickItems={quickItems}
     />
   );
 }

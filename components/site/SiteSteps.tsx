@@ -17,9 +17,35 @@ export type SiteStep = {
   node: React.ReactNode;
 };
 
-export function SiteSteps({ steps, issues, hasIssues }: { steps: SiteStep[]; issues: React.ReactNode; hasIssues: boolean }) {
+export function SiteSteps({
+  steps,
+  issues,
+  hasIssues,
+  hasQuickItems = false,
+  allIssuesStandard = true,
+}: {
+  steps: SiteStep[];
+  issues: React.ReactNode;
+  hasIssues: boolean;
+  // Whether this stage has standard document lines to tick (see
+  // lib/inspectionQuickItems), and whether every recorded issue is one of
+  // them. Standard lines are legitimate on any outcome — a passed piers
+  // inspection still owes the engineer's certificate — so when they
+  // exist the issues step shows even on a pass, called what it is, and
+  // the "passed inspections normally have none" warning is kept for
+  // hand-typed defects only.
+  hasQuickItems?: boolean;
+  allIssuesStandard?: boolean;
+}) {
   const { outcome } = useSiteOutcome();
-  const section = issuesSection(outcome, hasIssues);
+  const section = { ...issuesSection(outcome, hasIssues) };
+  if (outcome === "passed" && hasQuickItems) {
+    section.show = true;
+    if (allIssuesStandard) {
+      section.title = "Items to be provided";
+      section.hint = undefined;
+    }
+  }
 
   const shown: SiteStep[] = [];
   for (const step of steps) {

@@ -6,6 +6,7 @@ import { ChevronLeft, MapPin, Phone, Navigation } from "lucide-react";
 import { formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { directionsUrl } from "@/lib/site/visitList";
+import { quickItemsFor, isQuickItem } from "@/lib/inspectionQuickItems";
 import { OutcomeChoice } from "@/components/site/OutcomeChoice";
 import { SiteOutcomeState } from "@/components/site/SiteOutcome";
 import { SiteSteps } from "@/components/site/SiteSteps";
@@ -94,7 +95,9 @@ export default async function SiteInspectionPage({ params }: { params: Promise<{
       <SiteOutcomeState inspectionId={inspection.id} jobId={jobId} outcome={inspection.outcome}>
         <SiteSteps
           hasIssues={inspection.defects.length > 0}
-          issues={<SiteIssues inspectionId={inspection.id} jobId={jobId} issues={inspection.defects.map((d) => ({ id: d.id, text: d.text }))} />}
+          hasQuickItems={quickItemsFor(inspection.title).length > 0}
+          allIssuesStandard={inspection.defects.every((d) => isQuickItem(d.text, quickItemsFor(inspection.title)))}
+          issues={<SiteIssues inspectionId={inspection.id} jobId={jobId} title={inspection.title} issues={inspection.defects.map((d) => ({ id: d.id, text: d.text }))} />}
           steps={[
             { key: "outcome", title: "What did you find?", node: <OutcomeChoice /> },
             {

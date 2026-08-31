@@ -2,6 +2,7 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 import { addDefect, updateDefect, removeDefect } from "@/lib/actions/inspections";
+import { isQuickItem } from "@/lib/inspectionQuickItems";
 import type { Defect } from "@/types/db";
 
 // The issues found on an inspection — the defects and conditions the
@@ -37,6 +38,7 @@ export function InspectionIssues({
   title,
   placeholder,
   hint,
+  quickItems = [],
 }: {
   inspectionId: string;
   jobId: string;
@@ -47,10 +49,44 @@ export function InspectionIssues({
   title: string;
   placeholder: string;
   hint?: string;
+  // The standard lines for this inspection stage, offered as tick boxes —
+  // see lib/inspectionQuickItems. Ticking one adds it to this same list.
+  quickItems?: string[];
 }) {
   const [list, dispatch] = useOptimistic(defects, reducer);
   const [, startTransition] = useTransition();
   const [draft, setDraft] = useState("");
+
+  // A ticked standard line lives as an ordinary row in the list, but is
+  // shown as its checkbox rather than twice over; only hand-typed items
+  // get an editable box.
+  const quickRowFor = (item: string) => list.find((d) => d.text.trim().toLowerCase() === item.trim().toLowerCase());
+  const typedRows = list.filter((d) => !isQuickItem(d.text, quickItems));
+
+  function toggleQuickItem(item: string, ticked: boolean) {
+    if (ticked) {
+      if (quickRowFor(item)) return;
+      startTransition(async () => {
+        const temp: Defect = { id: `temp-${Math.random().toString(36).slice(2)}`, inspection_id: inspectionId, text: item, resolved: false, created_at: new Date().toISOString(), resolved_at: null };
+        dispatch({ type: "add", defect: temp });
+        const fd = new FormData();
+        fd.set("inspection_id", inspectionId);
+        fd.set("job_id", jobId);
+        fd.set("text", item);
+        await addDefect(fd);
+      });
+    } else {
+      const row = quickRowFor(item);
+      if (!row) return;
+      startTransition(async () => {
+        dispatch({ type: "remove", id: row.id });
+        const fd = new FormData();
+        fd.set("defect_id", row.id);
+        fd.set("job_id", jobId);
+        await removeDefect(fd);
+      });
+    }
+  }
 
   function handleAdd(e?: React.FormEvent) {
     e?.preventDefault();
@@ -98,7 +134,17 @@ export function InspectionIssues({
     <div className="mt-3 space-y-2">
       <div className="text-[11px] font-semibold text-muted">{title}</div>
       {hint && <p className="text-[11px] text-warning-text bg-warning-bg rounded-md px-2.5 py-1.5">{hint}</p>}
-      {list.map((d) => (
+      {quickItems.length > 0 && (
+        <div className="space-y-1.5">
+          {quickItems.map((item) => (
+            <label key={item} className="flex items-start gap-2 text-xs text-heading cursor-pointer">
+              <input type="checkbox" checked={!!quickRowFor(item)} onChange={(e) => toggleQuickItem(item, e.target.checked)} className="mt-0.5 accent-icon shrink-0" />
+              <span>{item}</span>
+            </label>
+          ))}
+        </div>
+      )}
+      {typedRows.map((d) => (
         <div key={d.id} className="flex items-center gap-2">
           <input
             defaultValue={d.text}

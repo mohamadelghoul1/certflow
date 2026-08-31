@@ -120,7 +120,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
 
           {insp.booked_by_client && !insp.confirmed && <BookingDecision inspectionId={insp.id} jobId={jobId} requestedDate={insp.date} />}
 
-          <IssuesWhenNeeded inspectionId={insp.id} jobId={jobId} defects={insp.defects} />
+          <IssuesWhenNeeded inspectionId={insp.id} jobId={jobId} defects={insp.defects} title={insp.title} />
 
           <div className="mt-3">
             <div className="text-[11px] font-semibold text-muted mb-1.5">Photos</div>
