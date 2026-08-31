@@ -179,6 +179,7 @@ export async function CertificatesPanel({
                 library={library}
                 isNewest={i === modifications.length - 1}
                 activeVersion={activeVersion}
+                maxVersion={versions.reduce((max, v) => Math.max(max, v.version), 0)}
               />
             ))}
             {/* One modification at a time: the next can start once the one
@@ -295,6 +296,7 @@ async function ModificationCard({
   library,
   isNewest,
   activeVersion,
+  maxVersion,
 }: {
   mod: ModificationWithChecklist;
   job: Job;
@@ -303,10 +305,22 @@ async function ModificationCard({
   library: LibItem[];
   isNewest: boolean;
   activeVersion: PathwayCertificateVersion | undefined;
+  maxVersion: number;
 }) {
   const complete = stageComplete(mod.items);
   const issuedBy = certifiers.find((c) => c.id === mod.issued_by);
   const approvalUrl = await signedUrl(mod.approval_file_path);
+
+  // The stamp for this modification's documents carries the modified
+  // certificate's number: the version it produced, or — while it is
+  // unissued (or was issued under the old flow that created no version) —
+  // the number the next version will get, never lower than /02.
+  const projRef = job.details?.projectNumber || job.id.slice(0, 8);
+  const modCertRef =
+    mod.generated && job.pathway_version > 1 && isNewest
+      ? resolvePathwayCertRef(activeVersion?.cert_ref, job.pathway, projRef, job.pathway_version)
+      : resolvePathwayCertRef(null, job.pathway, projRef, Math.max(maxVersion + 1, 2));
+  const stamp = await buildStampPreview(job, modCertRef);
 
   return (
     // Collapsed by default. Each modification carries a full document
@@ -333,7 +347,17 @@ async function ModificationCard({
 
       <div className="px-6 pb-6">
         {mod.checklistId && (
-          <ChecklistSection jobId={job.id} firmId={firmId} checklistId={mod.checklistId} label={`Modification${mod.reason ? ` — ${mod.reason}` : ""}`} library={library} items={mod.items} />
+          <ChecklistSection
+            jobId={job.id}
+            firmId={firmId}
+            checklistId={mod.checklistId}
+            label={`Modification${mod.reason ? ` — ${mod.reason}` : ""}`}
+            library={library}
+            items={mod.items}
+            // The amended plans get stamped like the originals did — with
+            // the modified certificate's number on the stamp.
+            stamp={stamp}
+          />
         )}
 
         {complete && (
