@@ -27,7 +27,6 @@ export async function CertificatesPanel({
   pathwayChecklistId,
   pathwayItems,
   certifiers,
-  modifications,
   library,
   versions,
 }: {
@@ -36,7 +35,6 @@ export async function CertificatesPanel({
   pathwayChecklistId: string;
   pathwayItems: ItemWithAmendments[];
   certifiers: Certifier[];
-  modifications: ModificationWithChecklist[];
   library: LibItem[];
   versions: PathwayCertificateVersion[];
 }) {
@@ -165,39 +163,75 @@ export async function CertificatesPanel({
         </div>
       </ApprovalSigningProvider>
 
-      {job.pathway_generated && (
-        <div>
-          <div className="text-sm font-semibold text-heading mb-2">Modifications</div>
-          <div className="space-y-4">
-            {modifications.map((m, i) => (
-              <ModificationCard
-                key={m.id}
-                mod={m}
-                job={job}
-                firmId={firmId}
-                certifiers={certifiers}
-                library={library}
-                linkedVersion={versions.find((v) => v.id === m.certificate_version_id)}
-                maxVersion={versions.reduce((max, v) => Math.max(max, v.version), 0)}
-              />
-            ))}
-            {/* One modification at a time: the next can start once the one
-                under way has been issued. Two open at once means two
-                checklists both claiming to be "the" modification, and a
-                certificate that cannot say which reason it reflects. */}
-            {modifications.every((m) => m.generated) ? (
-              <form action={startModification} className="flex items-center gap-2">
-                <input type="hidden" name="job_id" value={job.id} />
-                {/* Printed on the letters as "This modification reflects …",
-                    so the placeholder shows the shape that reads well. */}
-                <input name="reason" placeholder="Reason, e.g. changes to the floor plan layout and window schedule" className="flex-1 px-2 py-1.5 rounded border border-line text-xs" />
-                <SubmitButton className="text-xs font-semibold text-secondary hover:underline">Start a modified {job.pathway}</SubmitButton>
-              </form>
-            ) : (
-              <p className="text-xs text-muted">Another modification can be started once the one above has been issued.</p>
-            )}
-          </div>
-        </div>
+    </div>
+  );
+}
+
+// Every modification of the issued CDC/CC, on a tab of its own.
+//
+// Kept apart from the certificate panel deliberately: a modification is
+// its own Planning Portal application with its own checklist,
+// pre-inspection and certificate, and having the two side by side is how
+// an original approval gets edited - or deleted - while the intent was
+// to work on the modification.
+export async function ModificationsPanel({
+  job,
+  firmId,
+  certifiers,
+  modifications,
+  library,
+  versions,
+}: {
+  job: Job;
+  firmId: string;
+  certifiers: Certifier[];
+  modifications: ModificationWithChecklist[];
+  library: LibItem[];
+  versions: PathwayCertificateVersion[];
+}) {
+  const maxVersion = versions.reduce((max, v) => Math.max(max, v.version), 0);
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-muted">
+        A modification is a fresh application against the same job: its own documents, its own NSW Planning Portal reference, its own pre-inspection
+        report, and a modified {job.pathway} issued under {job.pathway === "CDC" ? "section 4.30" : "section 6.33(1)"}. The original {job.pathway} on
+        its own tab is left exactly as issued.
+      </p>
+
+      {modifications.map((m) => (
+        <ModificationCard
+          key={m.id}
+          mod={m}
+          job={job}
+          firmId={firmId}
+          certifiers={certifiers}
+          library={library}
+          linkedVersion={versions.find((v) => v.id === m.certificate_version_id)}
+          maxVersion={maxVersion}
+        />
+      ))}
+
+      {/* One modification at a time: the next can start once the one
+          under way has been issued. Two open at once means two
+          checklists both claiming to be "the" modification, and a
+          certificate that cannot say which reason it reflects. */}
+      {modifications.every((m) => m.generated) ? (
+        <form action={startModification} className="flex items-center gap-2 border border-line rounded-xl bg-white shadow-sm p-4">
+          <input type="hidden" name="job_id" value={job.id} />
+          {/* Printed on the letters as "This modification reflects ...",
+              so the placeholder shows the shape that reads well. */}
+          <input
+            name="reason"
+            placeholder="Reason, e.g. changes to the floor plan layout and window schedule"
+            className="flex-1 px-2 py-1.5 rounded border border-line text-xs"
+          />
+          <SubmitButton className="text-xs font-semibold text-white bg-secondary hover:opacity-90 px-3 py-1.5 rounded-md whitespace-nowrap">
+            Start a modified {job.pathway}
+          </SubmitButton>
+        </form>
+      ) : (
+        <p className="text-xs text-muted">Another modification can be started once the one above has been issued.</p>
       )}
     </div>
   );

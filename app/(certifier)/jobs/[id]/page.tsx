@@ -10,7 +10,7 @@ import { createInvoice } from "@/lib/actions/invoices";
 import { ReceiptText } from "lucide-react";
 import { NeighbourNotificationPanel } from "@/components/certifier/NeighbourNotificationPanel";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
-import { CertificatesPanel } from "@/components/certifier/CertificatesPanel";
+import { CertificatesPanel, ModificationsPanel } from "@/components/certifier/CertificatesPanel";
 import { OcPanel } from "@/components/certifier/OcPanel";
 import { InspectionsPanel } from "@/components/certifier/InspectionsPanel";
 import { JobTabs } from "@/components/certifier/JobTabs";
@@ -19,12 +19,18 @@ import type { Contractor, Job } from "@/types/db";
 import { pathwayLabel, type Pathway } from "@/lib/business";
 import { SubmitButton } from "@/components/SubmitButton";
 
-function tabsFor(pathway: Pathway) {
+// hasModifications: the tab appears once the CDC/CC has been issued,
+// since there is nothing to modify before that. It is a tab of its own
+// rather than a section of the certificate panel so that working on a
+// modification never puts the original approval - or its Delete button -
+// under the same hand.
+function tabsFor(pathway: Pathway, showModifications: boolean) {
   return [
     { key: "details", label: "Details" },
     // A PC/OC job issues no certificate, so its second tab holds the
     // approval another certifier issued rather than one of ours.
     { key: "pathway", label: pathway === "PC_OC" ? "Approval" : pathway },
+    ...(showModifications ? [{ key: "modifications", label: `Modified ${pathway}` }] : []),
     { key: "noc", label: "NOC" },
     { key: "inspections", label: "Inspections" },
     { key: "oc", label: "Occupation Certificate" },
@@ -151,7 +157,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
 
       <JobTabs
         initialTab={tab}
-        tabs={tabsFor(job.pathway).map((t) => ({
+        tabs={tabsFor(job.pathway, job.pathway !== "PC_OC" && typedJob.pathway_generated === true).map((t) => ({
           ...t,
           progress:
             t.key === "pathway"
@@ -160,6 +166,10 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               ? checklistProgress((nocChecklist?.checklist_items as never[]) || [])
               : t.key === "oc"
               ? checklistProgress((ocChecklist?.checklist_items as never[]) || [])
+              : t.key === "modifications"
+              ? modificationsWithChecklist.length > 0
+                ? `${modificationsWithChecklist.filter((m) => m.generated).length}/${modificationsWithChecklist.length}`
+                : null
               : null,
           // Green once there is nothing left to do at that stage. Each
           // stage answers that differently: a certificate is issued, a
@@ -174,6 +184,11 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               ? inspectionsCarriedOut((inspections || []).map((i) => i.outcome as string))
               : t.key === "oc"
               ? (ocRecords || []).length > 0
+              // Green only when there is at least one modification and
+              // every one of them has been issued: an empty tab has
+              // nothing to be finished.
+              : t.key === "modifications"
+              ? modificationsWithChecklist.length > 0 && modificationsWithChecklist.every((m) => m.generated)
               : false,
         }))}
         content={{
@@ -186,7 +201,6 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
                 pathwayChecklistId={pathwayChecklist.id}
                 pathwayItems={(pathwayChecklist.checklist_items as never[]) || []}
                 certifiers={certifiers || []}
-                modifications={modificationsWithChecklist as never[]}
                 library={libraries[job.pathway] || []}
                 versions={(pathwayVersions as never[]) || []}
               />
@@ -197,6 +211,16 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               )}
             </div>
           ) : null,
+          modifications: (
+            <ModificationsPanel
+              job={typedJob}
+              firmId={profile.firm_id}
+              certifiers={certifiers || []}
+              modifications={modificationsWithChecklist as never[]}
+              library={libraries[job.pathway] || []}
+              versions={(pathwayVersions as never[]) || []}
+            />
+          ),
           noc: nocChecklist ? (
             <ChecklistSection jobId={id} firmId={profile.firm_id} checklistId={nocChecklist.id} label="Notice of Commencement" library={libraries.NOC} items={(nocChecklist.checklist_items as never[]) || []} />
           ) : null,
