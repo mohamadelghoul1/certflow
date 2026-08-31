@@ -378,15 +378,26 @@ async function ModificationCard({
           </>
         )}
 
-        {complete && !mod.generated && (
-          <IssueModificationForm
-            jobId={job.id}
-            modificationId={mod.id}
-            assignedCertifierId={job.assigned_certifier_id}
-            certifiers={certifiers}
-            hasPortalRef={(mod.portal_ref || "").trim().length > 0}
-            pathway={job.pathway}
-          />
+        {/* Offered until the modification has its certificate — including
+            one marked issued whose certificate does not exist: issued
+            under the old flow that created none, or deleted since.
+            Issuing again is what creates it. */}
+        {complete && !linkedVersion && (
+          <>
+            {mod.generated && (
+              <p className="mt-3 text-xs text-warning-text bg-warning-bg rounded-md px-2.5 py-1.5">
+                This modification is marked issued, but no modified certificate exists for it. Issue it again to create one.
+              </p>
+            )}
+            <IssueModificationForm
+              jobId={job.id}
+              modificationId={mod.id}
+              assignedCertifierId={job.assigned_certifier_id}
+              certifiers={certifiers}
+              hasPortalRef={(mod.portal_ref || "").trim().length > 0}
+              pathway={job.pathway}
+            />
+          </>
         )}
 
         {/* The modified certificate this modification produced — the
