@@ -8,6 +8,7 @@ import { notifyJobCertifier } from "@/lib/email";
 import { requireProfile } from "@/lib/auth";
 import { formatISODate } from "@/lib/business";
 import { escapeHtml } from "@/lib/html";
+import { inspectionRequestEmail, type SameDayInspection } from "@/lib/inspections/bookingRequestEmail";
 import { currentDocuments } from "@/lib/checklistDocuments";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/uploads";
 
@@ -144,10 +145,36 @@ export async function notifyInspectionBooked(inspectionId: string): Promise<void
     .maybeSingle();
   if (!inspection) return;
 
-  await notifyJobCertifier(
-    createAdminClient(),
-    inspection.job_id,
-    "Client booked an inspection",
-    `<p>Your client has booked the <strong>${escapeHtml(inspection.title || "an")}</strong> inspection for <strong>${formatISODate(inspection.date)}</strong>. Please confirm it in Certlyn.</p>`
-  );
+  // From here on the admin client, because what the certifier needs to
+  // answer this — the rest of their day — is deliberately beyond what
+  // the client can see. Every query below is pinned to the firm that
+  // owns this job, so the client's own request is all that decides which
+  // firm's diary is read.
+  const admin = createAdminClient();
+  const { data: job } = await admin.from("jobs").select("firm_id, address").eq("id", inspection.job_id).maybeSingle();
+
+  let sameDay: SameDayInspection[] = [];
+  if (job?.firm_id && inspection.date) {
+    const { data: others } = await admin
+      .from("inspections")
+      .select("id, title, certifiers(name), jobs!inner(address, firm_id, deleted_at)")
+      .eq("date", inspection.date)
+      .neq("id", inspection.id);
+    sameDay = ((others || []) as unknown as {
+      id: string;
+      title: string;
+      certifiers: { name: string } | null;
+      jobs: { address: string | null; firm_id: string; deleted_at: string | null } | null;
+    }[])
+      .filter((row) => row.jobs && row.jobs.firm_id === job.firm_id && !row.jobs.deleted_at)
+      .map((row) => ({ title: row.title, address: row.jobs!.address || "", certifier: row.certifiers?.name || null }));
+  }
+
+  const mail = inspectionRequestEmail({
+    title: inspection.title || "",
+    date: inspection.date,
+    address: job?.address || null,
+    sameDay,
+  });
+  await notifyJobCertifier(admin, inspection.job_id, mail.subject, mail.html);
 }

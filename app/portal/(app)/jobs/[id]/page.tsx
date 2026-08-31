@@ -541,7 +541,8 @@ async function InspectionCard({
       )}
       {stage === "awaiting_confirmation" && (
         <div className="text-xs text-warning-text mt-2 bg-warning-bg rounded-md px-3 py-2">
-          You asked for <strong>{formatISODate(insp.date)}</strong>. Your certifier will confirm it or offer another day, and this page will update.
+          You asked for <strong>{formatISODate(insp.date)}</strong>. This inspection will be booked once our office accepts the date — we will confirm
+          it, or offer another day, and this page will update.
         </div>
       )}
       {stage === "confirmed" && (
