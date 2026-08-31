@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { firmSender, sendEmail } from "@/lib/email";
+import { clientEmailFooter, type FirmContact } from "@/lib/emailFooter";
 import { buildInvoiceFile } from "@/lib/invoices/invoiceDocument";
 import { recordAuditEvent } from "@/lib/audit";
 import { invoiceTotals, invoiceNumberOf, formatMoney } from "@/lib/invoices/invoiceLogic";
@@ -68,14 +69,24 @@ export async function runInvoiceReminders(admin: SupabaseClient, now: Date = new
   const summary: InvoiceReminderSummary = { ready: true, considered: 0, sent: 0, notes: [] };
   const todayIso = now.toISOString().slice(0, 10);
 
-  const { data: firms, error: firmsError } = await admin.from("firms").select("id, invoice_reminders_enabled, invoice_reminder_days");
+  // name, email and phone come along for the footer on every chase: the
+  // address these go out from is not monitored, and the client needs a
+  // way through.
+  const { data: firms, error: firmsError } = await admin.from("firms").select("id, name, email, phone, invoice_reminders_enabled, invoice_reminder_days");
   if (firmsError) {
     summary.ready = !isMissingColumn(firmsError);
     summary.notes.push(summary.ready ? `firms: ${firmsError.message}` : "migration 0038 has not been run yet");
     return summary;
   }
   const settings = new Map(
-    (firms || []).map((f) => [f.id as string, { enabled: f.invoice_reminders_enabled !== false, everyDays: Number(f.invoice_reminder_days) || 7 }])
+    (firms || []).map((f) => [
+      f.id as string,
+      {
+        enabled: f.invoice_reminders_enabled !== false,
+        everyDays: Number(f.invoice_reminder_days) || 7,
+        contact: { name: f.name, email: f.email, phone: f.phone } as FirmContact,
+      },
+    ])
   );
 
   const { data: invoices, error: invoicesError } = await admin
@@ -120,7 +131,7 @@ export async function runInvoiceReminders(admin: SupabaseClient, now: Date = new
     const result = await sendEmail(
       typed.clients.email,
       subject,
-      html,
+      `${html}${clientEmailFooter(settings.get(typed.firm_id)?.contact ?? null)}`,
       file ? [{ filename: file.fileName, content: Buffer.from(file.bytes) }] : undefined,
       await firmSender(admin, typed.firm_id),
     );

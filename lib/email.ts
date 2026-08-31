@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAuditEvent } from "@/lib/audit";
 import { siteUrl } from "@/lib/siteUrl";
+import { clientEmailFooter, type FirmContact } from "@/lib/emailFooter";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 // Who an email comes from, and where a reply to it lands.
@@ -254,10 +255,15 @@ export async function notifyJobClient(
   }
 
   const site = await siteUrl();
+  // The firm's own contact details, for the footer: the sending address
+  // is not monitored, so the email has to say where a reply should go
+  // instead. select("*") rather than naming columns, so a database
+  // missing one of them still sends the email.
+  const { data: firmRow } = await supabase.from("firms").select("*").eq("id", job.firm_id).single();
   const result = await sendEmail(
     client.email,
     subject,
-    `<p>Hi ${client.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to your Certlyn portal to view the details: <a href="${site}/client-login">${site}/client-login</a></p>`,
+    `<p>Hi ${client.name || "there"},</p>${bodyHtml}<p style="margin-top:24px">Log in to your Certlyn portal to view the details: <a href="${site}/client-login">${site}/client-login</a></p>${clientEmailFooter(firmRow as FirmContact | null)}`,
     attachments,
     await firmSender(supabase, job.firm_id)
   );

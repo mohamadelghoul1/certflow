@@ -17,6 +17,7 @@ import { escapeHtml } from "@/lib/html";
 import { buildInvoiceFile } from "@/lib/invoices/invoiceDocument";
 import { invoiceEmailHtml } from "@/lib/invoices/invoiceEmail";
 import { siteUrl } from "@/lib/siteUrl";
+import { clientEmailFooter, type FirmContact } from "@/lib/emailFooter";
 
 // Due in 14 days unless the certifier says otherwise — the trade
 // standard, and always visible and editable on the draft before it goes.
@@ -266,7 +267,10 @@ export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: F
   const [{ data: invoice }, { data: lines }, { data: firm }] = await Promise.all([
     supabase.from("invoices").select("*").eq("id", invoiceId).eq("firm_id", profile.firm_id).single(),
     supabase.from("invoice_lines").select("*").eq("invoice_id", invoiceId).order("sort_order"),
-    supabase.from("firms").select("name, email").eq("id", profile.firm_id).single(),
+    // phone as well as the name: the footer on the email tells the client
+    // how to reach the office, since the address it comes from is not
+    // monitored.
+    supabase.from("firms").select("name, email, phone").eq("id", profile.firm_id).single(),
   ]);
   if (!invoice) return { error: "Invoice not found." };
   if (!invoice.client_id) return { error: "Choose which client this invoice goes to first." };
@@ -314,7 +318,9 @@ export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: F
   const result = await sendEmail(
     client.email,
     `Invoice ${number}${typed.reference ? ` — ${typed.reference}` : ""}`,
-    html,
+    // The same footer every other client email carries: the sending
+    // address is not monitored, and here is how to reach the office.
+    `${html}${clientEmailFooter(firm as FirmContact | null)}`,
     file ? [{ filename: file.fileName, content: Buffer.from(file.bytes) }] : undefined,
     // From this firm, not the deployment's. A second firm's client
     // should never see the first firm's name on their invoice.
