@@ -53,6 +53,7 @@ export function certificateFixture(overrides: Record<string, unknown> = {}): Pat
     // issue. Ahead of the spread so a modification test can override.
     isModification: false,
     modificationReason: null,
+    modificationLabel: null,
     letterCertLabel: "Complying Development Certificate No.:",
     d: {
       council: { lga: "Liverpool City Council", address: { streetNumber: "50", street: "Scott Street", suburb: "Liverpool", state: "NSW", postcode: "2170" } },

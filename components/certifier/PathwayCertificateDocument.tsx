@@ -51,9 +51,15 @@ function CertRow({
       {/* Right-aligned against its value, the shape every field takes in
           the Word export and the approved-set PDF (fieldRow / fieldTable).
           wideLabel is for the covering letters, whose labels are sentences
-          rather than the certificate's one-word "Applicant:". */}
-      <td className={`py-1 pr-3 text-sm font-semibold text-heading text-right align-top ${wideLabel ? "w-[42%] whitespace-nowrap" : "w-[32%]"}`}>{label}</td>
-      <td className="py-1 text-sm text-heading">
+          rather than the certificate's one-word "Applicant:" — they wrap,
+          as they do in the PDF; a modification's reference label is too
+          long to hold on one line. */}
+      <td className={`py-1 pr-3 text-sm font-semibold text-heading text-right align-top ${wideLabel ? "w-[42%]" : "w-[32%]"}`}>{label}</td>
+      {/* pre-line, and "paragraphs" once a line break is in the value:
+          a modified certificate's description carries the modification
+          on its own line, and both branches must show it the way the
+          PDF and the Word export print it. */}
+      <td className="py-1 text-sm text-heading whitespace-pre-line">
         {jobId && docKey ? (
           <EditableDocText
             jobId={jobId}
@@ -61,8 +67,8 @@ function CertRow({
             value={shown || "—"}
             overridden={!!override}
             label={label}
-            as={multiline ? "paragraphs" : "inline"}
-            rows={multiline ? 4 : 2}
+            as={multiline || shown.includes("\n") ? "paragraphs" : "inline"}
+            rows={multiline || shown.includes("\n") ? 4 : 2}
           />
         ) : (
           shown || "—"
@@ -359,10 +365,12 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
       {/* 3. Certificate */}
       <Section>
         <DocumentHeader firm={firm} logoUrl={logoUrl} />
+        {/* A modified certificate's title leads with what it is — "Section
+            4.30 Modification – …" — before the certificate's own name. */}
         {isCdc ? (
           <>
             <DocTitle
-              title={`${pathwayFull} ${ref}`}
+              title={`${data.modificationLabel ? `${data.modificationLabel} – ` : ""}${pathwayFull} ${ref}`}
               subtitles={["Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979"]}
             />
             <p className="text-sm font-bold mb-4">
@@ -373,7 +381,10 @@ export function PathwayCertificateDocument({ data, preInspection }: { data: Path
           </>
         ) : (
           <>
-            <DocTitle title={`${pathwayFull} – ${projRef}`} subtitles={["Issued under Part 6 the Environmental Planning and Assessment Act 1979"]} />
+            <DocTitle
+              title={`${data.modificationLabel ? `${data.modificationLabel} – ` : ""}${pathwayFull} – ${projRef}`}
+              subtitles={["Issued under Part 6 the Environmental Planning and Assessment Act 1979"]}
+            />
             <p className="text-sm font-bold mb-4">
               This Construction Certificate does not give authorisation of any construction works to commence until a Principal Certifier has been
               appointed.

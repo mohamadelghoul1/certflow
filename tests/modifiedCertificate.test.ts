@@ -16,6 +16,7 @@ function modifiedFixture() {
     ref: "CDC-26001/02",
     isModification: true,
     modificationReason: "This modification reflects changes to the floor plan layout and window schedule.",
+    modificationLabel: "Section 4.30 Modification",
     letterCertLabel: "Section 4.30 Modification – Complying Development Certificate No.:",
     councilBody: [
       "Quality Private Certifiers Pty Ltd has issued a Modified Complying Development Certificate under Part 4 of the Environmental Planning and Assessment Act 1979 for the above premises.",
@@ -92,6 +93,16 @@ describe("a modified certificate's council letter", () => {
   test("the body says a Modified certificate was issued, and why", () => {
     assert.ok(pdf.pages[0].includes("has issued a Modified Complying Development Certificate"));
     assert.ok(pdf.pages[0].includes("This modification reflects changes to the floor plan layout and window schedule."));
+  });
+
+  test("the certificate's title and description name the modification", () => {
+    const certPage = pdf.pages.find((p) => p.includes("APPLICANT DETAILS")) || "";
+    assert.ok(certPage.includes("SECTION 4.30 MODIFICATION"), "the title leads with what it is");
+    assert.ok(
+      certPage.includes("Section 4.30 Modification – This modification reflects changes to the floor plan layout and"),
+      "the description of building works carries the modification line"
+    );
+    assert.ok(certPage.includes("Construction of a detached secondary dwelling"), "under the works as approved");
   });
 
   test("the Word export carries the same reference line and body", async () => {

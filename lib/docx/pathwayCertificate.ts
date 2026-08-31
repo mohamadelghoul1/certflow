@@ -135,9 +135,12 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
   const issuedUnder = isCdc
     ? "Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979"
     : "Issued under Part 6 the Environmental Planning and Assessment Act 1979";
+  // A modified certificate's title leads with what it is — "SECTION 4.30
+  // MODIFICATION – …" — before the certificate's own name and number.
+  const certTitlePrefix = data.modificationLabel ? `${data.modificationLabel} – ` : "";
   const certTitle = isCdc
-    ? documentTitle(`${pathwayFull} ${ref}`, { uppercase: true, subtitle: issuedUnder })
-    : documentTitle(`${pathwayFull} – ${projRef}`, { uppercase: true, subtitle: issuedUnder });
+    ? documentTitle(`${certTitlePrefix}${pathwayFull} ${ref}`, { uppercase: true, subtitle: issuedUnder })
+    : documentTitle(`${certTitlePrefix}${pathwayFull} – ${projRef}`, { uppercase: true, subtitle: issuedUnder });
   push(
     pageBreak(),
     ...certTitle,
@@ -162,7 +165,12 @@ export async function buildPathwayCertificateDocx(data: PathwayCertificateData, 
                   para.bulleted ? bullet(para.text) : p(para.text, { spacingAfter: 30 }),
                 ),
               }
-            : { kind: "row" as const, label: row.label, value: row.value },
+            : row.value.includes("\n")
+              ? // A value with lines of its own — the description of a
+                // modified certificate carries the modification under the
+                // works — prints them as separate paragraphs in the cell.
+                { kind: "row" as const, label: row.label, children: row.value.split("\n").map((line) => p(line, { spacingAfter: 0 })) }
+              : { kind: "row" as const, label: row.label, value: row.value },
         ),
       ]),
     ]),

@@ -63,12 +63,18 @@ export function modificationReasonSentence(reason: string | null | undefined): s
   return `This modification reflects ${lead}${period}`;
 }
 
+// What a modification is called: a modified CDC is issued under section
+// 4.30 of the Act, a modified CC under section 6.33(1). This one name
+// leads the certificate's title, both letters' reference lines, and the
+// line added to the description of building works.
+export function modificationLabelFor(isCdc: boolean): string {
+  return `Section ${isCdc ? "4.30" : "6.33(1)"} Modification`;
+}
+
 // The certificate's reference line on both covering letters — council
-// and applicant alike. A modified CDC is issued under section 4.30 of
-// the Act, a modified CC under section 6.33(1), and the line names the
-// right one; a first issue is just the certificate's own name.
+// and applicant alike. A first issue is just the certificate's own name.
 export function letterCertLabelFor(isModification: boolean, isCdc: boolean, pathwayFull: string): string {
-  return isModification ? `Section ${isCdc ? "4.30" : "6.33(1)"} Modification – ${pathwayFull} No.:` : `${pathwayFull} No.:`;
+  return isModification ? `${modificationLabelFor(isCdc)} – ${pathwayFull} No.:` : `${pathwayFull} No.:`;
 }
 
 export type PathwayCertificateData = {
@@ -97,6 +103,9 @@ export type PathwayCertificateData = {
   // when none was given).
   isModification: boolean;
   modificationReason: string | null;
+  // "Section 4.30 Modification" / "Section 6.33(1) Modification", null
+  // on a first issue — the prefix the certificate's title carries.
+  modificationLabel: string | null;
   letterCertLabel: string;
   d: JobDetails;
   cd: NonNullable<JobDetails["certificateDetails"]>;
@@ -241,6 +250,7 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
   const mods = ((modifications || []) as { reason: string | null; generated: boolean }[]);
   const latestMod = mods.find((m) => m.generated) || mods[0];
   const modificationReason = isModification ? modificationReasonSentence(latestMod?.reason) : null;
+  const modificationLabel = isModification ? modificationLabelFor(isCdc) : null;
   const letterCertLabel = letterCertLabelFor(isModification, isCdc, pathwayFull);
 
   const councilBody = job.council_letter_override
@@ -319,6 +329,7 @@ export async function getPathwayCertificateData(jobId: string, firmId: string, c
     pathwayFull,
     isModification,
     modificationReason,
+    modificationLabel,
     letterCertLabel,
     d,
     cd,

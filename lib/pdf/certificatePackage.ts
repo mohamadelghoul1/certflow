@@ -136,7 +136,10 @@ export async function buildCertificatePackagePdf(
   const issuedUnder = isCdc
     ? "Issued under Part 4, Division 4.5 of the Environmental Planning and Assessment Act 1979"
     : "Issued under Part 6 the Environmental Planning and Assessment Act 1979";
-  l.documentTitle(isCdc ? `${pathwayFull} ${ref}`.toUpperCase() : `${pathwayFull} – ${projRef}`.toUpperCase(), {
+  // A modified certificate's title leads with what it is — "SECTION 4.30
+  // MODIFICATION – …" — before the certificate's own name and number.
+  const titlePrefix = data.modificationLabel ? `${data.modificationLabel} – ` : "";
+  l.documentTitle(`${titlePrefix}${isCdc ? `${pathwayFull} ${ref}` : `${pathwayFull} – ${projRef}`}`.toUpperCase(), {
     subtitle: issuedUnder,
   });
   l.text(

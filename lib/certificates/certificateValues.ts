@@ -61,7 +61,17 @@ export function certificateFieldValues(data: PathwayCertificateData): FieldValue
     zone: ov("zone", d.zoning),
     bcaClass: ov("bcaClass", formatClassifications(d.proposal?.classifications)),
     bcaVersion: ov("bcaVersion", formatBcaVersion(d.bcaVersion, d.bcaVolumes)),
-    description: ov("description", job.description),
+    // A modified certificate's description carries the modification on
+    // its own line under the works — "Section 4.30 Modification – This
+    // modification reflects …" — so the row says both what is approved
+    // and what changed. A correction typed on the certificate replaces
+    // the whole row, modification line included, as any override does.
+    description: ov(
+      "description",
+      [job.description, data.modificationLabel && (data.modificationReason ? `${data.modificationLabel} – ${data.modificationReason}` : data.modificationLabel)]
+        .filter(Boolean)
+        .join("\n")
+    ),
     value: ov("value", formatCurrency(d.proposal?.estimatedCost)),
     attachments: ov("attachments", "Schedule 1: Approved Plans and Specifications and Supporting Documentation Relied Upon"),
     inspections: ov("inspections", "See attached Notice"),
