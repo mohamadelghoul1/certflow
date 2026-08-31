@@ -13,7 +13,9 @@ import { SiteSteps } from "@/components/site/SiteSteps";
 import { SiteIssues } from "@/components/site/SiteIssues";
 import { SitePhotos } from "@/components/site/SitePhotos";
 import { SiteNotes } from "@/components/site/SiteNotes";
-import { FinishOnSite } from "@/components/site/FinishOnSite";
+import { SitePortalReport } from "@/components/site/SitePortalReport";
+import { portalConfigured } from "@/lib/portal/config";
+import { SignOnSite, EmailReportOnSite } from "@/components/site/FinishOnSite";
 import type { Defect, InspectionPhoto, JobDetails } from "@/types/db";
 
 // One inspection, one screen, in the order the work happens: where am I,
@@ -42,6 +44,9 @@ export default async function SiteInspectionPage({ params }: { params: Promise<{
     report_sent: boolean;
     report_sent_date: string | null;
     report_notes: string | null;
+    portal_reported: boolean;
+    portal_reported_date: string | null;
+    inspector_certifier_id: string | null;
     defects: Defect[];
     inspection_photos: InspectionPhoto[];
     jobs: { id: string; address: string; details: JobDetails | null; deleted_at: string | null };
@@ -52,6 +57,18 @@ export default async function SiteInspectionPage({ params }: { params: Promise<{
   const address = inspection.jobs.address || "";
   const contact = inspection.jobs.details?.contact;
   const photoUrls = await Promise.all(inspection.inspection_photos.map((p) => signedUrl(p.file_path)));
+
+  // What the NSW Planning Portal step needs: the case the job is filed
+  // under, and the Portal login the submission is recorded against —
+  // the inspector's own where they have one, the signed-in certifier's
+  // otherwise. Same rule the desktop panel uses.
+  const portalCaseRef = inspection.jobs.details?.inspectionPortalCase || inspection.jobs.details?.certificateDetails?.planningPortalRef || "";
+  const { data: inspector } = inspection.inspector_certifier_id
+    ? await supabase.from("certifiers").select("*").eq("id", inspection.inspector_certifier_id).maybeSingle()
+    : { data: null };
+  const { data: me } = profile.certifier_id ? await supabase.from("certifiers").select("*").eq("id", profile.certifier_id).maybeSingle() : { data: null };
+  const submitterEmail =
+    (inspector as { portal_email?: string | null } | null)?.portal_email || (me as { portal_email?: string | null } | null)?.portal_email || profile.email || "";
 
   return (
     <div className="space-y-4">
@@ -113,17 +130,48 @@ export default async function SiteInspectionPage({ params }: { params: Promise<{
               ),
             },
             { key: "notes", title: "Notes", node: <SiteNotes inspectionId={inspection.id} jobId={jobId} notes={inspection.report_notes || ""} /> },
+            // Read it, sign it, tell the regulator, then — only if it is
+            // wanted — tell the client. The order the work actually
+            // happens in, and the Portal's two-day clock ahead of the
+            // courtesy rather than behind it.
             {
               key: "finish",
-              title: "Sign and send",
+              title: "Review and sign",
               node: (
-                <FinishOnSite
+                <SignOnSite
                   inspectionId={inspection.id}
                   jobId={jobId}
                   outcome={inspection.outcome}
                   signedAt={inspection.report_signed_at}
-                  sentAt={inspection.report_sent ? inspection.report_sent_date || "sent" : null}
                   reportHref={`/jobs/${jobId}/inspections/${inspection.id}/report`}
+                />
+              ),
+            },
+            {
+              key: "portal",
+              title: "Report to the NSW Planning Portal",
+              node: (
+                <SitePortalReport
+                  inspectionId={inspection.id}
+                  jobId={jobId}
+                  live={portalConfigured()}
+                  defaultCaseId={portalCaseRef}
+                  reported={!!inspection.portal_reported}
+                  reportedDate={inspection.portal_reported_date}
+                  signed={!!inspection.report_signed_at}
+                  submittedBy={submitterEmail}
+                />
+              ),
+            },
+            {
+              key: "email",
+              title: "Email the client (optional)",
+              node: (
+                <EmailReportOnSite
+                  inspectionId={inspection.id}
+                  jobId={jobId}
+                  signedAt={inspection.report_signed_at}
+                  sentAt={inspection.report_sent ? inspection.report_sent_date || "sent" : null}
                 />
               ),
             },
