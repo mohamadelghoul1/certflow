@@ -9,7 +9,7 @@ import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { PRIOR_APPROVAL_DOCUMENTS, INSPECTION_LIBRARY, defaultCriticalStageInspections, normalizeCriticalStageInspections, epiForCodeParts } from "@/lib/constants";
-import { todayISO, normalizePortalRef, portalRefKindFor, resolveOcCertRef, resolvePathwayCertRef, type PortalRefKind, type Pathway } from "@/lib/business";
+import { todayISO, formatISODate, normalizePortalRef, portalRefKindFor, resolveOcCertRef, resolvePathwayCertRef, type PortalRefKind, type Pathway } from "@/lib/business";
 import { splitAddress } from "@/lib/address";
 import { notifyJobClient } from "@/lib/email";
 import { certificateIssuedEmail } from "@/lib/certificateIssuedEmail";
@@ -1088,6 +1088,17 @@ export async function issuePathwayCertificate(_prev: ActionState, formData: Form
   const jobDetails = (job.details || {}) as JobDetails;
   if (!jobDetails.certificateDetails?.planningPortalRef?.trim()) {
     return { error: "Enter the NSW Planning Portal reference number before issuing." };
+  }
+
+  // A recorded neighbour notification is a hold on determination: the
+  // certificate cannot be issued until the 17 days are up. The date came
+  // from the certifier's own hand, so the way past it is theirs too —
+  // clear the dates if notification does not apply to this job.
+  const notificationEnd = jobDetails.neighbourNotification?.end;
+  if (notificationEnd && notificationEnd >= todayISO()) {
+    return {
+      error: `The neighbour notification period runs until ${formatISODate(notificationEnd)}, so the certificate cannot be determined yet. If notification does not apply to this project, clear the dates in the Neighbour notification panel below.`,
+    };
   }
 
   const issued = await issueNextPathwayVersion(supabase, jobId, certifierId, profile.firm_id);

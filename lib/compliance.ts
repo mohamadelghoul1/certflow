@@ -38,6 +38,8 @@ type JobRow = {
   address: string;
   pathway: Pathway;
   pathway_approval_date: string | null;
+  pathway_generated: boolean;
+  details: { neighbourNotification?: { end?: string } } | null;
   checklists: { kind: string; checklist_items: Pick<ChecklistItem, "status">[] }[];
   // Only the outcomes, and only because the CDC lapse rule asks whether
   // work has commenced.
@@ -49,7 +51,7 @@ export async function getComplianceItems(supabase: SupabaseClient, firmId: strin
     supabase
       .from("jobs")
       .select(
-        "id, address, pathway, pathway_approval_date, checklists(kind, checklist_items(status)), inspections(outcome)"
+        "id, address, pathway, pathway_approval_date, pathway_generated, details, checklists(kind, checklist_items(status)), inspections(outcome)"
       )
       .eq("firm_id", firmId)
       .eq("status", "active")
@@ -78,6 +80,21 @@ export async function getComplianceItems(supabase: SupabaseClient, firmId: strin
     // lapses appear — a commenced job returns a sentence, not a date.
     const nocItems = job.checklists.find((c) => c.kind === "noc")?.checklist_items || [];
     const lapse = calcCdcLapseDate(job.pathway, job.pathway_approval_date, nocItems, (job.inspections || []).map((i) => i.outcome));
+    // A neighbour notification still running is a hold on the job: the
+    // certificate cannot be determined until its 17 days are up, and
+    // issuing checks the same date. Shown while it runs; once the period
+    // has passed it is permission to proceed, not a deadline, and the
+    // row goes.
+    const notificationEnd = job.details?.neighbourNotification?.end;
+    if (!job.pathway_generated && notificationEnd && notificationEnd >= todayIso) {
+      add(
+        notificationEnd,
+        "Neighbour notification period ends",
+        `${job.address} — the ${job.pathway} cannot be determined until this date has passed`,
+        `/jobs/${job.id}?tab=pathway`
+      );
+    }
+
     if (/^\d{4}-\d{2}-\d{2}$/.test(lapse)) {
       const horizon = new Date(`${todayIso}T00:00:00Z`);
       horizon.setUTCDate(horizon.getUTCDate() + 90);

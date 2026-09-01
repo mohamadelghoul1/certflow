@@ -17,6 +17,9 @@ type JobRow = {
   // The CDC/CC itself, issued — independent of the checklist's state.
   certIssued: boolean;
   certIssuedDate: string;
+  // Set while a neighbour notification period is still running — a hold
+  // on determining the certificate.
+  notificationEnds: string;
   pathwayDone: boolean;
   // Every document approved, but the certificate not issued yet.
   pathwayToIssue: boolean;
@@ -174,6 +177,9 @@ export function JobsList({
                           <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-warning-bg text-warning-text text-[11px] font-semibold">
                             <AlertTriangle size={11} /> Amendment needed
                           </span>
+                        )}
+                        {j.notificationEnds && (
+                          <span className="px-2 py-0.5 rounded bg-info-bg text-info text-[11px] font-semibold">Notification until {j.notificationEnds}</span>
                         )}
                       </div>
                       <div className="text-placeholder mt-0.5">{j.description}</div>

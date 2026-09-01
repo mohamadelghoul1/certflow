@@ -2,7 +2,7 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { excludingDeleted } from "@/lib/softDelete";
 import { JobsList } from "@/components/certifier/JobsList";
-import { stageComplete, checklistProgress, unresolvedCount, inspectionsComplete, inspectionProgress, issuesCertificate, pathwayLabel, formatISODate } from "@/lib/business";
+import { stageComplete, checklistProgress, unresolvedCount, inspectionsComplete, inspectionProgress, issuesCertificate, pathwayLabel, formatISODate, todayISO } from "@/lib/business";
 import type { Job } from "@/types/db";
 
 type ChecklistItemRow = { status: "requested" | "submitted" | "approved"; amendments: { resolved: boolean }[] };
@@ -67,6 +67,13 @@ export default async function JobsListPage({ searchParams }: { searchParams: Pro
       // The certificate itself, issued — shown and filtered on directly,
       // apart from the checklist's own progress.
       certIssued: issuesCertificate(j.pathway) && !!j.pathway_generated,
+      // The neighbour notification still running: a visible hold on the
+      // job until its 17 days are up. Empty once passed or once the
+      // certificate is issued.
+      notificationEnds:
+        !j.pathway_generated && j.details?.neighbourNotification?.end && j.details.neighbourNotification.end >= todayISO()
+          ? formatISODate(j.details.neighbourNotification.end)
+          : "",
       certIssuedDate: issuesCertificate(j.pathway) && j.pathway_generated ? formatISODate(j.pathway_generated_date || "") : "",
       pathwayDone: pathwayChecklistDone && pathwayIssued,
       pathwayToIssue: pathwayChecklistDone && !pathwayIssued,
