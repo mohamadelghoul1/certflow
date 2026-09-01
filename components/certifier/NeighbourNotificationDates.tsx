@@ -6,9 +6,9 @@ import { notificationEndDate, notificationFirstDay } from "@/lib/neighbourNotifi
 import { SaveButton } from "@/components/certifier/SaveButton";
 import type { ActionState } from "@/lib/actions/auth";
 
-// When the neighbour notice went out, and when its 15 days are up.
+// When the neighbour notice went out, and when its 17 days are up.
 //
-// The end date fills itself in from the start date — fifteen days, with
+// The end date fills itself in from the start date — seventeen days, with
 // a notice that goes out on a Friday counted from the following Tuesday,
 // because it sits in letterboxes over the weekend. The certifier can
 // still type over it: the rule serves the ordinary case, it does not
@@ -34,7 +34,7 @@ export function NeighbourNotificationDates({ jobId, start, end }: { jobId: strin
       <input type="hidden" name="job_id" value={jobId} />
       <div className="text-sm font-semibold text-heading mb-1">Notification period</div>
       <p className="text-xs text-muted mb-2">
-        15 days from the day the notice goes out. A notice that starts on a Friday is counted from the following Tuesday.
+        17 days from the day the notice goes out. A notice that starts on a Friday is counted from the following Tuesday.
       </p>
       <div className="flex items-end gap-3 flex-wrap">
         <div>
@@ -63,7 +63,7 @@ export function NeighbourNotificationDates({ jobId, start, end }: { jobId: strin
       </div>
       {fridayStart && (
         <p className="text-xs text-warning-text mt-2">
-          That start is a Friday, so day one of the 15 is the following Tuesday — the end date above already allows for it.
+          That start is a Friday, so day one of the 17 is the following Tuesday — the end date above already allows for it.
         </p>
       )}
       {state?.error && <p className="text-xs text-error mt-2">{state.error}</p>}

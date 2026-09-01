@@ -1057,7 +1057,7 @@ export async function setPreInspectionDates(_prev: ActionState, formData: FormDa
   return { savedAt: Date.now() };
 }
 
-// The neighbour notification's 15 days. The end date is worked out from
+// The neighbour notification's 17 days. The end date is worked out from
 // the start by lib/neighbourNotification — including the Friday rule —
 // unless the certifier types their own.
 export async function setNeighbourNotificationDates(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -1332,6 +1332,52 @@ export async function deletePathwayVersion(formData: FormData) {
     await mirrorVisiblePathwayVersion(supabase, jobId, promoted);
   }
   revalidatePath(`/jobs/${jobId}`);
+}
+
+// Removing an issued Occupation Certificate — a wrong type picked, a
+// certificate generated against the wrong details. Refused once it has
+// been reported to the NSW Planning Portal, the same line the
+// inspections hold: what the regulator has been told exists cannot
+// quietly stop existing. Recorded in the audit log either way, because
+// an issued certificate disappearing is history, not housekeeping.
+export async function deleteOc(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const ocId = String(formData.get("oc_id"));
+
+  const { data: job } = await supabase.from("jobs").select("id, address").eq("id", jobId).eq("firm_id", profile.firm_id).single();
+  if (!job) return { error: "Project not found." };
+
+  const { data: record } = await supabase.from("oc_records").select("*").eq("id", ocId).eq("job_id", jobId).maybeSingle();
+  if (!record) return { error: "Could not find this Occupation Certificate." };
+  if (record.portal_reported) {
+    return { error: "This Occupation Certificate has been reported to the NSW Planning Portal and can no longer be deleted." };
+  }
+
+  const { error } = await supabase.from("oc_records").delete().eq("id", ocId).eq("job_id", jobId);
+  if (error) return { error: error.message };
+
+  // The uploaded signed copy goes with it — an orphaned file nobody can
+  // reach from the app is clutter at best and a stale certificate at
+  // worst. Best effort: the record is already gone either way.
+  if (record.approval_file_path) {
+    await supabase.storage.from("certflow-files").remove([record.approval_file_path]);
+  }
+
+  await recordAuditEvent(supabase, {
+    firmId: profile.firm_id,
+    action: "oc.deleted",
+    summary: `Deleted the ${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate${record.cert_ref ? ` ${record.cert_ref}` : ""}`,
+    jobId,
+    jobAddress: job.address || null,
+    actor: profile,
+    detail: { type: record.type, certRef: record.cert_ref, generatedDate: record.generated_date, wasSigned: !!record.signed_at, wasSentToClient: !!record.sent_to_client },
+    severity: "warning",
+  });
+
+  revalidatePath(`/jobs/${jobId}`);
+  return undefined;
 }
 
 // Overrides the auto-generated certificate reference for one version / one

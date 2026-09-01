@@ -8,6 +8,7 @@ import { IssueOcForm } from "@/components/certifier/IssueOcForm";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import { Download } from "lucide-react";
 import { EditableCertRef } from "@/components/certifier/EditableCertRef";
+import { DeleteOcButton } from "@/components/certifier/DeleteOcButton";
 import type { Job, Certifier, OcRecord, ChecklistItem, Amendment } from "@/types/db";
 import { SubmitButton } from "@/components/SubmitButton";
 
@@ -167,6 +168,12 @@ async function OcRecordCard({
               message: `Your ${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate has been issued and is now available to view in your portal.`,
             }}
           />
+        )}
+        {/* Gone from the row once the Portal has been told — the server
+            refuses anyway, but a button that can only ever refuse is
+            better not offered. */}
+        {!record.portal_reported && (
+          <DeleteOcButton jobId={job.id} ocId={record.id} label={`the ${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate ${ref}`} />
         )}
       </div>
     </div>

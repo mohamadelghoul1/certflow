@@ -23,6 +23,7 @@ export type AuditAction =
   | "certificate.sent"
   | "inspection.signed"
   | "inspection.deleted"
+  | "oc.deleted"
   | "oc.generated"
   | "portal.inspection"
   | "email.failed"

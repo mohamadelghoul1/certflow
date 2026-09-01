@@ -1,7 +1,7 @@
 // The neighbour notification period, counted the way the practice
 // counts it.
 //
-// The notice runs for 15 days, with the day it starts as day one. A
+// The notice runs for 17 days, with the day it starts as day one. A
 // notice that goes out on a Friday sits in letterboxes over the
 // weekend, so its first day is not counted until the following Tuesday
 // — the period runs from there.
@@ -21,7 +21,7 @@ function toIso(date: Date): string {
 
 const FRIDAY = 5;
 
-// The day the 15 begins: the start date itself, unless the notice went
+// The day the 17 begins: the start date itself, unless the notice went
 // out on a Friday — then the following Tuesday.
 export function notificationFirstDay(startIso: string): string | null {
   const day = parseDay(startIso);
@@ -30,11 +30,11 @@ export function notificationFirstDay(startIso: string): string | null {
   return toIso(day);
 }
 
-// The last of the 15 days: day one plus fourteen.
+// The last of the 17 days: day one plus sixteen.
 export function notificationEndDate(startIso: string): string | null {
   const first = notificationFirstDay(startIso);
   if (!first) return null;
   const day = parseDay(first)!;
-  day.setDate(day.getDate() + 14);
+  day.setDate(day.getDate() + 16);
   return toIso(day);
 }
