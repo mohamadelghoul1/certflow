@@ -67,8 +67,13 @@ function quantityOf(raw: string | null | undefined): number {
 // Xero matches an existing contact by name, so this has to be the name
 // the firm's books already know: whoever the invoice is billed to, and
 // only then the client record it hangs off.
+//
+// "Bill to" is the invoice's whole address block — a name, then the
+// postal address under it. Only its first line is a contact name; the
+// rest would arrive in Xero as a contact called "Unit 104/7 Hoyle Ave".
 export function contactNameFor(invoice: XeroInvoice): string {
-  return (invoice.bill_to || "").trim() || (invoice.client_name || "").trim() || "Unknown contact";
+  const billedTo = (invoice.bill_to || "").split("\n")[0].trim();
+  return billedTo || (invoice.client_name || "").trim() || "Unknown contact";
 }
 
 export function xeroInvoiceCsv(invoices: XeroInvoice[], options: XeroCsvOptions): string {

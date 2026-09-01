@@ -54,8 +54,11 @@ describe("the invoice PDF", () => {
   // page shows — GST added at a tenth, not folded into the fees.
   test("carries the letterhead, the fees and the totals", async () => {
     const text = await pdfText(invoice());
-    assert.ok(text.includes("TAX INVOICE"));
+    assert.ok(text.includes("Tax Invoice"));
     assert.ok(text.includes("QP Certifiers"));
+    assert.ok(text.includes("Bill to"));
+    assert.ok(text.includes("Amount due"), "the figure the client opened the file for");
+    assert.ok(text.includes("Due date"));
     assert.ok(text.includes("11 222 333 444"), "the ABN belongs on a tax invoice");
     assert.ok(text.includes("INV-0007"));
     assert.ok(text.includes("Jane Nguyen"));
@@ -64,6 +67,7 @@ describe("the invoice PDF", () => {
     assert.ok(text.includes("$4,000.00"), "subtotal");
     assert.ok(text.includes("$400.00"), "GST at 10%");
     assert.ok(text.includes("$4,400.00"), "total due");
+    assert.ok(text.includes("Total GST 10%"), "GST named as a tax invoice must name it");
     assert.ok(text.includes("BSB 062-000"));
   });
 
@@ -75,8 +79,10 @@ describe("the invoice PDF", () => {
   });
 
   test("a paid invoice says so, and a void one says that", async () => {
-    assert.ok((await pdfText(invoice({ status: "paid", paid_date: "2026-08-20" }))).includes("Paid:"));
-    assert.ok((await pdfText(invoice({ status: "void" }))).includes("VOID"));
+    const paid = await pdfText(invoice({ status: "paid", paid_date: "2026-08-20" }));
+    assert.ok(paid.includes("Amount paid"), "not still asking for money that has arrived");
+    assert.ok(paid.includes("Paid 20 Aug 2026"));
+    assert.ok((await pdfText(invoice({ status: "void" }))).includes("Void"));
   });
 
   // An invoice with no fees on it yet still has to produce a file rather
@@ -85,7 +91,7 @@ describe("the invoice PDF", () => {
     const bytes = await buildInvoicePdf({ firm: null, invoice: invoice({ payment_details: null }), lines: [] }, { logo: null });
     const { text, pageCount } = await readPdf(bytes);
     assert.equal(pageCount, 1);
-    assert.ok(text.includes("TAX INVOICE"));
+    assert.ok(text.includes("Tax Invoice"));
   });
 });
 

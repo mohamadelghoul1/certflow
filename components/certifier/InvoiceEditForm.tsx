@@ -59,7 +59,19 @@ export function InvoiceEditForm({
           </div>
           <div>
             <label className={labelCls}>Bill to</label>
-            <input name="bill_to" defaultValue={invoice.bill_to || ""} disabled={locked} placeholder="who the invoice is addressed to" className={inputCls} />
+            {/* Several lines, because this prints as the address block on
+                the invoice — a name and ABN, then the postal address, the
+                way a bookkeeper expects to see it. The client's email and
+                phone are added from their record, so they need not be
+                typed here. */}
+            <textarea
+              name="bill_to"
+              rows={3}
+              defaultValue={invoice.bill_to || ""}
+              disabled={locked}
+              placeholder={"The Granny Flat Experts, ABN: 29 155 078 014\nUnit 104/7 Hoyle Ave,\nCastle Hill NSW 2154"}
+              className={inputCls}
+            />
           </div>
           <div>
             <label className={labelCls}>Reference / project</label>

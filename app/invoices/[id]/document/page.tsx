@@ -2,15 +2,22 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
-import { invoiceTotals, invoiceNumberOf, formatMoney } from "@/lib/invoices/invoiceLogic";
+import { invoiceView } from "@/lib/invoices/invoiceLayout";
 import { PrintButton } from "@/components/PrintButton";
-import type { Firm, Invoice, InvoiceLine } from "@/types/db";
+import type { ClientContact, Firm, Invoice, InvoiceLine } from "@/types/db";
 
-// The printed tax invoice, on the same letterhead as the quote it grew
-// from. Lives outside the app chrome so Print / Save as PDF captures
-// only the document.
+// The printed tax invoice.
+//
+// Laid out the way an accounting system lays one out — the title and the
+// firm's mark across the top, who it is for facing who it is from, then
+// the figure owed and the date it is owed by set large enough to read
+// across a desk. The same blocks, in the same order, as the PDF that
+// goes to the client, because they are both drawing what
+// lib/invoices/invoiceLayout.ts worked out.
+//
+// Lives outside the app chrome so Print / Save as PDF captures only the
+// document.
 export default async function InvoiceDocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { profile } = await requireProfile("certifier");
@@ -25,7 +32,15 @@ export default async function InvoiceDocumentPage({ params }: { params: Promise<
   const invoice = rawInvoice as Invoice;
   const firmData = (firm as Firm | null) || null;
   const feeLines = (lines || []) as InvoiceLine[];
-  const { subtotal, gst, total } = invoiceTotals(feeLines);
+
+  // The client's own email and phone, so the address block carries them
+  // without the certifier typing what the client record already holds.
+  const { data: client } = invoice.client_id
+    ? await supabase.from("clients").select("*").eq("id", invoice.client_id).eq("firm_id", profile.firm_id).maybeSingle()
+    : { data: null };
+  const recipient = (client as ClientContact | null) || null;
+
+  const view = invoiceView({ firm: firmData, invoice, lines: feeLines, recipient });
 
   // Embedded as data so a saved copy keeps its logo after the signed URL
   // expires — same approach as the quote document.
@@ -45,121 +60,108 @@ export default async function InvoiceDocumentPage({ params }: { params: Promise<
 
   return (
     <div className="min-h-screen bg-surface print:bg-white">
-      <div className="max-w-2xl mx-auto py-6 px-4 print:hidden flex items-center justify-between flex-wrap gap-2">
+      <div className="max-w-3xl mx-auto py-6 px-4 print:hidden flex items-center justify-between flex-wrap gap-2">
         <Link href={`/invoices/${id}`} className="text-sm text-placeholder hover:text-primary">
           ← Back to invoice
         </Link>
         <PrintButton label="Save as PDF" />
       </div>
 
-      <div className="max-w-2xl mx-auto p-8 bg-white text-heading print:max-w-none">
-        <div className="flex justify-between items-start pb-3 mb-1">
+      <div className="max-w-3xl mx-auto p-10 bg-white text-heading print:max-w-none print:p-0">
+        <div className="flex justify-between items-start gap-6 mb-10">
+          <h1 className="text-3xl font-bold tracking-tight">Tax Invoice</h1>
+          {logoSrc && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoSrc} alt={`${firmData?.name || "Firm"} logo`} className="h-16 w-auto object-contain" />
+          )}
+        </div>
+
+        <div className="flex justify-between gap-8 mb-10 text-sm">
           <div>
-            {logoSrc && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoSrc} alt={`${firmData?.name || "Firm"} logo`} className="h-16 w-auto object-contain mb-3" />
-            )}
-            <div className="text-xl font-black tracking-tight">{firmData?.name}</div>
+            <div className="font-semibold text-xs mb-1.5">Bill to</div>
+            {view.billTo.length ? view.billTo.map((line) => <div key={line}>{line}</div>) : <div>—</div>}
           </div>
-          <div className="text-right text-xs text-muted leading-relaxed">
-            <div className="font-bold">{firmData?.name}</div>
-            {firmData?.abn && <div>ABN {firmData.abn}</div>}
-            <div>{firmData?.office_address}</div>
-            <div className="mt-1">Phone: {firmData?.phone}</div>
-            <div className="text-info underline">{firmData?.email}</div>
+          <div className="text-right text-xs leading-relaxed text-muted">
+            {view.firmLines.map((line, i) => (
+              <div key={line} className={i === 0 ? "font-semibold text-heading text-sm" : undefined}>
+                {line}
+              </div>
+            ))}
           </div>
         </div>
-        <div className="border-b border-heading mb-4" />
 
-        <div className="text-center mb-6">
-          <div className="text-lg font-black tracking-wide">TAX INVOICE</div>
+        <div className="flex gap-16 mb-6">
+          <div>
+            <div className="text-xs text-muted">{view.headline.label}</div>
+            <div className="text-3xl font-bold tracking-tight">{view.headline.value}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted">{view.headline.dueLabel}</div>
+            <div className="text-3xl font-bold tracking-tight">{view.headline.dueValue}</div>
+          </div>
         </div>
 
-        <div className="flex justify-between text-sm mb-6 flex-wrap gap-2">
-          <div className="space-y-0.5">
-            <div>
-              <span className="font-semibold">Invoice number:</span> {invoiceNumberOf(invoice)}
+        {view.status && <div className={`text-sm font-semibold mb-5 ${view.status.paid ? "text-success" : "text-muted"}`}>{view.status.text}</div>}
+
+        <div className="flex flex-wrap gap-x-12 gap-y-3 mb-6">
+          {view.facts.map((fact) => (
+            <div key={fact.label}>
+              <div className="text-xs text-muted">{fact.label}</div>
+              <div className="text-sm font-semibold">{fact.value}</div>
             </div>
-            {invoice.bill_to && (
-              <div>
-                <span className="font-semibold">Bill to:</span> {invoice.bill_to}
-              </div>
-            )}
-            {invoice.reference && (
-              <div>
-                <span className="font-semibold">Re:</span> {invoice.reference}
-              </div>
-            )}
-          </div>
-          <div className="space-y-0.5 text-right">
-            <div>
-              <span className="font-semibold">Issued:</span> {formatISODate(invoice.issue_date)}
-            </div>
-            {invoice.due_date && (
-              <div>
-                <span className="font-semibold">Due:</span> {formatISODate(invoice.due_date)}
-              </div>
-            )}
-            {invoice.status === "paid" && invoice.paid_date && <div className="font-semibold text-success">Paid {formatISODate(invoice.paid_date)}</div>}
-            {invoice.status === "void" && <div className="font-semibold">VOID</div>}
-          </div>
+          ))}
         </div>
 
-        <table className="w-full mb-1 border border-line text-sm">
+        <div className="border-b-2 mb-6" style={{ borderColor: "#B8B49A" }} />
+
+        <table className="w-full text-sm mb-8">
           <thead>
-            <tr style={{ backgroundColor: "#B8B49A" }}>
-              <th className="text-left font-semibold px-3 py-2 border border-line">Description</th>
-              <th className="text-right font-semibold px-3 py-2 border border-line w-32">Amount (ex GST)</th>
+            <tr className="text-xs text-muted">
+              <th className="text-left font-normal pb-2">Description</th>
+              <th className="text-right font-normal pb-2 w-20">Tax</th>
+              <th className="text-right font-normal pb-2 w-32">Amount</th>
             </tr>
           </thead>
           <tbody>
-            {feeLines.map((l) => (
-              <tr key={l.id}>
-                <td className="px-3 py-1.5 border border-line whitespace-pre-line">{l.description || "—"}</td>
-                <td className="px-3 py-1.5 border border-line text-right align-top">{formatMoney(Number(l.amount) || 0)}</td>
+            {view.items.map((item, i) => (
+              <tr key={i} className="border-t border-line">
+                <td className="py-2.5 pr-4 whitespace-pre-line align-top">{item.description}</td>
+                <td className="py-2.5 text-right align-top text-muted">{item.tax}</td>
+                <td className="py-2.5 text-right align-top">{item.amount}</td>
               </tr>
             ))}
+            <tr className="border-t border-line">
+              <td colSpan={3} className="p-0" />
+            </tr>
           </tbody>
         </table>
 
-        <div className="flex flex-col items-end gap-0.5 text-sm mb-6">
-          <div className="flex gap-4">
-            <span className="text-placeholder">Subtotal:</span>
-            <span>{formatMoney(subtotal)}</span>
-          </div>
-          <div className="flex gap-4">
-            <span className="text-placeholder">GST (10%):</span>
-            <span>{formatMoney(gst)}</span>
-          </div>
-          <div className="flex gap-4 font-bold text-base">
-            <span>Total due:</span>
-            <span>{formatMoney(total)}</span>
+        <div className="flex justify-end mb-10">
+          <div className="w-72">
+            {view.totals.map((row) => (
+              <div
+                key={row.label}
+                className={`flex justify-between gap-6 py-1.5 ${row.ruleBefore ? "border-t border-line" : ""} ${row.strong ? "text-lg font-bold pt-2.5" : "text-sm"}`}
+              >
+                <span className={row.strong ? "" : "text-muted"}>{row.label}</span>
+                <span className={row.strong ? "" : "font-medium"}>{row.value}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {(invoice.payment_details || invoice.stripe_payment_link_url) && (
-          <div className="text-sm mb-6 border border-line rounded-md p-4">
-            <div className="font-semibold mb-1">Payment details</div>
-            {invoice.payment_details && <div className="whitespace-pre-line">{invoice.payment_details}</div>}
-            {invoice.stripe_payment_link_url && (
-              <div className={invoice.payment_details ? "mt-2" : ""}>
-                Pay online by card: <a href={invoice.stripe_payment_link_url} className="text-info underline break-all">{invoice.stripe_payment_link_url}</a>
-                {invoice.card_surcharge ? (
-                  <div className="text-xs text-muted mt-0.5">
-                    Card payments carry a {formatMoney(Number(invoice.card_surcharge))} processing surcharge (total {formatMoney(total + Number(invoice.card_surcharge))}); bank
-                    transfer avoids it.
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </div>
-        )}
-
-        {invoice.notes && <div className="text-sm whitespace-pre-line mb-6">{invoice.notes}</div>}
-
-        <div className="text-sm mt-6">
-          <div>Kind Regards</div>
-          <div>{firmData?.name}</div>
+        <div className="max-w-md text-sm space-y-3">
+          {view.notes && <div className="whitespace-pre-line">{view.notes}</div>}
+          {view.paymentDetails && <div className="whitespace-pre-line">{view.paymentDetails}</div>}
+          {view.payUrl && (
+            <div>
+              Pay online by card:{" "}
+              <a href={view.payUrl} className="text-info underline break-all">
+                {view.payUrl}
+              </a>
+              {view.surcharge && <div className="text-xs text-muted mt-0.5">{view.surcharge}</div>}
+            </div>
+          )}
         </div>
       </div>
     </div>
