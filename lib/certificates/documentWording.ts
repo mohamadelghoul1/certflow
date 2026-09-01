@@ -81,16 +81,21 @@ export const WORDING_FIELDS: WordingField[] = [
     key: "oc.council.body",
     label: "Letter to the council — Occupation Certificate",
     help: "Sent with a copy of the OC.",
-    starting:
-      "{FIRM} has issued a {PATHWAY} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on {CONSENT} No. {CONSENT NO}. Please find enclosed a copy for your records.",
+    starting: [
+      "{FIRM} has issued an Occupation Certificate for the above-mentioned project under Sections 6.9, 6.10 of the Environmental Planning and Assessment Act 1979.",
+      "Please find enclosed the following documentation:",
+      "•  Occupation Certificate No. {CERTIFICATE NO}\n•  Documentation used to determine the Occupation Certificate",
+      "Should you need to discuss any issues, please do not hesitate to contact the Principal Certifier, {CERTIFIER}, on the above numbers.",
+    ].join("\n\n"),
   },
   {
     key: "oc.applicant.body",
     label: "Letter to the applicant — Occupation Certificate",
-    help: "Goes to the applicant or owner with their copy of the OC.",
+    help: "Goes to the applicant or owner with their copy of the OC. The standard letter adds the five-year condition on a partial OC and a thank-you on a whole one; a saved letter here is used for both kinds.",
     starting: [
-      "Enclosed is a copy of the issued {PATHWAY} for the subject development. One copy has been forwarded directly to {COUNCIL} for their records.",
-      "Please retain this certificate, as it authorises occupation and use of the building.",
+      "In accordance with Sections 6.9, 6.10 of the Environmental Planning and Assessment Act 1979, we enclose an Occupation Certificate relating to the construction of the above project.",
+      "As required under the legislation copies of the same have been forwarded to {COUNCIL} for their records.",
+      "Should you need to discuss any issues, please do not hesitate to contact the Principal Certifier, {CERTIFIER}, on the above numbers.",
     ].join("\n\n"),
   },
   {

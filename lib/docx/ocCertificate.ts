@@ -62,15 +62,14 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
     p(formatAddress(d.council?.address)),
     p("Dear Sir/Madam,"),
     mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }]),
-    mixed([{ text: `${typeLabel} No.  `, bold: true }, { text: ref }]),
-    // The consent number goes in the letter, its dates do not — the
-    // council files against the number.
+    mixed([{ text: "Occupation Certificate No.  ", bold: true }, { text: ref }]),
+    ...data.letterFacts.map((fact) => mixed([{ text: `${fact.label}  `, bold: true }, { text: fact.value }])),
     // From ocData, like the PDF and the screen.
     ...data.councilBody.map((paragraph) => p(paragraph)),
     signatureRule(),
     p("Yours sincerely,", { spacingBefore: 120 }),
     ...signatureBlock(images.signature),
-    ...signatory(issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""}`)
+    ...signatory(issuedBy?.name, `${data.signoffRole} / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""}`)
   );
 
   // 2. Applicant/owner letter
@@ -82,34 +81,50 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
     p(formatAddress(d.applicantAddress)),
     p("Dear Sir/Madam,"),
     mixed([{ text: "Re: ", bold: true }, { text: job.address || "" }]),
-    mixed([{ text: `${typeLabel} No.:  `, bold: true }, { text: ref }]),
+    mixed([{ text: "Occupation Certificate No.:  ", bold: true }, { text: ref }]),
+    ...data.letterFacts.map((fact) => mixed([{ text: `${fact.label}  `, bold: true }, { text: fact.value }])),
     ...data.applicantBody.map((paragraph) => p(paragraph)),
     signatureRule(),
     p("Yours sincerely,", { spacingBefore: 120 }),
     ...signatureBlock(images.signature),
-    ...signatory(issuedBy?.name, `Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""}`)
+    ...signatory(issuedBy?.name, `${data.signoffRole} / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""}`)
   );
 
-  // 3. Occupation Certificate & schedule
+  // 3. Occupation Certificate & schedule, headed the way the practice's
+  // own are: WHOLE or PARTIAL and the number in the title, the Act
+  // underneath, the same letterhead as the letters in front of it.
   push(
     pageBreak(),
-    certificateHeader(firm, ref),
-    ...documentTitle(typeLabel, {
-      uppercase: true,
-      center: true,
-      subtitle: "Issued under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979",
-    }),
+    letterheadHeader(firm, images.logo),
+    ...documentTitle(data.certTitle, { uppercase: true, center: true, subtitle: data.certSubtitle }),
     // The same layout the PDF walks, so a firm's Word copy and their PDF
     // of one certificate can only differ if the layout does. The labels
     // carry their own punctuation, which is why the trailing colons that
     // used to be added here are now part of the label itself.
     fieldTable(
-      resolveTemplate(data.template, ocFieldValues(data), typeLabel, consentLabel).flatMap((section) => [
+      resolveTemplate(data.template, ocFieldValues(data), typeLabel, data.consentFull).flatMap((section) => [
         ...(section.heading ? [{ kind: "heading" as const, text: section.heading }] : []),
         ...section.rows.map((row) => ({ kind: "row" as const, label: row.label, value: row.value })),
       ]),
     ),
-    headingRule("DOCUMENTS RELIED UPON"),
+    // Only a partial carries a condition — the whole building's OC is
+    // owed within five years. A whole OC prints no conditions at all.
+    ...(data.partialConditions
+      ? [
+          headingRule(data.partialConditions.heading),
+          p(data.partialConditions.clause, { bold: true, spacingAfter: 60 }),
+          p(data.partialConditions.text),
+        ]
+      : []),
+    headingRule(data.determination.heading),
+    mixed([{ text: `${data.determination.dateLabel}  `, bold: true }, { text: data.determination.date }]),
+    p(data.determination.opening, { spacingBefore: 120 }),
+    ...data.determination.bullets.map((bullet) => p(`•  ${bullet}`, { spacingAfter: 40 })),
+    ...signatureBlock(images.signature),
+    ...signatory(issuedBy?.name, `${issuedBy?.registration_no || "—"} · ${issuedBy?.registration_body || "—"}`),
+    pageBreak(),
+    letterheadHeader(firm, images.logo),
+    headingRule(data.scheduleHeading),
     approvedItems.length > 0
       ? gridTable(
           ["Prepared by", "Document", "Reference no.", "Revision", "Date"],
@@ -117,9 +132,7 @@ export async function buildOcCertificateDocx(data: OcCertificateData, images: { 
           [20, 32, 18, 13, 17],
           { zebra: true, rowHeight: 300 }
         )
-      : p("No approved documents.", { color: MUTED_COLOR }),
-    headingRule("CERTIFYING AUTHORITY"),
-    ...signatory(issuedBy?.name, `${issuedBy?.registration_no || "—"} · ${issuedBy?.registration_body || "—"}`, `Issued ${issuedDate}`)
+      : p("No approved documents.", { color: MUTED_COLOR })
   );
 
   const doc = new Document({

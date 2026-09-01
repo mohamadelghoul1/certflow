@@ -19,8 +19,19 @@ export function IssueOcForm({ jobId, assignedCertifierId, certifiers }: { jobId:
         </select>
       </div>
       <div className="flex-1 min-w-[160px]">
-        <label className="block text-[11px] text-placeholder mb-1">Description (scope, for partials)</label>
+        <label className="block text-[11px] text-placeholder mb-1">Scope of building works (blank uses the job&apos;s)</label>
         <input name="description" className="w-full px-2 py-1.5 rounded border border-line text-xs" />
+      </div>
+      {/* A partial is partial because something is unfinished, and the
+          certificate must say what in its own Exclusions row. */}
+      <div className="w-full">
+        <label className="block text-[11px] text-placeholder mb-1">Exclusions — what this certificate does not cover (partials)</label>
+        <textarea
+          name="exclusions"
+          rows={2}
+          placeholder="e.g. This Occupation Certificate excludes the swimming pool. The swimming pool must be completed to obtain a Whole Occupation Certificate."
+          className="w-full px-2 py-1.5 rounded border border-line text-xs"
+        />
       </div>
       {/* Each occupation certificate is its own Portal application — a
           partial and a final OC on the same job come back with different

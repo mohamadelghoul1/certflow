@@ -52,6 +52,9 @@ export const FIELD_KEYS = [
   "consentRelied",
   "daNumber",
   "daDate",
+  // Whole or Partial, and what a partial one leaves out.
+  "ocType",
+  "exclusions",
 ] as const;
 
 export type FieldKey = (typeof FIELD_KEYS)[number];
@@ -93,6 +96,8 @@ export const FIELD_NAMES: Record<FieldKey, string> = {
   consentRelied: "Approval relied upon",
   daNumber: "Development consent (DA) number",
   daDate: "Development consent (DA) date",
+  ocType: "Type of occupation certificate (whole or partial)",
+  exclusions: "What this certificate excludes",
 };
 
 // Rows a certificate must carry, whatever a firm prefers.
@@ -108,10 +113,11 @@ export const FIELD_NAMES: Record<FieldKey, string> = {
 export const REQUIRED_FIELDS: Record<CertificatePathway, FieldKey[]> = {
   CDC: ["applicant", "owner", "devAddress", "lotDp", "description", "determinationDate", "certifierName", "registrationNo"],
   CC: ["applicant", "owner", "devAddress", "lotDp", "description", "developmentConsentNumber", "certifierName", "registrationNo"],
-  // An Occupation Certificate names the building it covers, what it was
-  // assessed against, and when it was issued. Who signed it is printed
-  // by the signature block rather than as a row.
-  OC: ["devAddress", "lotDp", "description", "consentRelied", "issuedDate"],
+  // An Occupation Certificate names the building it covers and what it
+  // was assessed against. Who signed it and when are printed by the
+  // DETERMINATION block rather than as rows, so neither is required
+  // here.
+  OC: ["devAddress", "lotDp", "description", "consentRelied"],
 };
 
 export function isRequired(pathway: CertificatePathway, key: string): boolean {
@@ -125,5 +131,29 @@ export function isRequired(pathway: CertificatePathway, key: string): boolean {
 export const FIELDS_FOR_PATHWAY: Record<CertificatePathway, FieldKey[]> = {
   CDC: FIELD_KEYS.filter((k) => !["consentRelied", "daNumber", "daDate", "developmentConsentNumber", "developmentConsentDate"].includes(k)),
   CC: FIELD_KEYS.filter((k) => !["consentRelied", "daNumber", "daDate", "determinationDate", "lapseDate", "epi", "partOfCode", "zone"].includes(k)),
-  OC: ["devAddress", "lotDp", "description", "bcaClass", "consentRelied", "daNumber", "daDate", "issuedDate", "certificateNumber", "certifierName", "registrationBody", "registrationNo"],
+  OC: [
+    "applicant",
+    "applicantAddress",
+    "applicantPhone",
+    "owner",
+    "ownerAddress",
+    "ownerPhone",
+    "lga",
+    "epi",
+    "devAddress",
+    "lotDp",
+    "ocType",
+    "bcaClass",
+    "bcaVersion",
+    "description",
+    "attachments",
+    "exclusions",
+    "consentRelied",
+    "daNumber",
+    "daDate",
+    "issuedDate",
+    "certifierName",
+    "registrationBody",
+    "registrationNo",
+  ],
 };

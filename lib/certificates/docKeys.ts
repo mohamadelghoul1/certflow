@@ -44,6 +44,8 @@ export const DOC_KEYS: Record<FieldKey, string[]> = {
   consentRelied: ["cert.consentRelied"],
   daNumber: ["cert.daNumber"],
   daDate: ["cert.daDate"],
+  ocType: ["cert.ocType"],
+  exclusions: ["cert.exclusions"],
 };
 
 // The name the screen writes under.

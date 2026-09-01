@@ -141,9 +141,26 @@ describe("a firm's own Occupation Certificate layout", () => {
     return pdf.text.replace(/\s+/g, " ");
   }
 
-  test("the default prints the rows it always has", async () => {
+  test("the default prints the certificate the practice already issues", async () => {
     const text = await ocText(DEFAULT_TEMPLATES.OC);
-    for (const label of ["Property address:", "Lot/Section/DP:", "Development description:", "Building classification(s):", "Date of issue:"]) {
+    for (const label of [
+      "APPLICANT DETAILS",
+      "OWNER DETAILS",
+      "Name of the person having benefit of the development consent:",
+      "RELEVANT CONSENTS",
+      "Consent Authority / Local Government Area:",
+      "Complying Development Certificate Number:",
+      "Address of Development:",
+      "Lot/Section/DP:",
+      "Type of Occupation Certificate:",
+      "Building Classification:",
+      "Scope of Building Works Covered by this Notice:",
+      "Fire Safety Schedule:",
+      "Certificate Relates To:",
+      "The occupation or use of a new building.",
+      "PRINCIPAL CERTIFIER",
+      "Certifying Authority:",
+    ]) {
       assert.ok(text.includes(label), `the default Occupation Certificate lost "${label}"`);
     }
   });
@@ -153,7 +170,8 @@ describe("a firm's own Occupation Certificate layout", () => {
   // beside them.
   test("a row marked hide-if-blank is left off when the job has no value for it", async () => {
     const text = await ocText(DEFAULT_TEMPLATES.OC);
-    assert.ok(!text.includes("Development Consent (DA) No.:"), "an empty consent row printed anyway");
+    assert.ok(!text.includes("Development Consent Number:"), "an empty consent row printed anyway");
+    assert.ok(!text.includes("Exclusions:"), "an empty exclusions row printed anyway");
   });
 
   test("the same row prints when the job does have one", async () => {
@@ -163,7 +181,7 @@ describe("a firm's own Occupation Certificate layout", () => {
       await buildOcPackagePdf(ocCertificateFixture({ daNumber: "DA-2026/0044", daDate: "02 Sep 2026" }), { logo: null, signature: null }),
     );
     const text = pdf.text.replace(/\s+/g, " ");
-    assert.ok(text.includes("Development Consent (DA) No.:") && text.includes("DA-2026/0044"));
+    assert.ok(text.includes("Development Consent Number:") && text.includes("DA-2026/0044"));
   });
 
   test("a firm's own row and label reach the certificate", async () => {
@@ -186,6 +204,6 @@ describe("a firm's own Occupation Certificate layout", () => {
     const text = await ocText(template);
     assert.ok(text.includes("Site:") && text.includes("Works:"), "the renamed labels did not print");
     assert.ok(text.includes("Fire safety schedule:") && text.includes("Attached"), "the added row did not print");
-    assert.ok(!text.includes("Property address:"), "the old label printed as well");
+    assert.ok(!text.includes("Address of Development:"), "the default's label printed as well");
   });
 });

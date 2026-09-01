@@ -22,6 +22,7 @@ export async function OcPanel({
   certifiers,
   ocRecords,
   library,
+  governingRef,
 }: {
   job: Job;
   firmId: string;
@@ -30,6 +31,9 @@ export async function OcPanel({
   certifiers: Certifier[];
   ocRecords: OcRecord[];
   library: LibItem[];
+  // The job's current CDC/CC reference — the number an OC is issued
+  // under on a full-service job. Empty on a PC/OC job.
+  governingRef: string;
 }) {
   const complete = stageComplete(items);
   const hasWhole = ocRecords.some((r) => r.type === "whole");
@@ -57,7 +61,7 @@ export async function OcPanel({
 
       <div className="space-y-3">
         {ocRecords.map((r, i) => (
-          <OcRecordCard key={r.id} record={r} sequence={i + 1} job={job} firmId={firmId} certifiers={certifiers} />
+          <OcRecordCard key={r.id} record={r} sequence={i + 1} job={job} firmId={firmId} certifiers={certifiers} governingRef={governingRef} />
         ))}
       </div>
 
@@ -77,9 +81,22 @@ export async function OcPanel({
   );
 }
 
-async function OcRecordCard({ record, sequence, job, certifiers }: { record: OcRecord; sequence: number; job: Job; firmId: string; certifiers: Certifier[] }) {
+async function OcRecordCard({
+  record,
+  sequence,
+  job,
+  certifiers,
+  governingRef,
+}: {
+  record: OcRecord;
+  sequence: number;
+  job: Job;
+  firmId: string;
+  certifiers: Certifier[];
+  governingRef: string;
+}) {
   const issuedBy = certifiers.find((c) => c.id === record.issued_by);
-  const ref = resolveOcCertRef(record.cert_ref, job.details?.projectNumber || job.id.slice(0, 8), sequence);
+  const ref = resolveOcCertRef(record.cert_ref, job.pathway, governingRef, job.details?.projectNumber || job.id.slice(0, 8), sequence);
   const approvalUrl = await signedUrl(record.approval_file_path);
   return (
     <div className="card-lift border border-line rounded-xl p-6 shadow-sm bg-white">

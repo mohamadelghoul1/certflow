@@ -48,10 +48,18 @@ export async function buildOcPackagePdf(data: OcCertificateData, images: Package
     l.signatureRule();
     l.text("Yours sincerely,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
     await signature();
-    l.signatory(issuedBy?.name || "—", [`Registered Certifier / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""}`], {
+    l.signatory(issuedBy?.name || "—", [`${data.signoffRole} / ${issuedBy?.registration_no || "—"}`, `${firm?.name || ""}`], {
       size: LETTER_BODY_SIZE,
       nameSize: LETTER_SIGNATURE_NAME_SIZE,
     });
+  };
+
+  // Under "Re:" both letters carry the certificate's number, then what a
+  // CDC was decided under or the DA behind a CC — the facts a council
+  // files the letter against.
+  const reBlock = () => {
+    l.fieldRow("Occupation Certificate No.:", ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
+    for (const fact of data.letterFacts) l.fieldRow(fact.label, fact.value, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
   };
 
   const body = (text: string) => l.text(text, { size: LETTER_BODY_SIZE, justify: true, letter: true, gapAfter: LETTER_PARA_AFTER });
@@ -62,7 +70,7 @@ export async function buildOcPackagePdf(data: OcCertificateData, images: Package
   l.addressBlock(["The General Manager", d.council?.lga || "Council", ...formatAddressLines(d.council?.address)], { size: LETTER_BODY_SIZE });
   l.text("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
   l.documentTitle(`RE: ${(job.address || "").toUpperCase()}`);
-  l.fieldRow(`${typeLabel} No.:`, ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
+  reBlock();
   l.gap(4);
   // From ocData, so the firm's own wording reaches the PDF, the Word
   // file and the screen alike.
@@ -75,26 +83,49 @@ export async function buildOcPackagePdf(data: OcCertificateData, images: Package
   l.addressBlock([applicantName || "", ...formatAddressLines(d.applicantAddress)], { size: LETTER_BODY_SIZE });
   l.text("Dear Sir/Madam,", { size: LETTER_BODY_SIZE, gapAfter: 3, letter: true });
   l.documentTitle(`RE: ${(job.address || "").toUpperCase()}`);
-  l.fieldRow(`${typeLabel} No.:`, ref, l.contentWidth * LETTER_LABEL_FRACTION, LETTER_BODY_SIZE);
+  reBlock();
   l.gap(4);
   for (const paragraph of data.applicantBody) body(paragraph);
   await closing();
 
-  // 3. The certificate itself
+  // 3. The certificate itself, headed the way the practice's own are:
+  // WHOLE or PARTIAL and the number in the title, the Act underneath.
   l.pageBreak();
-  l.documentTitle(typeLabel.toUpperCase(), {
-    subtitle: ["Issued under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979", `Certificate No.: ${ref}`],
-    center: true,
-  });
-  // The firm's layout where they have one, ours otherwise. A CDC job has
-  // no development consent behind it, and the rows that would carry one
-  // drop out rather than printing a label with nothing beside it.
-  for (const section of resolveTemplate(data.template, ocFieldValues(data), typeLabel, consentLabel)) {
-    if (section.heading) l.heading(section.heading, { rule: true, gapBefore: 6 });
+  l.documentTitle(data.certTitle, { subtitle: data.certSubtitle, center: true });
+  // The firm's layout where they have one, ours otherwise. The rows only
+  // one pathway has — the DA behind a CC, the planning instrument behind
+  // a CDC — drop out on the other rather than printing a label with
+  // nothing beside it.
+  for (const section of resolveTemplate(data.template, ocFieldValues(data), typeLabel, data.consentFull)) {
+    if (section.heading) l.heading(section.heading, { rule: true, gapBefore: 3 });
     for (const row of section.rows) l.fieldRow(row.label, row.value);
   }
 
-  l.heading("DOCUMENTS RELIED UPON", { rule: true, gapBefore: 6 });
+  // Only a partial carries a condition: the whole building's OC is owed
+  // within five years. A whole OC prints no conditions section at all.
+  if (data.partialConditions) {
+    l.heading(data.partialConditions.heading, { rule: true, gapBefore: 3 });
+    l.text(data.partialConditions.clause, { bold: true, gapAfter: 2 });
+    l.text(data.partialConditions.text, { justify: true });
+  }
+
+  l.heading(data.determination.heading, { rule: true, gapBefore: 3 });
+  l.fieldRow(data.determination.dateLabel, data.determination.date);
+  l.gap(4);
+  l.text(data.determination.opening, { gapAfter: 3 });
+  for (const bullet of data.determination.bullets) {
+    l.text(`•  ${bullet}`, { x: MARGIN + 10, width: l.contentWidth - 10, gapAfter: 1.5 });
+  }
+  l.gap(4);
+  // The signing block stays in one piece: a page break between the
+  // signature and the name under it leaves a registration line orphaned
+  // on a blank sheet.
+  l.ensure(84);
+  await signature();
+  l.signatory(issuedBy?.name || "—", [`${issuedBy?.registration_no || "—"} · ${issuedBy?.registration_body || "—"}`]);
+
+  l.pageBreak();
+  l.heading(data.scheduleHeading, { rule: true, gapBefore: 3 });
   if (approvedItems.length > 0) {
     l.table(
       ["Prepared by", "Document", "Reference no.", "Revision", "Date"],
@@ -105,10 +136,6 @@ export async function buildOcPackagePdf(data: OcCertificateData, images: Package
   } else {
     l.text("No approved documents.", { color: MUTED });
   }
-
-  l.heading("CERTIFYING AUTHORITY", { rule: true, gapBefore: 6 });
-  await signature();
-  l.signatory(issuedBy?.name || "—", [`${issuedBy?.registration_no || "—"} · ${issuedBy?.registration_body || "—"}`, `Issued ${issuedDate}`]);
 
   return l.save();
 }

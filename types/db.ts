@@ -450,6 +450,9 @@ export type PathwayCertificateVersion = {
 
 export type OcRecord = {
   cert_ref: string | null;
+  // What this certificate deliberately does not cover — the reason a
+  // partial OC is partial. Added by migration 0067; absent until run.
+  exclusions?: string | null;
   // The NSW Planning Portal reference this certificate was lodged under
   // (the CFT series). Per certificate, not per job — see migration 0016.
   portal_ref: string | null;

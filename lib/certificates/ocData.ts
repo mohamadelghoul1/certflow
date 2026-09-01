@@ -37,6 +37,27 @@ export type OcCertificateData = {
   d: JobDetails;
   issuedDate: string;
   applicantName: string;
+  // "Complying Development Certificate" / "Construction Certificate" —
+  // the words {CONSENT} fills in with on rows and letters.
+  consentFull: string;
+  // The certificate's own heading and the line under it, composed once:
+  // "OCCUPATION CERTIFICATE - WHOLE - CDC-26057/01 (RESIDENTIAL)".
+  certTitle: string;
+  certSubtitle: string;
+  // The extra facts under "Re:" on both letters — a CDC names what it
+  // was decided under, a CC names the development application.
+  letterFacts: { label: string; value: string }[];
+  // Clause 53 of the certification regulation, printed on a partial OC
+  // and only a partial: the whole building's OC is owed within 5 years.
+  partialConditions: { heading: string; clause: string; text: string } | null;
+  // "I, <certifier>, as the certifying authority, certify that:" and
+  // what follows it — the statutory declarations the signature sits
+  // under, worded for this job's pathway and this certificate's type.
+  determination: { heading: string; dateLabel: string; date: string; opening: string; bullets: string[] };
+  scheduleHeading: string;
+  // OC letters and certificates go out over the Principal Certifier's
+  // title, not the generic "Registered Certifier" of the CDC/CC letters.
+  signoffRole: string;
   // The layout this certificate is drawn from: the firm's own where they
   // have saved one, Certlyn's otherwise.
   template: CertificateTemplate;
@@ -81,9 +102,6 @@ export async function getOcCertificateData(jobId: string, ocId: string, firmId: 
   const allItems = ((ocChecklist?.checklist_items as never[]) || []) as OcChecklistItem[];
   const approvedItems = allItems.filter((i) => i.status === "approved");
 
-  const ref = resolveOcCertRef(record.cert_ref, job.details?.projectNumber || job.id.slice(0, 8), sequence);
-  const projRef = ref.split("/")[0];
-  const typeLabel = record.type === "whole" ? "Whole Occupation Certificate" : "Partial Occupation Certificate";
   // What the occupation certificate is issued against: our own CDC/CC on
   // a full-service job, and the certificate another certifier issued on a
   // PC/OC one.
@@ -93,12 +111,61 @@ export async function getOcCertificateData(jobId: string, ocId: string, firmId: 
   const approval = governingApproval(job.pathway, job.details?.priorApproval, ownRef);
   const consentRef = approval.ref;
   const consentLabel = approval.label;
+  const consentFull =
+    consentLabel === "CDC" ? "Complying Development Certificate" : consentLabel === "CC" ? "Construction Certificate" : consentLabel || "Approval";
+  const ref = resolveOcCertRef(record.cert_ref, job.pathway, job.pathway_generated ? ownRef : "", job.details?.projectNumber || job.id.slice(0, 8), sequence);
+  const projRef = ref.split("/")[0];
+  const typeLabel = record.type === "whole" ? "Whole Occupation Certificate" : "Partial Occupation Certificate";
   const d = job.details || {};
   const issuedDate = formatISODate(record.generated_date);
   const applicantName = [d.contact?.title, d.contact?.givenNames, d.contact?.surname].filter(Boolean).join(" ") || d.contact?.nameOrCompany || "Applicant";
 
   const daNumber = (d.certificateDetails?.developmentConsentNumber || "").trim();
   const daDate = d.certificateDetails?.developmentConsentDate ? formatISODate(d.certificateDetails.developmentConsentDate) : "";
+
+  // The heading, worked out the way the practice's own certificates put
+  // it: the kind of OC, its number, and (RESIDENTIAL) when every class
+  // on the job is a house or its outbuildings (class 1 and 10).
+  const classes = d.proposal?.classifications || [];
+  const residential = classes.length > 0 && classes.every((c) => /^(1|10)[a-c]?$/i.test(String(c).trim()));
+  const certTitle = `OCCUPATION CERTIFICATE - ${record.type === "whole" ? "WHOLE" : "PARTIAL"} - ${ref}${residential ? " (RESIDENTIAL)" : ""}`;
+  const certSubtitle = "Issued under Part 6 of the Environmental Planning and Assessment Act 1979";
+
+  // Under "Re:" a CDC letter says what the decision was made under, a CC
+  // letter names the development application the consent sits on.
+  const decidedUnder = [d.certificateDetails?.relevantInstrument, d.certificateDetails?.relevantPartOfCode].filter(Boolean).join(" - ");
+  const letterFacts: { label: string; value: string }[] = [];
+  if (job.pathway === "CDC" && decidedUnder) letterFacts.push({ label: "Decision Made Under:", value: decidedUnder });
+  if (job.pathway !== "CDC" && daNumber) letterFacts.push({ label: "Development Application No.:", value: daNumber });
+
+  const partialConditions =
+    record.type === "partial"
+      ? {
+          heading: "CONDITIONS OF OCCUPATION CERTIFICATE",
+          clause: "53  Occupation certificates for partially completed buildings—the Act, s 6.33(1)",
+          text: "It is a condition of an occupation certificate issued for the first completed stage of a partially completed building (the partial occupation certificate) that an occupation certificate must be obtained for the whole building within 5 years after the partial occupation certificate is issued.",
+        }
+      : null;
+
+  const determination = {
+    heading: "DETERMINATION",
+    dateLabel: "Approval Date:",
+    date: issuedDate,
+    opening: `I, ${issuedBy?.name || "—"}, as the certifying authority, certify that:`,
+    bullets: [
+      "I have been appointed as the Principal Certifier under s6.5;",
+      // On a partial, the occupants move in beside unfinished work — the
+      // certifier declares that has been weighed, as the practice's own
+      // partial OCs do.
+      ...(record.type === "partial" ? ["The health and safety of the occupants of the building have been considered;"] : []),
+      "A current Development Consent or Complying Development Certificate is in force with respect to the building;",
+      `A ${consentFull} has been issued with respect to the plans and specifications for the building;`,
+      "The building is suitable for occupation or use in accordance with its Classification under the Building Code of Australia;",
+    ],
+  };
+
+  const scheduleHeading = `SCHEDULE 1: DOCUMENTATION REQUIRED TO ISSUE OCCUPATION CERTIFICATE ${ref}`;
+  const signoffRole = "Principal Certifier";
 
   const { template } = await loadCertificateTemplate(supabase, firmId, "OC");
 
@@ -112,23 +179,66 @@ export async function getOcCertificateData(jobId: string, ocId: string, firmId: 
     PATHWAY: typeLabel,
     COUNCIL: d.council?.lga || "Council",
     APPLICANT: applicantName,
-    CONSENT: consentLabel,
+    CONSENT: consentFull,
     "CONSENT NO": consentRef,
     "DA NO": daNumber,
     "CERTIFICATE NO": ref,
     "FIRM ADDRESS": firm?.office_address,
   };
 
+  // The letters as the practice writes them, taken sentence for
+  // sentence from their issued OCs. The firm's own wording, where they
+  // have saved some, still wins.
+  const contactClose = `Should you need to discuss any issues, please do not hesitate to contact the Principal Certifier, ${issuedBy?.name || "our office"}, on the above numbers.`;
   const councilBody = firmWording(wording, "oc.council.body", wordingValues) ?? [
-    `${firm?.name} has issued a ${typeLabel.toLowerCase()} under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on ${consentLabel} No. ${consentRef}${
-      daNumber ? `, issued under Development Consent No. ${daNumber}` : ""
-    }. Please find enclosed a copy for your records.`,
+    `${firm?.name} has issued an Occupation Certificate for the above-mentioned project under Sections 6.9, 6.10 of the Environmental Planning and Assessment Act 1979.`,
+    "Please find enclosed the following documentation:",
+    `•  Occupation Certificate No. ${ref}
+•  Documentation used to determine the Occupation Certificate`,
+    contactClose,
   ];
 
   const applicantBody = firmWording(wording, "oc.applicant.body", wordingValues) ?? [
-    `Enclosed is a copy of the issued ${typeLabel} for the subject development. One copy has been forwarded directly to ${d.council?.lga || "Council"} for their records.`,
-    `Please retain this certificate, as it authorises ${record.type === "whole" ? "occupation and use of the building" : "occupation and use of the part of the building described below"}.`,
+    `In accordance with Sections 6.9, 6.10 of the Environmental Planning and Assessment Act 1979, we enclose an Occupation Certificate relating to the construction of the above project.`,
+    `As required under the legislation copies of the same have been forwarded to ${d.council?.lga || "Council"} for their records.`,
+    // A partial is a certificate with a clock on it, and the client is
+    // told so in the letter as well as on the certificate. A whole OC is
+    // the end of the job, and says thank you instead.
+    record.type === "partial"
+      ? "It is a condition of an occupation certificate issued for the first completed stage of a partially completed building (the partial occupation certificate) that an occupation certificate must be obtained for the whole building within 5 years after the partial occupation certificate is issued. A fee will apply for an additional inspection, assessment and issuance of an additional Occupation Certificate."
+      : "We would like to take this opportunity to thank you for using our services.",
+    contactClose,
   ];
 
-  return { template, job, firm: firm || null, record, issuedBy: issuedBy || null, approvedItems, signatureUrl, uploadedApprovalUrl, logoUrl, ref, projRef, typeLabel, consentRef, consentLabel, daNumber, daDate, d, issuedDate, applicantName, councilBody, applicantBody };
+  return {
+    template,
+    job,
+    firm: firm || null,
+    record,
+    issuedBy: issuedBy || null,
+    approvedItems,
+    signatureUrl,
+    uploadedApprovalUrl,
+    logoUrl,
+    ref,
+    projRef,
+    typeLabel,
+    consentRef,
+    consentLabel,
+    consentFull,
+    daNumber,
+    daDate,
+    d,
+    issuedDate,
+    applicantName,
+    certTitle,
+    certSubtitle,
+    letterFacts,
+    partialConditions,
+    determination,
+    scheduleHeading,
+    signoffRole,
+    councilBody,
+    applicantBody,
+  };
 }

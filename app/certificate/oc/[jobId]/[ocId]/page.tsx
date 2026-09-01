@@ -108,8 +108,13 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
                 <strong>Re:</strong> {job.address}
               </div>
               <div className="mt-2">
-                <strong>{typeLabel} No.</strong>&nbsp;&nbsp;{ref}
+                <strong>Occupation Certificate No.</strong>&nbsp;&nbsp;{ref}
               </div>
+              {data.letterFacts.map((fact) => (
+                <div key={fact.label} className="mt-1">
+                  <strong>{fact.label}</strong>&nbsp;&nbsp;{fact.value}
+                </div>
+              ))}
             </div>
             {/* From ocData, which the PDF and the Word export read too —
                 so the letter cannot say one thing here and another in
@@ -120,7 +125,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
             <div className="pt-4">Yours sincerely,</div>
             <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
             <div>{issuedBy?.name || "—"}</div>
-            <div className="text-xs text-placeholder">Registered Certifier / {issuedBy?.registration_no}</div>
+            <div className="text-xs text-placeholder">{data.signoffRole} / {issuedBy?.registration_no}</div>
             <div className="text-xs text-placeholder">{firm?.name}</div>
           </div>
           <DocFooter projRef={projRef} website={firm?.website} />
@@ -149,8 +154,13 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
                 <strong>Re:</strong> {job.address}
               </div>
               <div className="mt-2">
-                <strong>{typeLabel} No.:</strong>&nbsp;&nbsp;{ref}
+                <strong>Occupation Certificate No.:</strong>&nbsp;&nbsp;{ref}
               </div>
+              {data.letterFacts.map((fact) => (
+                <div key={fact.label} className="mt-1">
+                  <strong>{fact.label}</strong>&nbsp;&nbsp;{fact.value}
+                </div>
+              ))}
             </div>
             {data.applicantBody.map((paragraph, i) => (
               <div key={i}>{paragraph}</div>
@@ -158,7 +168,7 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
             <div className="pt-4">Yours sincerely,</div>
             <SignatureLine signatureUrl={signatureUrl} topPadding="pt-6" />
             <div>{issuedBy?.name || "—"}</div>
-            <div className="text-xs text-placeholder">Registered Certifier / {issuedBy?.registration_no}</div>
+            <div className="text-xs text-placeholder">{data.signoffRole} / {issuedBy?.registration_no}</div>
             <div className="text-xs text-placeholder">{firm?.name}</div>
           </div>
           <DocFooter projRef={projRef} website={firm?.website} />
@@ -173,32 +183,43 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
             >
               APPROVED
             </div>
-            <table className="w-full border-b-2 border-heading mb-6">
-              <tbody>
-                <tr>
-                  <td className="align-top pb-4">
-                    <div className="text-xl font-bold text-heading">{firm?.name}</div>
-                    <div className="text-xs text-placeholder mt-1">ABN {firm?.abn}</div>
-                    <div className="text-xs text-placeholder">{firm?.office_address}</div>
-                    <div className="text-xs text-placeholder">
-                      {firm?.phone} · {firm?.email}
-                    </div>
-                  </td>
-                  <td className="align-top pb-4 text-right text-xs text-placeholder">
-                    <div>Reference</div>
-                    <div className="font-mono font-semibold text-heading">{ref}</div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <DocumentHeader firm={firm} logoUrl={logoUrl} />
 
-            <h1 className="text-center text-2xl font-bold text-heading uppercase tracking-wide mb-1">{typeLabel}</h1>
-            <p className="text-center text-xs text-placeholder mb-8">Issued under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979</p>
+            <h1 className="text-center text-lg font-bold text-heading uppercase tracking-wide mb-1">{data.certTitle}</h1>
+            <p className="text-center text-xs text-placeholder mb-8">{data.certSubtitle}</p>
 
             <OcCertificateRows data={data} />
 
+            {/* Only a partial carries a condition: the whole building's OC
+                is owed within five years. A whole OC prints none. */}
+            {data.partialConditions && (
+              <div className="mb-8">
+                <div className="text-sm font-bold uppercase text-doc-heading border-b border-line pb-1 mb-2">{data.partialConditions.heading}</div>
+                <div className="text-sm font-semibold text-heading">{data.partialConditions.clause}</div>
+                <div className="text-sm text-muted mt-1">{data.partialConditions.text}</div>
+              </div>
+            )}
+
             <div className="mb-8">
-              <div className="text-xs font-bold uppercase tracking-wide text-placeholder mb-2">Documents relied upon</div>
+              <div className="text-sm font-bold uppercase text-doc-heading border-b border-line pb-1 mb-2">{data.determination.heading}</div>
+              <div className="text-sm">
+                <span className="font-semibold text-heading">{data.determination.dateLabel}</span> <span className="text-muted">{data.determination.date}</span>
+              </div>
+              <div className="text-sm mt-3">{data.determination.opening}</div>
+              <ul className="text-sm text-muted mt-2 space-y-1 list-disc pl-6">
+                {data.determination.bullets.map((bullet) => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
+              </ul>
+              <SignatureLine signatureUrl={signatureUrl} topPadding="pt-4" />
+              <div className="text-sm font-semibold text-heading">{issuedBy?.name || "—"}</div>
+              <div className="text-xs text-placeholder">
+                {issuedBy?.registration_no} · {issuedBy?.registration_body}
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <div className="text-sm font-bold uppercase text-doc-heading border-b border-line pb-1 mb-2">{data.scheduleHeading}</div>
               <table className="w-full text-xs border border-line">
                 <thead>
                   <tr className="bg-surface text-left">
@@ -230,14 +251,6 @@ export default async function OcCertificatePage({ params }: { params: Promise<{ 
               </table>
             </div>
 
-            <div className="border-t border-line pt-4 mt-8 text-sm">
-              <div className="text-[11px] uppercase tracking-wide text-placeholder mb-1">Certifying authority</div>
-              <div className="font-semibold text-heading">{issuedBy?.name || "—"}</div>
-              <div className="text-placeholder">
-                {issuedBy?.registration_no} · {issuedBy?.registration_body}
-              </div>
-              <div className="text-placeholder mt-1">Issued {issuedDate}</div>
-            </div>
           </div>
           <DocFooter projRef={projRef} website={firm?.website} />
         </Section>

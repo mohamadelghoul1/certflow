@@ -200,20 +200,54 @@ export function ocCertificateFixture(overrides: Record<string, unknown> = {}): O
   // so a test that makes the OC partial gets the letter that goes with
   // it instead of one quietly describing a different certificate.
   const partial = (overrides.record as { type?: string } | undefined)?.type === "partial";
-  const typeLabel = (overrides.typeLabel as string | undefined) || "Occupation Certificate";
+  const ref = (overrides.ref as string | undefined) || "CDC-26001/01";
 
   return {
-    // The two letters, as getOcCertificateData resolves them. Ahead of
-    // the spread so a test can still put its own words in — and present
-    // at all because this fixture is cast, so a missing field is not a
-    // type error here but a crash in whatever reads it.
+    // The letters and the certificate's own blocks, as
+    // getOcCertificateData resolves them. Ahead of the spread so a test
+    // can still put its own words in — and present at all because this
+    // fixture is cast, so a missing field is not a type error here but a
+    // crash in whatever reads it.
     councilBody: [
-      "Quality Private Certifiers Pty Ltd has issued an occupation certificate under Part 6 Division 3 of the Environmental Planning and Assessment Act 1979 for the above premises, relying on CDC No. CDC-26091/01. Please find enclosed a copy for your records.",
+      "Quality Private Certifiers Pty Ltd has issued an Occupation Certificate for the above-mentioned project under Sections 6.9, 6.10 of the Environmental Planning and Assessment Act 1979.",
+      "Please find enclosed the following documentation:",
+      `•  Occupation Certificate No. ${ref}\n•  Documentation used to determine the Occupation Certificate`,
+      "Should you need to discuss any issues, please do not hesitate to contact the Principal Certifier, Mohamad El Ghoul, on the above numbers.",
     ],
     applicantBody: [
-      `Enclosed is a copy of the issued ${typeLabel} for the subject development. One copy has been forwarded directly to Liverpool for their records.`,
-      `Please retain this certificate, as it authorises ${partial ? "occupation and use of the part of the building described below" : "occupation and use of the building"}.`,
+      "In accordance with Sections 6.9, 6.10 of the Environmental Planning and Assessment Act 1979, we enclose an Occupation Certificate relating to the construction of the above project.",
+      "As required under the legislation copies of the same have been forwarded to Liverpool City Council for their records.",
+      partial
+        ? "It is a condition of an occupation certificate issued for the first completed stage of a partially completed building (the partial occupation certificate) that an occupation certificate must be obtained for the whole building within 5 years after the partial occupation certificate is issued. A fee will apply for an additional inspection, assessment and issuance of an additional Occupation Certificate."
+        : "We would like to take this opportunity to thank you for using our services.",
+      "Should you need to discuss any issues, please do not hesitate to contact the Principal Certifier, Mohamad El Ghoul, on the above numbers.",
     ],
+    consentFull: "Complying Development Certificate",
+    certTitle: `OCCUPATION CERTIFICATE - ${partial ? "PARTIAL" : "WHOLE"} - ${ref}`,
+    certSubtitle: "Issued under Part 6 of the Environmental Planning and Assessment Act 1979",
+    letterFacts: [],
+    partialConditions: partial
+      ? {
+          heading: "CONDITIONS OF OCCUPATION CERTIFICATE",
+          clause: "53  Occupation certificates for partially completed buildings—the Act, s 6.33(1)",
+          text: "It is a condition of an occupation certificate issued for the first completed stage of a partially completed building (the partial occupation certificate) that an occupation certificate must be obtained for the whole building within 5 years after the partial occupation certificate is issued.",
+        }
+      : null,
+    determination: {
+      heading: "DETERMINATION",
+      dateLabel: "Approval Date:",
+      date: "24 Aug 2026",
+      opening: "I, Mohamad El Ghoul, as the certifying authority, certify that:",
+      bullets: [
+        "I have been appointed as the Principal Certifier under s6.5;",
+        ...(partial ? ["The health and safety of the occupants of the building have been considered;"] : []),
+        "A current Development Consent or Complying Development Certificate is in force with respect to the building;",
+        "A Complying Development Certificate has been issued with respect to the plans and specifications for the building;",
+        "The building is suitable for occupation or use in accordance with its Classification under the Building Code of Australia;",
+      ],
+    },
+    scheduleHeading: `SCHEDULE 1: DOCUMENTATION REQUIRED TO ISSUE OCCUPATION CERTIFICATE ${ref}`,
+    signoffRole: "Principal Certifier",
     job: {
       id: "job-1",
       address: "21 Coquet Way Green Valley",
@@ -240,8 +274,8 @@ export function ocCertificateFixture(overrides: Record<string, unknown> = {}): O
     signatureUrl: null,
     uploadedApprovalUrl: null,
     logoUrl: null,
-    ref: "OC-26001/01",
-    projRef: "OC-26001",
+    ref: "CDC-26001/01",
+    projRef: "CDC-26001",
     typeLabel: "Whole Occupation Certificate",
     consentRef: "CDC-26001/01",
     consentLabel: "CDC",

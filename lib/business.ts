@@ -335,8 +335,23 @@ export function ocCertRef(projectNumberOrId: string, sequence: number) {
   return `OC-${withoutPathwayPrefix("OC", projectNumberOrId)}/${String(sequence || 1).padStart(2, "0")}`;
 }
 
-export function resolveOcCertRef(customRef: string | null | undefined, projectNumberOrId: string, sequence: number) {
-  return customRef?.trim() || ocCertRef(projectNumberOrId, sequence);
+// The number an Occupation Certificate is issued under. The practice —
+// on every real OC this was built from — numbers the OC after the
+// certificate it completes: the OC for CDC-26057/01 is CDC-26057/01,
+// with WHOLE or PARTIAL on the document itself naming which kind. So
+// the default is the governing certificate's own reference. Only a
+// PC/OC job, whose approval belongs to another certifier, numbers its
+// OCs in a series of this firm's own — putting someone else's CDC
+// number on our certificate would claim their approval as ours.
+//
+// Issuing stamps the resolved number onto the record (issueOc), so a
+// certificate keeps the number it went out with even if the job is
+// modified afterwards; the fallback here is for records from before
+// that.
+export function resolveOcCertRef(customRef: string | null | undefined, pathway: Pathway, governingRef: string, projectNumberOrId: string, sequence: number) {
+  if (customRef?.trim()) return customRef.trim();
+  if (pathway !== "PC_OC" && governingRef.trim()) return governingRef.trim();
+  return ocCertRef(projectNumberOrId, sequence);
 }
 
 // Build Brief §9: CDC/CC/OC issuance and critical stage inspections must be

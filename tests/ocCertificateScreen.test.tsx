@@ -20,7 +20,19 @@ const OC = DEFAULT_TEMPLATES.OC;
 describe("the Occupation Certificate on screen", () => {
   test("draws the standard layout when the firm has not changed it", () => {
     const text = screen(OC);
-    for (const label of ["Property address:", "Lot/Section/DP:", "Development description:", "Building classification(s):", "Date of issue:"]) {
+    for (const label of [
+      "APPLICANT DETAILS",
+      "OWNER DETAILS",
+      "RELEVANT CONSENTS",
+      "Consent Authority / Local Government Area:",
+      "Address of Development:",
+      "Lot/Section/DP:",
+      "Type of Occupation Certificate:",
+      "Building Classification:",
+      "Scope of Building Works Covered by this Notice:",
+      "Certificate Relates To:",
+      "PRINCIPAL CERTIFIER",
+    ]) {
       assert.ok(text.includes(label), `the screen lost "${label}"`);
     }
   });
@@ -31,8 +43,8 @@ describe("the Occupation Certificate on screen", () => {
       sections: OC.sections.map((s) => ({ ...s, rows: s.rows.filter((r) => r.source !== "bcaClass") })),
     };
     const text = screen(without);
-    assert.ok(!text.includes("Building classification(s):"), "a removed row still showed on screen");
-    assert.ok(text.includes("Property address:"), "removing one row should not remove the rest");
+    assert.ok(!text.includes("Building Classification:"), "a removed row still showed on screen");
+    assert.ok(text.includes("Address of Development:"), "removing one row should not remove the rest");
   });
 
   test("a row the firm renamed is renamed on the screen too", () => {
@@ -45,7 +57,7 @@ describe("the Occupation Certificate on screen", () => {
     };
     const text = screen(renamed);
     assert.ok(text.includes("Site address:"), "the firm's own wording did not reach the screen");
-    assert.ok(!text.includes("Property address:"), "the old wording was still drawn");
+    assert.ok(!text.includes("Address of Development:"), "the old wording was still drawn");
   });
 
   test("a row and a section the firm added show on screen", () => {
@@ -65,6 +77,6 @@ describe("the Occupation Certificate on screen", () => {
     const text = renderToStaticMarkup(
       <OcCertificateRows data={ocCertificateFixture({ template: OC, daNumber: "", daDate: "" })} />
     ).replace(/<[^>]+>/g, " ");
-    assert.ok(!text.includes("Development Consent (DA) No.:"), "an empty consent row was drawn anyway");
+    assert.ok(!text.includes("Development Consent Number:"), "an empty consent row was drawn anyway");
   });
 });

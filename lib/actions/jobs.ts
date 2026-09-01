@@ -9,7 +9,7 @@ import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { PRIOR_APPROVAL_DOCUMENTS, INSPECTION_LIBRARY, defaultCriticalStageInspections, normalizeCriticalStageInspections, epiForCodeParts } from "@/lib/constants";
-import { todayISO, normalizePortalRef, portalRefKindFor, type PortalRefKind, type Pathway } from "@/lib/business";
+import { todayISO, normalizePortalRef, portalRefKindFor, resolveOcCertRef, resolvePathwayCertRef, type PortalRefKind, type Pathway } from "@/lib/business";
 import { splitAddress } from "@/lib/address";
 import { notifyJobClient } from "@/lib/email";
 import { certificateIssuedEmail } from "@/lib/certificateIssuedEmail";
@@ -1448,6 +1448,7 @@ export async function issueOc(_prev: ActionState, formData: FormData): Promise<A
   const jobId = String(formData.get("job_id"));
   const type = String(formData.get("type")) as "partial" | "whole";
   const description = String(formData.get("description") || "");
+  const exclusions = String(formData.get("exclusions") || "").trim();
   const certifierId = String(formData.get("certifier_id") || "");
   if (!certifierId) return { error: "Select a certifier before issuing." };
 
@@ -1457,11 +1458,38 @@ export async function issueOc(_prev: ActionState, formData: FormData): Promise<A
   const portalRef = normalizePortalRef(String(formData.get("portal_ref") || ""), "OC");
   if (!portalRef) return { error: "Enter the NSW Planning Portal reference number before issuing." };
 
-  const { error } = await supabase.from("oc_records").insert({ job_id: jobId, type, description, generated_date: todayISO(), issued_by: certifierId, portal_ref: portalRef });
-  if (error) return { error: error.message };
+  // The certificate's number is settled now and stamped on the record,
+  // so a modification bumping the job's version later cannot quietly
+  // renumber a certificate that has already gone out. On a full-service
+  // job that number is the CDC/CC the OC completes; on a PC/OC job, a
+  // series of this firm's own.
+  const [{ data: ocJob }, { data: activeVersion }, { count: priorOcs }] = await Promise.all([
+    supabase.from("jobs").select("firm_id, pathway, pathway_version, pathway_generated, details").eq("id", jobId).single(),
+    supabase.from("pathway_certificate_versions").select("cert_ref, version").eq("job_id", jobId).order("version", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("oc_records").select("id", { count: "exact", head: true }).eq("job_id", jobId),
+  ]);
+  if (!ocJob) return { error: "Could not find this job to issue against." };
+  const projectRef = (ocJob.details as JobDetails | null)?.projectNumber || jobId.slice(0, 8);
+  const governingRef = ocJob.pathway_generated
+    ? resolvePathwayCertRef(activeVersion?.cert_ref, ocJob.pathway as Pathway, projectRef, ocJob.pathway_version || 1)
+    : "";
+  const certRef = resolveOcCertRef(null, ocJob.pathway as Pathway, governingRef, projectRef, (priorOcs || 0) + 1);
 
-  const { data: ocJob } = await supabase.from("jobs").select("firm_id").eq("id", jobId).single();
-  after(() => pruneAfterIssue({ jobId, kind: "oc", firmId: ocJob?.firm_id ?? null }));
+  const { error } = await supabase
+    .from("oc_records")
+    .insert({ job_id: jobId, type, description, exclusions: exclusions || null, cert_ref: certRef, generated_date: todayISO(), issued_by: certifierId, portal_ref: portalRef });
+  if (error) {
+    // A database from before migration 0067 has no exclusions column;
+    // the certificate still issues, without the row, rather than
+    // refusing until the migration is run.
+    if (!isUnknownColumn(error)) return { error: error.message };
+    const retry = await supabase
+      .from("oc_records")
+      .insert({ job_id: jobId, type, description, cert_ref: certRef, generated_date: todayISO(), issued_by: certifierId, portal_ref: portalRef });
+    if (retry.error) return { error: retry.error.message };
+  }
+
+  after(() => pruneAfterIssue({ jobId, kind: "oc", firmId: ocJob.firm_id ?? null }));
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
 }

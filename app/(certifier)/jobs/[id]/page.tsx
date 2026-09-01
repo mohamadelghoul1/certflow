@@ -16,7 +16,7 @@ import { InspectionsPanel } from "@/components/certifier/InspectionsPanel";
 import { JobTabs } from "@/components/certifier/JobTabs";
 import { signedUrl } from "@/lib/storage";
 import type { Contractor, Job } from "@/types/db";
-import { pathwayLabel, type Pathway } from "@/lib/business";
+import { pathwayLabel, resolvePathwayCertRef, type Pathway } from "@/lib/business";
 import { SubmitButton } from "@/components/SubmitButton";
 
 // hasModifications: the tab appears once the CDC/CC has been issued,
@@ -242,7 +242,25 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               />
           ),
           oc: ocChecklist ? (
-            <OcPanel job={typedJob} firmId={profile.firm_id} checklistId={ocChecklist.id} items={(ocChecklist.checklist_items as never[]) || []} certifiers={certifiers || []} ocRecords={ocRecords || []} library={libraries.OC} />
+            <OcPanel
+              job={typedJob}
+              firmId={profile.firm_id}
+              checklistId={ocChecklist.id}
+              items={(ocChecklist.checklist_items as never[]) || []}
+              certifiers={certifiers || []}
+              ocRecords={ocRecords || []}
+              library={libraries.OC}
+              governingRef={
+                typedJob.pathway_generated
+                  ? resolvePathwayCertRef(
+                      ((pathwayVersions as { version: number; cert_ref: string | null }[] | null) || []).find((v) => v.version === typedJob.pathway_version)?.cert_ref,
+                      typedJob.pathway,
+                      typedJob.details?.projectNumber || typedJob.id.slice(0, 8),
+                      typedJob.pathway_version
+                    )
+                  : ""
+              }
+            />
           ) : null,
         }}
       />

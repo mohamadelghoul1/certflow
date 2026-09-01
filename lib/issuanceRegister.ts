@@ -35,6 +35,8 @@ type JobRow = {
   address: string;
   description: string | null;
   pathway: Pathway;
+  pathway_version: number;
+  pathway_generated: boolean;
   details: JobDetails | null;
 };
 
@@ -80,12 +82,12 @@ export async function getIssuanceRegister(supabase: SupabaseClient, firmId: stri
     supabase.from("certifiers").select("id, name").eq("firm_id", firmId),
     supabase
       .from("pathway_certificate_versions")
-      .select("version, generated_date, approval_date, issued_by, cert_ref, jobs!inner(id, firm_id, deleted_at, address, description, pathway, details)")
+      .select("version, generated_date, approval_date, issued_by, cert_ref, jobs!inner(id, firm_id, deleted_at, address, description, pathway, pathway_version, pathway_generated, details)")
       .eq("jobs.firm_id", firmId)
       .is("jobs.deleted_at", null),
     supabase
       .from("oc_records")
-      .select("id, type, generated_date, approval_date, issued_by, cert_ref, created_at, jobs!inner(id, firm_id, deleted_at, address, description, pathway, details)")
+      .select("id, type, generated_date, approval_date, issued_by, cert_ref, created_at, jobs!inner(id, firm_id, deleted_at, address, description, pathway, pathway_version, pathway_generated, details)")
       .eq("jobs.firm_id", firmId)
       .is("jobs.deleted_at", null),
   ]);
@@ -113,6 +115,17 @@ export async function getIssuanceRegister(supabase: SupabaseClient, firmId: stri
   // An OC's printed number carries its 1-based position among every OC
   // on the job, so the positions are worked out across all of a job's
   // OCs before the date filter narrows them.
+  // An OC's default number is the certificate it completes, so each
+  // job's current CDC/CC reference is worked out from the versions this
+  // query already fetched — including any custom reference typed on it.
+  const governingRefByJob = new Map<string, string>();
+  for (const v of versions || []) {
+    const job = v.jobs as unknown as JobRow;
+    if ((v.version as number) === job.pathway_version) {
+      governingRefByJob.set(job.id, resolvePathwayCertRef(v.cert_ref as string | null, job.pathway, job.details?.projectNumber || job.id.slice(0, 8), job.pathway_version));
+    }
+  }
+
   const ocsByJob = new Map<string, { created_at: string; id: string }[]>();
   for (const r of ocRecords || []) {
     const job = r.jobs as unknown as JobRow;
@@ -131,7 +144,13 @@ export async function getIssuanceRegister(supabase: SupabaseClient, firmId: stri
     rows.push({
       date: date!,
       certType: "OC",
-      certNumber: resolveOcCertRef(r.cert_ref as string | null, projectRef, sequence || 1),
+      certNumber: resolveOcCertRef(
+        r.cert_ref as string | null,
+        job.pathway,
+        job.pathway_generated ? governingRefByJob.get(job.id) || resolvePathwayCertRef(null, job.pathway, projectRef, job.pathway_version || 1) : "",
+        projectRef,
+        sequence || 1
+      ),
       ...rowFromJob(job, certifierName.get(r.issued_by as string) || ""),
     });
   }

@@ -16,38 +16,73 @@ describe("the Occupation Certificate package", () => {
   // one file, so it has to say the same things section for section.
   test("carries both letters and the certificate", async () => {
     const { text, pageCount } = await packageText();
-    assert.equal(pageCount, 3, "council letter, applicant letter, certificate");
+    // Two letters, the certificate (whose determination and signature run
+    // to a second page when the rows fill the first), then Schedule 1 on
+    // a page of its own — the same shape as the practice's own OCs.
+    assert.equal(pageCount, 5);
     assert.ok(text.includes("The General Manager"));
     assert.ok(text.includes("Liverpool City Council"));
     assert.ok(text.includes("Anh Cao"), "the applicant's letter is addressed to them");
-    assert.ok(text.includes("WHOLE OCCUPATION CERTIFICATE"));
-    assert.ok(text.includes("Certificate No.: OC-26001/01"));
-    assert.ok(text.includes("Part 6 Division 3"));
+    assert.ok(text.includes("OCCUPATION CERTIFICATE - WHOLE - CDC-26001/01"));
+    assert.ok(text.includes("Issued under Part 6 of the Environmental Planning and Assessment Act 1979"));
+    assert.ok(text.includes("Sections 6.9, 6.10"), "the letters cite the sections an OC is issued under");
     assert.ok(text.includes("9 / DP253031"));
     assert.ok(text.includes("Class 1a"));
+    assert.ok(text.includes("DETERMINATION"));
+    assert.ok(text.includes("I, Mohamad El Ghoul, as the certifying authority, certify that:"));
+    assert.ok(text.includes("suitable for occupation or use in accordance with its Classification"));
+    assert.ok(text.includes("Principal Certifier / BDC2961"), "OC letters go out over the Principal Certifier's title");
+  });
+
+  // A whole OC ends the job: no conditions section, and the letter says
+  // thank you rather than starting a five-year clock.
+  test("a whole OC carries no conditions and thanks the client", async () => {
+    const { text } = await packageText();
+    assert.ok(!text.includes("CONDITIONS OF OCCUPATION CERTIFICATE"));
+    assert.ok(!text.includes("s 6.33(1)"));
+    assert.ok(text.includes("thank you for using our services"));
   });
 
   // What the certificate relies on is the whole point of the schedule —
   // an OC that does not list its documents is not evidence of anything.
-  test("lists the documents relied upon", async () => {
+  test("lists the documents relied upon under Schedule 1", async () => {
     const { text } = await packageText();
-    assert.ok(text.includes("DOCUMENTS RELIED UPON"));
+    assert.ok(text.includes("SCHEDULE 1: DOCUMENTATION REQUIRED TO ISSUE OCCUPATION CERTIFICATE CDC-26001/01"));
     assert.ok(text.includes("Structural engineer's certificate"));
     assert.ok(text.includes("Studio North"));
     assert.ok(text.includes("SE-01"));
     assert.ok(text.includes("Waterproofing certificate"));
   });
 
-  test("a partial OC says what part it covers, and names the consent when there is one", async () => {
+  // A partial OC is a certificate with a clock on it: clause 53's
+  // five-year condition on the certificate, the same warning in the
+  // applicant's letter, and what is excluded said in its own row.
+  test("a partial OC carries the five-year condition, its exclusions and the extra declaration", async () => {
     const { text } = await packageText({
-      record: { id: "oc-2", type: "partial", description: "Ground floor only", generated_date: "2026-08-24", approval_uploaded: false, approval_file_path: null },
+      record: {
+        id: "oc-2",
+        type: "partial",
+        description: "Ground floor only",
+        exclusions: "This Occupation Certificate excludes the swimming pool.",
+        generated_date: "2026-08-24",
+        approval_uploaded: false,
+        approval_file_path: null,
+      },
+      ref: "CC-25191",
       typeLabel: "Partial Occupation Certificate",
       daNumber: "DA-2025/0123",
       daDate: "12 Mar 2025",
     });
-    assert.ok(text.includes("PARTIAL OCCUPATION CERTIFICATE"));
+    assert.ok(text.includes("OCCUPATION CERTIFICATE - PARTIAL - CC-25191"));
     assert.ok(text.includes("Ground floor only"));
-    assert.ok(text.includes("part of the building"));
+    assert.ok(text.includes("CONDITIONS OF OCCUPATION CERTIFICATE"));
+    assert.ok(text.includes("s 6.33(1)"));
+    assert.ok(text.includes("within 5 years"));
+    assert.ok(text.includes("Exclusions:"));
+    assert.ok(text.includes("excludes the swimming pool"));
+    assert.ok(text.includes("health and safety of the occupants"), "the partial's extra declaration");
+    assert.ok(text.includes("A fee will apply"), "the applicant letter warns about the second OC");
+    assert.ok(text.includes("Development Consent Number:"));
     assert.ok(text.includes("DA-2025/0123"));
     assert.ok(text.includes("12 Mar 2025"));
   });
@@ -104,7 +139,7 @@ describe("the combined set", () => {
     const report = await buildInspectionReportPdf(inspectionReportFixture(), { logo: null, signature: null, photos: [] });
 
     const bytes = await buildApprovalBundle({
-      heading: "Whole Occupation Certificate OC-26001/01 — issued set",
+      heading: "Whole Occupation Certificate CDC-26001/01 — issued set",
       subheading: "21 Coquet Way Green Valley",
       approval: { bytes: certificate, contentType: "application/pdf" },
       approvalLabel: "Whole Occupation Certificate — letters and certificate",
@@ -117,7 +152,7 @@ describe("the combined set", () => {
 
     const { pages } = await readPdf(bytes);
     const find = (needle: string) => pages.findIndex((page) => page.replace(/\s+/g, " ").includes(needle));
-    const certificatePage = find("WHOLE OCCUPATION CERTIFICATE");
+    const certificatePage = find("OCCUPATION CERTIFICATE - WHOLE");
     const documentPage = find("Structural engineers certificate");
     const reportPage = find("Slab Steel");
 

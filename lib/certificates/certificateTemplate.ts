@@ -109,27 +109,50 @@ export const DEFAULT_TEMPLATES: Record<CertificatePathway, CertificateTemplate> 
       },
     ],
   },
+  // Transcribed from the practice's own issued OCs — a whole and a
+  // partial for each of a CDC and a CC job — so what Certlyn prints is
+  // the certificate their council and their clients already receive.
+  // One template serves both pathways: {CONSENT} fills in as
+  // "Complying Development Certificate" or "Construction Certificate",
+  // and the rows only one pathway has (a DA behind a CC, the planning
+  // instrument behind a CDC) drop out on the other rather than printing
+  // a label with nothing beside it.
   OC: {
     pathway: "OC",
     sections: [
+      { heading: "APPLICANT DETAILS", rows: [f("applicant", "Applicant:"), f("applicantAddress", "Address:"), f("applicantPhone", "Phone:")] },
       {
-        // No heading: these rows sit straight under the certificate's
-        // own title, as they always have.
-        heading: "",
+        heading: "OWNER DETAILS",
+        rows: [f("owner", "Name of the person having benefit of the development consent:"), f("ownerAddress", "Address:"), f("ownerPhone", "Phone:")],
+      },
+      {
+        heading: "RELEVANT CONSENTS",
         rows: [
-          f("devAddress", "Property address:"),
-          f("lotDp", "Lot/Section/DP:"),
-          f("description", "Development description:"),
-          f("bcaClass", "Building classification(s):"),
-          // {CONSENT} is filled in with what the job was approved under
-          // — a complying development certificate or a construction
-          // certificate — so one row covers both without a firm that
-          // renames it losing that.
-          f("consentRelied", "{CONSENT} relied upon:"),
-          { source: "daNumber", label: "Development Consent (DA) No.:", hideWhenEmpty: true },
-          { source: "daDate", label: "Development Consent (DA) date:", hideWhenEmpty: true },
-          f("issuedDate", "Date of issue:"),
+          f("lga", "Consent Authority / Local Government Area:"),
+          { source: "daNumber", label: "Development Consent Number:", hideWhenEmpty: true },
+          { source: "daDate", label: "Date Issued:", hideWhenEmpty: true },
+          f("consentRelied", "{CONSENT} Number:"),
+          { source: "epi", label: "Decision Made Under:", hideWhenEmpty: true },
         ],
+      },
+      {
+        heading: "PROPOSAL",
+        rows: [
+          f("devAddress", "Address of Development:"),
+          f("lotDp", "Lot/Section/DP:"),
+          f("ocType", "Type of Occupation Certificate:"),
+          f("bcaClass", "Building Classification:"),
+          f("bcaVersion", "BCA/NCC Version:"),
+          f("description", "Scope of Building Works Covered by this Notice:"),
+          f("attachments", "Attachments:"),
+          { source: "fixed", label: "Fire Safety Schedule:", fixedValue: "N/A" },
+          { source: "exclusions", label: "Exclusions:", hideWhenEmpty: true },
+          { source: "fixed", label: "Certificate Relates To:", fixedValue: "The occupation or use of a new building." },
+        ],
+      },
+      {
+        heading: "PRINCIPAL CERTIFIER",
+        rows: [f("certifierName", "Certifying Authority:"), f("registrationNo", "Registration No:"), f("registrationBody", "Registration Body:")],
       },
     ],
   },

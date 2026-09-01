@@ -116,11 +116,34 @@ export function conditionParagraphs(data: PathwayCertificateData): ConditionPara
 // it was issued against rather than the consents behind an approval it
 // is granting.
 export function ocFieldValues(data: OcCertificateData): FieldValues {
+  const d = data.d;
+  const applicantPhone = d.contact?.phone || d.contact?.mobile || "";
+  // The person having the benefit of the consent — the applicant unless
+  // an owner is recorded separately, same rule the CDC and CC use.
+  const ownerName = d.ownerSameAsApplicant ? data.applicantName : d.owner?.name || data.applicantName;
+  const ownerAddress = d.ownerSameAsApplicant ? formatAddress(d.applicantAddress) : formatAddress(d.owner?.address);
+  const ownerPhone = (d.ownerSameAsApplicant ? applicantPhone : d.owner?.phone) || "";
+  const cd = d.certificateDetails || {};
   return {
+    applicant: data.applicantName,
+    applicantAddress: formatAddress(d.applicantAddress) || "—",
+    applicantPhone: applicantPhone || "—",
+    owner: ownerName || "—",
+    ownerAddress: ownerAddress || "—",
+    ownerPhone: ownerPhone || "—",
+    lga: d.council?.lga || "—",
+    // What a CDC was decided under — the planning instrument, and the
+    // part of the code where one is recorded. A CC job leaves this row
+    // out: its authority is the development consent above it.
+    epi: data.job.pathway === "CDC" ? [cd.relevantInstrument, cd.relevantPartOfCode].filter(Boolean).join(" - ") : "",
     devAddress: data.job.address || "—",
-    lotDp: data.d.certificateDetails?.lotSectionDp || "—",
+    lotDp: cd.lotSectionDp || "—",
+    ocType: data.record.type === "whole" ? "Whole" : "Partial",
     description: data.record.description || data.job.description || "—",
-    bcaClass: formatClassifications(data.d.proposal?.classifications) || "—",
+    bcaClass: formatClassifications(d.proposal?.classifications) || "—",
+    bcaVersion: formatBcaVersion(d.bcaVersion, d.bcaVolumes) || "—",
+    attachments: "Schedule 1",
+    exclusions: (data.record.exclusions || "").trim(),
     consentRelied: data.consentRef || "—",
     // Blank on a CDC job, which has no development consent behind it —
     // the rows that carry them are dropped rather than printed empty.
