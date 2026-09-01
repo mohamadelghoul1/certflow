@@ -207,7 +207,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               {/* The s134 notice is about a CDC application being received,
                   so it has no place on a CC or PC/OC job. */}
               {job.pathway === "CDC" && (
-                <NeighbourNotificationPanel jobId={id} />
+                <NeighbourNotificationPanel jobId={id} start={typedJob.details?.neighbourNotification?.start || ""} end={typedJob.details?.neighbourNotification?.end || ""} />
               )}
             </div>
           ) : null,

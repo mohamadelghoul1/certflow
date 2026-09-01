@@ -20,6 +20,7 @@ import { missingJobFields, missingFieldsMessage } from "@/lib/validation/job";
 import { insertChecklistItems, reorderedIds } from "@/lib/checklists";
 import { detailsPatchFromForm } from "@/lib/jobDetails";
 import { mergeJobDetailsInDb } from "@/lib/actions/mergeDetails";
+import { notificationEndDate } from "@/lib/neighbourNotification";
 import { recordAuditEvent } from "@/lib/audit";
 import { isUnknownColumn } from "@/lib/softDelete";
 import type { JobDetails, CriticalStageInspection } from "@/types/db";
@@ -1053,6 +1054,21 @@ export async function setPreInspectionDates(_prev: ActionState, formData: FormDa
 
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pre-inspection/${jobId}`);
+  return { savedAt: Date.now() };
+}
+
+// The neighbour notification's 15 days. The end date is worked out from
+// the start by lib/neighbourNotification — including the Friday rule —
+// unless the certifier types their own.
+export async function setNeighbourNotificationDates(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireProfile("certifier");
+  const supabase = await createClient();
+  const jobId = String(formData.get("job_id"));
+  const start = String(formData.get("start") || "").trim();
+  const typedEnd = String(formData.get("end") || "").trim();
+  const end = typedEnd || (start ? notificationEndDate(start) || "" : "");
+  await mergeJobDetailsInDb(supabase, jobId, profile.firm_id, { neighbourNotification: { start: start || null, end: end || null } });
+  revalidatePath(`/jobs/${jobId}`);
   return { savedAt: Date.now() };
 }
 

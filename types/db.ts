@@ -232,6 +232,8 @@ export type JobDetails = {
   // Only the two dates are recorded; everything else on the report comes
   // from the job it belongs to.
   preInspection?: { applicationDate?: string; inspectionDate?: string };
+  // The s134 neighbour notification period — see lib/neighbourNotification.
+  neighbourNotification?: { start?: string; end?: string };
   certificateDetails?: {
     lotSectionDp?: string;
     planningPortalRef?: string;

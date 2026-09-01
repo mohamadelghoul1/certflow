@@ -1,4 +1,5 @@
 import { Download, Users } from "lucide-react";
+import { NeighbourNotificationDates } from "@/components/certifier/NeighbourNotificationDates";
 
 // The s134 neighbour notification — one click, no setup. The letter is
 // addressed "Dear Occupant" with no recipient block, following the firm's
@@ -7,7 +8,7 @@ import { Download, Users } from "lucide-react";
 // address, the proposed development, the applicant's contact details —
 // the job already knows. Two downloads of one letter: Word to edit
 // before sending, PDF to print straight away.
-export function NeighbourNotificationPanel({ jobId }: { jobId: string }) {
+export function NeighbourNotificationPanel({ jobId, start, end }: { jobId: string; start: string; end: string }) {
   return (
     <div className="border border-line rounded-xl p-6 shadow-sm bg-white">
       <div className="flex items-center gap-2 mb-1">
@@ -33,6 +34,7 @@ export function NeighbourNotificationPanel({ jobId }: { jobId: string }) {
           <Download size={14} /> Export neighbour notification (PDF)
         </a>
       </div>
+      <NeighbourNotificationDates jobId={jobId} start={start} end={end} />
     </div>
   );
 }

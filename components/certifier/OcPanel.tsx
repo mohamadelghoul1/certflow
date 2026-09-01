@@ -102,9 +102,16 @@ async function OcRecordCard({
     <div className="card-lift border border-line rounded-xl p-6 shadow-sm bg-white">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-base font-semibold text-heading">
-            {record.type === "whole" ? "Whole OC" : "Partial OC"} {record.description ? `— ${record.description}` : ""}
+          {/* Which kind was issued is the one thing a glance at the card
+              must answer, so it sits in green beside the name rather
+              than folded into it. */}
+          <div className="text-base font-semibold text-heading flex items-center gap-2 flex-wrap">
+            Occupation Certificate
+            <span className="text-[11px] font-bold uppercase tracking-wide text-success bg-success-bg border border-success/40 rounded-full px-2.5 py-0.5">
+              {record.type === "whole" ? "Whole" : "Partial"}
+            </span>
           </div>
+          {record.description && <div className="text-xs text-muted mt-0.5">{record.description}</div>}
           <div className="text-xs font-semibold text-heading mt-0.5">
             <EditableCertRef jobId={job.id} recordId={record.id} kind="oc" currentRef={ref} isCustom={!!record.cert_ref} />
           </div>
