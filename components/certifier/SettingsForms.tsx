@@ -729,9 +729,19 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
         <summary className="text-sm font-semibold text-secondary cursor-pointer hover:underline">
           Contract certifier — use their own company letterhead for inspection reports
         </summary>
+        {/* Said outright because the mistake is easy and silent: this
+            block is the company THIS certifier trades as, not a place to
+            name a different person. Typing a colleague's name here gives
+            that colleague no record, no registration number and nowhere
+            to put their signature — and the reports still go out signed
+            by the certifier whose card it is. */}
         <p className="text-[11px] text-muted mt-2 mb-3">
           For a certifier working under their own registration rather than as an employee. Their inspection reports carry these details instead of the
           firm&rsquo;s. Leave the company name blank for an employee.
+        </p>
+        <p className="text-[11px] text-warning-text mb-3">
+          This is <span className="font-semibold">{certifier.name}&rsquo;s</span> own company — not another person. To add a different certifier, close
+          this and use <span className="font-semibold">+ Add certifier</span>: they get their own registration number and their own signature.
         </p>
         <div className="grid sm:grid-cols-2 gap-3">
           <div>
