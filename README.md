@@ -406,6 +406,26 @@ whose key is used, so such a firm sets its sending address to
 `Their Firm Pty Ltd <notifications@certlyn.com.au>` with its own inbox as
 the reply-to. Their client sees their name; replies reach them.
 
+### A second firm — waiting on a firm being ready
+
+The owner's decision, 2 Sept 2026: leave the second firm until one is
+actually ready to join, rather than standing a test firm up now.
+`supabase/add_firm.sql` is written and proved against a real database
+(the unfilled placeholder, a UID with no login behind it, a real login
+creating the firm, and a second run refusing to duplicate).
+
+Two migrations go with it and are only worth running then:
+
+- **0068** marks the owner's firm, which is what hides the Storage page
+  from everybody else. With one firm there is nobody to hide it from.
+- **0069** adds the published standard layout and wording. Until it is
+  run, "Save as the standard for every firm" answers that it could not
+  save — the button shows because a database without 0068 has no owner
+  flag to check, and one firm is treated as the owner.
+
+**0067** is different and is worth running now: without it a partial
+Occupation Certificate cannot record what it excludes.
+
 ### Also worth doing
 
 - Register `certlin.com.au` and point it at the same place. It catches
