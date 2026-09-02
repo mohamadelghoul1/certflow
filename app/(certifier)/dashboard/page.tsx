@@ -8,6 +8,7 @@ import { excludingDeleted } from "@/lib/softDelete";
 import Link from "next/link";
 import { DashboardSearch } from "@/components/certifier/DashboardSearch";
 import { TaskBoard } from "@/components/certifier/TaskBoard";
+import { AssistantBriefing } from "@/components/certifier/AssistantBriefing";
 import { ProjectsDonut } from "@/components/certifier/ProjectsDonut";
 import { AlertTriangle, Building2, CalendarCheck, ClipboardCheck, Activity, CalendarClock, ShieldCheck, Inbox, Zap, Plus, FilePlus, UserPlus, BarChart3, PieChart, HardHat } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -271,7 +272,11 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="max-w-lg">
+      {/* What happened and what is worth doing, in a few sentences —
+          written by the AI from the same facts the tiles below count. */}
+      <AssistantBriefing />
+
+      <div className="max-w-lg mt-6">
         <DashboardSearch jobs={activeJobs.map((p) => ({ id: p.id, address: p.address, description: p.description || "", pathway: p.pathway }))} />
       </div>
 

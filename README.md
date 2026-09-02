@@ -453,7 +453,7 @@ CDC only, deliberately: a Construction Certificate is issued against a
 consent whose conditions are the council's, and an Occupation
 Certificate imposes none of its own.
 
-### AI-written "what's still needed" notes — needs one key in Vercel
+### The AI assistant — needs one key in Vercel, and database update 0071
 
 Every project page now opens with **What's still needed**: the documents
 not yet received, sent back for changes, or waiting on the certifier,
@@ -474,6 +474,23 @@ and the titles and library descriptions of the outstanding documents.
 No names, addresses, or files. Each note costs a few cents; the key is
 created at console.anthropic.com and, like every other key, is pasted
 into Vercel and never into a chat or an email.
+
+**The dashboard note.** The dashboard opens with **Your assistant**: a
+headline and a few points on what has happened and what is worth doing
+— which client uploaded which document and when (in Sydney time),
+documents waiting to be assessed and how long the oldest has waited,
+bookings to confirm, inspections coming up or passed with no result
+recorded, deadlines, money overdue. Each point links to its project.
+
+The app gathers those facts; the AI only writes them up, and is told it
+may not invent one. The note is kept in the `ai_briefings` table
+(**run migration 0071**) with a fingerprint of the facts it came from,
+so reopening the dashboard shows the same note for nothing and a new
+one is written only when something has changed (and not more often
+than every fifteen minutes, unless Refresh is pressed). Without the key
+the same card lists the facts plainly, so nothing is lost — only the
+prose. Site addresses do go to the AI for this note, because the note
+is about them; client names still do not.
 
 ### A second firm — waiting on a firm being ready
 
