@@ -11,7 +11,7 @@ export type Answer = { data?: unknown; error?: { code?: string; message?: string
 
 export type Call = { table: string | null; rpc: string | null; steps: { method: string; args: unknown[] }[] };
 
-const CHAIN_METHODS = ["select", "insert", "update", "delete", "upsert", "eq", "neq", "is", "not", "in", "filter", "order", "limit", "range", "single", "maybeSingle", "returns"];
+const CHAIN_METHODS = ["select", "insert", "update", "delete", "upsert", "eq", "neq", "is", "not", "in", "lt", "lte", "gt", "gte", "filter", "order", "limit", "range", "single", "maybeSingle", "returns"];
 
 export function fakeSupabase(answer: (call: Call) => Answer) {
   const calls: Call[] = [];

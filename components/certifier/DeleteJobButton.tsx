@@ -6,10 +6,11 @@ import { deleteJob } from "@/lib/actions/jobs";
 import type { ActionState } from "@/lib/actions/auth";
 
 // Deleting a project takes it out of the jobs list, the dashboard, the
-// reports and the client's portal — but nothing is thrown away. The row,
-// its documents, its inspections and any certificate already issued
-// against it all stay where they are, and the whole project can be
-// brought back from Projects → Deleted.
+// reports and the client's portal — but nothing is thrown away yet. The
+// row, its documents, its inspections and any certificate already issued
+// against it all stay where they are for thirty days, and the whole
+// project can be brought back from Projects → Deleted. After that the
+// morning sweep removes it for good (lib/deletedJobsPurge).
 //
 // That is why this is two clicks rather than the typed-address
 // confirmation it used to be: the confirmation now sits on the permanent

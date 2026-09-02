@@ -5,6 +5,7 @@ import { runInvoiceReminders } from "@/lib/invoiceReminders";
 import { runUploadDigests } from "@/lib/uploadDigest";
 import { runReviewDigests } from "@/lib/reviewDigest";
 import { runDatabaseBackups } from "@/lib/backup/database";
+import { runDeletedJobPurge } from "@/lib/deletedJobsPurge";
 
 // The morning sweep, called by Vercel's scheduler (vercel.json) rather
 // than by anyone's click. Vercel proves it is the scheduler by sending
@@ -32,5 +33,8 @@ export async function GET(request: NextRequest) {
   // client uploads (to the certifier) and review outcomes (to the client).
   const uploads = await runUploadDigests(admin);
   const reviews = await runReviewDigests(admin);
-  return NextResponse.json({ documents, invoices, records, uploads, reviews });
+  // And the projects deleted more than thirty days ago go for good,
+  // documents included — see lib/deletedJobsPurge.
+  const purged = await runDeletedJobPurge(admin);
+  return NextResponse.json({ documents, invoices, records, uploads, reviews, purged });
 }

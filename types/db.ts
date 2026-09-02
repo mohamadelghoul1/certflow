@@ -7,6 +7,10 @@ import type { Pathway } from "@/lib/business";
 export type Firm = {
   id: string;
   name: string;
+  // The firm that runs Certlyn, as opposed to a firm using it. Added by
+  // migration 0068; absent until run, which the Settings page treats as
+  // "the only firm there is".
+  platform_owner?: boolean;
   abn: string | null;
   postal_address: string | null;
   office_address: string | null;

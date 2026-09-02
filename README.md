@@ -298,6 +298,16 @@ allows:
 STORAGE_LIMIT_GB=1
 ```
 
+Only the platform owner's firm sees the Storage page at all — the plan
+is the owner's, and a firm using Certlyn should see its own projects,
+not the size of someone else's plan. Migration 0068 marks the first
+firm as the owner and prints back which one it chose.
+
+A deleted project is recoverable for thirty days from Projects →
+Deleted, then the morning sweep removes it for good, documents
+included, so deleted projects stop counting against storage on their
+own.
+
 The number is gigabytes, and it is your Supabase project's storage
 allowance — find it under **Supabase → Settings → Usage**, which also
 shows what you are currently billed for. Leave it out and the page

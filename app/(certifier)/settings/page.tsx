@@ -50,9 +50,17 @@ const SECTIONS: { key: string; label: string; icon: LucideIcon; blurb: string }[
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
   const { section = "firm" } = await searchParams;
-  const active = SECTIONS.find((s) => s.key === section) || SECTIONS[0];
   const { profile } = await requireProfile("certifier");
   const supabase = await createClient();
+
+  // Storage reports against the plan the whole deployment sits on, which
+  // is the platform owner's business and nobody else's: a tenant firm
+  // gets every section but that one. A database without migration 0068
+  // has no such flag, and then there is only one firm — it sees it.
+  const { data: ownerRow } = await supabase.from("firms").select("*").eq("id", profile.firm_id).maybeSingle();
+  const platformOwner = (ownerRow as { platform_owner?: boolean } | null)?.platform_owner ?? true;
+  const sections = platformOwner ? SECTIONS : SECTIONS.filter((s) => s.key !== "storage");
+  const active = sections.find((s) => s.key === section) || sections[0];
 
   let content: React.ReactNode = null;
 
@@ -155,7 +163,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         {/* The menu: a column beside the content on a desktop, a
             scrollable strip above it on a phone. */}
         <nav className="mb-5 lg:mb-0 flex gap-1 overflow-x-auto pb-1 lg:pb-0 lg:flex-col lg:overflow-visible" style={{ scrollbarWidth: "none" }}>
-          {SECTIONS.map((s) => {
+          {sections.map((s) => {
             const Icon = s.icon;
             const current = s.key === active.key;
             return (

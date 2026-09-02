@@ -33,7 +33,8 @@ export default async function DeletedJobsPage() {
       </Link>
       <h1 className="text-xl font-bold text-primary mb-1">Deleted projects</h1>
       <p className="text-placeholder text-sm mb-6 max-w-2xl">
-        Nothing here has been thrown away. Every document, inspection and certificate is still attached, and restoring a project puts it back exactly as it was.
+        Nothing here has been thrown away yet. Every document, inspection and certificate is still attached, and restoring a project puts it back exactly as it was.
+        Thirty days after it was deleted, a project is removed for good — documents included — so it stops counting against your storage.
       </p>
 
       {error && isUnknownColumn(error) ? (
