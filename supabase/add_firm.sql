@@ -19,7 +19,13 @@
 do $$
 declare
   -- ---- FILL THESE IN -------------------------------------------------
-  v_auth_user_id   uuid := '<PASTE THE USER UID HERE>';
+  -- Text, not uuid, on purpose: left as the placeholder, a uuid column
+  -- fails while the variables are still being set up — before any of
+  -- this script's own checks can run — and Supabase shows
+  -- "invalid input syntax for type uuid", which says nothing about what
+  -- to do. Held as text and cast below, so the unfilled placeholder gets
+  -- a sentence instead.
+  v_auth_user_typed text := '<PASTE THE USER UID HERE>';
   v_firm_name      text := 'Their Firm Pty Ltd';
   v_firm_email     text := 'info@theirfirm.com.au';
   v_firm_phone     text := '02 0000 0000';
@@ -28,13 +34,20 @@ declare
   v_reg_body       text := 'Building Commission NSW';
   -- --------------------------------------------------------------------
 
+  v_auth_user_id uuid;
   v_firm_id      uuid;
   v_certifier_id uuid;
   v_template     uuid;
   v_library      int;
 begin
-  if v_auth_user_id is null then
-    raise exception 'Paste the User UID from Authentication -> Users into v_auth_user_id first.';
+  if v_auth_user_typed is null or v_auth_user_typed !~ '^[0-9a-fA-F-]{36}$' then
+    raise exception E'Fill in the values at the top of this script first.\n\nThe User UID comes from Supabase -> Authentication -> Users: click the user you created for this firm and copy their UID. It looks like a1b2c3d4-5e6f-7890-abcd-ef1234567890.\n\nNothing has been created.';
+  end if;
+  v_auth_user_id := v_auth_user_typed::uuid;
+
+  -- The login has to exist before a profile can point at it.
+  if not exists (select 1 from auth.users where id = v_auth_user_id) then
+    raise exception 'No login with that UID exists. Create it under Authentication -> Users first, then copy the UID from the user you just made. Nothing has been created.';
   end if;
 
   -- Already set up: say so and stop, rather than giving one person two

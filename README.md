@@ -242,10 +242,21 @@ the Settings page only offers a provider whose keys are present.
 You register the app with the provider; Certlyn never sees your firm's
 password, and the keys below are the deployment's, not any one firm's.
 
+Until those keys are present the Settings page says so and offers no
+Connect button — there is nothing to connect to, and a button that could
+only fail would be worse than its absence.
+
 **Dropbox** — create an app at https://www.dropbox.com/developers/apps
-(scoped access, "Full Dropbox" or "App folder"), give it the
-`files.content.write` and `account_info.read` permissions, and add the
-redirect URI `https://YOUR-DOMAIN/api/backup/dropbox/callback`.
+(Scoped access, then "Full Dropbox" or "App folder"), and on the app's
+page:
+
+- **Permissions** tab: tick `files.content.write`, `files.content.read`
+  and `account_info.read`, then Submit. Do this *before* connecting —
+  a permission added afterwards does not apply to a connection already
+  made, and the firm has to disconnect and reconnect.
+- **Settings** tab: add the redirect URI
+  `https://www.certlyn.com.au/api/backup/dropbox/callback`, and copy the
+  App key and App secret.
 
 **OneDrive** — register an application in the Microsoft Entra admin
 centre, add a Web redirect URI of
