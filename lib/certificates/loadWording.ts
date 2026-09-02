@@ -8,9 +8,19 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // document then prints the default it always did.
 export async function loadFirmWording(supabase: SupabaseClient, firmId: string): Promise<Record<string, string>> {
   try {
-    const { data, error } = await supabase.from("firm_document_wording").select("doc_key, body").eq("firm_id", firmId);
+    // The firm's own wording, over the platform default the owner
+    // published, over nothing — in which case every document prints the
+    // built-in wording it always did.
+    const { data, error } = await supabase
+      .from("firm_document_wording")
+      .select("firm_id, doc_key, body")
+      .or(`firm_id.eq.${firmId},firm_id.is.null`);
     if (error || !data) return {};
-    return Object.fromEntries((data as { doc_key: string; body: string }[]).map((r) => [r.doc_key, r.body]));
+    const rows = data as { firm_id: string | null; doc_key: string; body: string }[];
+    const wording: Record<string, string> = {};
+    for (const row of rows.filter((r) => r.firm_id === null)) wording[row.doc_key] = row.body;
+    for (const row of rows.filter((r) => r.firm_id === firmId)) wording[row.doc_key] = row.body;
+    return wording;
   } catch {
     return {};
   }

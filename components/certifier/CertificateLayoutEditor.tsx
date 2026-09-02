@@ -21,10 +21,14 @@ import type { ActionState } from "@/lib/actions/auth";
 export function CertificateLayoutEditor({
   pathway,
   custom,
+  platformOwner = false,
   template,
 }: {
   pathway: CertificatePathway;
   custom: boolean;
+  // The firm that runs Certlyn can publish this layout as the one every
+  // other firm starts from.
+  platformOwner?: boolean;
   template: CertificateTemplate;
 }) {
   const [open, setOpen] = useState(false);
@@ -216,6 +220,29 @@ export function CertificateLayoutEditor({
                 {saving ? "Saving…" : "Save this layout"}
               </button>
             </form>
+
+            {/* Publishing the layout, not just saving it. Separate from
+                Save so nobody changes every firm's certificate while
+                meaning to change their own — and only offered to the
+                firm that runs Certlyn. */}
+            {platformOwner && (
+              <form
+                action={save}
+                onSubmit={(e) => {
+                  if (!confirm(`Make this the standard ${pathway} layout for every firm on Certlyn? Firms that have saved a layout of their own keep theirs.`)) e.preventDefault();
+                }}
+              >
+                <input type="hidden" name="pathway" value={pathway} />
+                <input type="hidden" name="layout" value={JSON.stringify(sections)} />
+                <input type="hidden" name="scope" value="platform" />
+                <button
+                  disabled={saving || problems.length > 0}
+                  className="border border-primary text-primary rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-hover disabled:opacity-60"
+                >
+                  Save as the standard for every firm
+                </button>
+              </form>
+            )}
 
             <button type="button" onClick={() => setSections(DEFAULT_TEMPLATES[pathway].sections)} className="text-xs text-secondary hover:underline">
               Start again from Certlyn&rsquo;s layout

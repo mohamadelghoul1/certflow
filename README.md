@@ -298,6 +298,31 @@ allows:
 STORAGE_LIMIT_GB=1
 ```
 
+### Certificate layout and letter wording: three layers
+
+What prints is resolved in this order, per firm and per document:
+
+1. **What this firm saved** in Settings → Certificate layout / Approval
+   wording. Theirs alone, and never overwritten from outside.
+2. **What the platform owner published** — the same editors carry a
+   second button, "Save as the standard for every firm", shown only to
+   the owner's firm. It becomes what every firm that has saved nothing
+   is drawn from, including firms that signed up before it was
+   published.
+3. **Certlyn's built-in**, when nobody has published anything.
+
+So the owner improving the standard letter reaches every firm on the
+standard; a firm that has written its own keeps it. Migration 0069
+stores the published rows with no firm against them, readable by every
+certifier and writable only by the owner — enforced in the database, not
+only in the form.
+
+The document library is different on purpose: a new firm gets a **copy**
+of the owner's library at signup (`add_firm.sql`), and changes made
+afterwards on either side stay where they are made. A checklist is a
+working list a firm edits constantly; having it change underneath them
+because the owner added an item would be worse than useless.
+
 Only the platform owner's firm sees the Storage page at all — the plan
 is the owner's, and a firm using Certlyn should see its own projects,
 not the size of someone else's plan. Migration 0068 marks the first

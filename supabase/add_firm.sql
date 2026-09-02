@@ -87,11 +87,26 @@ begin
   -- Both were proved against a real database before this was written:
   -- the new firm receives the list with none of the forms, and a delete
   -- on one side leaves the other side whole.
-  select firm_id into v_template
-    from document_library_items
-   group by firm_id
-   order by count(*) desc
+  -- Copied from the firm that runs Certlyn where one is marked
+  -- (migration 0068), and otherwise from whichever firm has the fullest
+  -- library. The new firm gets its own copy of every item: a change the
+  -- owner makes to their library afterwards does not reach back into a
+  -- firm already signed up, which is the point of copying rather than
+  -- sharing.
+  select f.id into v_template
+    from firms f
+    join document_library_items d on d.firm_id = f.id
+   where f.platform_owner
+   group by f.id
    limit 1;
+
+  if v_template is null then
+    select firm_id into v_template
+      from document_library_items
+     group by firm_id
+     order by count(*) desc
+     limit 1;
+  end if;
 
   if v_template is null then
     raise warning 'No firm has a document library to copy, so this one starts empty. Add items under Settings -> Document library.';

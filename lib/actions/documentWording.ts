@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { WORDING_KEYS, type WordingKey } from "@/lib/certificates/documentWording";
+import { isPlatformOwner } from "@/lib/platformOwner";
+import { savePlatformRow } from "@/lib/actions/platformDefaults";
 import type { ActionState } from "@/lib/actions/auth";
 
 // A firm's own wording for one approval document.
@@ -20,17 +22,28 @@ export async function saveDocumentWording(_prev: ActionState, formData: FormData
   if (!WORDING_KEYS.includes(key)) return { error: "That isn't a document Certlyn knows about." };
   const body = String(formData.get("body") || "").trim();
 
+  // Saved for this firm, or — for the firm that runs Certlyn — as the
+  // wording every firm starts from. Checked here as well as in the
+  // database: a form field is a suggestion, not a permission.
+  const forEveryFirm = String(formData.get("scope") || "") === "platform";
+  if (forEveryFirm && !(await isPlatformOwner(supabase, profile.firm_id))) {
+    return { error: "Only the firm that runs Certlyn can change the standard wording." };
+  }
+
   if (!body) {
-    const { error } = await supabase.from("firm_document_wording").delete().eq("firm_id", profile.firm_id).eq("doc_key", key);
+    const query = supabase.from("firm_document_wording").delete().eq("doc_key", key);
+    const { error } = await (forEveryFirm ? query.is("firm_id", null) : query.eq("firm_id", profile.firm_id));
     if (error) return { error: wordingError(error.code, error.message) };
     revalidatePath("/settings");
     return { savedAt: Date.now() };
   }
 
-  const { error } = await supabase
-    .from("firm_document_wording")
-    .upsert({ firm_id: profile.firm_id, doc_key: key, body, updated_at: new Date().toISOString(), updated_by: userId }, { onConflict: "firm_id,doc_key" });
-  if (error) return { error: wordingError(error.code, error.message) };
+  const saved = forEveryFirm
+    ? await savePlatformRow(supabase, "firm_document_wording", { doc_key: key }, { doc_key: key, body, updated_by: userId })
+    : await supabase
+        .from("firm_document_wording")
+        .upsert({ firm_id: profile.firm_id, doc_key: key, body, updated_at: new Date().toISOString(), updated_by: userId }, { onConflict: "firm_id,doc_key" });
+  if (saved.error) return { error: wordingError(saved.error.code, saved.error.message) };
   revalidatePath("/settings");
   return { savedAt: Date.now() };
 }
@@ -38,6 +51,19 @@ export async function saveDocumentWording(_prev: ActionState, formData: FormData
 function wordingError(code: string | undefined, message: string): string {
   const missing = ["42P01", "PGRST205", "PGRST106"];
   return missing.includes(code || "") ? "Run database update 0064 first (Settings → System check)." : message;
+}
+
+// What the owner published as the standard, for the editor to show
+// alongside the firm's own. Empty for everyone else — and empty is the
+// right answer for them, since the box then opens on the built-in text.
+export async function platformWordingForSettings(): Promise<Record<string, string>> {
+  const supabase = await createClient();
+  try {
+    const { data } = await supabase.from("firm_document_wording").select("doc_key, body").is("firm_id", null);
+    return Object.fromEntries(((data || []) as { doc_key: string; body: string }[]).map((r) => [r.doc_key, r.body]));
+  } catch {
+    return {};
+  }
 }
 
 export async function firmWordingForSettings(firmId: string): Promise<Record<string, string>> {

@@ -15,13 +15,14 @@ import { firmSender, firmEmailStatus, emailSenderSettings } from "@/lib/email";
 import { CloudBackupSection } from "@/components/certifier/CloudBackupSection";
 import { CertificateLayoutEditor } from "@/components/certifier/CertificateLayoutEditor";
 import { DocumentWordingEditor } from "@/components/certifier/DocumentWordingEditor";
-import { firmWordingForSettings } from "@/lib/actions/documentWording";
+import { firmWordingForSettings, platformWordingForSettings } from "@/lib/actions/documentWording";
 import { certificateTemplatesForFirm } from "@/lib/actions/certificateTemplates";
 import { getBackupStatus } from "@/lib/actions/backup";
 import { DocumentLibrarySection } from "@/components/certifier/DocumentLibrarySection";
 import { signedUrl } from "@/lib/storage";
 import { runSystemChecks, runEnvChecks, runNotificationChecks, deploymentFirmCount } from "@/lib/systemCheck";
 import { getStorageUsage } from "@/lib/storageUsage";
+import { isPlatformOwner } from "@/lib/platformOwner";
 import { StorageSection } from "@/components/certifier/StorageSection";
 import { SystemCheckSection } from "@/components/certifier/SystemCheckSection";
 import Link from "next/link";
@@ -55,10 +56,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
   // Storage reports against the plan the whole deployment sits on, which
   // is the platform owner's business and nobody else's: a tenant firm
-  // gets every section but that one. A database without migration 0068
-  // has no such flag, and then there is only one firm — it sees it.
-  const { data: ownerRow } = await supabase.from("firms").select("*").eq("id", profile.firm_id).maybeSingle();
-  const platformOwner = (ownerRow as { platform_owner?: boolean } | null)?.platform_owner ?? true;
+  // gets every section but that one.
+  const platformOwner = await isPlatformOwner(supabase, profile.firm_id);
   const sections = platformOwner ? SECTIONS : SECTIONS.filter((s) => s.key !== "storage");
   const active = sections.find((s) => s.key === section) || sections[0];
 
@@ -137,12 +136,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           on; anything already issued keeps the layout it was issued under.
         </p>
         {templates.map((t) => (
-          <CertificateLayoutEditor key={t.pathway} pathway={t.pathway} custom={t.custom} template={t.template} />
+          <CertificateLayoutEditor key={t.pathway} pathway={t.pathway} custom={t.custom} template={t.template} platformOwner={platformOwner} />
         ))}
       </div>
     );
   } else if (active.key === "wording") {
-    content = <DocumentWordingEditor saved={await firmWordingForSettings(profile.firm_id)} />;
+    const [saved, platformSaved] = await Promise.all([firmWordingForSettings(profile.firm_id), platformOwner ? platformWordingForSettings() : Promise.resolve({})]);
+    content = <DocumentWordingEditor saved={saved} platformSaved={platformSaved} platformOwner={platformOwner} />;
   } else if (active.key === "backup") {
     const backup = await getBackupStatus(profile.firm_id);
     content = <CloudBackupSection configured={backup.configured} connections={backup.connections} />;

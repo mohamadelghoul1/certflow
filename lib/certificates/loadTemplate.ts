@@ -18,18 +18,26 @@ export async function loadCertificateTemplate(
   pathway: string,
 ): Promise<{ template: CertificateTemplate; custom: boolean; problems: string[] }> {
   const key: CertificatePathway = pathway === "CC" || pathway === "OC" ? pathway : "CDC";
-  const fallback = { template: DEFAULT_TEMPLATES[key], custom: false, problems: [] as string[] };
+  const builtIn = { template: DEFAULT_TEMPLATES[key], custom: false, problems: [] as string[] };
 
   try {
+    // The firm's own first, then the platform default the owner
+    // published, then the built-in. Both come back in one query so the
+    // fallback costs nothing: a firm on the standard layout is the
+    // ordinary case, not the exception.
     const { data, error } = await supabase
       .from("certificate_templates")
-      .select("layout")
-      .eq("firm_id", firmId)
-      .eq("pathway", key)
-      .maybeSingle();
-    if (error || !data) return fallback;
+      .select("firm_id, layout")
+      .or(`firm_id.eq.${firmId},firm_id.is.null`)
+      .eq("pathway", key);
+    if (error || !data) return builtIn;
 
-    const layout = (data as { layout?: unknown }).layout as { sections?: unknown } | null;
+    const rows = data as { firm_id: string | null; layout?: unknown }[];
+    const fallback = usable(rows.find((r) => r.firm_id === null), key) || builtIn;
+    const own = rows.find((r) => r.firm_id === firmId);
+    if (!own) return fallback;
+
+    const layout = (own.layout || null) as { sections?: unknown } | null;
     if (!layout || !Array.isArray(layout.sections)) return fallback;
 
     const template = { pathway: key, sections: layout.sections } as CertificateTemplate;
@@ -38,6 +46,16 @@ export async function loadCertificateTemplate(
     return { template, custom: true, problems: [] };
   } catch {
     // No table yet — the firm is on the default like everyone else.
-    return fallback;
+    return builtIn;
   }
+}
+
+// A stored layout only counts if it can actually be drawn. A platform
+// default that has gone bad falls through to the built-in rather than
+// taking every firm's certificate down with it.
+function usable(row: { layout?: unknown } | undefined, pathway: CertificatePathway) {
+  const layout = (row?.layout || null) as { sections?: unknown } | null;
+  if (!layout || !Array.isArray(layout.sections)) return null;
+  const template = { pathway, sections: layout.sections } as CertificateTemplate;
+  return templateProblems(template).length > 0 ? null : { template, custom: false, problems: [] as string[] };
 }

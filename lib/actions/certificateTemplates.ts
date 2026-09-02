@@ -7,6 +7,8 @@ import { recordAuditEvent } from "@/lib/audit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DEFAULT_TEMPLATES, templateProblems, type CertificateTemplate } from "@/lib/certificates/certificateTemplate";
 import type { CertificatePathway } from "@/lib/certificates/templateFields";
+import { isPlatformOwner } from "@/lib/platformOwner";
+import { savePlatformRow } from "@/lib/actions/platformDefaults";
 import type { ActionState } from "@/lib/actions/auth";
 
 // A firm's own certificate layout.
@@ -40,22 +42,29 @@ export async function saveCertificateTemplate(_prev: ActionState, formData: Form
   if (problems.length > 0) return { error: problems[0] };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("certificate_templates").upsert(
-    {
-      firm_id: profile.firm_id,
-      pathway,
-      layout: { sections: template.sections },
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "firm_id,pathway" },
-  );
-  if (error) return { error: "That layout could not be saved. Please try again." };
+
+  // Two places a layout can be saved: this firm's own, or — for the firm
+  // that runs Certlyn — the default every firm starts from. The second
+  // is refused for anybody else here as well as by the database, because
+  // a form field is a suggestion and not a permission.
+  const forEveryFirm = String(formData.get("scope") || "") === "platform";
+  if (forEveryFirm && !(await isPlatformOwner(supabase, profile.firm_id))) {
+    return { error: "Only the firm that runs Certlyn can change the default layout." };
+  }
+
+  const layout = { sections: template.sections };
+  const saved = forEveryFirm
+    ? await savePlatformRow(supabase, "certificate_templates", { pathway }, { pathway, layout })
+    : await supabase
+        .from("certificate_templates")
+        .upsert({ firm_id: profile.firm_id, pathway, layout, updated_at: new Date().toISOString() }, { onConflict: "firm_id,pathway" });
+  if (saved.error) return { error: "That layout could not be saved. Please try again." };
 
   await recordAuditEvent(createAdminClient(), {
     firmId: profile.firm_id,
     action: "certificate.template_changed",
-    summary: `Changed the ${pathway} certificate layout`,
-    detail: { pathway, sections: template.sections.length },
+    summary: forEveryFirm ? `Changed the ${pathway} certificate layout for every firm` : `Changed the ${pathway} certificate layout`,
+    detail: { pathway, sections: template.sections.length, scope: forEveryFirm ? "platform" : "firm" },
     severity: "warning",
   });
 

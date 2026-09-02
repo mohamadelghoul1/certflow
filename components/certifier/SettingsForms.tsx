@@ -606,7 +606,13 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
               // eslint-disable-next-line @next/next/no-img-element
               <img src={signatureUrl} alt={`${certifier.name} signature`} className="h-10 border border-line rounded bg-white px-2" />
             ) : (
-              <span className="text-[11px] text-placeholder">No signature uploaded</span>
+              // Named rather than left as a bare "No signature": a
+              // contract certifier signs their own inspection reports,
+              // and the upload being here — on the card rather than
+              // inside Edit — is not obvious until it is said.
+              <span className="text-[11px] text-placeholder">
+                No signature uploaded — needed to sign their inspection reports and certificates
+              </span>
             )}
             <ActionUpload
               action={updateCertifierSignature}
@@ -662,6 +668,14 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
   return (
     <form action={formAction} className="border border-line rounded-md p-4 space-y-3">
       <input type="hidden" name="id" value={certifier.id} />
+      {/* The signature and company-logo uploads sit on the card behind
+          this form, not in it: an upload is its own form, and a form
+          inside a form is not valid HTML. Said plainly here because
+          "where do I add the signature?" is otherwise a fair question
+          from someone looking straight at the edit screen. */}
+      <p className="text-[11px] text-muted">
+        Signature and company logo are uploaded on this certifier&rsquo;s card — press Cancel or Save below and they are the first thing under the name.
+      </p>
       <div className="grid sm:grid-cols-2 gap-3">
         <div>
           <label className={labelCls}>Name</label>

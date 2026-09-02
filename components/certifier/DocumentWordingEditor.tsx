@@ -14,9 +14,22 @@ import type { ActionState } from "@/lib/actions/auth";
 // change a sentence in one that already works. Clearing the box puts the
 // standard wording back rather than printing nothing, which is what a
 // person means when they have second thoughts.
-function WordingField({ field, saved }: { field: (typeof WORDING_FIELDS)[number]; saved: string | undefined }) {
+function WordingField({
+  field,
+  saved,
+  platformSaved,
+  platformOwner,
+}: {
+  field: (typeof WORDING_FIELDS)[number];
+  saved: string | undefined;
+  platformSaved: string | undefined;
+  platformOwner: boolean;
+}) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(saveDocumentWording, undefined);
-  const [text, setText] = useState(saved ?? field.starting);
+  // What the box opens holding: this firm's own wording, or the standard
+  // the owner published, or the built-in text — the same order the
+  // documents themselves resolve it in.
+  const [text, setText] = useState(saved ?? platformSaved ?? field.starting);
   const custom = !!saved;
 
   return (
@@ -24,7 +37,9 @@ function WordingField({ field, saved }: { field: (typeof WORDING_FIELDS)[number]
       <input type="hidden" name="doc_key" value={field.key} />
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <div className="font-semibold text-sm text-primary">{field.label}</div>
-        <span className={`text-[11px] ${custom ? "text-accent" : "text-placeholder"}`}>{custom ? "Your wording" : "Certlyn's standard wording"}</span>
+        <span className={`text-[11px] ${custom ? "text-accent" : "text-placeholder"}`}>
+          {custom ? "Your wording" : platformSaved ? "Certlyn's standard wording" : "Certlyn's built-in wording"}
+        </span>
       </div>
       <p className="text-[11px] text-muted">{field.help}</p>
       <textarea
@@ -40,6 +55,25 @@ function WordingField({ field, saved }: { field: (typeof WORDING_FIELDS)[number]
         <SaveButton pending={pending} savedAt={state?.savedAt} className="px-3.5 py-1.5 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-700">
           Save wording
         </SaveButton>
+        {/* Publishing rather than saving: the standard every other firm
+            starts from. Its own button, so nobody rewrites every firm's
+            letter meaning to rewrite their own. */}
+        {platformOwner && (
+          <form
+            action={formAction}
+            onSubmit={(e) => {
+              if (!confirm(`Make this the standard wording for every firm on Certlyn? Firms that have written their own keep theirs.`)) e.preventDefault();
+            }}
+          >
+            <input type="hidden" name="doc_key" value={field.key} />
+            <input type="hidden" name="body" value={text} />
+            <input type="hidden" name="scope" value="platform" />
+            <button className="px-3.5 py-1.5 rounded-md border border-primary text-primary text-xs font-semibold hover:bg-hover">
+              Save as the standard for every firm
+            </button>
+          </form>
+        )}
+
         {custom && (
           <button
             type="button"
@@ -57,7 +91,15 @@ function WordingField({ field, saved }: { field: (typeof WORDING_FIELDS)[number]
   );
 }
 
-export function DocumentWordingEditor({ saved }: { saved: Record<string, string> }) {
+export function DocumentWordingEditor({
+  saved,
+  platformSaved = {},
+  platformOwner = false,
+}: {
+  saved: Record<string, string>;
+  platformSaved?: Record<string, string>;
+  platformOwner?: boolean;
+}) {
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted">
@@ -78,7 +120,7 @@ export function DocumentWordingEditor({ saved }: { saved: Record<string, string>
       </div>
 
       {WORDING_FIELDS.map((field) => (
-        <WordingField key={field.key} field={field} saved={saved[field.key]} />
+        <WordingField key={field.key} field={field} saved={saved[field.key]} platformSaved={platformSaved[field.key]} platformOwner={platformOwner} />
       ))}
     </div>
   );
