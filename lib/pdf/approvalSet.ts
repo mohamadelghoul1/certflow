@@ -26,6 +26,15 @@ async function fetchPdfImage(url: string | null) {
   return fetchStampImage(url);
 }
 
+// A stored file that can actually be appended. A firm uploading a Word
+// copy of the conditions would otherwise reach appendPdf as bytes that
+// are not a PDF; caught here so the contents page can say so.
+function isPdfFile(file: { bytes: Uint8Array; contentType?: string | null } | null): boolean {
+  if (!file) return false;
+  if ((file.contentType || "").includes("pdf")) return true;
+  return file.bytes.length > 4 && file.bytes[0] === 0x25 && file.bytes[1] === 0x50 && file.bytes[2] === 0x44 && file.bytes[3] === 0x46;
+}
+
 export async function buildApprovalSet(jobId: string, profile: Profile): Promise<{ bytes: Uint8Array; fileName: string } | null> {
 
   const supabase = await createClient();
@@ -127,6 +136,20 @@ export async function buildApprovalSet(jobId: string, profile: Profile): Promise
     supplement = { bytes: await buildPreInspectionReportPdf(preInspection, { logo, signature }), label: `Inspection report — ${preInspection.regulationTitle}` };
   }
 
+  // The standard conditions this CDC was issued subject to. CDC only —
+  // a CC is issued against a consent whose conditions are the council's,
+  // and an OC imposes none of its own. A set the certifier ticked but
+  // never uploaded a PDF for is still named on the contents page, as
+  // "not included", rather than going missing quietly.
+  const chosenConditions = job.pathway === "CDC" ? d.cdcConditions || [] : [];
+  const conditionFiles = await Promise.all(
+    chosenConditions.map(async (chosen) => {
+      const { data: set } = await supabase.from("cdc_condition_sets").select("file_path").eq("id", chosen.setId).eq("firm_id", profile.firm_id).maybeSingle();
+      const file = set?.file_path ? await fetchStoredFile(set.file_path) : null;
+      return { label: `Conditions — ${chosen.name}`, bytes: isPdfFile(file) ? file!.bytes : null };
+    })
+  );
+
   const firmData = (firm || null) as Firm | null;
   const stampDetails = await buildStampDetails(supabase, job, profile, firmData, activeVersion?.cert_ref);
 
@@ -136,6 +159,7 @@ export async function buildApprovalSet(jobId: string, profile: Profile): Promise
     approval: approval ? { bytes: approval.bytes, contentType: approval.contentType } : null,
     approvalLabel,
     supplement,
+    attachments: conditionFiles,
     documents,
     stampDetails,
     // The same footer line the generated approval carries — certRef minus

@@ -9,13 +9,14 @@ import { DocumentReminderControls } from "@/components/certifier/DocumentReminde
 import { createInvoice } from "@/lib/actions/invoices";
 import { ReceiptText } from "lucide-react";
 import { NeighbourNotificationPanel } from "@/components/certifier/NeighbourNotificationPanel";
+import { JobCdcConditions } from "@/components/certifier/JobCdcConditions";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { CertificatesPanel, ModificationsPanel } from "@/components/certifier/CertificatesPanel";
 import { OcPanel } from "@/components/certifier/OcPanel";
 import { InspectionsPanel } from "@/components/certifier/InspectionsPanel";
 import { JobTabs } from "@/components/certifier/JobTabs";
 import { signedUrl } from "@/lib/storage";
-import type { Contractor, Job } from "@/types/db";
+import type { CdcConditionSet, Contractor, Job } from "@/types/db";
 import { pathwayLabel, resolvePathwayCertRef, type Pathway } from "@/lib/business";
 import { SubmitButton } from "@/components/SubmitButton";
 
@@ -84,6 +85,13 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
     supabase.from("pathway_certificate_versions").select("*").eq("job_id", id).order("version", { ascending: false }),
     supabase.from("job_shared_access").select("client_id, clients(id, name, type)").eq("job_id", id),
   ]);
+  // Its own query rather than one of the parallel batch above: the
+  // table does not exist until migration 0070 has been run, and an error
+  // inside Promise.all would take the whole job page down with it. Here,
+  // an empty list is the answer and the picker says how to fill it.
+  const { data: conditionSetRows } = await supabase.from("cdc_condition_sets").select("*").eq("firm_id", profile.firm_id).order("sort_order");
+  const conditionSets = (conditionSetRows || []) as CdcConditionSet[];
+
   if (!job) notFound();
   // Opening a deleted project's old link lands on the list it can be
   // restored from, rather than a dead end.
@@ -204,6 +212,16 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
                 library={libraries[job.pathway] || []}
                 versions={(pathwayVersions as never[]) || []}
               />
+              {/* Conditions are the CDC's own: a CC is issued against a
+                  consent whose conditions are the council's, and an OC
+                  imposes none of its own. */}
+              {job.pathway === "CDC" && (
+                <JobCdcConditions
+                  jobId={id}
+                  sets={conditionSets}
+                  chosen={(typedJob.details?.cdcConditions || []).map((c) => c.setId)}
+                />
+              )}
               {/* The s134 notice is about a CDC application being received,
                   so it has no place on a CC or PC/OC job. */}
               {job.pathway === "CDC" && (

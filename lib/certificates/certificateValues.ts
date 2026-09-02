@@ -98,11 +98,19 @@ export function conditionParagraphs(data: PathwayCertificateData): ConditionPara
       .filter(Boolean)
       .map((text) => ({ text, bulleted: false }));
   }
+  // The standard sets this development was approved subject to, named on
+  // the certificate as well as attached behind it: a reader holding only
+  // the certificate can still see which conditions apply. CDC only.
+  const attached = (data.job.pathway === "CDC" ? data.d.cdcConditions || [] : []).filter((c) => c.name?.trim());
+
   return [
     {
       text: "Conditions under the Environmental Planning and Assessment Regulation 2021 and State Environmental Planning Policy (Exempt and Complying Development) Codes 2008 & State Environmental Planning Policy (Housing) 2021",
       bulleted: false,
     },
+    ...(attached.length > 0
+      ? [{ text: `This certificate is issued subject to the following conditions, attached to this approval:`, bulleted: false }, ...attached.map((c) => ({ text: c.name, bulleted: true }))]
+      : []),
     {
       text: "Any monetary contribution fee’s and/or any other Council fee’s/bonds that are required by council MUST be paid prior to commencement of building works. A receipt is to be sent to the PC. Any works in council property MUST have prior approval from Council and a copy of such approval provided to the PC prior to the works commencing.",
       bulleted: false,

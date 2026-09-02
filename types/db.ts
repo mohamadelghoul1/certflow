@@ -238,6 +238,12 @@ export type JobDetails = {
   preInspection?: { applicationDate?: string; inspectionDate?: string };
   // The s134 neighbour notification period — see lib/neighbourNotification.
   neighbourNotification?: { start?: string; end?: string };
+  // The standard condition sets this CDC is issued subject to — more
+  // than one where the development needs more than one, a dwelling and
+  // its demolition being the ordinary case. Each name is kept beside its
+  // id so a set renamed later cannot change what an issued certificate
+  // says. CDC jobs only. Migration 0070.
+  cdcConditions?: { setId: string; name: string }[] | null;
   certificateDetails?: {
     lotSectionDp?: string;
     planningPortalRef?: string;
@@ -452,6 +458,14 @@ export type PathwayCertificateVersion = {
   approval_file_path: string | null;
   visible_to_client: boolean;
   created_at: string;
+};
+
+export type CdcConditionSet = {
+  id: string;
+  firm_id: string;
+  name: string;
+  file_path: string | null;
+  sort_order: number;
 };
 
 export type OcRecord = {

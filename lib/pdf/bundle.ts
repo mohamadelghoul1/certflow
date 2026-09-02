@@ -45,6 +45,12 @@ export type BundleInput = {
   // to sit inside. It is counted as part of the approval, so it keeps
   // its own footer rather than having a second one drawn over it.
   supplement?: { bytes: Uint8Array; label: string } | null;
+  // Documents that are part of the approval rather than evidence behind
+  // it — the standard conditions a CDC is issued subject to. They follow
+  // the certificate and come before the approved documents, because that
+  // is the order the approval reads in: what was approved, on what
+  // conditions, then what it was approved on.
+  attachments?: { bytes: Uint8Array | null; label: string }[];
   documents: BundleDocument[];
   stampDetails: StampDetails;
   // The "Project No.: … · website" line the generated documents carry at
@@ -124,6 +130,16 @@ export async function buildApprovalBundle(input: BundleInput): Promise<Uint8Arra
     });
   } else {
     notes.push({ title: input.approvalLabel || "Approval", detail: "Not included — the approval could not be generated for this job.", included: false });
+  }
+
+  // The set no longer closes with a page listing what was left out, so
+  // an attachment that cannot be appended is simply absent here. That is
+  // deliberate and handled elsewhere: a condition set with no PDF says so
+  // on the picker and in Settings, where it can actually be fixed —
+  // rather than in a document going to a council.
+  for (const attachment of input.attachments || []) {
+    const ok = !!attachment.bytes && (await appendPdf(bundle, attachment.bytes));
+    notes.push({ title: attachment.label, detail: ok ? "Included" : "Not included — no PDF uploaded for this condition set.", included: ok });
   }
 
   if (input.supplement) {

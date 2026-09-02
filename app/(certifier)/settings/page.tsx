@@ -22,11 +22,13 @@ import { DocumentLibrarySection } from "@/components/certifier/DocumentLibrarySe
 import { signedUrl } from "@/lib/storage";
 import { runSystemChecks, runEnvChecks, runNotificationChecks, deploymentFirmCount } from "@/lib/systemCheck";
 import { getStorageUsage } from "@/lib/storageUsage";
+import { CdcConditionsSection } from "@/components/certifier/CdcConditionsSection";
+import type { CdcConditionSet } from "@/types/db";
 import { isPlatformOwner } from "@/lib/platformOwner";
 import { StorageSection } from "@/components/certifier/StorageSection";
 import { SystemCheckSection } from "@/components/certifier/SystemCheckSection";
 import Link from "next/link";
-import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, Activity, FileText, Mail, PenLine, type LucideIcon, HardDrive } from "lucide-react";
+import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, Activity, FileText, Mail, PenLine, ScrollText, type LucideIcon, HardDrive } from "lucide-react";
 
 // Settings, one section at a time. Everything used to sit on one long
 // page; finding the certifier list meant scrolling past the firm form
@@ -43,6 +45,7 @@ const SECTIONS: { key: string; label: string; icon: LucideIcon; blurb: string }[
   { key: "clients", label: "Clients & portal access", icon: KeyRound, blurb: "Contacts and their portal logins" },
   { key: "library", label: "Document library", icon: Library, blurb: "What each checklist asks for" },
   { key: "certificates", label: "Certificate layout", icon: FileText, blurb: "What prints on your CDC, CC and OC" },
+  { key: "conditions", label: "CDC conditions", icon: ScrollText, blurb: "The standard conditions a CDC is issued under" },
   { key: "wording", label: "Approval wording", icon: PenLine, blurb: "The letters that go out with a certificate" },
   { key: "backup", label: "Cloud backup", icon: CloudUpload, blurb: "Copies in your own Dropbox or OneDrive" },
   { key: "storage", label: "Storage", icon: HardDrive, blurb: "What each project is holding" },
@@ -125,6 +128,28 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       })
     );
     content = <DocumentLibrarySection items={libraryItems || []} firmId={profile.firm_id} templateUrls={templateUrls} />;
+  } else if (active.key === "conditions") {
+    // The table is missing until migration 0070 has been run, and the
+    // section says so rather than showing an empty list that reads as
+    // "you have none".
+    const { data: sets, error } = await supabase.from("cdc_condition_sets").select("*").eq("firm_id", profile.firm_id).order("sort_order");
+    const rows = ((sets || []) as CdcConditionSet[]) ?? [];
+    const fileUrls: Record<string, string> = {};
+    await Promise.all(
+      rows.map(async (set) => {
+        if (set.file_path) {
+          const url = await signedUrl(set.file_path);
+          if (url) fileUrls[set.id] = url;
+        }
+      })
+    );
+    content = error ? (
+      <div className="rounded-lg border border-warning/50 bg-warning-bg px-5 py-4 text-sm text-warning-text max-w-2xl">
+        Run database update 0070 in Supabase and this section starts working — see Settings → System check.
+      </div>
+    ) : (
+      <CdcConditionsSection sets={rows} firmId={profile.firm_id} fileUrls={fileUrls} />
+    );
   } else if (active.key === "storage") {
     content = <StorageSection usage={await getStorageUsage(supabase, profile.firm_id)} />;
   } else if (active.key === "certificates") {

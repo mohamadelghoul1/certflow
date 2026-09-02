@@ -406,6 +406,24 @@ whose key is used, so such a firm sets its sending address to
 `Their Firm Pty Ltd <notifications@certlyn.com.au>` with its own inbox as
 the reply-to. Their client sees their name; replies reach them.
 
+### CDC conditions — the firm uploads them once
+
+The conditions a CDC is issued subject to are the department's words,
+not the firm's: nine to sixteen pages of the Regulation, different for a
+greenfield dwelling, a demolition, an alteration. Certlyn does not hold
+the text and never should — it holds the PDF and the name the firm knows
+it by.
+
+Set them up once under **Settings → CDC conditions** (migration 0070),
+then tick which apply on each CDC project. More than one is normal — a
+dwelling and the demolition preceding it are two sets. The chosen ones
+are named on the certificate's Conditions row and attached to the
+approved set behind it, ahead of the approved documents.
+
+CDC only, deliberately: a Construction Certificate is issued against a
+consent whose conditions are the council's, and an Occupation
+Certificate imposes none of its own.
+
 ### A second firm — waiting on a firm being ready
 
 The owner's decision, 2 Sept 2026: leave the second firm until one is
