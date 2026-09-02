@@ -406,6 +406,35 @@ whose key is used, so such a firm sets its sending address to
 `Their Firm Pty Ltd <notifications@certlyn.com.au>` with its own inbox as
 the reply-to. Their client sees their name; replies reach them.
 
+### Planning data from the address — needs verifying against the live service
+
+Pressing **Look up lot, council & planning** on the Details tab asks NSW
+for the parcel and then for the planning layers over it: zone, lot area,
+heritage and bushfire. Nothing is applied automatically — each finding
+is shown with a "Use this" button, because these end up on a statutory
+certificate and a zone taken on trust from a map service mid-republish
+is a certificate issued on a premise nobody checked.
+
+Two deliberate refusals in that panel:
+
+- **A layer with nothing over the parcel reads "not identified", never
+  "No".** Silence from a map service is not a clearance.
+- **Flood and frontage are not offered at all.** Flood planning layers
+  are council-held with patchy statewide coverage, so "No" would usually
+  mean "nothing published". Frontage is not an attribute anywhere — it
+  would have to be measured off the boundary, and for a corner lot or a
+  battleaxe there is no single right answer.
+
+**The endpoints are not yet proved.** This environment has no route to
+the NSW services, so the layer names and services in `lib/nsw/planning`
+are written from documentation, and the arithmetic and parsing are what
+the tests cover. Confirm them against the live service with
+`/api/address-details?address=…&debug=1`, which returns every request
+made and every response, then correct the field patterns from what comes
+back. An earlier attempt at zoning was abandoned because every endpoint
+"came back empty" — from an environment that cannot reach NSW at all,
+empty and blocked look identical.
+
 ### CDC conditions — the firm uploads them once
 
 The conditions a CDC is issued subject to are the department's words,

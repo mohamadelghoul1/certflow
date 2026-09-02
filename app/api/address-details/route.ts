@@ -3,6 +3,7 @@ import { requireProfile } from "@/lib/auth";
 import { extractLotDps } from "@/lib/nsw/propertyLookup";
 import { lookupNswProperty, suggestNswAddresses, type Attempt } from "@/lib/nsw/spatial";
 import { matchCouncilByAddress } from "@/lib/constants";
+import { lookupPlanningLayers, formatArea } from "@/lib/nsw/planning";
 
 // Lot/Section/Plan and council for an address the certifier has picked or
 // typed. Answers from three sources: the address text itself (if it
@@ -35,13 +36,37 @@ export async function GET(request: NextRequest) {
 
   // Only ask NSW for what we couldn't work out locally — unless we're
   // diagnosing, in which case ask regardless so there's something to see.
-  const askNsw = debug || !fromText.length || !council;
-  const remote = askNsw ? await lookupNswProperty(address, log) : { lots: [], lga: undefined };
+  // The planning layers are only worth asking for when the certifier
+  // asked for them: they are four more requests, and typing an address
+  // should not fire them on every pause.
+  const wantPlanning = debug || request.nextUrl.searchParams.get("planning") === "1";
+  const askNsw = debug || wantPlanning || !fromText.length || !council;
+  const remote = askNsw ? await lookupNswProperty(address, log) : { lots: [], lga: undefined, lotAreaSqm: null, point: null };
+
+  // Zone, heritage and bushfire, asked at the point the parcel lookup
+  // resolved. Nothing found is left null and typed in by hand — these
+  // end up on a statutory certificate, so a blank is honest where a
+  // guess would not be.
+  const layers = wantPlanning && remote.point ? await lookupPlanningLayers(remote.point.lon, remote.point.lat, log) : null;
 
   const body: Record<string, unknown> = {
     lots: fromText.length ? fromText : remote.lots,
     lga: council?.name || remote.lga || null,
   };
+
+  if (wantPlanning) {
+    body.planning = {
+      zone: layers?.zone || null,
+      heritage: layers?.heritage || null,
+      bushfire: layers?.bushfire || null,
+      lotAreaSqm: remote.lotAreaSqm ?? null,
+      lotArea: formatArea(remote.lotAreaSqm ?? null) || null,
+      // What was actually reachable, so the panel can say "couldn't be
+      // reached" rather than "not affected" — the difference between the
+      // two matters on a certificate.
+      reached: layers !== null,
+    };
+  }
 
   if (debug) {
     body.diagnostics = {
@@ -50,6 +75,9 @@ export async function GET(request: NextRequest) {
       councilFromDirectory: council?.name || null,
       lotsFromNsw: remote.lots,
       lgaFromNsw: remote.lga || null,
+      pointFromNsw: remote.point || null,
+      lotAreaSqmFromNsw: remote.lotAreaSqm ?? null,
+      planningLayers: layers,
       addressSuggestions: await suggestNswAddresses(address, 8, log),
       calls: log,
     };

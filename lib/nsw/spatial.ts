@@ -1,3 +1,5 @@
+import { polygonAreaSqm, NSW_LAMBERT } from "@/lib/nsw/planning";
+
 // Address search and Lot/Section/Plan from NSW Spatial Services.
 //
 // This replaces an earlier attempt against the NSW ePlanning API, which
@@ -152,16 +154,23 @@ export async function suggestNswAddresses(input: string, limit = 8, log?: Attemp
   return filterByWords(addresses, words).slice(0, limit);
 }
 
-export type PropertyLookup = { lots: string[]; lga?: string };
+export type PropertyLookup = {
+  lots: string[];
+  lga?: string;
+  // The parcel's own area, and a point inside it in longitude/latitude —
+  // what the planning layers are asked about. Absent when the address
+  // could not be placed.
+  lotAreaSqm?: number | null;
+  point?: { lon: number; lat: number } | null;
+};
 
-// Land zoning is deliberately not looked up here.
-//
-// It isn't in the parcel service, and the planning service that holds it
-// couldn't be found on any public endpoint that answers — the searches
-// for it came back empty. Rather than leave five failing calls slowing
-// down every address lookup, zoning stays a field the certifier fills in,
-// with the NSW Planning Portal linked beside the address for looking one
-// up.
+// Zoning, heritage and bushfire are not in this service — it holds
+// parcels, not planning layers. They come from the Planning Portal's own
+// map services, in lib/nsw/planning, asked at the point this lookup
+// resolves. An earlier attempt gave up on them after every candidate
+// endpoint came back empty; from an environment with no route to NSW at
+// all, "empty" and "blocked" look identical, which is why the debug mode
+// exists and why nothing here treats a silent answer as a fact.
 
 export async function lookupNswProperty(address: string, log?: Attempt[]): Promise<PropertyLookup> {
   if (address.trim().length < 6) return { lots: [] };
@@ -192,9 +201,45 @@ export async function lookupNswProperty(address: string, log?: Attempt[]): Promi
     `&geometryType=esriGeometryPoint&inSR=${wkid}&spatialRel=esriSpatialRelIntersects` +
     `&outFields=lotidstring,lotnumber,sectionnumber,planlabel&returnGeometry=false&resultRecordCount=12&f=json`;
 
-  const lots = features(await getJson(lotUrl, log))
-    .map((f) => (f.attributes ? lotLabel(f.attributes) : null))
-    .filter((l): l is string => !!l);
+  // Asked for in NSW Lambert so the rings come back in metres and the
+  // area is a shoelace sum — Web Mercator would read about a third too
+  // large at this latitude.
+  const lotUrlWithGeometry = `${lotUrl.replace("&returnGeometry=false", "&returnGeometry=true")}&outSR=${NSW_LAMBERT}`;
+  const lotFeatures = features(await getJson(lotUrlWithGeometry, log));
 
-  return { lots: [...new Set(lots)] };
+  const lots = lotFeatures.map((f) => (f.attributes ? lotLabel(f.attributes) : null)).filter((l): l is string => !!l);
+
+  // Every parcel the property sits on, added together: a house across
+  // two lots has the area of both, which is the figure a certificate
+  // wants.
+  const areas = lotFeatures.map((f) => polygonAreaSqm((f.geometry as { rings?: number[][][] } | undefined)?.rings)).filter((a): a is number => a !== null);
+  const lotAreaSqm = areas.length ? areas.reduce((sum, a) => sum + a, 0) : null;
+
+  // The same point, in longitude/latitude, for the planning layers.
+  const lonLat = await pointInLonLat(point, wkid, log);
+
+  return { lots: [...new Set(lots)], lotAreaSqm, point: lonLat };
+}
+
+// The property point as longitude/latitude. The parcel service answers in
+// Web Mercator by default, and the planning services are asked in
+// degrees, so the point is converted rather than sent in the wrong units
+// — a mistake that would return another suburb's planning layers without
+// failing.
+async function pointInLonLat(point: { x: number; y: number }, wkid: number, log?: Attempt[]): Promise<{ lon: number; lat: number } | null> {
+  if (wkid === 4326) return { lon: point.x, lat: point.y };
+  if (wkid === 102100 || wkid === 3857) {
+    // Web Mercator is a closed form; no service call needed for it.
+    const lon = (point.x / 20037508.34) * 180;
+    const raw = (point.y / 20037508.34) * 180;
+    const lat = (180 / Math.PI) * (2 * Math.atan(Math.exp((raw * Math.PI) / 180)) - Math.PI / 2);
+    return Number.isFinite(lon) && Number.isFinite(lat) ? { lon, lat } : null;
+  }
+  // Anything else goes to the geometry service rather than being guessed.
+  const url =
+    `https://portal.spatial.nsw.gov.au/server/rest/services/Utilities/Geometry/GeometryServer/project` +
+    `?inSR=${wkid}&outSR=4326&geometries=${encodeURIComponent(JSON.stringify({ geometryType: "esriGeometryPoint", geometries: [{ x: point.x, y: point.y }] }))}&f=json`;
+  const data = await getJson(url, log);
+  const first = (data?.geometries as { x?: number; y?: number }[] | undefined)?.[0];
+  return typeof first?.x === "number" && typeof first?.y === "number" ? { lon: first.x, lat: first.y } : null;
 }

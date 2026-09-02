@@ -173,6 +173,7 @@ export function DetailsTab({
   const [portalClientId, setPortalClientId] = useState(job.client_id || "");
   const [address, setAddress] = useState(job.address || "");
   const [zoning, setZoning] = useState(d.zoning || "");
+  const [siteArea, setSiteArea] = useState(d.siteArea || "");
   const [lotSectionDp, setLotSectionDp] = useState(d.certificateDetails?.lotSectionDp || "");
   const [codeParts, setCodeParts] = useState<Set<string>>(new Set(d.certificateDetails?.codeParts || []));
   const [shareClientId, setShareClientId] = useState("");
@@ -289,6 +290,7 @@ export function DetailsTab({
             councilLga={council.lga}
             zoning={zoning}
             onZoningChange={setZoning}
+            onSiteAreaChange={setSiteArea}
             addressLabel="Development street address"
           />
           {certifiers.length > 0 && (
@@ -539,7 +541,18 @@ export function DetailsTab({
           </div>
           <div>
             <label className={labelCls}>Site area (m²)</label>
-            <input type="text" inputMode="decimal" name="siteArea" defaultValue={d.siteArea || ""} placeholder="e.g. 1,234.5" className={inputCls} />
+            {/* Controlled rather than defaulted, because the planning
+                lookup above fills it in — an uncontrolled input keeps
+                showing its original value however the state changes. */}
+            <input
+              type="text"
+              inputMode="decimal"
+              name="siteArea"
+              value={siteArea}
+              onChange={(e) => setSiteArea(e.target.value)}
+              placeholder="e.g. 1,234.5"
+              className={inputCls}
+            />
           </div>
             </>
           )}

@@ -5,6 +5,8 @@ import { Search, ExternalLink } from "lucide-react";
 import { matchCouncilByAddress } from "@/lib/constants";
 import { extractLotDps } from "@/lib/nsw/propertyLookup";
 
+type PlanningFindings = { zone: string | null; heritage: string | null; bushfire: string | null; lotArea: string | null; reached: boolean };
+
 // The NSW Planning Portal's own property search. Always available as a
 // fallback: it's the authoritative source, so if our lookup can't place an
 // address the certifier can check it there and paste the lot back in.
@@ -39,6 +41,7 @@ export function AddressLookupField({
   councilLga,
   zoning,
   onZoningChange,
+  onSiteAreaChange,
   addressLabel = "Property address",
   required = false,
   lotRequired = required,
@@ -55,6 +58,10 @@ export function AddressLookupField({
   councilLga: string;
   zoning?: string;
   onZoningChange?: (value: string) => void;
+  // Set on the Details tab, where there is a site-area field to fill and
+  // a sensitivities list to record a finding in. Left off elsewhere, and
+  // then the planning lookup is not offered at all.
+  onSiteAreaChange?: (value: string) => void;
   addressLabel?: string;
   // Set on New Job, where these have to be there before the project can
   // be created. Left off on the Details tab, which edits a job that
@@ -85,6 +92,10 @@ export function AddressLookupField({
   // Set once a search has actually run and come back empty, so an address
   // search that finds nothing says so instead of looking dead.
   const [noSuggestions, setNoSuggestions] = useState(false);
+  // What the planning layers answered. Held rather than applied: these
+  // end up on a statutory certificate, so each one is offered with a
+  // button and nothing is written into the job until it is pressed.
+  const [planning, setPlanning] = useState<PlanningFindings | null>(null);
 
   const selectedLots = lotSectionDp
     .split(",")
@@ -140,8 +151,13 @@ export function AddressLookupField({
     setLooking(true);
     setResult(null);
     try {
-      const res = await fetch(`/api/address-details?address=${encodeURIComponent(value)}`);
+      // The planning layers are four more requests, so they are asked for
+      // only when the certifier pressed the button — never on the
+      // debounced lookup that follows typing.
+      const wantPlanning = force && !!onSiteAreaChange;
+      const res = await fetch(`/api/address-details?address=${encodeURIComponent(value)}${wantPlanning ? "&planning=1" : ""}`);
       const data = await res.json();
+      if (wantPlanning) setPlanning((data.planning as PlanningFindings) || null);
 
       const lots: string[] = Array.isArray(data.lots) ? data.lots : [];
       setLotOptions(lots);
@@ -259,7 +275,7 @@ export function AddressLookupField({
             disabled={looking || address.trim().length < 6}
             className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline disabled:opacity-40 disabled:no-underline"
           >
-            <Search size={11} /> {looking ? "Looking up…" : "Look up lot & council"}
+            <Search size={11} /> {looking ? "Looking up…" : onSiteAreaChange ? "Look up lot, council & planning" : "Look up lot & council"}
           </button>
           <a href={SPATIAL_VIEWER} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[11px] text-placeholder hover:underline">
             <ExternalLink size={11} /> Find a property on the NSW Planning Portal
@@ -271,6 +287,7 @@ export function AddressLookupField({
           </div>
         )}
         {result && <div className="text-[11px] text-muted mt-1">{result}</div>}
+        {planning && <PlanningFindingsPanel found={planning} onZoningChange={onZoningChange} onSiteAreaChange={onSiteAreaChange} />}
         {!looking && !result && councilLga && <div className="text-[11px] text-secondary mt-1">Council: {councilLga} — matched from the address, edit below if wrong.</div>}
       </div>
       <div>
@@ -313,5 +330,76 @@ export function AddressLookupField({
         </div>
       )}
     </>
+  );
+}
+
+// What the NSW planning layers answered, offered rather than applied.
+//
+// Nothing here writes itself into the job. These values reach a
+// statutory certificate, and a zone or a bushfire category taken on
+// trust from a map service — one that may be mid-republish, or may hold
+// nothing for a new subdivision — is a certificate issued on a premise
+// nobody checked. So each finding is shown with where it came from and
+// a button, and the certifier decides.
+//
+// The distinction the panel is most careful about: a layer that returned
+// nothing is "not identified", not "No". Heritage and bushfire are
+// positive findings — the absence of a heritage polygon over a parcel is
+// the ordinary case, and reading it as a cleared parcel would be reading
+// silence as an answer.
+function PlanningFindingsPanel({
+  found,
+  onZoningChange,
+  onSiteAreaChange,
+}: {
+  found: PlanningFindings;
+  onZoningChange?: (value: string) => void;
+  onSiteAreaChange?: (value: string) => void;
+}) {
+  if (!found.reached) {
+    return (
+      <div className="text-[11px] text-warning-text mt-2 border border-warning/40 bg-warning-bg rounded-md px-3 py-2">
+        The NSW planning layers couldn&rsquo;t be reached, so nothing has been filled in. Check the property on the NSW Planning Portal and type the
+        zone and area in below.
+      </div>
+    );
+  }
+
+  // The area comes back as "650 m²" and the field holds a number.
+  const areaNumber = (found.lotArea || "").replace(/[^\d.]/g, "");
+
+  return (
+    <div className="mt-2 border border-line rounded-md p-3 space-y-2">
+      <div className="text-[11px] font-semibold text-placeholder">From the NSW planning layers — check each before using it</div>
+
+      <PlanningRow label="Zone" value={found.zone} onUse={onZoningChange && found.zone ? () => onZoningChange(found.zone!) : undefined} />
+      <PlanningRow label="Lot area" value={found.lotArea} onUse={onSiteAreaChange && areaNumber ? () => onSiteAreaChange(areaNumber) : undefined} />
+      <PlanningRow label="Heritage" value={found.heritage} absent="No heritage item mapped over this parcel" />
+      <PlanningRow label="Bushfire" value={found.bushfire} absent="Not mapped as bushfire prone" />
+
+      {(found.heritage || found.bushfire) && (
+        <p className="text-[11px] text-warning-text">
+          Record what applies in <span className="font-semibold">Site sensitivities</span> below — this panel does not write it in for you.
+        </p>
+      )}
+      <p className="text-[11px] text-placeholder">
+        Mapped data, not advice. Nothing found means nothing was mapped here, which is not the same as none — confirm anything that matters on the NSW
+        Planning Portal.
+      </p>
+    </div>
+  );
+}
+
+function PlanningRow({ label, value, onUse, absent }: { label: string; value: string | null; onUse?: () => void; absent?: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 flex-wrap text-[11px]">
+      <span className="text-placeholder w-16 shrink-0">{label}</span>
+      <span className={`flex-1 ${value ? "text-heading font-semibold" : "text-muted"}`}>{value || absent || "Not identified"}</span>
+      {onUse && (
+        <button type="button" onClick={onUse} className="font-semibold text-primary hover:underline shrink-0">
+          Use this
+        </button>
+      )}
+    </div>
   );
 }
