@@ -336,6 +336,30 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       // a marker behind for exactly this reason.
       probe: hasFunction(supabase, "booking_request_lock_installed", {}),
     },
+    {
+      migration: "0067",
+      label: "Partial OC exclusions",
+      detail: "Records what a partial Occupation Certificate leaves out, and prints it on the certificate.",
+      probe: hasColumn(supabase, "oc_records", "exclusions"),
+    },
+    {
+      migration: "0068",
+      label: "The firm that runs Certlyn",
+      detail: "Marks the owner's firm, which is what hides the Storage page from every other firm. Only worth running once there is a second firm.",
+      probe: hasColumn(supabase, "firms", "platform_owner"),
+    },
+    {
+      migration: "0070",
+      label: "CDC condition sets",
+      detail: "The standard conditions a CDC is issued subject to — set up once under Settings → CDC conditions, picked per project.",
+      probe: hasTable(supabase, "cdc_condition_sets"),
+    },
+    {
+      migration: "0071",
+      label: "Assistant's dashboard note",
+      detail: "Keeps the assistant's note between visits so it is written once when something changes, not on every open.",
+      probe: hasTable(supabase, "ai_briefings"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));
@@ -354,6 +378,11 @@ export function runEnvChecks(): EnvCheck[] {
       label: "Email delivery",
       detail: "Without this, clients are never emailed and nothing says so at the time.",
       configured: emailConfigured(),
+    },
+    {
+      label: "AI assistant",
+      detail: "ANTHROPIC_API_KEY. Without it the dashboard note and the \"what's still needed\" note are written from the facts alone, without the AI's plain-English explanations.",
+      configured: !!process.env.ANTHROPIC_API_KEY,
     },
     {
       label: "Dropbox backup",
