@@ -40,8 +40,12 @@ declare
   v_template     uuid;
   v_library      int;
 begin
-  if v_auth_user_typed is null or v_auth_user_typed !~ '^[0-9a-fA-F-]{36}$' then
-    raise exception E'Fill in the values at the top of this script first.\n\nThe User UID comes from Supabase -> Authentication -> Users: click the user you created for this firm and copy their UID. It looks like a1b2c3d4-5e6f-7890-abcd-ef1234567890.\n\nNothing has been created.';
+  -- Trimmed first: a UID copied out of Supabase often arrives with a
+  -- space or a newline on the end, and refusing that would be refusing
+  -- the right answer for the wrong reason.
+  v_auth_user_typed := btrim(coalesce(v_auth_user_typed, ''));
+  if v_auth_user_typed !~ '^[0-9a-fA-F-]{36}$' then
+    raise exception E'Scroll to the TOP of this script and fill in the values under "FILL THESE IN" — the User UID is the first one.\n\nIt comes from Supabase -> Authentication -> Users: click the user you created for this firm and copy their UID. It looks like a1b2c3d4-5e6f-7890-abcd-ef1234567890.\n\nNothing has been created.';
   end if;
   v_auth_user_id := v_auth_user_typed::uuid;
 
