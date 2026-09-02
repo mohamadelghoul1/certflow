@@ -28,6 +28,7 @@ export type AuditAction =
   | "portal.inspection"
   | "email.failed"
   | "client.reminder"
+  | "client.summary"
   | "invoice.sent"
   | "invoice.paid"
   | "invoice.reminder"

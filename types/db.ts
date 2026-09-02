@@ -244,6 +244,12 @@ export type JobDetails = {
   // id so a set renamed later cannot change what an issued certificate
   // says. CDC jobs only. Migration 0070.
   cdcConditions?: { setId: string; name: string }[] | null;
+  // The "what's still needed" note last written for this project — see
+  // lib/ai/outstandingSummary. Kept so the certifier can edit it before
+  // sending, and so the same note can be sent again. `written` records
+  // whether the AI wrote it, the standard wording did, or the certifier
+  // has since changed it.
+  outstandingSummary?: { text: string; generatedAt: string; written: "ai" | "standard" | "edited" } | null;
   certificateDetails?: {
     lotSectionDp?: string;
     planningPortalRef?: string;

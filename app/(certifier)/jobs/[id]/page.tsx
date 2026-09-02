@@ -10,6 +10,9 @@ import { createInvoice } from "@/lib/actions/invoices";
 import { ReceiptText } from "lucide-react";
 import { NeighbourNotificationPanel } from "@/components/certifier/NeighbourNotificationPanel";
 import { JobCdcConditions } from "@/components/certifier/JobCdcConditions";
+import { OutstandingDocumentsPanel } from "@/components/certifier/OutstandingDocumentsPanel";
+import { outstandingStages } from "@/lib/outstandingDocuments";
+import { aiConfigured } from "@/lib/ai/outstandingSummary";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { CertificatesPanel, ModificationsPanel } from "@/components/certifier/CertificatesPanel";
 import { OcPanel } from "@/components/certifier/OcPanel";
@@ -120,6 +123,11 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
   const ocChecklist = (checklists || []).find((c) => c.kind === "oc");
   const modChecklistsById = new Map((checklists || []).filter((c) => c.kind === "modification").map((c) => [c.modification_id, c]));
 
+  // What the whole project is still waiting on, read off every checklist
+  // at once, so the answer to "what are we waiting for" is one glance
+  // rather than a tour of the tabs.
+  const outstanding = outstandingStages((checklists || []) as never[], job.pathway as Pathway);
+
   const modificationsWithChecklist = (modifications || []).map((m) => {
     const cl = modChecklistsById.get(m.id);
     return { ...m, checklistId: cl?.id || null, items: (cl?.checklist_items as never[]) || [] };
@@ -162,6 +170,15 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           lastRemindedAt={typedJob.last_document_reminder_at || null}
         />
       </div>
+
+      <OutstandingDocumentsPanel
+        key={typedJob.details?.outstandingSummary?.generatedAt || "none"}
+        jobId={id}
+        stages={outstanding}
+        summary={typedJob.details?.outstandingSummary || null}
+        aiConfigured={aiConfigured()}
+        hasClient={!!job.client_id}
+      />
 
       <JobTabs
         initialTab={tab}

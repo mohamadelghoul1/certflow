@@ -453,6 +453,28 @@ CDC only, deliberately: a Construction Certificate is issued against a
 consent whose conditions are the council's, and an Occupation
 Certificate imposes none of its own.
 
+### AI-written "what's still needed" notes — needs one key in Vercel
+
+Every project page now opens with **What's still needed**: the documents
+not yet received, sent back for changes, or waiting on the certifier,
+stage by stage (CDC/CC application, NOC, Occupation Certificate,
+modifications). That list is read off the checklists and nothing else —
+the AI is never allowed to decide what a project needs.
+
+Underneath it, **Write with AI** drafts the note to the client: one or
+two plain-English sentences per document saying what it is, who
+prepares it and what it must show. The certifier reads it, changes what
+they like, and only then presses Send. Until `ANTHROPIC_API_KEY` is set
+under Vercel → Settings → Environment Variables (then Redeploy), the
+same button writes the note from the document library's own
+descriptions instead and says so.
+
+What is sent to the AI: the project type, the description of the works,
+and the titles and library descriptions of the outstanding documents.
+No names, addresses, or files. Each note costs a few cents; the key is
+created at console.anthropic.com and, like every other key, is pasted
+into Vercel and never into a chat or an email.
+
 ### A second firm — waiting on a firm being ready
 
 The owner's decision, 2 Sept 2026: leave the second firm until one is

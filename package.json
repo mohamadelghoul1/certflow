@@ -11,6 +11,7 @@
     "check": "tsc --noEmit && eslint . --quiet && npm test"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.123.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
     "docx": "^9.7.1",
