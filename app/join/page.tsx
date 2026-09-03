@@ -39,8 +39,9 @@ export default function JoinPage() {
   return (
     <MarketingShell current="/join">
       <Hero kicker="For certifiers" title={<>Run your practice on Certlyn. <span className="text-[#f0b93a]">We&rsquo;ll set it up with you.</span></>}>
-        Certlyn is used every day by a working NSW certification practice, and it&rsquo;s ready for yours. Joining is a conversation, not a
-        sign-up page: we set up your firm, bring your projects across, and stay on hand while you get going.
+        Certlyn was built from the feedback of certifiers across NSW, combined into one system made for the way NSW certification
+        actually works. Joining is a conversation, not a sign-up page: we set up your firm, bring your projects across, and stay on hand
+        while you get going.
       </Hero>
 
       <Section title="What joining looks like">
@@ -70,8 +71,8 @@ export default function JoinPage() {
           </div>
           <div className="lg:col-span-2 space-y-4 text-[15px] leading-relaxed text-slate-300">
             <p>
-              <span className="font-semibold text-white">Who you&rsquo;ll hear from.</span> A certifier, not a sales team. The people
-              behind Certlyn issue certificates and carry out inspections with it every week.
+              <span className="font-semibold text-white">Who you&rsquo;ll hear from.</span> The Certlyn team &mdash; people who know NSW
+              certification and have spent a long time listening to certifiers about what they need from their software.
             </p>
             <p>
               <span className="font-semibold text-white">What a walk-through covers.</span> Your own project, start to finish, on your

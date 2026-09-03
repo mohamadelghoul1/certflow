@@ -13,8 +13,8 @@ export default function HowItWorksPage() {
   return (
     <MarketingShell current="/how-it-works">
       <Hero kicker="How it works" title={<>From quote to Occupation Certificate, <span className="text-[#f0b93a]">in one place.</span></>}>
-        Certlyn follows a project the way a NSW certifier actually runs one: quote it, collect the documents, issue the certificate, inspect
-        the work, issue the OC. Each step hands what it knows to the next, so nothing is typed twice.
+        Certlyn follows a project the way NSW certifiers told us they run one: quote it, collect the documents, issue the certificate,
+        inspect the work, issue the OC. Each step hands what it knows to the next, so nothing is typed twice.
       </Hero>
 
       <Section title="A project, step by step">

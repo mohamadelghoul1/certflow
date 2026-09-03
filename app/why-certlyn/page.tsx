@@ -15,9 +15,9 @@ export default function WhyCertlynPage() {
   return (
     <MarketingShell current="/why-certlyn">
       <Hero kicker="Why Certlyn" title={<>Less typing. Fewer missed deadlines. <span className="text-[#f0b93a]">A file that stands up.</span></>}>
-        Most certification software was written for someone else and adapted. Certlyn was built alongside a working NSW certification
-        practice, for the work as it is: the Regulation, the Portal, the builder on the phone, the client who hasn&rsquo;t sent the BASIX
-        certificate.
+        Most certification software was written for someone else and adapted. Certlyn was shaped by feedback from certifiers across NSW
+        &mdash; what slows them down, what gets missed, what they wish the last system had done &mdash; and built around the work as it
+        is: the Regulation, the Portal, the builder on the phone, the client who hasn&rsquo;t sent the BASIX certificate.
       </Hero>
 
       <Section title="What you get back">

@@ -17,7 +17,7 @@ export function RegisterInterestForm() {
         <div className="flex items-center gap-2 text-[17px] font-bold text-[#f0b93a]">
           <CheckCircle2 size={20} /> {state.success}
         </div>
-        <p className="mt-2 text-[15px] text-slate-300">We&rsquo;ll reply from a real person, usually within a business day.</p>
+        <p className="mt-2 text-[15px] text-slate-300">The Certlyn team will reply, usually within a business day.</p>
       </div>
     );
   }
@@ -59,7 +59,7 @@ export function RegisterInterestForm() {
       >
         <Send size={16} /> {pending ? "Sending…" : "Register your interest"}
       </button>
-      <p className="text-xs text-slate-500">Your details go to the team behind Certlyn and nowhere else.</p>
+      <p className="text-xs text-slate-500">Your details go to the Certlyn team and nowhere else.</p>
     </form>
   );
 }
