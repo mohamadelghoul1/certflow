@@ -521,6 +521,16 @@ Certlyn now installs to a phone's home screen (Chrome: menu → Add to
 Home screen; Safari: Share → Add to Home Screen), opening without the
 browser around it.
 
+### The public pages — one optional setting
+
+`/how-it-works`, `/why-certlyn` and `/join` are readable without a
+login and linked from the front door. The form on `/join` emails
+whoever runs Certlyn: `CONTACT_EMAIL` in Vercel if it is set, otherwise
+the email on the owner's firm (Settings → Firm). It goes out through
+the deployment's own sending address, so it needs `RESEND_API_KEY` like
+every other email. Five messages a minute from the whole world is the
+cap, and a hidden box catches the robots.
+
 ### A second firm — waiting on a firm being ready
 
 The owner's decision, 2 Sept 2026: leave the second firm until one is

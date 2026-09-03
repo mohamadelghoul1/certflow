@@ -31,6 +31,19 @@ export default function HomePage() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-xl px-6 pt-12 pb-10 sm:pt-16 min-h-screen flex flex-col">
+        {/* The way in for someone who is not signing in yet. */}
+        <nav className="mb-8 flex items-center gap-5 text-[13px] text-slate-300">
+          <Link href="/how-it-works" className="hover:text-[#f0b93a]">
+            How it works
+          </Link>
+          <Link href="/why-certlyn" className="hover:text-[#f0b93a]">
+            Why Certlyn
+          </Link>
+          <Link href="/join" className="font-semibold text-[#f0b93a]">
+            For certifiers
+          </Link>
+        </nav>
+
         {/* Brand */}
         <LogoMark size={56} />
         <div className="mt-4 font-serif text-5xl font-medium tracking-tight">
@@ -91,6 +104,13 @@ export default function HomePage() {
             </span>
           </Link>
         </div>
+
+        <p className="mt-6 text-[14px] text-slate-400">
+          Not a member yet?{" "}
+          <Link href="/join" className="font-semibold text-[#f0b93a] hover:underline">
+            See what joining involves →
+          </Link>
+        </p>
 
         {/* Footer */}
         <div className="mt-auto pt-10">
