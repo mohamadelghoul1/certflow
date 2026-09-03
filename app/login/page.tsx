@@ -4,6 +4,7 @@ import { useActionState, useSyncExternalStore } from "react";
 import { signInCertifier, type ActionState } from "@/lib/actions/auth";
 import Link from "next/link";
 import { ForgotPassword } from "@/components/ForgotPassword";
+import { AuthShell, AuthCard, PasswordField, authInputCls, authLabelCls, authButtonCls } from "@/components/AuthShell";
 
 export default function CertifierLoginPage() {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(signInCertifier, undefined);
@@ -19,40 +20,41 @@ export default function CertifierLoginPage() {
   );
 
   return (
-    <div className="min-h-screen bg-heading flex items-center justify-center px-6">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="font-serif text-4xl font-medium text-warning">Certlyn</div>
-          <div className="mt-2 text-[12px] tracking-[0.2em] uppercase text-placeholder">Certifier sign in</div>
-        </div>
-        <form action={formAction} className="bg-heading border border-warning/30 border-b-0 rounded-t-lg p-6 space-y-4">
+    <AuthShell
+      kicker="Certification records"
+      title="Welcome back."
+      blurb="Your projects, inspections and certificates, exactly where you left them."
+      footer={
+        <Link href="/client-login" className="text-slate-400 hover:text-[#f0b93a]">
+          Client? Sign in here →
+        </Link>
+      }
+    >
+      <AuthCard heading="Certifier sign in">
+        <form action={formAction} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-placeholder mb-1">Email</label>
-            <input name="email" type="email" required className="w-full px-3 py-2 rounded-md bg-heading border border-white/10 text-white text-sm outline-none focus:ring-2 focus:ring-warning/50" />
+            <label className={authLabelCls}>Email</label>
+            <input name="email" type="email" required autoComplete="email" inputMode="email" autoFocus className={authInputCls} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-placeholder mb-1">Password</label>
-            <input name="password" type="password" required className="w-full px-3 py-2 rounded-md bg-heading border border-white/10 text-white text-sm outline-none focus:ring-2 focus:ring-warning/50" />
+            <label className={authLabelCls}>Password</label>
+            <PasswordField />
           </div>
           {expired && !state?.error && (
-            <div className="text-sm text-warning-text bg-warning-bg border border-warning/50 rounded-md px-3 py-2">
+            <div className="text-sm text-[#f0b93a] bg-[#f0b93a]/10 border border-[#f0b93a]/40 rounded-xl px-3 py-2">
               That link had already been used or has expired. Ask for a new one below.
             </div>
           )}
-          {state?.error && <div className="text-sm text-error">{state.error}</div>}
-          <button disabled={pending} className="w-full py-2.5 rounded-md bg-warning text-heading font-semibold text-sm hover:bg-warning disabled:opacity-60">
+          {state?.error && <div className="text-sm text-red-300 bg-red-500/10 border border-red-400/40 rounded-xl px-3 py-2">{state.error}</div>}
+          <button disabled={pending} className={authButtonCls}>
             {pending ? "Signing in…" : "Sign in"}
           </button>
+          {pending && <p className="text-center text-xs text-slate-400">Opening your dashboard…</p>}
         </form>
-        <div className="bg-heading border border-warning/30 border-t-0 rounded-b-lg px-6 pb-5">
+        <div className="mt-5 pt-4 border-t border-slate-800">
           <ForgotPassword kind="certifier" />
         </div>
-        <div className="text-center mt-4">
-          <Link href="/client-login" className="text-xs text-placeholder hover:text-warning">
-            Client? Sign in here instead →
-          </Link>
-        </div>
-      </div>
-    </div>
+      </AuthCard>
+    </AuthShell>
   );
 }

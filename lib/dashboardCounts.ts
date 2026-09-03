@@ -10,8 +10,12 @@ import { unresolvedCount, type ChecklistItemLike } from "@/lib/business";
 export type CountableChecklist = { kind: string; checklist_items?: ChecklistItemLike[] | null };
 export type CountableJob = {
   status?: string | null;
+  pathway?: string | null;
   pathway_generated?: boolean | null;
   checklists?: CountableChecklist[] | null;
+  // Only the outcomes: an inspection carried out is what says the works
+  // have started.
+  inspections?: { outcome?: string | null }[] | null;
 };
 
 export type JobStage = "complete" | "underConstruction" | "awaitingCommencement" | "readyToIssue" | "assessment";
@@ -48,7 +52,15 @@ export function countJob(job: CountableJob): JobCounts {
 
   const pathwayItems = itemsFor(job, "pathway");
   const pathwayDone = allApproved(pathwayItems);
-  const issued = !!job.pathway_generated;
+  // A PC/OC job — every imported job is one — carries an approval
+  // someone else issued. There is nothing for this firm to issue, so it
+  // can never be "ready to issue": it starts life awaiting commencement.
+  const priorApproval = job.pathway === "PC_OC";
+  const issued = !!job.pathway_generated || priorApproval;
+  // Works have started once an inspection has actually been carried
+  // out, whatever the NOC checklist says — a job imported mid-build
+  // with its piers already inspected is under construction.
+  const commenced = (job.inspections || []).some((i) => !!i.outcome && i.outcome !== "pending");
 
   // Issuing the certificate does not put a job on site. The applicant
   // still has to appoint a principal certifier and lodge the notice of
@@ -63,7 +75,7 @@ export function countJob(job: CountableJob): JobCounts {
   const nocSettled = nocItems.length === 0 || nocItems.every((i) => i.status === "approved");
 
   const stage: JobStage = issued
-    ? nocSettled
+    ? nocSettled || commenced
       ? "underConstruction"
       : "awaitingCommencement"
     : pathwayDone

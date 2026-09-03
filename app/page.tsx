@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ShieldCheck, CloudUpload, BadgeCheck, User, Users, ArrowRight } from "lucide-react";
+import { LogoMark } from "@/components/LogoMark";
 
 // The front door. Everything on it is real text and real buttons rather
 // than one big picture, so it stays sharp on any screen and the sign-in
@@ -9,23 +10,6 @@ import { ShieldCheck, CloudUpload, BadgeCheck, User, Users, ArrowRight } from "l
 //
 // Deliberately darker and more gold than the app inside: this is the
 // shopfront, and the working screens stay light where documents are read.
-
-// The gold-ring-and-tick mark from the artwork, drawn as its own graphic
-// so it is crisp at any size and can go on letterheads later if wanted.
-function LogoMark({ size }: { size: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
-      <defs>
-        <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#f5c045" />
-          <stop offset="1" stopColor="#d98a1f" />
-        </linearGradient>
-      </defs>
-      <path d="M 51 13.5 A 24 24 0 1 0 55.5 43" fill="none" stroke="url(#lg)" strokeWidth="8" strokeLinecap="round" />
-      <path d="M 26 32 L 36 42 L 56 20" fill="none" stroke="url(#lg)" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 function FeatureChip({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (

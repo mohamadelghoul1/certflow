@@ -5,7 +5,7 @@ import { countJob, type CountableJob } from "@/lib/dashboardCounts";
 const requested = (n: number) => Array.from({ length: n }, () => ({ status: "requested" as const }));
 const approved = (n: number) => Array.from({ length: n }, () => ({ status: "approved" as const }));
 
-function job(parts: Partial<CountableJob> & { pathway?: unknown[]; noc?: unknown[]; oc?: unknown[] } = {}): CountableJob {
+function job(parts: Partial<Omit<CountableJob, "pathway">> & { pathway?: unknown[]; noc?: unknown[]; oc?: unknown[] } = {}): CountableJob {
   return {
     status: parts.status ?? "active",
     pathway_generated: parts.pathway_generated ?? false,
@@ -96,3 +96,24 @@ test("a job with no checklists at all is counted without throwing", () => {
   assert.equal(c.stage, "assessment");
   assert.equal(c.documentsForReview, 0);
 });
+
+// The defect reported from the live dashboard: an imported job — a PC/OC
+// project with someone else's approval — read as "ready to issue",
+// because its approval documents were all approved and nothing had been
+// "issued". There is nothing for this firm to issue on such a job.
+test("an imported PC/OC job is awaiting commencement, never ready to issue", () => {
+  const c = countJob({ ...job({ pathway: approved(3) }), pathway: "PC_OC" });
+  assert.equal(c.stage, "awaitingCommencement");
+  assert.equal(c.approvalToIssue, false);
+  assert.equal(c.pathwayAssessment, false);
+});
+
+test("once an inspection has been carried out the job is under construction, NOC or not", () => {
+  const started = countJob({ ...job({ pathway: approved(3) }), pathway: "PC_OC", inspections: [{ outcome: "passed" }, { outcome: "pending" }] });
+  assert.equal(started.stage, "underConstruction");
+  const booked = countJob({ ...job({ pathway: approved(3) }), pathway: "PC_OC", inspections: [{ outcome: "pending" }] });
+  assert.equal(booked.stage, "awaitingCommencement", "a booked inspection with no result is not a start on site");
+  const issuedHere = countJob({ ...job({ pathway: approved(3), pathway_generated: true }), inspections: [{ outcome: "failed" }] });
+  assert.equal(issuedHere.stage, "underConstruction");
+});
+

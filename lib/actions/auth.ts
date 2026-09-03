@@ -21,13 +21,13 @@ export async function signInCertifier(_prev: ActionState, formData: FormData): P
 
   if (!(await withinLimit(supabase, loginBucket(email), LOGIN_LIMIT))) return { error: TOO_MANY };
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  // The sign-in answer already carries the user; asking the auth server
+  // for them again was a second round trip on the slowest step there is.
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message };
+  if (!data.user) return { error: "Sign-in did not complete. Try again." };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user!.id).single();
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
   if (!profile || profile.role !== "certifier") {
     await supabase.auth.signOut();
     return { error: "This login isn't set up as a certifier account." };
@@ -42,13 +42,13 @@ export async function signInClient(_prev: ActionState, formData: FormData): Prom
 
   if (!(await withinLimit(supabase, loginBucket(email), LOGIN_LIMIT))) return { error: TOO_MANY };
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  // The sign-in answer already carries the user; asking the auth server
+  // for them again was a second round trip on the slowest step there is.
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message };
+  if (!data.user) return { error: "Sign-in did not complete. Try again." };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user!.id).single();
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
   if (!profile || profile.role !== "client") {
     await supabase.auth.signOut();
     return { error: "This login isn't set up as a client account." };
