@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, AlertTriangle, Upload } from "lucide-react";
+import { Check, AlertTriangle, Upload, FileSpreadsheet, Download } from "lucide-react";
 import { importJobs, type ImportResult } from "@/lib/actions/importJobs";
 import { parsePaste } from "@/lib/import/parseTable";
 import { buildPreview, looksLikeHeadings } from "@/lib/import/jobRows";
@@ -20,8 +20,41 @@ const inputCls = "w-full px-3 py-2 rounded-md border border-line text-sm outline
 export function ImportJobsForm({ certifiers }: { certifiers: { id: string; name: string }[] }) {
   const certifierNames = useMemo(() => certifiers.map((c) => c.name), [certifiers]);
   const [pasted, setPasted] = useState("");
+  const [fileNote, setFileNote] = useState<{ text: string; tone: "ok" | "error" | "busy" } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
   const [certifierId, setCertifierId] = useState(certifiers[0]?.id || "");
   const [state, formAction, pending] = useActionState<ImportResult | undefined, FormData>(importJobs, undefined);
+
+  // A dropped file becomes the paste it would have been, so everything
+  // from the preview down is the same code whichever way the list came.
+  // The spreadsheet reader is fetched only when a file arrives: it is a
+  // sizeable library, and most visits to this page never need it.
+  async function readFile(file: File) {
+    setFileNote({ text: `Reading ${file.name}…`, tone: "busy" });
+    try {
+      const { isTextFile, isSpreadsheetFile, rowsFromWorkbook, rowsToPaste } = await import("@/lib/import/spreadsheet");
+      if (isTextFile(file.name)) {
+        setPasted(await file.text());
+        setFileNote({ text: `Read ${file.name}.`, tone: "ok" });
+        return;
+      }
+      if (!isSpreadsheetFile(file.name)) {
+        setFileNote({ text: "That is not a spreadsheet — save it as an Excel file (.xlsx) or a CSV and try again.", tone: "error" });
+        return;
+      }
+      const table = rowsFromWorkbook(new Uint8Array(await file.arrayBuffer()));
+      if (!table) {
+        setFileNote({ text: `${file.name} has nothing on any of its sheets.`, tone: "error" });
+        return;
+      }
+      setPasted(rowsToPaste(table.rows));
+      const dataRows = Math.max(0, table.rows.length - 1);
+      setFileNote({ text: `Read ${dataRows} row${dataRows === 1 ? "" : "s"} from the "${table.sheet}" sheet of ${file.name}.`, tone: "ok" });
+    } catch {
+      setFileNote({ text: `${file.name} could not be read — save it again as an Excel file (.xlsx) or a CSV and try once more.`, tone: "error" });
+    }
+  }
 
   const preview = useMemo(() => {
     const paste = parsePaste(pasted, looksLikeHeadings);
@@ -74,18 +107,74 @@ export function ImportJobsForm({ certifiers }: { certifiers: { id: string; name:
       <input type="hidden" name="pasted" value={pasted} />
 
       <div className="bg-white rounded-lg border border-line p-5">
-        <label className="block text-sm font-semibold text-primary mb-1">Paste your projects</label>
+        <label className="block text-sm font-semibold text-primary mb-1">Drop in your spreadsheet</label>
         <p className="text-xs text-muted mb-3">
-          Export a list from your current system, open it, select everything including the heading row, copy, and paste it here. The column headings can say whatever they already say —
-          Certlyn works out what they mean.
+          The easiest way: download the template, fill in one row per project, and drop the file here. An export from your current system works too — the column headings can say whatever
+          they already say, and Certlyn works out what they mean.
         </p>
-        <textarea
+        <div className="flex items-center gap-3 flex-wrap mb-3">
+          <a
+            href="/api/import/template"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-line text-xs font-semibold text-heading hover:bg-hover"
+          >
+            <Download size={13} /> Download the Excel template
+          </a>
+          <span className="text-[11px] text-placeholder">Two sheets: the one to fill in, and one explaining every column.</span>
+        </div>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => fileInput.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") fileInput.current?.click();
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) void readFile(file);
+          }}
+          className={`flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-4 py-7 text-center cursor-pointer ${
+            dragging ? "border-icon bg-info-bg" : "border-line hover:bg-hover"
+          }`}
+        >
+          <FileSpreadsheet size={22} strokeWidth={1.5} className="text-icon" />
+          <div className="text-sm font-medium text-heading">Drop your Excel or CSV file here, or click to choose one</div>
+          <div className="text-[11px] text-placeholder">.xlsx, .xls or .csv — the first sheet with anything on it is read</div>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".xlsx,.xlsm,.xls,.ods,.csv,.tsv,.txt"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void readFile(file);
+              e.target.value = "";
+            }}
+          />
+        </div>
+        {fileNote && (
+          <p className={`text-xs mt-2 ${fileNote.tone === "error" ? "text-error" : fileNote.tone === "ok" ? "text-accent" : "text-muted"}`}>{fileNote.text}</p>
+        )}
+
+        <details className="mt-4">
+          <summary className="text-xs font-semibold text-secondary cursor-pointer select-none">Or paste the rows instead</summary>
+          <p className="text-xs text-muted mt-2 mb-2">
+            Open the list, select everything including the heading row, copy, and paste it here.
+          </p>
+          <textarea
           value={pasted}
           onChange={(e) => setPasted(e.target.value)}
           rows={8}
           placeholder="Site Address	Scope of Works	Lot/DP	Council	Client	CDC Number …"
           className={`${inputCls} font-mono text-xs`}
         />
+        </details>
       </div>
 
       {preview && (
