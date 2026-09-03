@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function HowItWorksPage() {
   return (
     <MarketingShell current="/how-it-works">
-      <Hero kicker="How it works" title={<>From quote to Occupation Certificate, <span className="text-[#f0b93a]">in one place.</span></>}>
+      <Hero kicker="Product" title={<>From quote to Occupation Certificate, <span className="text-[#d99a12]">in one place.</span></>}>
         Certlyn follows a project the way NSW certifiers told us they run one: quote it, collect the documents, issue the certificate,
         inspect the work, issue the OC. Each step hands what it knows to the next, so nothing is typed twice.
       </Hero>
@@ -39,7 +39,7 @@ export default function HowItWorksPage() {
             counted for you.
           </Step>
           <Step number={5} title="Inspect from your phone">
-            <span className="font-semibold text-white">On site</span> is the inspection as one thumb-sized screen: directions, call the site,
+            <span className="font-semibold text-slate-900">On site</span> is the inspection as one thumb-sized screen: directions, call the site,
             what you found, issues, photos straight from the camera, notes. Sign the report standing on the slab, report it to the NSW
             Planning Portal, email the client if you want to.
           </Step>
@@ -84,7 +84,7 @@ export default function HowItWorksPage() {
         </div>
       </Section>
 
-      <CallToAction title="Bring your projects across in an afternoon." blurb="Fill in one spreadsheet, drop it on the Import page, and every job under construction is in Certlyn with its approval recorded, ready for inspections and the OC." />
+      <CallToAction title="Bring your projects across in an afternoon." blurb="Fill in one spreadsheet, drop it on the Import page, and every job under construction is in Certlyn with its approval recorded, ready for inspections and the OC." primary={{ href: "/join?intent=demo", label: "Book a Demo" }} secondary={{ href: "/join?intent=launch-offer", label: "Claim the Launch Offer" }} />
     </MarketingShell>
   );
 }

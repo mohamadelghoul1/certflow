@@ -278,3 +278,16 @@ input[type="radio"]:active {
   box-shadow: 0 0 0 3px rgba(47, 166, 160, 0.55);
   transform: scale(0.97);
 }
+
+/* The one bit of motion on the public site: the hero copy and product
+   picture settle into place. Off for anyone who has asked their system
+   for less motion. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.rise-in { animation: rise 0.6s ease-out both; }
+.rise-in-late { animation: rise 0.6s ease-out 0.15s both; }
+@media (prefers-reduced-motion: reduce) {
+  .rise-in, .rise-in-late { animation: none; }
+}

@@ -14,17 +14,17 @@ export const metadata: Metadata = {
 // not do.
 
 function H({ children }: { children: React.ReactNode }) {
-  return <h2 className="mt-10 text-[22px] font-bold">{children}</h2>;
+  return <h2 className="mt-10 text-[22px] font-bold text-[#1a3a5f]">{children}</h2>;
 }
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="mt-3 text-[15px] leading-relaxed text-slate-300">{children}</p>;
+  return <p className="mt-3 text-[15px] leading-relaxed text-slate-600">{children}</p>;
 }
 function UL({ items }: { items: React.ReactNode[] }) {
   return (
-    <ul className="mt-3 space-y-2 text-[15px] leading-relaxed text-slate-300">
+    <ul className="mt-3 space-y-2 text-[15px] leading-relaxed text-slate-600">
       {items.map((item, i) => (
         <li key={i} className="flex gap-3">
-          <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f0b93a]" />
+          <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#2fa6a0]" />
           <span>{item}</span>
         </li>
       ))}
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
         Australian Privacy Principles in the Privacy Act 1988 (Cth).
       </Hero>
 
-      <div className="max-w-3xl">
+      <div className="mx-auto max-w-3xl px-6 pb-16">
         <H>Who this covers</H>
         <P>
           Certlyn is used by building certification firms (&ldquo;firms&rdquo;) to run their projects, and by their clients &mdash;
@@ -59,22 +59,22 @@ export default function PrivacyPage() {
         <UL
           items={[
             <>
-              <span className="font-semibold text-white">From firms:</span> the firm&rsquo;s name, ABN, addresses, phone, email, logo and
+              <span className="font-semibold text-slate-900">From firms:</span> the firm&rsquo;s name, ABN, addresses, phone, email, logo and
               stamp; each certifier&rsquo;s name, registration number and expiry, insurance details, email, phone, Planning Portal login
               email and signature image; sending-address and payment settings, including bank details printed on invoices.
             </>,
             <>
-              <span className="font-semibold text-white">About clients and projects, entered by a firm or by the client:</span> names,
+              <span className="font-semibold text-slate-900">About clients and projects, entered by a firm or by the client:</span> names,
               contact details and postal addresses of applicants, owners and builders; site addresses and land details; the documents
               uploaded for a project and their details; inspection dates, outcomes, notes and photographs; certificates, reports and letters
               the firm issues; quotes and invoices.
             </>,
             <>
-              <span className="font-semibold text-white">From visitors to this website:</span> what you enter in the &ldquo;Register your
+              <span className="font-semibold text-slate-900">From visitors to this website:</span> what you enter in the &ldquo;Register your
               interest&rdquo; form &mdash; name, firm, email, phone and message.
             </>,
             <>
-              <span className="font-semibold text-white">Automatically:</span> a sign-in session cookie, and a record of actions taken in
+              <span className="font-semibold text-slate-900">Automatically:</span> a sign-in session cookie, and a record of actions taken in
               the service (who did what, when) kept as an audit log. We do not run advertising or analytics trackers.
             </>,
           ]}
@@ -95,27 +95,27 @@ export default function PrivacyPage() {
         <UL
           items={[
             <>
-              <span className="font-semibold text-white">Hosting and database</span> (Vercel and Supabase) &mdash; where the service runs and
+              <span className="font-semibold text-slate-900">Hosting and database</span> (Vercel and Supabase) &mdash; where the service runs and
               its data and documents are stored.
             </>,
             <>
-              <span className="font-semibold text-white">Email delivery</span> (Resend) &mdash; to send the emails described above.
+              <span className="font-semibold text-slate-900">Email delivery</span> (Resend) &mdash; to send the emails described above.
             </>,
             <>
-              <span className="font-semibold text-white">Card payments</span> (Stripe) &mdash; when a client pays an invoice by card. Card
+              <span className="font-semibold text-slate-900">Card payments</span> (Stripe) &mdash; when a client pays an invoice by card. Card
               details are entered on Stripe&rsquo;s own pages and never reach Certlyn.
             </>,
             <>
-              <span className="font-semibold text-white">AI assistance</span> (Anthropic) &mdash; where a firm has switched it on. Most uses
+              <span className="font-semibold text-slate-900">AI assistance</span> (Anthropic) &mdash; where a firm has switched it on. Most uses
               send only project details and document titles. A document itself is sent only when a certifier presses &ldquo;Read the details
               with AI&rdquo; on that document, and only its first pages. Anthropic&rsquo;s API does not use this to train its models.
             </>,
             <>
-              <span className="font-semibold text-white">Cloud backup</span> (Dropbox or Microsoft OneDrive) &mdash; only if a firm connects its
+              <span className="font-semibold text-slate-900">Cloud backup</span> (Dropbox or Microsoft OneDrive) &mdash; only if a firm connects its
               own account, and only into that account.
             </>,
             <>
-              <span className="font-semibold text-white">NSW Planning Portal</span> &mdash; when a firm reports an inspection or certificate, as
+              <span className="font-semibold text-slate-900">NSW Planning Portal</span> &mdash; when a firm reports an inspection or certificate, as
               it is required to by law.
             </>,
           ]}
@@ -166,12 +166,12 @@ export default function PrivacyPage() {
         <P>
           {contact.email ? (
             <>
-              Privacy questions and requests: <a href={`mailto:${contact.email}`} className="text-[#f0b93a] hover:underline">{contact.email}</a>.
+              Privacy questions and requests: <a href={`mailto:${contact.email}`} className="text-[#1f7f7a] hover:underline">{contact.email}</a>.
             </>
           ) : (
             <>
               Privacy questions and requests can be sent through the form on the{" "}
-              <Link href={contact.formPath} className="text-[#f0b93a] hover:underline">
+              <Link href={contact.formPath} className="text-[#1f7f7a] hover:underline">
                 For certifiers
               </Link>{" "}
               page.

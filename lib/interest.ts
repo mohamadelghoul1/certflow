@@ -7,11 +7,25 @@ import { escapeHtml } from "@/lib/html";
 // hidden box that only a robot fills in. What survives that is emailed
 // to the firm that runs Certlyn, and nothing is stored.
 
-export type InterestFields = { name: string; firm: string; email: string; phone: string; message: string; website: string };
+export type Intent = "demo" | "launch-offer" | "question";
+
+export const INTENTS: { value: Intent; label: string; subject: string }[] = [
+  { value: "demo", label: "Book a demo", subject: "would like a demo" },
+  { value: "launch-offer", label: "Claim the launch offer", subject: "wants to claim the launch offer" },
+  { value: "question", label: "Ask a question", subject: "has a question" },
+];
+
+export function isIntent(value: unknown): value is Intent {
+  return INTENTS.some((i) => i.value === value);
+}
+
+export type InterestFields = { intent: Intent; name: string; firm: string; email: string; phone: string; message: string; website: string };
 
 export function readInterest(formData: FormData): InterestFields {
   const text = (name: string, max: number) => String(formData.get(name) || "").trim().slice(0, max);
+  const intent = formData.get("intent");
   return {
+    intent: isIntent(intent) ? intent : "demo",
     name: text("name", 120),
     firm: text("firm", 160),
     email: text("email", 200),
@@ -30,10 +44,16 @@ export function validateInterest(fields: InterestFields): string | null {
   return null;
 }
 
+export function interestSubject(fields: InterestFields): string {
+  const intent = INTENTS.find((i) => i.value === fields.intent) || INTENTS[0];
+  return `Certlyn — ${fields.firm} ${intent.subject}`;
+}
+
 export function interestEmailHtml(fields: InterestFields): string {
   const row = (label: string, value: string) => (value ? `<tr><td style="padding:4px 12px 4px 0;color:#555"><strong>${label}</strong></td><td style="padding:4px 0">${escapeHtml(value)}</td></tr>` : "");
+  const intent = INTENTS.find((i) => i.value === fields.intent) || INTENTS[0];
   return [
-    `<p>A certifier has registered their interest in Certlyn.</p>`,
+    `<p>Through the Certlyn website: <strong>${escapeHtml(intent.label)}</strong>.</p>`,
     `<table style="border-collapse:collapse">`,
     row("Name", fields.name),
     row("Firm", fields.firm),
@@ -41,6 +61,6 @@ export function interestEmailHtml(fields: InterestFields): string {
     row("Phone", fields.phone),
     `</table>`,
     fields.message ? `<p style="margin-top:12px"><strong>Message</strong></p><p style="white-space:pre-wrap">${escapeHtml(fields.message)}</p>` : "",
-    `<p style="margin-top:16px;color:#777;font-size:12px">Sent from the Register your interest form on certlyn.com.au. Reply to this email to reach them.</p>`,
+    `<p style="margin-top:16px;color:#777;font-size:12px">Sent from the contact form on certlyn.com.au. Reply to this email to reach them.</p>`,
   ].join("");
 }

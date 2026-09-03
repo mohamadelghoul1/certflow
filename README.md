@@ -523,8 +523,10 @@ browser around it.
 
 ### The public pages — one optional setting
 
-`/how-it-works`, `/why-certlyn` and `/join` are readable without a
-login and linked from the front door. The form on `/join` emails
+The homepage, `/how-it-works`, `/why-certlyn`, `/pricing` and `/join`
+are readable without a login. The price, the plan's contents and the
+launch offer dates live in `lib/pricing.ts` and are quoted from there on
+every page that mentions them. The form on `/join` emails
 whoever runs Certlyn: `CONTACT_EMAIL` in Vercel if it is set, otherwise
 the email on the owner's firm (Settings → Firm). It goes out through
 the deployment's own sending address, so it needs `RESEND_API_KEY` like

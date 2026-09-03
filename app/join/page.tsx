@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { Upload, Building2, PenLine, Mail, HelpCircle } from "lucide-react";
 import { MarketingShell, Hero, Section, Card } from "@/components/marketing/MarketingShell";
 import { RegisterInterestForm } from "@/components/marketing/RegisterInterestForm";
+import { isIntent, type Intent } from "@/lib/interest";
+import { PRICE_LABEL, OFFER_JOIN_BY, OFFER_FREE_UNTIL } from "@/lib/pricing";
 
 export const metadata: Metadata = {
-  title: "Join Certlyn",
-  description: "For NSW building certifiers: what joining Certlyn involves, and how to register your interest.",
+  title: "Book a demo — Certlyn",
+  description: "Book a demo of Certlyn, claim the launch offer, or ask a question.",
 };
 
 const FAQ: { q: string; a: string }[] = [
@@ -31,69 +33,79 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What does it cost?",
-    a: "We'll talk it through when you register — it depends on how many certifiers you have. There is no setup fee for bringing your projects across.",
+    a: `${PRICE_LABEL} per month for your firm, after the launch offer. Join before ${OFFER_JOIN_BY} and there is no subscription cost until ${OFFER_FREE_UNTIL}. No setup fee.`,
   },
 ];
 
-export default function JoinPage() {
+const HEADINGS: Record<Intent, { title: React.ReactNode; lead: string }> = {
+  demo: { title: <>Book a demo. <span className="text-[#d99a12]">Your own project, start to finish.</span></>, lead: "Tell us a little about your practice and we'll arrange a walk-through on your own screen." },
+  "launch-offer": {
+    title: <>Claim the launch offer. <span className="text-[#d99a12]">Free until {OFFER_FREE_UNTIL}.</span></>,
+    lead: `Join before ${OFFER_JOIN_BY} and use Certlyn at no subscription cost until ${OFFER_FREE_UNTIL}. Leave your details and we'll set your firm up.`,
+  },
+  question: { title: <>Ask us anything.</>, lead: "A question about the product, pricing, security or bringing your projects across — we'll answer it." },
+};
+
+export default async function JoinPage({ searchParams }: { searchParams: Promise<{ intent?: string }> }) {
+  const { intent: raw } = await searchParams;
+  const intent: Intent = isIntent(raw) ? raw : "demo";
+  const heading = HEADINGS[intent];
+
   return (
     <MarketingShell current="/join">
-      <Hero kicker="For certifiers" title={<>Run your practice on Certlyn. <span className="text-[#f0b93a]">We&rsquo;ll set it up with you.</span></>}>
-        Certlyn was built from the feedback of certifiers across NSW, combined into one system made for the way NSW certification
-        actually works. Joining is a conversation, not a sign-up page: we set up your firm, bring your projects across, and stay on hand
-        while you get going.
+      <Hero kicker="Contact" title={heading.title}>
+        {heading.lead}
       </Hero>
 
-      <Section title="What joining looks like">
+      <Section title="Get in touch">
+        <div className="grid gap-8 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            <RegisterInterestForm defaultIntent={intent} />
+          </div>
+          <div className="lg:col-span-2 space-y-4 text-[15px] leading-relaxed text-slate-600">
+            <p>
+              <span className="font-semibold text-slate-900">Who you&rsquo;ll hear from.</span> The Certlyn team &mdash; people who know NSW
+              certification and have spent a long time listening to certifiers about what they need from their software.
+            </p>
+            <p>
+              <span className="font-semibold text-slate-900">What a demo covers.</span> Your own project, start to finish, on your own screen
+              &mdash; and the questions you have about how you work now. About forty minutes.
+            </p>
+            <p>
+              <span className="font-semibold text-slate-900">No obligation.</span> If it isn&rsquo;t for you, nothing has been set up and nothing
+              needs undoing.
+            </p>
+          </div>
+        </div>
+      </Section>
+
+      <Section tone="tint" title="What joining looks like">
         <div className="grid gap-4 sm:grid-cols-2">
           <Card icon={<Building2 size={20} />} title="Your firm, set up for you">
-            Your logo, your ABN, your certifiers with their registrations and signatures, your sending address. Done with you on a call,
-            not from a form.
+            Your logo, your ABN, your certifiers with their registrations and signatures, your sending address. Done with you on a call, not
+            from a form.
           </Card>
           <Card icon={<Upload size={20} />} title="Your projects, brought across">
-            One spreadsheet, dropped on the Import page. Every job under construction lands with its approval recorded and its
-            inspections ready.
+            One spreadsheet, dropped on the Import page. Every job under construction lands with its approval recorded and its inspections
+            ready.
           </Card>
           <Card icon={<PenLine size={20} />} title="Your wording and layout">
             Start from the standard certificate, letter and report layouts and change any wording you like. Or keep them as they are.
           </Card>
           <Card icon={<Mail size={20} />} title="Your clients, invited">
-            Each client gets a portal login by email. From then on they upload into it, book inspections from it, and pay invoices through
-            it.
+            Each client gets a portal login by email. From then on they upload into it, book inspections from it, and pay invoices through it.
           </Card>
         </div>
       </Section>
 
-      <Section title="Register your interest" lead="Tell us a little about your practice and we'll be in touch to arrange a walk-through.">
-        <div className="grid gap-8 lg:grid-cols-5">
-          <div className="lg:col-span-3">
-            <RegisterInterestForm />
-          </div>
-          <div className="lg:col-span-2 space-y-4 text-[15px] leading-relaxed text-slate-300">
-            <p>
-              <span className="font-semibold text-white">Who you&rsquo;ll hear from.</span> The Certlyn team &mdash; people who know NSW
-              certification and have spent a long time listening to certifiers about what they need from their software.
-            </p>
-            <p>
-              <span className="font-semibold text-white">What a walk-through covers.</span> Your own project, start to finish, on your
-              own screen &mdash; and the questions you have about how you work now.
-            </p>
-            <p>
-              <span className="font-semibold text-white">No obligation.</span> If it isn&rsquo;t for you, nothing has been set up and
-              nothing needs undoing.
-            </p>
-          </div>
-        </div>
-      </Section>
-
       <Section title="Questions certifiers ask">
-        <dl className="grid gap-6 sm:grid-cols-2">
+        <dl className="grid gap-5 sm:grid-cols-2">
           {FAQ.map((item) => (
-            <div key={item.q} className="rounded-2xl border border-slate-800 p-5">
-              <dt className="flex items-start gap-2 text-[16px] font-bold">
-                <HelpCircle size={18} className="mt-0.5 shrink-0 text-[#f0b93a]" /> {item.q}
+            <div key={item.q} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <dt className="flex items-start gap-2 text-[16px] font-bold text-slate-900">
+                <HelpCircle size={18} className="mt-0.5 shrink-0 text-[#1f7f7a]" /> {item.q}
               </dt>
-              <dd className="mt-2 text-[15px] leading-relaxed text-slate-300">{item.a}</dd>
+              <dd className="mt-2 text-[15px] leading-relaxed text-slate-600">{item.a}</dd>
             </div>
           ))}
         </dl>

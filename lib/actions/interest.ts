@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, emailConfigured } from "@/lib/email";
 import { withinLimit, type Limit } from "@/lib/rateLimit";
-import { readInterest, validateInterest, interestEmailHtml } from "@/lib/interest";
+import { readInterest, validateInterest, interestEmailHtml, interestSubject } from "@/lib/interest";
 
 export type InterestState = { error?: string; success?: string } | undefined;
 
@@ -38,7 +38,7 @@ export async function registerInterest(_prev: InterestState, formData: FormData)
     return { error: "The form isn't connected yet — email us directly instead." };
   }
 
-  const result = await sendEmail(to, `Certlyn — ${fields.firm} would like to join`, interestEmailHtml(fields));
+  const result = await sendEmail(to, interestSubject(fields), interestEmailHtml(fields));
   if (result.error || result.skipped) return { error: "Your message couldn't be sent just now — please try again shortly." };
   return { success: "Thanks — we've got your details and will be in touch shortly." };
 }

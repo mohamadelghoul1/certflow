@@ -14,17 +14,17 @@ export const metadata: Metadata = {
 // plainly, because it is both true and the thing a regulator will ask.
 
 function H({ children }: { children: React.ReactNode }) {
-  return <h2 className="mt-10 text-[22px] font-bold">{children}</h2>;
+  return <h2 className="mt-10 text-[22px] font-bold text-[#1a3a5f]">{children}</h2>;
 }
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="mt-3 text-[15px] leading-relaxed text-slate-300">{children}</p>;
+  return <p className="mt-3 text-[15px] leading-relaxed text-slate-600">{children}</p>;
 }
 function UL({ items }: { items: React.ReactNode[] }) {
   return (
-    <ul className="mt-3 space-y-2 text-[15px] leading-relaxed text-slate-300">
+    <ul className="mt-3 space-y-2 text-[15px] leading-relaxed text-slate-600">
       {items.map((item, i) => (
         <li key={i} className="flex gap-3">
-          <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f0b93a]" />
+          <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#2fa6a0]" />
           <span>{item}</span>
         </li>
       ))}
@@ -42,7 +42,7 @@ export default function TermsPage() {
         set out in the written agreement between {OPERATOR_NAME} and the firm, which sits alongside these terms.
       </Hero>
 
-      <div className="max-w-3xl">
+      <div className="mx-auto max-w-3xl px-6 pb-16">
         <H>1. What Certlyn is, and what it is not</H>
         <P>
           Certlyn is software for recording and managing building certification work. It is not a certifier and does not provide
@@ -143,19 +143,19 @@ export default function TermsPage() {
         <P>
           {contact.email ? (
             <>
-              Questions about these terms: <a href={`mailto:${contact.email}`} className="text-[#f0b93a] hover:underline">{contact.email}</a>.
+              Questions about these terms: <a href={`mailto:${contact.email}`} className="text-[#1f7f7a] hover:underline">{contact.email}</a>.
             </>
           ) : (
             <>
               Questions about these terms can be sent through the form on the{" "}
-              <Link href={contact.formPath} className="text-[#f0b93a] hover:underline">
+              <Link href={contact.formPath} className="text-[#1f7f7a] hover:underline">
                 For certifiers
               </Link>{" "}
               page.
             </>
           )}{" "}
           Our{" "}
-          <Link href="/privacy" className="text-[#f0b93a] hover:underline">
+          <Link href="/privacy" className="text-[#1f7f7a] hover:underline">
             privacy policy
           </Link>{" "}
           explains how personal information is handled.

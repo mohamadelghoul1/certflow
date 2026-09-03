@@ -34,7 +34,7 @@ export async function updateSession(request: NextRequest) {
   // the link's one-time token IS their proof, and the route verifies it
   // itself. Bouncing them to the sign-in page here would eat the link.
   // The public pages a certifier reads before they have a login.
-  const isMarketingRoute = path === "/how-it-works" || path === "/why-certlyn" || path === "/join" || path === "/privacy" || path === "/terms";
+  const isMarketingRoute = path === "/how-it-works" || path === "/why-certlyn" || path === "/join" || path === "/pricing" || path === "/privacy" || path === "/terms";
   const isPublicRoute = path === "/" || isAuthRoute || isMarketingRoute || path.startsWith("/auth/");
 
   if (!user && !isPublicRoute) {

@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { readInterest, validateInterest, interestEmailHtml } from "@/lib/interest";
+import { readInterest, validateInterest, interestEmailHtml, interestSubject } from "@/lib/interest";
 
 // The one public form on the site. What is held: a robot is thanked and
 // dropped, a person is told what to fix, and nothing they typed can
@@ -38,3 +38,11 @@ describe("registering interest", () => {
     assert.ok(html.includes("Hello &lt;script&gt;"));
   });
 });
+
+test("what they asked for is in the subject line, and an unknown intent is a demo", () => {
+  const offer = readInterest(form({ name: "N", firm: "Jane Certifies", email: "a@b.co", intent: "launch-offer" }));
+  assert.equal(interestSubject(offer), "Certlyn — Jane Certifies wants to claim the launch offer");
+  const odd = readInterest(form({ name: "N", firm: "F", email: "a@b.co", intent: "hack" }));
+  assert.equal(odd.intent, "demo");
+});
+
