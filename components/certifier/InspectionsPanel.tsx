@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, Download, FileDown } from "lucide-react";
+import { FileText, Download, FileDown, Smartphone } from "lucide-react";
 import { InspectionSigning, SignInspectionReportButton } from "@/components/certifier/SignInspectionReportButton";
 import { formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
@@ -218,6 +218,11 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
                 pressing it would do both. */}
             <Link href={`/jobs/${jobId}/inspections/${insp.id}/report`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
               <FileText size={12} /> Review report
+            </Link>
+            {/* The same inspection as one thumb-sized column — the screen
+                to open standing on the slab. */}
+            <Link href={`/site/${insp.id}`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
+              <Smartphone size={12} /> Open on site
             </Link>
             <a href={`/api/jobs/${jobId}/inspections/${insp.id}/report/word`} className="flex items-center gap-1 text-xs font-semibold text-secondary hover:underline">
               <Download size={12} /> Export to Word

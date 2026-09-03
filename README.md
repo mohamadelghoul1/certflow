@@ -492,6 +492,35 @@ the same card lists the facts plainly, so nothing is lost — only the
 prose. Site addresses do go to the AI for this note, because the note
 is about them; client names still do not.
 
+### AI reads uploaded documents — same key as above
+
+On every uploaded document, **Read the details with AI** sends the
+first four pages (or the photo) to the AI, which reads the title block
+and suggests the Schedule 1 details: label, prepared by, reference
+number, revision, date. Each comes back beside what the box holds now
+with a **Use** button, and nothing is saved until one is pressed. It
+also says whether the address printed on the document is this
+project's, and flags anything worth knowing — unsigned, expired, marked
+preliminary.
+
+The document itself is what is sent, so this is the one AI feature
+where a client's document leaves Certlyn. The button only appears when
+`ANTHROPIC_API_KEY` is set, and reads nothing until pressed. A reading
+costs a few cents; a long drawing set is cut to its first four pages
+before it goes.
+
+### On site, on a phone — built; install it to the home screen
+
+`/site` is the inspection as one thumb-sized column: directions, call
+the site, what was found, issues, photos straight from the camera (with
+retry over one bar of signal), notes, sign, report to the Portal, email
+the client. Reached from the **On site** tab on a phone, or **Open on
+site** on any inspection card.
+
+Certlyn now installs to a phone's home screen (Chrome: menu → Add to
+Home screen; Safari: Share → Add to Home Screen), opening without the
+browser around it.
+
 ### A second firm — waiting on a firm being ready
 
 The owner's decision, 2 Sept 2026: leave the second firm until one is

@@ -7,6 +7,12 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
   title: "Certlyn",
   description: "Certification project management for NSW building certifiers",
+  // Installable on a phone: "Add to Home Screen" gives an icon that opens
+  // straight into the app without the browser's chrome around it — what
+  // an inspector standing on a slab wants, one tap and the camera.
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Certlyn" },
+  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
 };
 
 // Without this, phones lay the page out at a notional 980px and shrink the

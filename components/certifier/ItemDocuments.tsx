@@ -8,6 +8,7 @@ import { ItemMetaDetails } from "@/components/certifier/ItemMetaDetails";
 import { CertifierDocumentUpload } from "@/components/certifier/CertifierDocumentUpload";
 import type { ChecklistItem, ChecklistItemFile } from "@/types/db";
 import { SubmitButton } from "@/components/SubmitButton";
+import { aiConfigured } from "@/lib/ai/outstandingSummary";
 
 type ItemWithFiles = ChecklistItem & { checklist_item_files?: ChecklistItemFile[] | null };
 
@@ -64,7 +65,7 @@ export async function ItemDocuments({ item, jobId, firmId }: { item: ItemWithFil
           </div>
           {/* Only offered once there is more than one: removing the only
               document is what "reopen" already does to the whole item. */}
-          <ItemDocumentDetails doc={doc} itemId={item.id} itemTitle={item.title} jobId={jobId} removable={docs.length > 1} />
+          <ItemDocumentDetails doc={doc} itemId={item.id} itemTitle={item.title} jobId={jobId} removable={docs.length > 1} aiConfigured={aiConfigured()} />
         </div>
       ))}
       {/* An item with nothing uploaded still opens onto the same detail
