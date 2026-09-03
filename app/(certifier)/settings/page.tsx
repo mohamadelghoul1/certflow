@@ -27,8 +27,9 @@ import type { CdcConditionSet } from "@/types/db";
 import { isPlatformOwner } from "@/lib/platformOwner";
 import { StorageSection } from "@/components/certifier/StorageSection";
 import { SystemCheckSection } from "@/components/certifier/SystemCheckSection";
+import { SecuritySection } from "@/components/certifier/SecuritySection";
 import Link from "next/link";
-import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, Activity, FileText, Mail, PenLine, ScrollText, type LucideIcon, HardDrive } from "lucide-react";
+import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, Activity, FileText, Mail, PenLine, ScrollText, type LucideIcon, HardDrive, ShieldCheck } from "lucide-react";
 
 // Settings, one section at a time. Everything used to sit on one long
 // page; finding the certifier list meant scrolling past the firm form
@@ -42,6 +43,7 @@ const SECTIONS: { key: string; label: string; icon: LucideIcon; blurb: string }[
   { key: "payments", label: "Payment details", icon: Landmark, blurb: "Bank details on invoices, card surcharge, your Stripe account" },
   { key: "reminders", label: "Client reminders", icon: BellRing, blurb: "Automatic chasing of outstanding documents" },
   { key: "certifiers", label: "Certifiers", icon: Users, blurb: "The team, signatures and registrations" },
+  { key: "security", label: "Sign-in security", icon: ShieldCheck, blurb: "Two-factor sign-in for your own login" },
   { key: "clients", label: "Clients & portal access", icon: KeyRound, blurb: "Contacts and their portal logins" },
   { key: "library", label: "Document library", icon: Library, blurb: "What each checklist asks for" },
   { key: "certificates", label: "Certificate layout", icon: FileText, blurb: "What prints on your CDC, CC and OC" },
@@ -150,6 +152,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     ) : (
       <CdcConditionsSection sets={rows} firmId={profile.firm_id} fileUrls={fileUrls} />
     );
+  } else if (active.key === "security") {
+    // The signed-in person's own authenticator, if they have one. A
+    // factor still "unverified" is a set-up that was never finished and
+    // reads as none.
+    const { data: factors } = await supabase.auth.mfa.listFactors();
+    const verified = factors?.totp?.[0] || null;
+    content = <SecuritySection factor={verified ? { id: verified.id, createdAt: verified.created_at } : null} />;
   } else if (active.key === "storage") {
     content = <StorageSection usage={await getStorageUsage(supabase, profile.firm_id)} />;
   } else if (active.key === "certificates") {

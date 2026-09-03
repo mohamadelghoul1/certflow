@@ -531,6 +531,41 @@ the deployment's own sending address, so it needs `RESEND_API_KEY` like
 every other email. Five messages a minute from the whole world is the
 cap, and a hidden box catches the robots.
 
+### Two-factor sign-in — check one switch in Supabase
+
+Settings → Sign-in security lets each certifier scan a QR code into an
+authenticator app; from then on every sign-in asks for the six-digit
+code, and no certifier page or action opens without it. Supabase does
+the cryptography (`auth.mfa`); Certlyn only carries the steps across.
+
+Two things to know:
+
+- **Supabase must allow it.** Authentication → Sign In / Providers →
+  Multi-Factor Authentication → TOTP should be enabled. It usually is by
+  default; if "Set up two-factor sign-in" answers with an error, that is
+  where to look.
+- **A lost phone locks the account.** There are no recovery codes. The
+  fix is in Supabase: Authentication → Users → the certifier → remove
+  the MFA factor. They can then sign in with their password and set up a
+  new phone. Only the person with Supabase access can do this, which is
+  what makes it safe.
+
+Clients are not offered two-factor; their portal holds their own
+project only.
+
+### Privacy policy and terms — live, and due for a solicitor's eye
+
+`/privacy` and `/terms` are linked from every public page and from the
+interest form. Both are written to be true of the app as it is: every
+processor named is one the code sends data to, and the terms say
+plainly that every statutory decision is the certifier's. They should
+still be read by a solicitor before another firm signs up.
+
+The operating entity is `Certlyn` in `lib/legal.ts`; when Certlyn has
+its own company and ABN, change it there and both pages follow. The
+contact address on both pages is `CONTACT_EMAIL` once it is set in
+Vercel, and the interest form until then.
+
 ### A second firm — waiting on a firm being ready
 
 The owner's decision, 2 Sept 2026: leave the second firm until one is

@@ -6,6 +6,7 @@ import { withinLimit, loginBucket, LOGIN_LIMIT } from "@/lib/rateLimit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, emailConfigured, firmSender } from "@/lib/email";
 import { siteUrl } from "@/lib/siteUrl";
+import { needsSecondFactor } from "@/lib/twoFactor";
 
 const TOO_MANY = "Too many sign-in attempts for this email address. Wait a minute and try again.";
 
@@ -32,7 +33,8 @@ export async function signInCertifier(_prev: ActionState, formData: FormData): P
     await supabase.auth.signOut();
     return { error: "This login isn't set up as a certifier account." };
   }
-  redirect("/dashboard");
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  redirect(needsSecondFactor(aal) ? "/login/verify" : "/dashboard");
 }
 
 export async function signInClient(_prev: ActionState, formData: FormData): Promise<ActionState> {

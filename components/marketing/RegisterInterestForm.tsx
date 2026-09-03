@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { CheckCircle2, Send } from "lucide-react";
 import { registerInterest, type InterestState } from "@/lib/actions/interest";
 
@@ -59,7 +60,13 @@ export function RegisterInterestForm() {
       >
         <Send size={16} /> {pending ? "Sending…" : "Register your interest"}
       </button>
-      <p className="text-xs text-slate-500">Your details go to the Certlyn team and nowhere else.</p>
+      <p className="text-xs text-slate-500">
+        Your details go to the Certlyn team and nowhere else — see our{" "}
+        <Link href="/privacy" className="underline hover:text-slate-300">
+          privacy policy
+        </Link>
+        .
+      </p>
     </form>
   );
 }

@@ -63,6 +63,14 @@ export function MarketingShell({ current, children }: { current: string; childre
             <Link href="/client-login" className="hover:text-white">
               Client portal
             </Link>
+            <span className="mx-3 text-slate-700">·</span>
+            <Link href="/privacy" className="hover:text-white">
+              Privacy
+            </Link>
+            <span className="mx-3 text-slate-700">·</span>
+            <Link href="/terms" className="hover:text-white">
+              Terms
+            </Link>
           </span>
         </div>
       </footer>
