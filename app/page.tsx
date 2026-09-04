@@ -62,7 +62,7 @@ export default function HomePage() {
               <br />
               <span className="text-[#d99a12]">Simplified.</span>
             </h1>
-            <p className="mt-5 max-w-lg text-[20px] font-semibold leading-snug text-slate-800">The complete certification workflow for NSW private certifiers.</p>
+            <p className="mt-5 max-w-lg text-[20px] font-semibold leading-snug text-slate-800">Complete certification workflow software for NSW private certifiers.</p>
             <p className="mt-3 max-w-lg text-[16px] leading-relaxed text-slate-600">
               Projects, documents, inspections, clients, invoicing and certificates in one place &mdash; from application to Occupation
               Certificate.
@@ -79,8 +79,8 @@ export default function HomePage() {
               <Link href="/join?intent=demo" className={btnPrimary}>
                 Book a Demo <ArrowRight size={17} />
               </Link>
-              <Link href="/join?intent=launch-offer" className={btnSecondary}>
-                Start Using Certlyn
+              <Link href="/how-it-works" className={btnSecondary}>
+                See Certlyn in Action
               </Link>
             </div>
             <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-slate-600">
@@ -109,12 +109,17 @@ export default function HomePage() {
 
       {/* Who it is for */}
       <section className="border-b border-slate-200 bg-white">
-        <Container className="flex flex-col gap-4 py-6 text-[14px] text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-          <span>
-            <span className="font-semibold text-slate-900">For private certifiers across NSW</span> &mdash; sole practitioners to multi-certifier firms
-            &mdash; issuing CDCs, CCs and Occupation Certificates.
+        <Container className="flex flex-col gap-3 py-6 text-[14px] text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+          <span className="max-w-3xl">
+            <span className="block text-[16px] font-semibold text-[#1a3a5f]">
+              More than reporting. Certlyn manages the complete certification workflow &mdash; from application to Occupation Certificate.
+            </span>
+            <span className="mt-1 block">
+              For private certifiers across NSW &mdash; sole practitioners to multi-certifier firms &mdash; issuing CDCs, CCs and Occupation
+              Certificates.
+            </span>
           </span>
-          <span className="inline-flex items-center gap-2 text-[13px] text-slate-500">
+          <span className="inline-flex shrink-0 items-center gap-2 text-[13px] text-slate-500">
             <Smartphone size={14} className="text-[#1f7f7a]" /> On your desk and on your phone
           </span>
         </Container>
@@ -152,6 +157,28 @@ export default function HomePage() {
 
       {/* Time savings */}
       <Section title="Less administration. More time for certification." lead="Where the hours go on a certification job, and where Certlyn gives them back.">
+        <div className="mb-8 grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="text-[12px] font-bold uppercase tracking-[0.2em] text-slate-500">Less</div>
+            <ul className="mt-3 space-y-2 text-[15px] text-slate-700">
+              {["Email chasing", "Manual document tracking", "Spreadsheet management", "Repetitive client updates", "Double handling of inspection information"].map((item) => (
+                <li key={item} className="flex items-center gap-2.5">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" /> {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-2xl border border-[#1f7f7a]/30 bg-teal-50/40 p-6 shadow-sm">
+            <div className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#1f7f7a]">More</div>
+            <ul className="mt-3 space-y-2 text-[15px] text-slate-800">
+              {["Automation", "Client self-service", "Centralised records", "Faster inspections", "Clear project visibility"].map((item) => (
+                <li key={item} className="flex items-center gap-2.5">
+                  <Check size={15} className="shrink-0 text-[#1f7f7a]" /> {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="grid grid-cols-[1fr_1fr] border-b border-slate-200 bg-slate-50 text-[12px] font-semibold uppercase tracking-wide text-slate-500 sm:grid-cols-[1.1fr_1fr_1fr]">
             <div className="hidden px-5 py-3 sm:block">Task</div>
@@ -206,9 +233,13 @@ export default function HomePage() {
             <div>
               <Eyebrow>Client portal</Eyebrow>
               <h2 className="mt-3 text-[28px] font-bold leading-tight tracking-tight text-[#1a3a5f] sm:text-4xl">Give your clients their own portal.</h2>
-              <p className="mt-4 max-w-lg text-[16px] leading-relaxed text-slate-600">
-                Clients securely access their project, upload requested information, see outstanding items, receive notifications and stay
-                informed about progress. They see what you choose to share, and nothing you don&rsquo;t.
+              <p className="mt-4 max-w-lg text-[17px] font-semibold leading-relaxed text-slate-800">
+                Your clients know what is required, what has been approved, what is outstanding, and what happens next &mdash; without constant
+                phone calls and emails.
+              </p>
+              <p className="mt-3 max-w-lg text-[15px] leading-relaxed text-slate-600">
+                They securely access their project, upload requested information and receive notifications. They see what you choose to share,
+                and nothing you don&rsquo;t.
               </p>
               <ul className="mt-6 space-y-3">
                 <Tick>
@@ -399,14 +430,14 @@ export default function HomePage() {
               </Link>
             </div>
             <div className="rounded-3xl bg-[#1a3a5f] p-8 text-white">
-              <div className="inline-flex items-center rounded-full bg-[#f0b93a] px-3 py-1 text-[12px] font-bold uppercase tracking-wide text-[#241b06]">Launch program</div>
+              <div className="inline-flex items-center rounded-full bg-[#f0b93a] px-3 py-1 text-[12px] font-bold uppercase tracking-wide text-[#241b06]">Launch offer</div>
               <div className="mt-4 text-[30px] font-bold leading-tight tracking-tight sm:text-[34px]">Free until {OFFER_FREE_UNTIL}</div>
               <p className="mt-3 text-[15px] leading-relaxed text-slate-200">
                 Join Certlyn before {OFFER_JOIN_BY} and use the platform at no subscription cost until {OFFER_FREE_UNTIL}.
               </p>
               <p className="mt-3 text-[14px] leading-relaxed text-slate-300">After {OFFER_FREE_UNTIL}, the standard subscription is {PRICE_LABEL} per month.</p>
               <Link href="/join?intent=launch-offer" className={`${btnPrimary} mt-7`}>
-                Join the Certlyn launch program <ArrowRight size={17} />
+                Claim the Launch Offer <ArrowRight size={17} />
               </Link>
             </div>
           </div>
@@ -417,8 +448,8 @@ export default function HomePage() {
       <CallToAction
         title="Ready to simplify your certification workflow?"
         blurb="See how Certlyn can bring your certification jobs, clients and administration together in one place."
-        primary={{ href: "/join?intent=demo", label: "Book a Demo" }}
-        secondary={{ href: "/join?intent=launch-offer", label: "Join the Certlyn launch program" }}
+        primary={{ href: "/join?intent=demo", label: "Book a Certlyn Demo" }}
+        secondary={{ href: "/join?intent=launch-offer", label: "Claim the Launch Offer" }}
       />
     </MarketingShell>
   );

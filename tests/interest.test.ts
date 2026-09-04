@@ -41,7 +41,7 @@ describe("registering interest", () => {
 
 test("what they asked for is in the subject line, and an unknown intent is a demo", () => {
   const offer = readInterest(form({ name: "N", firm: "Jane Certifies", email: "a@b.co", intent: "launch-offer" }));
-  assert.equal(interestSubject(offer), "Certlyn — Jane Certifies wants to join the launch program");
+  assert.equal(interestSubject(offer), "Certlyn — Jane Certifies wants to claim the launch offer");
   const odd = readInterest(form({ name: "N", firm: "F", email: "a@b.co", intent: "hack" }));
   assert.equal(odd.intent, "demo");
 });

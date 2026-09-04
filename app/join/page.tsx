@@ -7,7 +7,7 @@ import { PRICE_LABEL, OFFER_JOIN_BY, OFFER_FREE_UNTIL, JOBS_PER_MONTH } from "@/
 
 export const metadata: Metadata = {
   title: "Book a demo — Certlyn",
-  description: "Book a demo of Certlyn, join the launch program, or ask a question.",
+  description: "Book a demo of Certlyn, claim the launch offer, or ask a question.",
 };
 
 const FAQ: { q: string; a: string }[] = [
@@ -33,14 +33,14 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What does it cost?",
-    a: `${PRICE_LABEL} per month for your firm — unlimited certifiers, up to ${JOBS_PER_MONTH} new projects a month — after the launch program. Join before ${OFFER_JOIN_BY} and there is no subscription cost until ${OFFER_FREE_UNTIL}. No setup fee.`,
+    a: `${PRICE_LABEL} per month for your firm — unlimited certifiers, up to ${JOBS_PER_MONTH} new projects a month — after the launch offer. Join before ${OFFER_JOIN_BY} and there is no subscription cost until ${OFFER_FREE_UNTIL}. No setup fee.`,
   },
 ];
 
 const HEADINGS: Record<Intent, { title: React.ReactNode; lead: string }> = {
   demo: { title: <>Book a demo. <span className="text-[#d99a12]">Your own project, start to finish.</span></>, lead: "Tell us a little about your practice and we'll arrange a walk-through on your own screen." },
   "launch-offer": {
-    title: <>Join the Certlyn launch program. <span className="text-[#d99a12]">Free until {OFFER_FREE_UNTIL}.</span></>,
+    title: <>Claim the launch offer. <span className="text-[#d99a12]">Free until {OFFER_FREE_UNTIL}.</span></>,
     lead: `Firms that join before ${OFFER_JOIN_BY} use Certlyn at no subscription cost until ${OFFER_FREE_UNTIL}. Leave your details and we'll set your firm up.`,
   },
   question: { title: <>Ask us anything.</>, lead: "A question about the product, pricing, security or bringing your projects across — we'll answer it." },

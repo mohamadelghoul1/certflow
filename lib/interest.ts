@@ -11,7 +11,7 @@ export type Intent = "demo" | "launch-offer" | "question";
 
 export const INTENTS: { value: Intent; label: string; subject: string }[] = [
   { value: "demo", label: "Book a demo", subject: "would like a demo" },
-  { value: "launch-offer", label: "Join the launch program", subject: "wants to join the launch program" },
+  { value: "launch-offer", label: "Claim the launch offer", subject: "wants to claim the launch offer" },
   { value: "question", label: "Ask a question", subject: "has a question" },
 ];
 
