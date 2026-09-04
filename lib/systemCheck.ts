@@ -360,6 +360,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Keeps the assistant's note between visits so it is written once when something changes, not on every open.",
       probe: hasTable(supabase, "ai_briefings"),
     },
+    {
+      migration: "0072",
+      label: "Directors and team members",
+      detail: "Lets a director give employees and contract certifiers their own logins that see only the projects and inspections assigned to them.",
+      probe: hasTable(supabase, "job_members"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));

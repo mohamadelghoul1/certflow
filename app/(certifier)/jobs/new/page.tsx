@@ -1,10 +1,10 @@
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { NewJobForm } from "@/components/certifier/NewJobForm";
 import type { Contractor } from "@/types/db";
 
 export default async function NewJobPage() {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const [{ data: certifiers }, { data: clients }, { data: contractors }] = await Promise.all([
     supabase.from("certifiers").select("id, name").eq("firm_id", profile.firm_id).order("name"),

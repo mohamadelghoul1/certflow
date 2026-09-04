@@ -11,7 +11,7 @@ type JobQueryRow = Job & { checklists: ChecklistRow[]; inspections: { outcome: s
 
 export default async function JobsListPage({ searchParams }: { searchParams: Promise<{ pathway?: string; issued?: string }> }) {
   const params = await searchParams;
-  const { profile } = await requireProfile("certifier");
+  const { profile, director } = await requireProfile("certifier");
   const supabase = await createClient();
   const [{ data: rawJobs }, { data: certifiers }] = await Promise.all([
     excludingDeleted((live) => {
@@ -91,7 +91,7 @@ export default async function JobsListPage({ searchParams }: { searchParams: Pro
   return (
     <div>
       <h1 className="text-xl font-bold text-primary mb-6">Projects</h1>
-      <JobsList key={`${params.pathway || ""}-${params.issued || ""}`} jobs={jobs} certifiers={certifiers || []} deletedCount={deletedCount || 0} initialPathway={params.pathway || ""} initialIssued={params.issued || ""} />
+      <JobsList key={`${params.pathway || ""}-${params.issued || ""}`} jobs={jobs} certifiers={certifiers || []} deletedCount={deletedCount || 0} manage={director} initialPathway={params.pathway || ""} initialIssued={params.issued || ""} />
     </div>
   );
 }

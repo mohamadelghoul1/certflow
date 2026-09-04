@@ -59,6 +59,9 @@ export type Certifier = {
   pi_insurance_expiry: string | null;
   registration_expiry: string | null;
   user_id: string | null;
+  // Director or team member. Added by migration 0072; absent before it,
+  // when every certifier login had the run of the firm.
+  firm_role?: "director" | "staff";
   // Where Certlyn's own notifications to this certifier go — client
   // uploads, inspection bookings. Added by migration 0040.
   email?: string | null;
@@ -88,6 +91,14 @@ export type ClientContact = {
   email: string | null;
   phone: string | null;
   user_id: string | null;
+};
+
+// One extra person on a project, beyond its assigned certifier. Added
+// by migration 0072.
+export type JobMember = {
+  job_id: string;
+  certifier_id: string;
+  created_at: string;
 };
 
 export type Profile = {

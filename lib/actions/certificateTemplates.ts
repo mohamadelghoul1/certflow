@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { recordAuditEvent } from "@/lib/audit";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -23,7 +23,7 @@ function pathwayOf(value: FormDataEntryValue | null): CertificatePathway {
 }
 
 export async function saveCertificateTemplate(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const pathway = pathwayOf(formData.get("pathway"));
 
   let template: CertificateTemplate;
@@ -76,7 +76,7 @@ export async function saveCertificateTemplate(_prev: ActionState, formData: Form
 // overwritten with a copy of the default, so "have they customised this?"
 // stays a question with one answer.
 export async function resetCertificateTemplate(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const pathway = pathwayOf(formData.get("pathway"));
 
   const supabase = await createClient();

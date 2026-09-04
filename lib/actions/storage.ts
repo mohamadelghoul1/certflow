@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { removeFolder } from "@/lib/storage";
@@ -19,7 +19,7 @@ import type { ActionState } from "@/lib/actions/auth";
 // records for years; deciding they are gone is theirs to make, not a
 // sweep that runs overnight.
 export async function clearOrphanedFiles(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
 
   // Worked out here rather than taken from the form: a folder id posted

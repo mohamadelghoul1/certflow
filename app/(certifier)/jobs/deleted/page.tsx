@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatISODate } from "@/lib/business";
 import { isUnknownColumn } from "@/lib/softDelete";
@@ -10,7 +10,7 @@ import { DeletedJobRow } from "@/components/certifier/DeletedJobRow";
 // This is where they come back from, and the only place they can be
 // destroyed for good.
 export default async function DeletedJobsPage() {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
 
   const [{ data: jobs, error }, { data: people }] = await Promise.all([

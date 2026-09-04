@@ -9,22 +9,24 @@ import { Home, Building2, HardHat, BarChart3, Settings } from "lucide-react";
 // destinations move to a fixed bar at the bottom, within thumb reach.
 // Hidden from tablet width up, where the top bar has room to work.
 const TABS = [
-  { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/jobs", label: "Projects", icon: Building2 },
+  { href: "/dashboard", label: "Home", icon: Home, directorOnly: false },
+  { href: "/jobs", label: "Projects", icon: Building2, directorOnly: false },
   // On site earns its place on a phone more than Quotes does: this bar
   // is what an inspector taps standing on a slab.
-  { href: "/site", label: "On site", icon: HardHat },
-  { href: "/reports", label: "Reports", icon: BarChart3 },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/site", label: "On site", icon: HardHat, directorOnly: false },
+  { href: "/reports", label: "Reports", icon: BarChart3, directorOnly: true },
+  { href: "/settings", label: "Settings", icon: Settings, directorOnly: false },
 ];
 
-export function MobileTabBar() {
+// director: a team member's bar has no Reports — those are the firm's.
+export function MobileTabBar({ director = true }: { director?: boolean }) {
   const pathname = usePathname();
+  const tabs = TABS.filter((t) => director || !t.directorOnly);
 
   return (
     <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-line pb-[env(safe-area-inset-bottom)]">
-      <div className="grid grid-cols-5">
-        {TABS.map(({ href, label, icon: Icon }) => {
+      <div className={`grid ${tabs.length === 5 ? "grid-cols-5" : "grid-cols-4"}`}>
+        {tabs.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link

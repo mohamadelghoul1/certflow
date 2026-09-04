@@ -61,12 +61,16 @@ export function JobsList({
   deletedCount = 0,
   initialPathway = "",
   initialIssued = "",
+  manage = true,
 }: {
   jobs: JobRow[];
   certifiers: { id: string; name: string }[];
   deletedCount?: number;
   initialPathway?: string;
   initialIssued?: string;
+  // A director creates, imports and restores projects; a team member
+  // works the ones they have been given.
+  manage?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [certifierFilter, setCertifierFilter] = useState("");
@@ -143,9 +147,11 @@ export function JobsList({
             Clear
           </button>
         )}
-        <Link href="/jobs/new" className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
-          <Plus size={16} /> New project
-        </Link>
+        {manage && (
+          <Link href="/jobs/new" className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-700">
+            <Plus size={16} /> New project
+          </Link>
+        )}
       </div>
 
       <div className="rounded-lg overflow-hidden border border-line bg-white shadow-sm">
@@ -205,6 +211,7 @@ export function JobsList({
         </table>
       </div>
 
+      {manage && (
       <div className="mt-4 flex items-center gap-4">
         <Link href="/jobs/import" className="inline-flex items-center gap-1.5 text-xs text-placeholder hover:text-muted hover:underline">
           <Upload size={13} /> Import projects from another system
@@ -215,6 +222,7 @@ export function JobsList({
           </Link>
         )}
       </div>
+      )}
     </div>
   );
 }

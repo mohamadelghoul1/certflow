@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { WORDING_KEYS, type WordingKey } from "@/lib/certificates/documentWording";
 import { isPlatformOwner } from "@/lib/platformOwner";
@@ -15,7 +15,7 @@ import type { ActionState } from "@/lib/actions/auth";
 // the one a person expects when they clear a box they have second
 // thoughts about.
 export async function saveDocumentWording(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile, userId } = await requireProfile("certifier");
+  const { profile, userId } = await requireDirector();
   const supabase = await createClient();
 
   const key = String(formData.get("doc_key") || "") as WordingKey;

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordReviewEvent } from "@/lib/reviewDigest";
 import { pruneSupersededVersions } from "@/lib/documentPruning";
-import { requireProfile } from "@/lib/auth";
+import { requireProfile, requireDirector } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { PRIOR_APPROVAL_DOCUMENTS, INSPECTION_LIBRARY, defaultCriticalStageInspections, normalizeCriticalStageInspections, epiForCodeParts } from "@/lib/constants";
@@ -192,7 +192,7 @@ function extractJobDetails(formData: FormData, pathway: Pathway): JobDetails {
 }
 
 export async function createJob(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
 
   const pathway = String(formData.get("pathway") || "CDC") as Pathway;
@@ -1629,7 +1629,7 @@ export async function uploadOcApproval(formData: FormData) {
 // and "someone deleted it and there is no record" is not an answer. The
 // deletion is written to the audit log as it happens.
 export async function deleteJob(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile, userId } = await requireProfile("certifier");
+  const { profile, userId } = await requireDirector();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
 
@@ -1667,7 +1667,7 @@ export async function deleteJob(_prev: ActionState, formData: FormData): Promise
 // Puts a deleted project back. Nothing was thrown away, so this is only
 // clearing the two columns that hid it.
 export async function restoreJob(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
 
@@ -1703,7 +1703,7 @@ export async function restoreJob(_prev: ActionState, formData: FormData): Promis
 // leaves behind is the audit entry, which is the point of writing it
 // somewhere the job itself does not reach.
 export async function purgeJob(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const typed = String(formData.get("confirm_address") || "").trim();

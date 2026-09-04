@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ImportJobsForm } from "@/components/certifier/ImportJobsForm";
 
@@ -8,7 +8,7 @@ import { ImportJobsForm } from "@/components/certifier/ImportJobsForm";
 // before, so the inspections and the occupation certificates can be done
 // here without typing three hundred projects in by hand.
 export default async function ImportJobsPage() {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const { data: certifiers } = await supabase.from("certifiers").select("id, name").eq("firm_id", profile.firm_id).order("name");
 

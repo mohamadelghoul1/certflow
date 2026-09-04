@@ -72,6 +72,30 @@ partially-failed script.
 
 You now have one working certifier login tied to your firm.
 
+## Adding another certifier to your firm
+
+Done inside Certlyn, not in Supabase. As a director, go to **Settings →
+Certifiers → + Add certifier**, fill in their name, registration and the
+email they will sign in with, and choose their role:
+
+- **Director** — runs the firm. Every project, quotes, invoices, the
+  audit log, every setting, and who is on the team.
+- **Team member** — an employee or a contract certifier. They see only
+  the projects they are the assigned certifier on, have been added to
+  the team of (on the project's page, under the address), or are the
+  inspector on. No quotes, no invoices, no firm settings; their own
+  card and their own two-factor sign-in are all they can change.
+
+Then press **Invite to sign in** on their card. They get an email with a
+link to choose a password, and they are in. The database enforces the
+role (update **0072**), not just the screens: a team member asking the
+database directly for another project's rows gets nothing.
+
+Every certifier who already had a login when 0072 was run is a
+director, so nothing changes for anyone until a director changes it.
+Your own role can only be changed by another director, so a firm is
+never left without one.
+
 ## Adding another firm later
 
 `supabase/add_firm.sql` sets up a second firm in one run — the firm, its
@@ -570,6 +594,28 @@ The operating entity is `Certlyn` in `lib/legal.ts`; when Certlyn has
 its own company and ABN, change it there and both pages follow. The
 contact address on both pages is `CONTACT_EMAIL` once it is set in
 Vercel, and the interest form until then.
+
+### Directors and team members — run database update 0072
+
+Built 4 Sept 2026. Until **0072** is run in Supabase, every certifier
+login still has the run of the firm and the role and invite controls
+under Settings → Certifiers stay hidden. Once it is run, everyone who
+already had a login is a director; add a team member, set their role,
+and press **Invite to sign in** — see "Adding another certifier to your
+firm" above. The invite needs email sending switched on (Settings →
+Email sending).
+
+Three deliberate limits, all the owner's to revisit:
+
+- A team member cannot create a project. The director creates it and
+  assigns them; the same for importing.
+- The dashboard's AI note is the director's only, since it is written
+  about the whole firm.
+- Firm-level settings functions that store keys (Stripe, Resend) still
+  answer any certifier login of the firm at the database level; the
+  screens that call them are director-only. Tightening those two
+  functions is a small follow-up if a firm has a team member it does
+  not trust with that.
 
 ### A second firm — waiting on a firm being ready
 

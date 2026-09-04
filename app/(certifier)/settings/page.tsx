@@ -54,21 +54,46 @@ const SECTIONS: { key: string; label: string; icon: LucideIcon; blurb: string }[
   { key: "system", label: "System check", icon: Activity, blurb: "Database updates and connected services" },
 ];
 
+// What a team member sees instead: their own card, and their own
+// sign-in. Everything above is the firm's, and the firm's is the
+// director's.
+const STAFF_SECTIONS: typeof SECTIONS = [
+  { key: "me", label: "My details", icon: Users, blurb: "Your registration, signature and contact details" },
+  { key: "security", label: "Sign-in security", icon: ShieldCheck, blurb: "Two-factor sign-in for your own login" },
+];
+
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
   const { section = "firm" } = await searchParams;
-  const { profile } = await requireProfile("certifier");
+  const { profile, director } = await requireProfile("certifier");
   const supabase = await createClient();
 
   // Storage reports against the plan the whole deployment sits on, which
   // is the platform owner's business and nobody else's: a tenant firm
   // gets every section but that one.
-  const platformOwner = await isPlatformOwner(supabase, profile.firm_id);
-  const sections = platformOwner ? SECTIONS : SECTIONS.filter((s) => s.key !== "storage");
+  const platformOwner = director && (await isPlatformOwner(supabase, profile.firm_id));
+  const sections = !director ? STAFF_SECTIONS : platformOwner ? SECTIONS : SECTIONS.filter((s) => s.key !== "storage");
   const active = sections.find((s) => s.key === section) || sections[0];
 
   let content: React.ReactNode = null;
 
-  if (active.key === "firm" || active.key === "payments" || active.key === "reminders" || active.key === "email") {
+  if (active.key === "me") {
+    const { data: certifiers } = profile.certifier_id
+      ? await supabase.from("certifiers").select("*").eq("id", profile.certifier_id).eq("firm_id", profile.firm_id)
+      : { data: [] };
+    const own = certifiers?.[0];
+    const signatureUrls: Record<string, string> = {};
+    const practiceLogoUrls: Record<string, string> = {};
+    if (own) {
+      const [signature, logo] = await Promise.all([signedUrl(own.signature_url), signedUrl(own.practice_logo_url)]);
+      if (signature) signatureUrls[own.id] = signature;
+      if (logo) practiceLogoUrls[own.id] = logo;
+    }
+    content = own ? (
+      <CertifierList certifiers={[own]} firmId={profile.firm_id} signatureUrls={signatureUrls} practiceLogoUrls={practiceLogoUrls} manage={false} ownCertifierId={own.id} rolesReady />
+    ) : (
+      <div className="text-sm text-placeholder">Your login is not linked to a certifier card yet — ask a director to set one up under Settings → Certifiers.</div>
+    );
+  } else if (active.key === "firm" || active.key === "payments" || active.key === "reminders" || active.key === "email") {
     const { data: firm } = await supabase.from("firms").select("*").eq("id", profile.firm_id).single();
     if (active.key === "firm") {
       const logoUrl = firm?.logo_url ? (await signedUrl(firm.logo_url)) || undefined : undefined;
@@ -114,7 +139,19 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         if (logo) practiceLogoUrls[c.id] = logo;
       })
     );
-    content = <CertifierList certifiers={certifiers || []} firmId={profile.firm_id} signatureUrls={signatureUrls} practiceLogoUrls={practiceLogoUrls} />;
+    // The role and invite controls need migration 0072; without it they
+    // would save a column that is not there.
+    const { error: roleProbe } = await supabase.from("certifiers").select("firm_role").eq("firm_id", profile.firm_id).limit(1);
+    content = (
+      <CertifierList
+        certifiers={certifiers || []}
+        firmId={profile.firm_id}
+        signatureUrls={signatureUrls}
+        practiceLogoUrls={practiceLogoUrls}
+        ownCertifierId={profile.certifier_id}
+        rolesReady={!roleProbe}
+      />
+    );
   } else if (active.key === "clients") {
     const { data: clients } = await supabase.from("clients").select("*").eq("firm_id", profile.firm_id).order("name");
     content = <ClientList clients={clients || []} />;

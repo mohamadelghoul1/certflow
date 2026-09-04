@@ -90,8 +90,9 @@ type DashboardJob = {
   inspections: { id: string; title: string; date: string | null; outcome: string; booked_by_client: boolean; confirmed: boolean }[];
 };
 
-export default async function DashboardPage() {
-  const { profile } = await requireProfile("certifier");
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ directors?: string }> }) {
+  const { directors } = await searchParams;
+  const { profile, director } = await requireProfile("certifier");
   const supabase = await createClient();
 
   const [{ data: jobs }, { data: certifiers }, { data: taskLists }, { data: manualTasks }, auditEvents, issuanceEvents] = await Promise.all([
@@ -272,9 +273,18 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {/* Where a team member lands after following a link to a page that
+          is the director's — told why, rather than bounced in silence. */}
+      {directors === "only" && !director && (
+        <div className="mb-6 rounded-lg border border-warning/50 bg-warning-bg px-5 py-3 text-sm text-warning-text">
+          That page is for the firm&rsquo;s directors. Your projects are under <Link href="/jobs" className="font-semibold underline">Projects</Link>.
+        </div>
+      )}
+
       {/* What happened and what is worth doing, in a few sentences —
-          written by the AI from the same facts the tiles below count. */}
-      <AssistantBriefing />
+          written by the AI from the same facts the tiles below count.
+          About the whole firm, so a director's. */}
+      {director && <AssistantBriefing />}
 
       <div className="max-w-lg mt-6">
         <DashboardSearch jobs={activeJobs.map((p) => ({ id: p.id, address: p.address, description: p.description || "", pathway: p.pathway }))} />
@@ -299,7 +309,7 @@ export default async function DashboardPage() {
         <Tile icon={Inbox} label="Documents for review" value={documentsForReview} href="/jobs" className="col-span-2 md:col-span-1" />
       </div>
 
-      {receivables.outstanding > 0 && (
+      {director && receivables.outstanding > 0 && (
         <Link
           href="/invoices"
           className={`card-lift mt-3 flex items-center justify-between gap-3 rounded-xl border bg-white px-4 py-3 shadow-sm ${receivables.overdueCount > 0 ? "border-error/40" : "border-line"}`}
@@ -364,11 +374,12 @@ export default async function DashboardPage() {
           <Panel title="Quick actions" icon={Zap}>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 p-3">
               <QuickAction href="/site" icon={HardHat} label="On site" />
-              <QuickAction href="/jobs/new" icon={Plus} label="New project" />
-              <QuickAction href="/quotes/new" icon={FilePlus} label="New quote" />
+              {director && <QuickAction href="/jobs/new" icon={Plus} label="New project" />}
+              {director && <QuickAction href="/quotes/new" icon={FilePlus} label="New quote" />}
               <QuickAction href="/jobs" icon={Building2} label="All projects" />
-              <QuickAction href="/settings" icon={UserPlus} label="Add client" />
-              <QuickAction href="/audit?section=reports" icon={BarChart3} label="Reports" />
+              {director && <QuickAction href="/settings" icon={UserPlus} label="Add client" />}
+              {director && <QuickAction href="/audit?section=reports" icon={BarChart3} label="Reports" />}
+              {!director && <QuickAction href="/calendar" icon={CalendarClock} label="Calendar" />}
             </div>
           </Panel>
 

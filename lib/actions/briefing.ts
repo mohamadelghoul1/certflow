@@ -43,10 +43,15 @@ function fromStored(row: StoredRow, changedSince: boolean): BriefingView {
 }
 
 export async function loadBriefing(force: boolean): Promise<BriefingView> {
-  const { profile } = await requireProfile("certifier");
+  const { profile, director } = await requireProfile("certifier");
   const supabase = await createClient();
   const now = new Date();
   const today = todayISO();
+
+  // The note is about the whole firm, and the dashboard only shows it
+  // to a director; a team member's copy would be a note about projects
+  // they cannot open.
+  if (!director) return { headline: "", points: [], generatedAt: now.toISOString(), written: "standard", changedSince: false };
 
   const [{ data: jobs }, compliance, { data: invoiceRows }, { data: invoiceLineRows }, { data: stored, error: storedError }] = await Promise.all([
     supabase

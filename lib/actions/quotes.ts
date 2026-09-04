@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { defaultScopeOfWorks, defaultCriticalStageInspections, COUNCIL_DIRECTORY } from "@/lib/constants";
@@ -80,7 +80,7 @@ function extractFeeLines(formData: FormData) {
 }
 
 export async function createQuote(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const { pathway, fields } = extractQuoteFields(formData);
 
@@ -103,7 +103,7 @@ export async function createQuote(_prev: ActionState, formData: FormData): Promi
 }
 
 export async function updateQuote(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const quoteId = String(formData.get("quote_id"));
   const { fields } = extractQuoteFields(formData);
@@ -122,7 +122,7 @@ export async function updateQuote(_prev: ActionState, formData: FormData): Promi
 }
 
 export async function addFeeLine(formData: FormData) {
-  await requireProfile("certifier");
+  await requireDirector();
   const supabase = await createClient();
   const quoteId = String(formData.get("quote_id"));
   const description = String(formData.get("description") || "");
@@ -133,7 +133,7 @@ export async function addFeeLine(formData: FormData) {
 }
 
 export async function removeFeeLine(formData: FormData) {
-  await requireProfile("certifier");
+  await requireDirector();
   const supabase = await createClient();
   const quoteId = String(formData.get("quote_id"));
   const lineId = String(formData.get("line_id"));
@@ -142,7 +142,7 @@ export async function removeFeeLine(formData: FormData) {
 }
 
 export async function setQuoteStatus(formData: FormData) {
-  await requireProfile("certifier");
+  await requireDirector();
   const supabase = await createClient();
   const quoteId = String(formData.get("quote_id"));
   const status = String(formData.get("status"));
@@ -151,7 +151,7 @@ export async function setQuoteStatus(formData: FormData) {
 }
 
 export async function markQuotePaid(formData: FormData) {
-  await requireProfile("certifier");
+  await requireDirector();
   const supabase = await createClient();
   const quoteId = String(formData.get("quote_id"));
   await supabase.from("quotes").update({ payment_status: "paid", payment_received_date: new Date().toISOString().slice(0, 10) }).eq("id", quoteId);
@@ -159,7 +159,7 @@ export async function markQuotePaid(formData: FormData) {
 }
 
 export async function updateQuoteTerms(formData: FormData) {
-  await requireProfile("certifier");
+  await requireDirector();
   const supabase = await createClient();
   const quoteId = String(formData.get("quote_id"));
   const termsOverride = String(formData.get("terms_override") || "");
@@ -169,7 +169,7 @@ export async function updateQuoteTerms(formData: FormData) {
 }
 
 export async function deleteQuote(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const quoteId = String(formData.get("quote_id"));
   const typed = String(formData.get("confirm_address") || "").trim();
@@ -191,7 +191,7 @@ export async function deleteQuote(_prev: ActionState, formData: FormData): Promi
 }
 
 export async function generateJobFromQuote(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const quoteId = String(formData.get("quote_id"));
 

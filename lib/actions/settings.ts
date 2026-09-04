@@ -2,8 +2,10 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireProfile } from "@/lib/auth";
+import { requireProfile, requireDirector, type Session } from "@/lib/auth";
+import { isFirmRole, canChangeRole } from "@/lib/roles";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { firmSender, sendEmail, firmEmailConfigured } from "@/lib/email";
 import { siteUrl } from "@/lib/siteUrl";
 import type { ActionState } from "@/lib/actions/auth";
@@ -14,8 +16,18 @@ export type InviteState = { error?: string; success?: string } | undefined;
 // that creates the function being called.
 const MISSING_FUNCTION = ["PGRST202", "42883"];
 
+// A certifier's card is theirs to keep up — signature, mobile, the
+// Portal login — and everyone else's is the director's. The database
+// holds the same line (migration 0072); this is the app agreeing with
+// it before the form is even sent.
+async function requireOwnCardOrDirector(certifierId: string): Promise<Session> {
+  const session = await requireProfile("certifier");
+  if (!session.director && session.profile.certifier_id !== certifierId) redirect("/dashboard?directors=only");
+  return session;
+}
+
 export async function updateFirm(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const fields = {
     name: String(formData.get("name") || ""),
@@ -48,7 +60,7 @@ export async function updateFirm(_prev: ActionState, formData: FormData): Promis
 // Each Settings section saves only its own columns, so pressing Save on
 // one can never blank another's fields.
 export async function updateFirmReminders(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const reminderDays = Math.min(90, Math.max(1, parseInt(String(formData.get("document_reminder_days") || "7"), 10) || 7));
   const { error } = await supabase
@@ -64,7 +76,7 @@ export async function updateFirmReminders(_prev: ActionState, formData: FormData
 }
 
 export async function updateFirmPayments(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const reminderDays = Math.min(90, Math.max(1, parseInt(String(formData.get("invoice_reminder_days") || "7"), 10) || 7));
   const details = { payment_details: String(formData.get("payment_details") || "").trim() || null };
@@ -106,7 +118,7 @@ function senderAddressProblem(value: string, label: string): string | null {
 }
 
 export async function updateFirmSender(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const fromEmail = String(formData.get("from_email") || "").trim();
   const replyToEmail = String(formData.get("reply_to_email") || "").trim();
@@ -137,7 +149,7 @@ export async function updateFirmSender(_prev: ActionState, formData: FormData): 
 // database function, never readable by anything holding a login. See
 // migration 0060.
 export async function saveFirmEmailKey(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireProfile("certifier");
+  await requireDirector();
   const supabase = await createClient();
   const apiKey = String(formData.get("resend_api_key") || "").trim();
   if (!apiKey) return { error: "Paste your Resend API key first." };
@@ -152,7 +164,7 @@ export async function saveFirmEmailKey(_prev: ActionState, formData: FormData): 
 }
 
 export async function disconnectFirmEmailKey(_prev: ActionState, _formData: FormData): Promise<ActionState> {
-  await requireProfile("certifier");
+  await requireDirector();
   const supabase = await createClient();
   const { error } = await supabase.rpc("clear_firm_email_api_key");
   if (error) {
@@ -173,7 +185,7 @@ export async function disconnectFirmEmailKey(_prev: ActionState, _formData: Form
 // A blank box means "leave what is stored alone", so the webhook secret
 // can be filled in a week after the key without retyping the key.
 export async function saveFirmStripe(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireProfile("certifier");
+  await requireDirector();
   const supabase = await createClient();
   const secretKey = String(formData.get("stripe_secret_key") || "").trim();
   const webhookSecret = String(formData.get("stripe_webhook_secret") || "").trim();
@@ -200,7 +212,7 @@ export async function saveFirmStripe(_prev: ActionState, formData: FormData): Pr
 }
 
 export async function disconnectFirmStripe(_prev: ActionState, _formData: FormData): Promise<ActionState> {
-  await requireProfile("certifier");
+  await requireDirector();
   const supabase = await createClient();
   const { error } = await supabase.rpc("clear_firm_stripe_credentials");
   if (error) {
@@ -211,7 +223,7 @@ export async function disconnectFirmStripe(_prev: ActionState, _formData: FormDa
 }
 
 export async function addCertifier(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const base = {
     firm_id: profile.firm_id,
@@ -223,11 +235,14 @@ export async function addCertifier(_prev: ActionState, formData: FormData): Prom
   };
   const email = String(formData.get("email") || "").trim() || null;
   const mobile = String(formData.get("mobile") || "").trim() || null;
-  const { error } = await supabase.from("certifiers").insert({ ...base, email, mobile });
+  // A new certifier is a team member unless the director says otherwise.
+  const role = formData.get("firm_role");
+  const firm_role = isFirmRole(role) ? role : "staff";
+  const { error } = await supabase.from("certifiers").insert({ ...base, email, mobile, firm_role });
   if (error) {
-    // A database that hasn't run migration 0040 has no email column, or
-    // 0054 no mobile — save the certifier without them rather than
-    // failing the whole form.
+    // A database that hasn't run migration 0040 has no email column,
+    // 0054 no mobile, 0072 no role — save the certifier without them
+    // rather than failing the whole form.
     if (error.code !== "PGRST204" && error.code !== "42703") return { error: error.message };
     const { error: retryError } = await supabase.from("certifiers").insert(base);
     if (retryError) return { error: retryError.message };
@@ -237,9 +252,13 @@ export async function addCertifier(_prev: ActionState, formData: FormData): Prom
 }
 
 export async function updateCertifier(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile, director } = await requireOwnCardOrDirector(String(formData.get("id")));
   const supabase = await createClient();
   const id = String(formData.get("id"));
+  // Only a director changes a role, and never their own: the last
+  // director stepping down would leave a firm nobody runs.
+  const role = formData.get("firm_role");
+  const roleChange = director && isFirmRole(role) && canChangeRole(id, profile.certifier_id) ? { firm_role: role } : {};
   // Blank stays null rather than an empty string, so "has this certifier
   // a practice of their own?" is a single test on the name.
   const text = (name: string) => String(formData.get(name) || "").trim() || null;
@@ -269,6 +288,7 @@ export async function updateCertifier(_prev: ActionState, formData: FormData): P
       // apart from the firm's office line, which is what prints on
       // certificates. Added by 0054.
       mobile: text("mobile"),
+      ...roleChange,
     })
     .eq("id", id)
     .eq("firm_id", profile.firm_id);
@@ -304,7 +324,7 @@ export async function updateCertifier(_prev: ActionState, formData: FormData): P
 }
 
 export async function updateCertifierPracticeLogo(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireOwnCardOrDirector(String(formData.get("id")));
   const supabase = await createClient();
   await supabase
     .from("certifiers")
@@ -315,21 +335,21 @@ export async function updateCertifierPracticeLogo(formData: FormData) {
 }
 
 export async function removeCertifierPracticeLogo(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireOwnCardOrDirector(String(formData.get("id")));
   const supabase = await createClient();
   await supabase.from("certifiers").update({ practice_logo_url: null }).eq("id", String(formData.get("id"))).eq("firm_id", profile.firm_id);
   revalidatePath("/settings");
 }
 
 export async function removeCertifier(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   await supabase.from("certifiers").delete().eq("id", String(formData.get("id"))).eq("firm_id", profile.firm_id);
   revalidatePath("/settings");
 }
 
 export async function updateCertifierSignature(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireOwnCardOrDirector(String(formData.get("id")));
   const supabase = await createClient();
   const id = String(formData.get("id"));
   const filePath = String(formData.get("file_path"));
@@ -338,7 +358,7 @@ export async function updateCertifierSignature(formData: FormData) {
 }
 
 export async function removeCertifierSignature(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireOwnCardOrDirector(String(formData.get("id")));
   const supabase = await createClient();
   const id = String(formData.get("id"));
   await supabase.from("certifiers").update({ signature_url: null }).eq("id", id).eq("firm_id", profile.firm_id);
@@ -346,7 +366,7 @@ export async function removeCertifierSignature(formData: FormData) {
 }
 
 export async function updateFirmLogo(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const filePath = String(formData.get("file_path"));
   await supabase.from("firms").update({ logo_url: filePath }).eq("id", profile.firm_id);
@@ -354,14 +374,14 @@ export async function updateFirmLogo(formData: FormData) {
 }
 
 export async function removeFirmLogo() {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   await supabase.from("firms").update({ logo_url: null }).eq("id", profile.firm_id);
   revalidatePath("/settings");
 }
 
 export async function updateFirmStamp(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const filePath = String(formData.get("file_path"));
   await supabase.from("firms").update({ stamp_url: filePath }).eq("id", profile.firm_id);
@@ -369,14 +389,14 @@ export async function updateFirmStamp(formData: FormData) {
 }
 
 export async function removeFirmStamp() {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   await supabase.from("firms").update({ stamp_url: null }).eq("id", profile.firm_id);
   revalidatePath("/settings");
 }
 
 export async function addClient(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const { error } = await supabase.from("clients").insert({
     firm_id: profile.firm_id,
@@ -392,7 +412,7 @@ export async function addClient(_prev: ActionState, formData: FormData): Promise
 }
 
 export async function updateClient(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const id = String(formData.get("id"));
   const { error } = await supabase
@@ -412,7 +432,7 @@ export async function updateClient(_prev: ActionState, formData: FormData): Prom
 }
 
 export async function removeClient(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   await supabase.from("clients").delete().eq("id", String(formData.get("id"))).eq("firm_id", profile.firm_id);
   revalidatePath("/settings");
@@ -424,7 +444,7 @@ export async function removeClient(formData: FormData) {
 // minted directly and sent through the same email service as everything
 // else, and every outcome is said out loud.
 export async function inviteClient(_prev: InviteState, formData: FormData): Promise<InviteState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const clientId = String(formData.get("client_id"));
 
   const supabase = await createClient();
@@ -478,4 +498,69 @@ export async function inviteClient(_prev: InviteState, formData: FormData): Prom
 
   revalidatePath("/settings");
   return { success: `Invite emailed to ${client.email}.` };
+}
+
+// A certifier's own sign-in, sent by the director. Same shape as the
+// client invite above: the link is minted here and goes out through the
+// firm's own sender, so a lost invite is a reported failure rather than
+// a silence. What makes the invite safe is not the email but the row:
+// the new login's id is written onto the certifier's card by the
+// director, and finishing the sign-in (accept_certifier_invite, 0072)
+// trusts that and nothing the person typed.
+export async function inviteCertifier(_prev: InviteState, formData: FormData): Promise<InviteState> {
+  const { profile } = await requireDirector();
+  const certifierId = String(formData.get("certifier_id"));
+
+  const supabase = await createClient();
+  const { data: certifier } = await supabase.from("certifiers").select("name, email, user_id, firm_role").eq("id", certifierId).eq("firm_id", profile.firm_id).single();
+  if (!certifier) return { error: "That certifier is no longer on the list." };
+  if (!certifier.email) return { error: "Add an email for notifications to this certifier first — that is the address they sign in with." };
+  if (!(await firmEmailConfigured(supabase))) return { error: "Email isn't switched on yet — connect your Resend account in Settings → Email sending." };
+
+  const admin = createAdminClient();
+  const site = await siteUrl();
+
+  const { data: linkData, error } = await admin.auth.admin.generateLink(
+    certifier.user_id
+      ? { type: "recovery", email: certifier.email }
+      : { type: "invite", email: certifier.email, options: { data: { firm_id: profile.firm_id, certifier_id: certifierId } } }
+  );
+  if (error || !linkData?.properties?.hashed_token) {
+    if (/already.*registered|already.*exists/i.test(error?.message || "")) {
+      return { error: `${certifier.email} already has a Certlyn login under another firm or as a client. Use a different address for them here.` };
+    }
+    return { error: error?.message || "The invite link could not be created." };
+  }
+
+  // The card learns which login is theirs. Done before the email goes,
+  // so a link that arrives always has a card waiting for it.
+  if (!certifier.user_id && linkData.user?.id) {
+    const { error: linkError } = await supabase.from("certifiers").update({ user_id: linkData.user.id }).eq("id", certifierId).eq("firm_id", profile.firm_id);
+    if (linkError) return { error: linkError.message };
+  }
+
+  const link = `${site}/auth/confirm?token_hash=${linkData.properties.hashed_token}&type=${certifier.user_id ? "recovery" : "invite"}&next=${encodeURIComponent("/set-password")}`;
+  const { data: firm } = await supabase.from("firms").select("name").eq("id", profile.firm_id).single();
+  const firmName = firm?.name || "your firm";
+
+  const result = await sendEmail(
+    certifier.email,
+    `Your Certlyn login for ${firmName}`,
+    [
+      `<p>Hi ${certifier.name || "there"},</p>`,
+      `<p>${firmName} has set you up on Certlyn, the software the firm runs its certification work on. Choose a password to get started:</p>`,
+      `<p><a href="${link}" style="display:inline-block;padding:10px 18px;background:#0f766e;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">${
+        certifier.user_id ? "Set a new password" : "Set up my login"
+      }</a></p>`,
+      certifier.firm_role === "director"
+        ? `<p>You have been made a director, with access to everything the firm does on Certlyn.</p>`
+        : `<p>You will see the projects and inspections the firm assigns to you. From your phone, <strong>On site</strong> is the inspection screen.</p>`,
+    ].join(""),
+    undefined,
+    await firmSender(supabase, profile.firm_id)
+  );
+  if (!result.sent) return { error: result.error || "The email could not be sent." };
+
+  revalidatePath("/settings");
+  return { success: `Invite emailed to ${certifier.email}.` };
 }

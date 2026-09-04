@@ -20,6 +20,7 @@ import {
   updateClient,
   removeClient,
   inviteClient,
+  inviteCertifier,
   saveFirmStripe,
   disconnectFirmStripe,
   updateFirmSender,
@@ -30,6 +31,7 @@ import type { ActionState } from "@/lib/actions/auth";
 import type { Firm, Certifier, ClientContact } from "@/types/db";
 import type { InviteState } from "@/lib/actions/settings";
 import { CLIENT_TYPES } from "@/lib/constants";
+import { FIRM_ROLES, roleLabel } from "@/lib/roles";
 import { ActionUpload } from "@/components/certifier/ActionUpload";
 import { SaveButton } from "@/components/certifier/SaveButton";
 import { DateField } from "@/components/DateField";
@@ -507,18 +509,62 @@ export function StripeConnectionForm({
   );
 }
 
-export function CertifierList({ certifiers, firmId, signatureUrls, practiceLogoUrls }: { certifiers: Certifier[]; firmId: string; signatureUrls: Record<string, string>; practiceLogoUrls?: Record<string, string> }) {
+// manage: a director sees the whole team and may add, remove, invite
+// and set roles. A team member sees this list as their own card only,
+// with none of that — the same row component, with the controls off.
+// ownCertifierId: whose card it is, since a director cannot change
+// their own role. rolesReady: migration 0072 has run, so the role and
+// invite controls do something.
+export function CertifierList({
+  certifiers,
+  firmId,
+  signatureUrls,
+  practiceLogoUrls,
+  manage = true,
+  ownCertifierId = null,
+  rolesReady = false,
+}: {
+  certifiers: Certifier[];
+  firmId: string;
+  signatureUrls: Record<string, string>;
+  practiceLogoUrls?: Record<string, string>;
+  manage?: boolean;
+  ownCertifierId?: string | null;
+  rolesReady?: boolean;
+}) {
   const [adding, setAdding] = useState(false);
   const [addState, addAction, addPending] = useActionState<ActionState, FormData>(addCertifier, undefined);
 
   return (
     <div className="space-y-3">
+      {manage && rolesReady && (
+        <p className="text-xs text-muted">
+          A <span className="font-semibold">director</span> runs the firm. A <span className="font-semibold">team member</span> — an employee or a
+          contract certifier — sees only the projects they are assigned to, added to the team of, or inspecting. Set the role here, then press{" "}
+          <span className="font-semibold">Invite to sign in</span> to email them their own login.
+        </p>
+      )}
+      {manage && !rolesReady && certifiers.length > 1 && (
+        <p className="text-xs text-warning-text">
+          Run database update 0072 (Settings → System check) to give team members their own logins that see only their projects. Until then every
+          certifier login has the run of the firm.
+        </p>
+      )}
       {certifiers.map((c) => (
-        <CertifierRow key={c.id} certifier={c} firmId={firmId} signatureUrl={signatureUrls[c.id]} practiceLogoUrl={practiceLogoUrls?.[c.id]} />
+        <CertifierRow
+          key={c.id}
+          certifier={c}
+          firmId={firmId}
+          signatureUrl={signatureUrls[c.id]}
+          practiceLogoUrl={practiceLogoUrls?.[c.id]}
+          manage={manage}
+          own={c.id === ownCertifierId}
+          rolesReady={rolesReady}
+        />
       ))}
       {certifiers.length === 0 && <div className="text-sm text-placeholder">No certifiers yet.</div>}
 
-      {adding ? (
+      {!manage ? null : adding ? (
         <form action={addAction} className="border border-line rounded-md p-4 space-y-3 mt-3">
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
@@ -549,6 +595,12 @@ export function CertifierList({ certifiers, firmId, signatureUrls, practiceLogoU
               <label className={labelCls}>Registration expiry</label>
               <DateField name="registration_expiry" className={inputCls} />
             </div>
+            {rolesReady && (
+              <div className="sm:col-span-2">
+                <label className={labelCls}>Role</label>
+                <RoleSelect />
+              </div>
+            )}
           </div>
           {addState?.error && <div className="text-sm text-error">{addState.error}</div>}
           <div className="flex gap-2">
@@ -569,7 +621,56 @@ export function CertifierList({ certifiers, firmId, signatureUrls, practiceLogoU
   );
 }
 
-function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { certifier: Certifier; firmId: string; signatureUrl?: string; practiceLogoUrl?: string }) {
+function RoleSelect({ defaultValue = "staff" }: { defaultValue?: string }) {
+  return (
+    <>
+      <select name="firm_role" defaultValue={defaultValue} className={inputCls}>
+        {FIRM_ROLES.map((r) => (
+          <option key={r.value} value={r.value}>
+            {r.label}
+          </option>
+        ))}
+      </select>
+      <p className="text-[11px] text-muted mt-1">{FIRM_ROLES.map((r) => `${r.label}: ${r.blurb}`).join(" ")}</p>
+    </>
+  );
+}
+
+// The invite with its outcome shown, as for a client: an email that
+// never went out must not look like one that did.
+function InviteCertifierButton({ certifierId, hasLogin }: { certifierId: string; hasLogin: boolean }) {
+  const [state, action, pending] = useActionState<InviteState, FormData>(inviteCertifier, undefined);
+  return (
+    <span className="inline-flex items-center gap-2">
+      <form action={action}>
+        <input type="hidden" name="certifier_id" value={certifierId} />
+        <button disabled={pending} className="text-xs text-primary hover:underline disabled:opacity-50">
+          {pending ? "Sending…" : hasLogin ? "Resend sign-in link" : "Invite to sign in"}
+        </button>
+      </form>
+      {state?.error && <span className="text-xs text-error max-w-64">{state.error}</span>}
+      {state?.success && <span className="text-xs text-success">{state.success}</span>}
+    </span>
+  );
+}
+
+function CertifierRow({
+  certifier,
+  firmId,
+  signatureUrl,
+  practiceLogoUrl,
+  manage,
+  own,
+  rolesReady,
+}: {
+  certifier: Certifier;
+  firmId: string;
+  signatureUrl?: string;
+  practiceLogoUrl?: string;
+  manage: boolean;
+  own: boolean;
+  rolesReady: boolean;
+}) {
   const [editing, setEditing] = useState(false);
   // Saving closes the form — pressing Save and having the form simply
   // sit there read as nothing happening. A failure keeps it open with
@@ -589,7 +690,18 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
     return (
       <div className="flex items-center justify-between border border-line rounded-md px-4 py-3">
         <div>
-          <div className="text-sm font-semibold text-primary">{certifier.name}</div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-semibold text-primary">{certifier.name}</span>
+            {rolesReady && (
+              <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${certifier.firm_role === "staff" ? "bg-hover text-muted" : "bg-info-bg text-secondary"}`}>
+                {roleLabel(certifier.firm_role)}
+              </span>
+            )}
+            {own && <span className="text-[10px] text-placeholder">you</span>}
+            {rolesReady && manage && !own && !certifier.user_id && certifier.email && (
+              <span className="text-[10px] text-placeholder">no login yet</span>
+            )}
+          </div>
           <div className="text-xs text-placeholder">
             {certifier.registration_no} · {certifier.registration_body}
           </div>
@@ -652,14 +764,17 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
             </div>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-start flex-wrap justify-end">
+          {rolesReady && manage && !own && <InviteCertifierButton certifierId={certifier.id} hasLogin={!!certifier.user_id} />}
           <button onClick={() => setEditing(true)} className="text-xs text-primary hover:underline">
             Edit
           </button>
-          <form action={removeCertifier}>
-            <input type="hidden" name="id" value={certifier.id} />
-            <SubmitButton className="text-xs text-error hover:underline">Remove</SubmitButton>
-          </form>
+          {manage && !own && (
+            <form action={removeCertifier}>
+              <input type="hidden" name="id" value={certifier.id} />
+              <SubmitButton className="text-xs text-error hover:underline">Remove</SubmitButton>
+            </form>
+          )}
         </div>
       </div>
     );
@@ -709,6 +824,18 @@ function CertifierRow({ certifier, firmId, signatureUrl, practiceLogoUrl }: { ce
           <label className={labelCls}>Registration expiry</label>
           <DateField name="registration_expiry" defaultValue={certifier.registration_expiry || ""} className={inputCls} />
         </div>
+        {rolesReady && manage && (
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Role</label>
+            {own ? (
+              <p className="text-sm text-muted">
+                {roleLabel(certifier.firm_role)}. Your own role is changed by another director, so a firm is never left without one.
+              </p>
+            ) : (
+              <RoleSelect defaultValue={certifier.firm_role || "staff"} />
+            )}
+          </div>
+        )}
         <div className="sm:col-span-2">
           <label className={labelCls}>NSW Planning Portal login email</label>
           <input name="portal_email" type="email" defaultValue={certifier.portal_email || ""} placeholder="the email this certifier signs into the NSW Planning Portal with" className={inputCls} />

@@ -19,6 +19,7 @@ export type AuditAction =
   | "job.deleted"
   | "job.restored"
   | "job.purged"
+  | "job.team"
   | "certificate.signed"
   | "certificate.sent"
   | "inspection.signed"

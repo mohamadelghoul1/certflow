@@ -15,7 +15,10 @@ function initialsOf(name: string) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmName: string; userName: string; recentJobs: Item[]; recentQuotes: Item[] }) {
+// director: whether the person runs the firm. A team member gets
+// Projects, Calendar and Settings — quotes, money, the audit log and the
+// firm's setup are the director's, and the pages themselves check too.
+export function NavBar({ director, firmName, userName, recentJobs, recentQuotes }: { director: boolean; firmName: string; userName: string; recentJobs: Item[]; recentQuotes: Item[] }) {
   return (
     <div className="flex items-center justify-between bg-primary px-4 sm:px-6">
       <div className="flex items-center overflow-x-auto" style={{ scrollbarWidth: "none" }}>
@@ -29,7 +32,7 @@ export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmN
           items={recentJobs}
           viewAllHref="/jobs"
           viewAllLabel="View all projects"
-          createHref="/jobs/new"
+          createHref={director ? "/jobs/new" : undefined}
           createLabel="New project"
           itemHrefBase="/jobs"
           itemHrefSuffix="?tab=pathway"
@@ -41,23 +44,25 @@ export function NavBar({ firmName, userName, recentJobs, recentQuotes }: { firmN
             { href: "/jobs?issued=not-issued", label: "Not issued yet" },
           ]}
         />
-        <NavDropdown
-          label="Quotes"
-          items={recentQuotes}
-          viewAllHref="/quotes"
-          viewAllLabel="View all quotes"
-          createHref="/quotes/new"
-          createLabel="New quote"
-          itemHrefBase="/quotes"
-        />
+        {director && (
+          <NavDropdown
+            label="Quotes"
+            items={recentQuotes}
+            viewAllHref="/quotes"
+            viewAllLabel="View all quotes"
+            createHref="/quotes/new"
+            createLabel="New quote"
+            itemHrefBase="/quotes"
+          />
+        )}
         <NavLink href="/calendar">Calendar</NavLink>
         {/* One entry for both: they answer the same question, and an
             overdue invoice used to appear under each of them. Named
             broadly on purpose — the business side of the practice, with
             room for a complaints register or conflict declarations later
             without renaming it again. */}
-        <NavLink href="/invoices">Admin</NavLink>
-        <NavLink href="/audit">Audit</NavLink>
+        {director && <NavLink href="/invoices">Admin</NavLink>}
+        {director && <NavLink href="/audit">Audit</NavLink>}
         <NavLink href="/settings">Settings</NavLink>
         </div>
       </div>

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { configuredProviders, type Connection, type ConnectionStatus } from "@/lib/backup/connection";
 import type { ActionState } from "@/lib/actions/auth";
@@ -20,7 +20,7 @@ export async function getBackupStatus(firmId: string): Promise<{ configured: Pro
 }
 
 export async function disconnectBackup(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const admin = createAdminClient();
   // The record of what has been copied goes with it: reconnecting a
   // different account should copy everything up again rather than assume
@@ -40,7 +40,7 @@ export async function disconnectBackup(formData: FormData) {
 export type BackupFolderState = { error?: string; saved?: string } | undefined;
 
 export async function setBackupFolder(_prev: BackupFolderState, formData: FormData): Promise<BackupFolderState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const folder = remotePath(String(formData.get("root_folder") || ""));
   if (folder === "/") return { error: "Type the folder to back up into, such as /Certlyn." };
 

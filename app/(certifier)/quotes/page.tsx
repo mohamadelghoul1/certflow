@@ -1,11 +1,11 @@
 import { pathwayLabel } from "@/lib/business";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { QUOTE_STATUS_META } from "@/lib/constants";
 
 export default async function QuotesListPage() {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const { data: quotes } = await supabase
     .from("quotes")

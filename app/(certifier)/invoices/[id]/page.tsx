@@ -1,4 +1,4 @@
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -15,7 +15,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
 
   const [{ data: rawInvoice }, { data: lines }, { data: clients }, cardPayments] = await Promise.all([

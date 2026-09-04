@@ -17,6 +17,7 @@ import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { CertificatesPanel, ModificationsPanel } from "@/components/certifier/CertificatesPanel";
 import { OcPanel } from "@/components/certifier/OcPanel";
 import { InspectionsPanel } from "@/components/certifier/InspectionsPanel";
+import { ProjectTeamPanel } from "@/components/certifier/ProjectTeamPanel";
 import { JobTabs } from "@/components/certifier/JobTabs";
 import { signedUrl } from "@/lib/storage";
 import type { CdcConditionSet, Contractor, Job } from "@/types/db";
@@ -44,7 +45,7 @@ function tabsFor(pathway: Pathway, showModifications: boolean) {
 export default async function JobDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
   const { id } = await params;
   const { tab = "details" } = await searchParams;
-  const { profile } = await requireProfile("certifier");
+  const { profile, director } = await requireProfile("certifier");
   const supabase = await createClient();
 
   const [
@@ -94,6 +95,11 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
   // an empty list is the answer and the picker says how to fill it.
   const { data: conditionSetRows } = await supabase.from("cdc_condition_sets").select("*").eq("firm_id", profile.firm_id).order("sort_order");
   const conditionSets = (conditionSetRows || []) as CdcConditionSet[];
+  // Who else is on the project. Same story: no table before 0072, and
+  // the panel says so instead of the page failing.
+  const { data: memberRows, error: membersError } = await supabase.from("job_members").select("certifier_id").eq("job_id", id);
+  const teamReady = !membersError;
+  const memberIds = (memberRows || []).map((m) => m.certifier_id);
 
   if (!job) notFound();
   // Opening a deleted project's old link lands on the list it can be
@@ -155,14 +161,24 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           {/* Straight to a draft invoice carrying this job's address and
               client — the route for projects that never had a quote,
               which is every imported one. */}
-          <form action={createInvoice}>
-            <input type="hidden" name="job_id" value={id} />
-            <SubmitButton className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary hover:underline">
-              <ReceiptText size={13} /> Create invoice
-            </SubmitButton>
-          </form>
+          {director && (
+            <form action={createInvoice}>
+              <input type="hidden" name="job_id" value={id} />
+              <SubmitButton className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary hover:underline">
+                <ReceiptText size={13} /> Create invoice
+              </SubmitButton>
+            </form>
+          )}
         </div>
         <div className="text-sm text-muted mt-1">{job.description}</div>
+        <ProjectTeamPanel
+          jobId={id}
+          certifiers={(certifiers || []).map((c) => ({ id: c.id, name: c.name, firm_role: c.firm_role }))}
+          assignedCertifierId={job.assigned_certifier_id}
+          memberIds={memberIds}
+          manage={director}
+          ready={teamReady}
+        />
         <DocumentReminderControls
           jobId={id}
           hasClient={!!job.client_id}
@@ -217,7 +233,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               : false,
         }))}
         content={{
-          details: <DetailsTab job={typedJob} clients={clients || []} sharedClients={sharedClients} contractors={contractors} certifiers={certifiers || []} />,
+          details: <DetailsTab job={typedJob} clients={clients || []} sharedClients={sharedClients} contractors={contractors} certifiers={certifiers || []} canDelete={director} />,
           pathway: pathwayChecklist ? (
             <div className="space-y-6">
               <CertificatesPanel

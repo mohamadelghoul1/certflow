@@ -130,6 +130,13 @@ export async function setCertifierPassword(_prev: ActionState, formData: FormDat
 
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: error.message };
+
+  // A certifier invited by their director has no profile yet: this
+  // creates it from the card the director linked their login to. For a
+  // plain reset it does nothing, and a database without migration 0072
+  // has no such function to call.
+  const { error: acceptError } = await supabase.rpc("accept_certifier_invite");
+  if (acceptError && acceptError.code !== "PGRST202" && acceptError.code !== "42883") return { error: acceptError.message };
   redirect("/dashboard");
 }
 

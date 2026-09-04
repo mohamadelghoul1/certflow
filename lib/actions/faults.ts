@@ -1,14 +1,14 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 // Marking a fault handled — looked at, fixed, or judged not worth
 // chasing. It stays on the page with its history; if it happens again it
 // reopens itself, because a fault that comes back was not fixed.
 export async function resolveFault(formData: FormData) {
-  const { userId } = await requireProfile("certifier");
+  const { userId } = await requireDirector();
   const supabase = await createClient();
   const id = String(formData.get("fault_id"));
   const reopen = String(formData.get("reopen")) === "true";

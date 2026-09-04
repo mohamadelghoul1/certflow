@@ -146,12 +146,15 @@ export function DetailsTab({
   sharedClients,
   contractors = [],
   certifiers = [],
+  canDelete = true,
 }: {
   job: Job;
   clients: ClientContact[];
   sharedClients: { id: string; name: string; type: string }[];
   contractors?: Contractor[];
   certifiers?: Certifier[];
+  // Deleting a project is a director's call.
+  canDelete?: boolean;
 }) {
   const d = job.details || {};
   const detailsFormId = `job-details-${job.id}`;
@@ -691,9 +694,11 @@ export function DetailsTab({
         {state?.error && <span className="text-sm text-error">{state.error}</span>}
       </div>
 
-      <div className="bg-white rounded-lg border border-line p-5">
-        <DeleteJobButton jobId={job.id} />
-      </div>
+      {canDelete && (
+        <div className="bg-white rounded-lg border border-line p-5">
+          <DeleteJobButton jobId={job.id} />
+        </div>
+      )}
     </div>
   );
 }

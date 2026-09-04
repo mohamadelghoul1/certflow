@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { todayISO } from "@/lib/business";
@@ -36,7 +36,7 @@ async function nextNumberForFirm(supabase: Awaited<ReturnType<typeof createClien
 // from a quote (carrying its fee lines, client and address), from a job
 // (carrying its client and address; the fees are typed), or blank.
 export async function createInvoice(formData: FormData): Promise<void> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const quoteId = String(formData.get("quote_id") || "");
   const jobId = String(formData.get("job_id") || "");
@@ -98,7 +98,7 @@ export async function createInvoice(formData: FormData): Promise<void> {
 }
 
 export async function updateInvoice(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const invoiceId = String(formData.get("invoice_id"));
 
@@ -123,7 +123,7 @@ export async function updateInvoice(_prev: ActionState, formData: FormData): Pro
 }
 
 export async function addInvoiceLine(formData: FormData) {
-  await requireProfile("certifier");
+  await requireDirector();
   const supabase = await createClient();
   const invoiceId = String(formData.get("invoice_id"));
   const description = String(formData.get("description") || "").trim();
@@ -136,7 +136,7 @@ export async function addInvoiceLine(formData: FormData) {
 }
 
 export async function removeInvoiceLine(formData: FormData) {
-  await requireProfile("certifier");
+  await requireDirector();
   const supabase = await createClient();
   const invoiceId = String(formData.get("invoice_id"));
   await supabase.from("invoice_lines").delete().eq("id", String(formData.get("line_id")));
@@ -147,7 +147,7 @@ export async function removeInvoiceLine(formData: FormData) {
 // the date it happened; anything else clears it, so un-marking a payment
 // leaves no stale date behind.
 export async function setInvoiceStatus(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const invoiceId = String(formData.get("invoice_id"));
   const status = String(formData.get("status"));
@@ -179,7 +179,7 @@ export async function setInvoiceStatus(formData: FormData) {
 // Only a draft can be deleted — it was never issued, so nothing refers
 // to it. A sent invoice is voided instead, keeping its number on record.
 export async function deleteInvoice(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const invoiceId = String(formData.get("invoice_id"));
   await supabase.from("invoices").delete().eq("id", invoiceId).eq("firm_id", profile.firm_id).eq("status", "draft");
@@ -191,7 +191,7 @@ export async function deleteInvoice(formData: FormData) {
 // invoice. Created against this firm's own Stripe account, so the money
 // arrives in this firm's bank account and no other.
 export async function createCardPaymentLink(_prev: InvoiceEmailState, formData: FormData): Promise<InvoiceEmailState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const invoiceId = String(formData.get("invoice_id"));
   // Read with the service-role client: the credentials table has no read
@@ -246,7 +246,7 @@ export async function createCardPaymentLink(_prev: InvoiceEmailState, formData: 
 // An invoice that shouldn't be chased — a disputed one, a client on an
 // agreed payment plan. Per invoice and reversible.
 export async function toggleInvoiceReminders(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const invoiceId = String(formData.get("invoice_id"));
   const paused = String(formData.get("paused")) === "true";
@@ -260,7 +260,7 @@ export type InvoiceEmailState = { error?: string; success?: string } | undefined
 // the full breakdown; the printed document is the same numbers on the
 // letterhead, exported from the invoice's document page.
 export async function emailInvoiceToClient(_prev: InvoiceEmailState, formData: FormData): Promise<InvoiceEmailState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const invoiceId = String(formData.get("invoice_id"));
 

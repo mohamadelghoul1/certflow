@@ -1,11 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 export async function addLibraryItem(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const pathway = String(formData.get("pathway"));
   const title = String(formData.get("title") || "").trim();
@@ -32,7 +32,7 @@ export async function addLibraryItem(formData: FormData) {
 // come from the browser, so each write stays scoped to the firm — an id
 // that isn't theirs simply updates nothing.
 export async function reorderLibraryItems(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   let ids: string[] = [];
   try {
@@ -57,7 +57,7 @@ export async function reorderLibraryItems(formData: FormData) {
 // automatic). An item whose title the other side already has is left
 // alone: the copy button can be pressed twice without doubling the list.
 export async function copyLibraryItem(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const id = String(formData.get("id"));
   const target = String(formData.get("target"));
@@ -91,7 +91,7 @@ export async function copyLibraryItem(formData: FormData) {
 // moment of creation — so editing here shapes future projects, not the
 // records of past ones.
 export async function updateLibraryItem(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const id = String(formData.get("id"));
   const title = String(formData.get("title") || "").trim();
@@ -105,7 +105,7 @@ export async function updateLibraryItem(formData: FormData) {
 }
 
 export async function removeLibraryItem(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const id = String(formData.get("id"));
   await supabase.from("document_library_items").delete().eq("id", id).eq("firm_id", profile.firm_id);
@@ -118,7 +118,7 @@ export async function removeLibraryItem(formData: FormData) {
 // than copied onto each project, so replacing it here replaces it
 // everywhere the moment it's uploaded.
 export async function setLibraryTemplate(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const id = String(formData.get("id"));
   const filePath = String(formData.get("file_path") || "");
@@ -138,7 +138,7 @@ export async function setLibraryTemplate(formData: FormData) {
 }
 
 export async function clearLibraryTemplate(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const id = String(formData.get("id"));
   // The stored file itself is left in place: a form that was handed to

@@ -22,7 +22,8 @@ export function NavDropdown({
   items: Item[];
   viewAllHref: string;
   viewAllLabel: string;
-  createHref: string;
+  // Absent for someone who may not create one.
+  createHref?: string;
   createLabel: string;
   itemHrefBase: string;
   itemHrefSuffix?: string;
@@ -89,13 +90,15 @@ export function NavDropdown({
             style={{ position: "fixed", top: pos.top, left: pos.left }}
             className="z-50 w-72 bg-white rounded-b-lg shadow-xl border border-line overflow-hidden"
           >
-            <Link
-              href={createHref}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-secondary hover:bg-hover border-b border-line"
-            >
-              <Plus size={14} /> {createLabel}
-            </Link>
+            {createHref && (
+              <Link
+                href={createHref}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-secondary hover:bg-hover border-b border-line"
+              >
+                <Plus size={14} /> {createLabel}
+              </Link>
+            )}
             {items.length > 0 && (
               <div className="max-h-72 overflow-y-auto">
                 {items.map((it) => (

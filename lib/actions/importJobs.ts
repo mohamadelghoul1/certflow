@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { parsePaste } from "@/lib/import/parseTable";
 import { buildPreview, looksLikeHeadings } from "@/lib/import/jobRows";
@@ -21,7 +21,7 @@ import { defaultCriticalStageInspections } from "@/lib/constants";
 export type ImportResult = { error?: string; created?: number; skipped?: string[] };
 
 export async function importJobs(_prev: ImportResult | undefined, formData: FormData): Promise<ImportResult> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
 
   const pasted = String(formData.get("pasted") || "");

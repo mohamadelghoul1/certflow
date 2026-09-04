@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { mergeJobDetailsInDb } from "@/lib/actions/mergeDetails";
 import type { ActionState } from "@/lib/actions/auth";
@@ -14,7 +14,7 @@ import type { ActionState } from "@/lib/actions/auth";
 // never tries to be the source of the words.
 
 export async function addConditionSet(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const name = String(formData.get("name") || "").trim();
   if (!name) return { error: "Give the condition set a name — it is what you will pick it by on a job." };
@@ -29,7 +29,7 @@ export async function addConditionSet(_prev: ActionState, formData: FormData): P
 // The uploaded PDF for one set. Its own action because an upload posts
 // on its own, once the file is in storage.
 export async function setConditionSetFile(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   await supabase
     .from("cdc_condition_sets")
@@ -40,7 +40,7 @@ export async function setConditionSetFile(formData: FormData) {
 }
 
 export async function removeConditionSet(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   await supabase.from("cdc_condition_sets").delete().eq("id", String(formData.get("id"))).eq("firm_id", profile.firm_id);
   revalidatePath("/settings");
@@ -51,7 +51,7 @@ export async function removeConditionSet(formData: FormData) {
 // renamed or removed later must not change what an issued certificate
 // says it was approved under.
 export async function setJobConditionSets(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const asked = formData.getAll("set_id").map((v) => String(v)).filter(Boolean);

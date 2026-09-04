@@ -1,4 +1,4 @@
-import { requireProfile } from "@/lib/auth";
+import { requireDirector } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getAuditEvents, getIssuanceEvents } from "@/lib/reporting";
 import { getRecordedEvents } from "@/lib/audit";
@@ -30,7 +30,7 @@ const SECTIONS: { key: string; label: string; icon: LucideIcon; blurb: string }[
 export default async function AuditPage({ searchParams }: { searchParams: Promise<{ section?: string; from?: string; to?: string }> }) {
   const params = await searchParams;
   const active = SECTIONS.find((s) => s.key === params.section) || SECTIONS[0];
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireDirector();
   const supabase = await createClient();
 
   let content: React.ReactNode = null;
