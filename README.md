@@ -385,12 +385,12 @@ to be deleted — two answers for one name kept Vercel's check failing).
 The old `certflow-drab.vercel.app` address still works, so every link
 already sent to a client keeps resolving.
 
-Still to do: Vercel -> Settings -> Environment Variables -> set
-`NEXT_PUBLIC_SITE_URL` to `https://www.certlyn.com.au`, then Deployments
--> Redeploy. Only the overnight reminder sweep reads it — everything a
-certifier triggers builds links from the address they are actually on —
-but until it is set the nightly chasers take whatever production address
-Vercel reports.
+Done in code, 4 Sept 2026: the overnight sweeps (document reminders,
+the review digest) now link to `https://www.certlyn.com.au` whenever
+they run on Vercel, so `NEXT_PUBLIC_SITE_URL` no longer needs setting.
+Before this a client's morning digest carried Vercel's address for the
+deployment itself. Setting the variable still overrides, if the address
+ever changes.
 
 ### Certlyn's own sending domain — done 31 Aug 2026
 

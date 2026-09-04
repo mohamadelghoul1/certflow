@@ -1,5 +1,7 @@
 import { headers } from "next/headers";
 
+export const PRODUCTION_SITE_URL = "https://www.certlyn.com.au";
+
 // Where this site actually is, asked of the request itself.
 //
 // Links mailed out (invites, password resets, portal links) used to be
@@ -22,7 +24,11 @@ export async function siteUrl(): Promise<string> {
   }
   const configured = process.env.NEXT_PUBLIC_SITE_URL;
   if (configured && !configured.includes("localhost")) return configured;
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  // Certlyn's own address, for the runs with no request to read it from.
+  // Before this, the morning digest fell through to Vercel's address for
+  // the deployment itself — certflow-ec026bec1-….vercel.app — and that is
+  // what a client was sent as "your Certlyn portal". On Vercel that is
+  // always this site; off Vercel (a laptop) the local address still wins.
+  if (process.env.VERCEL) return PRODUCTION_SITE_URL;
   return configured || "http://localhost:3000";
 }
