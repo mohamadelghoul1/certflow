@@ -113,6 +113,42 @@ director, so nothing changes for anyone until a director changes it.
 Your own role can only be changed by another director, so a firm is
 never left without one.
 
+## The demonstration account
+
+An account for showing Certlyn to other certifiers, with nothing to do
+with Quality Private Certifiers: its own firm, its own certifier, its
+own made-up clients and projects. Row security keeps it apart from your
+real work exactly as it keeps any two firms apart — neither can see the
+other's projects, even asking for them by id.
+
+1. **Run database update 0075** (it adds the demonstration flag).
+2. **Authentication → Users → Add user → Create new user.** Use an
+   address you control, e.g. `demo@certlyn.com.au`, leave "Auto Confirm
+   User" on, then click the new user and copy their **User UID**.
+3. Open `supabase/demo_firm.sql`, paste that UID at the top, and Run.
+
+You get *Certlyn Demonstration Certifiers* with a director and a team
+member, three clients, and five projects — one collecting documents,
+one ready to issue, one under construction with inspections done and
+one booked, one finished with its Occupation Certificate, and one
+PC/OC job under another certifier's approval — plus a quote, a paid
+invoice and an overdue one, so the dashboard, the compliance clock and
+every tab have something real-looking to show.
+
+**No email can leave that account.** The firm is marked as a
+demonstration, and Certlyn checks the firm before it sends anything: a
+press of Send to client shows exactly what a real firm's client would
+have received and then stops, saying so. Every made-up address is on
+`example.com`, a domain reserved by the standards so it can never
+belong to anyone. A yellow bar across every page says the account is a
+demonstration, so nobody watching mistakes it for live work.
+
+**Running the script again resets it** — the projects, clients, quotes
+and invoices are wiped and laid out fresh. That is how you put the
+account back after a demonstration where you issued a certificate or
+ticked off a checklist. It refuses outright to run against a login that
+belongs to a real firm.
+
 ## Adding another firm later
 
 `supabase/add_firm.sql` sets up a second firm in one run — the firm, its
@@ -611,6 +647,18 @@ The operating entity is `Certlyn` in `lib/legal.ts`; when Certlyn has
 its own company and ABN, change it there and both pages follow. The
 contact address on both pages is `CONTACT_EMAIL` once it is set in
 Vercel, and the interest form until then.
+
+### The demonstration account — run update 0075
+
+Built 4 Sept 2026 and ready to set up whenever you want it: see "The
+demonstration account" above. Nothing else needs 0075, so a database
+without it behaves exactly as before.
+
+While building this, a fault in **0074** came to light and is fixed in
+both files: its gate refused every write that was not a signed-in
+certifier — a background sweep, or a SQL script run by you — rather
+than letting them past. If you have already run 0074, running 0075
+installs the corrected version.
 
 ### Roles and the director's sign-off — run updates 0072, 0073 and 0074
 

@@ -49,7 +49,7 @@ export function emailConfigured(): boolean {
   return !!resend;
 }
 
-export type SendResult = { sent: boolean; skipped?: "not-configured"; error?: string };
+export type SendResult = { sent: boolean; skipped?: "not-configured" | "demo"; error?: string };
 
 // A file to travel with the email. The invoice PDF is the one that
 // matters: a client should be able to file the invoice from their inbox
@@ -71,7 +71,16 @@ export type EmailSender = {
   // True when this firm sends through its own Resend account rather
   // than the deployment's.
   ownAccount: boolean;
+  // A demonstration account (migration 0075). Its clients are invented,
+  // so nothing addressed to them may leave the building — every send is
+  // refused, out loud, wherever the press happened.
+  demo?: boolean;
 };
+
+// What is said when a demonstration account tries to send. Not an
+// error: the button worked, and the person watching should see exactly
+// what a real firm's client would have received, minus the sending.
+export const DEMO_NOT_SENT = "Demonstration account — the email was prepared but not sent to anyone.";
 
 // The service-role client, which is the only thing that can read a
 // firm's Resend key: migration 0060 gives that table no read policy at
@@ -150,7 +159,7 @@ export async function firmSender(supabase: SupabaseClient, firmId: string, admin
     // lookup on a database that has not run migration 0058, and an
     // email that does not send is worse than one from the wrong name.
     const { data } = await supabase.from("firms").select("*").eq("id", firmId).maybeSingle();
-    const firm = data as { from_email?: string | null; reply_to_email?: string | null } | null;
+    const firm = data as { from_email?: string | null; reply_to_email?: string | null; demo?: boolean } | null;
     const from = (firm?.from_email || "").trim();
     const replyTo = (firm?.reply_to_email || "").trim();
     const ownName = !!from || account.ownAccount;
@@ -159,6 +168,7 @@ export async function firmSender(supabase: SupabaseClient, firmId: string, admin
       replyTo: replyTo || (ownName ? null : fallback.replyTo),
       apiKey: account.apiKey,
       ownAccount: account.ownAccount,
+      demo: firm?.demo === true,
     };
   } catch {
     return {
@@ -172,6 +182,9 @@ export async function firmSender(supabase: SupabaseClient, firmId: string, admin
 
 export async function sendEmail(to: string, subject: string, html: string, attachments?: EmailAttachment[], sender?: EmailSender): Promise<SendResult> {
   const { from, replyTo, apiKey } = sender ?? { ...emailSenderSettings(), apiKey: null, ownAccount: false };
+  // Checked before anything else, and before any client is built: a
+  // demonstration firm's mail never reaches Resend at all.
+  if (sender?.demo) return { sent: false, skipped: "demo", error: DEMO_NOT_SENT };
   // The firm's own Resend account when it has one, this deployment's
   // otherwise.
   const client = apiKey ? new Resend(apiKey) : resend;

@@ -78,7 +78,12 @@ $$
 declare
   v_id uuid;
 begin
-  if current_app_role() <> 'certifier' or is_director() then
+  -- Anything that is not a signed-in certifier — the service role, a
+  -- background sweep, a SQL script run by the owner — is not what this
+  -- gate is about. current_app_role() is null for those, and a null
+  -- compared with <> is null rather than true, which is how the first
+  -- version of this refused them all.
+  if coalesce(current_app_role(), '') <> 'certifier' or is_director() then
     return;
   end if;
   v_id := issue_approval_open(p_job_id, p_stage);

@@ -378,6 +378,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "A team member can prepare a CDC, CC or OC in full, but issuing it waits on a director approving that one issue.",
       probe: hasTable(supabase, "issue_approvals"),
     },
+    {
+      migration: "0075",
+      label: "Demonstration accounts",
+      detail: "Marks a firm as a demonstration: sample projects to show other certifiers, and Certlyn refuses to send email from it. Only needed if you run a demo account.",
+      probe: hasColumn(supabase, "firms", "demo"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));
