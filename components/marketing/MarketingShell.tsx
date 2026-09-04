@@ -39,8 +39,8 @@ export function MarketingShell({ current, children }: { current: string; childre
               </Link>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-3">
-            <Link href="/login" className="hidden text-[14px] font-semibold text-[#1a3a5f] hover:underline sm:inline">
+          <div className="ml-auto flex items-center gap-2">
+            <Link href="/login" className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-[13px] font-semibold text-[#1a3a5f] hover:border-[#1a3a5f]/50 hover:bg-slate-50">
               Sign in
             </Link>
             <Link href="/join?intent=demo" className={btnSmall}>
@@ -54,9 +54,6 @@ export function MarketingShell({ current, children }: { current: string; childre
               {page.label}
             </Link>
           ))}
-          <Link href="/login" className="whitespace-nowrap font-semibold text-[#1a3a5f] sm:hidden">
-            Sign in
-          </Link>
         </nav>
       </header>
 

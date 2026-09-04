@@ -524,7 +524,10 @@ browser around it.
 ### The public pages — one optional setting
 
 The homepage, `/how-it-works`, `/why-certlyn`, `/pricing` and `/join`
-are readable without a login. The price, the plan's contents and the
+are readable without a login. The product pictures on the homepage are
+drawn from the app's own parts; drop real screenshots into
+`public/screenshots/` (see the README there) and the page uses those
+instead, taken on a demo project so no client's address is published. The price, the plan's contents and the
 launch offer dates live in `lib/pricing.ts` and are quoted from there on
 every page that mentions them. The form on `/join` emails
 whoever runs Certlyn: `CONTACT_EMAIL` in Vercel if it is set, otherwise

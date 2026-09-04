@@ -1,4 +1,5 @@
-import { AlertTriangle, CalendarCheck, ClipboardCheck, ShieldCheck, Inbox, Sparkles, Upload, CheckCircle2, Circle, FileText, ClipboardList, HardHat, Search, PenLine, BadgeCheck, Home, type LucideIcon } from "lucide-react";
+import Image from "next/image";
+import { AlertTriangle, CalendarCheck, ClipboardCheck, ShieldCheck, Inbox, Sparkles, Upload, CheckCircle2, Circle, FileText, ClipboardList, HardHat, Search, PenLine, BadgeCheck, Home, ChevronRight, Mail, Bell, type LucideIcon } from "lucide-react";
 
 // Product pictures drawn from the product's own parts.
 //
@@ -173,18 +174,25 @@ export const WORKFLOW: { title: string; text: string; icon: LucideIcon }[] = [
 
 export function WorkflowStrip() {
   return (
-    <ol className="grid gap-3 md:grid-cols-7 md:gap-2">
+    <ol className="grid gap-4 md:grid-cols-7 md:gap-0">
       {WORKFLOW.map((stage, i) => {
         const Icon = stage.icon;
+        const last = i === WORKFLOW.length - 1;
         return (
-          <li key={stage.title} className="relative flex gap-3 md:block">
-            <div className="flex flex-col items-center md:flex-row md:items-center">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1a3a5f] text-white shadow-sm">
-                <Icon size={18} />
+          <li key={stage.title} className="relative flex gap-4 md:block md:px-2">
+            <div className="flex flex-col items-center md:flex-row">
+              <span className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white shadow-sm ${last ? "bg-[#1f7f7a]" : "bg-[#1a3a5f]"}`}>
+                <Icon size={19} />
               </span>
-              {i < WORKFLOW.length - 1 && <span className="mt-1 h-full w-px flex-1 bg-slate-200 md:mt-0 md:h-px md:w-auto md:flex-1" />}
+              {!last && (
+                <>
+                  <span className="mt-1 w-px flex-1 bg-slate-300 md:hidden" />
+                  <span className="hidden h-px flex-1 bg-slate-300 md:block" />
+                  <ChevronRight size={14} className="hidden -ml-1 text-slate-400 md:block" />
+                </>
+              )}
             </div>
-            <div className="pb-4 md:pb-0 md:pr-2 md:pt-3">
+            <div className="pb-5 md:pb-0 md:pr-3 md:pt-3">
               <div className="text-[12px] font-bold uppercase tracking-wide text-[#1a3a5f]">{stage.title}</div>
               <p className="mt-1 text-[13px] leading-snug text-slate-600">{stage.text}</p>
             </div>
@@ -192,5 +200,107 @@ export function WorkflowStrip() {
         );
       })}
     </ol>
+  );
+}
+
+// The client portal as it is on a desk: the project at a glance, and
+// the documents table the client works down.
+export function PortalDesktopMockup() {
+  const rows: [string, "approved" | "review" | "needed" | "changes"][] = [
+    ["Site plan", "approved"],
+    ["Architectural drawings", "approved"],
+    ["Structural engineer's certificate", "approved"],
+    ["BASIX certificate", "review"],
+    ["Stormwater drainage plan", "changes"],
+    ["Home Building Compensation certificate", "needed"],
+  ];
+  const badge = {
+    approved: ["Approved", "bg-[#e8f5e9] text-[#2e7d32]"],
+    review: ["Being reviewed", "bg-[#fff8e1] text-[#8a6100]"],
+    changes: ["Needs changes", "bg-[#fdecea] text-[#c62828]"],
+    needed: ["Still needed", "bg-slate-100 text-slate-600"],
+  } as const;
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_rgba(26,58,95,0.16)]">
+      <div className="flex items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-3 py-2">
+        <span className="h-2 w-2 rounded-full bg-slate-300" />
+        <span className="h-2 w-2 rounded-full bg-slate-300" />
+        <span className="h-2 w-2 rounded-full bg-slate-300" />
+        <span className="ml-3 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[9px] text-slate-400">portal · your project</span>
+      </div>
+      <div className="bg-[#f5f7fa] p-3 sm:p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="text-[9px] uppercase tracking-[0.18em] text-slate-500">Your project</div>
+            <div className="text-[13px] font-bold text-slate-900">{SAMPLE_ADDRESS}</div>
+            <div className="text-[9px] text-slate-500">New two-storey dwelling · CDC application</div>
+          </div>
+          <span className="rounded-full bg-[#e3f2fd] px-2.5 py-1 text-[9px] font-semibold text-[#1565c0]">3 of 6 documents approved</span>
+        </div>
+        <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-slate-200 bg-slate-50 px-3 py-1.5 text-[8.5px] font-semibold uppercase tracking-wide text-slate-500">
+            <span>Document</span>
+            <span>Status</span>
+            <span className="w-14 text-right">Action</span>
+          </div>
+          {rows.map(([title, state]) => (
+            <div key={title} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-slate-100 px-3 py-1.5 last:border-b-0">
+              <span className="text-[9.5px] text-slate-800">{title}</span>
+              <span className={`rounded-full px-2 py-0.5 text-[8px] font-semibold ${badge[state][1]}`}>{badge[state][0]}</span>
+              <span className="w-14 text-right">
+                {(state === "needed" || state === "changes") && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#1a3a5f] px-2 py-0.5 text-[8px] font-semibold text-white">
+                    <Upload size={8} /> Upload
+                  </span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 rounded-lg border border-[#fdecea] bg-[#fdecea]/60 px-3 py-1.5 text-[8.5px] text-[#8a2f2f]">
+          <span className="font-semibold">Stormwater drainage plan — note from your certifier:</span> the plan is missing the overland flow path. Please upload a revised sheet.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// One of the emails a client gets, as they see it on a phone.
+export function ReminderEmailMockup() {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-2 text-[10px] text-slate-500">
+        <Mail size={13} className="text-[#1f7f7a]" />
+        <span className="font-semibold text-slate-800">Sunrise Certifiers</span>
+        <span>· 8:02 am</span>
+      </div>
+      <div className="mt-1.5 text-[12px] font-bold text-slate-900">Documents outstanding — {SAMPLE_ADDRESS}</div>
+      <p className="mt-2 text-[10.5px] leading-snug text-slate-700">Hi Jane, just a friendly reminder — the following documents are still needed so your project can keep moving:</p>
+      <ul className="mt-2 space-y-1 text-[10.5px] text-slate-800">
+        <li className="flex items-center gap-1.5"><Circle size={9} className="text-slate-300" /> Home Building Compensation certificate</li>
+        <li className="flex items-center gap-1.5"><Circle size={9} className="text-[#f9a825]" /> Stormwater drainage plan <span className="text-[#8a6100]">— needs changes</span></li>
+      </ul>
+      <p className="mt-2 text-[10.5px] text-slate-700">You can upload them straight into your portal, and we&rsquo;ll take it from there.</p>
+      <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#1a3a5f] px-3 py-1 text-[9.5px] font-semibold text-white">Open your portal</div>
+      <div className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-2 text-[9px] text-slate-500">
+        <Bell size={11} className="text-[#1f7f7a]" /> Sent automatically, and stopped the moment the certifier is in touch.
+      </div>
+    </div>
+  );
+}
+
+// A real screenshot when one has been dropped into public/screenshots,
+// the drawn mockup until then. The frame is the same either way.
+export function ProductFrame({ src, alt, fallback }: { src: string | null; alt: string; fallback: React.ReactNode }) {
+  if (!src) return <>{fallback}</>;
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_rgba(26,58,95,0.16)]">
+      <div className="flex items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-3 py-2">
+        <span className="h-2 w-2 rounded-full bg-slate-300" />
+        <span className="h-2 w-2 rounded-full bg-slate-300" />
+        <span className="h-2 w-2 rounded-full bg-slate-300" />
+      </div>
+      <Image src={src} alt={alt} width={1600} height={1000} className="h-auto w-full" />
+    </div>
   );
 }
