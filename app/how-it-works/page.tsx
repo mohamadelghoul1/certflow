@@ -84,7 +84,7 @@ export default function HowItWorksPage() {
         </div>
       </Section>
 
-      <CallToAction title="Bring your projects across in an afternoon." blurb="Fill in one spreadsheet, drop it on the Import page, and every job under construction is in Certlyn with its approval recorded, ready for inspections and the OC." primary={{ href: "/join?intent=demo", label: "Book a Demo" }} secondary={{ href: "/join?intent=launch-offer", label: "Claim the Launch Offer" }} />
+      <CallToAction title="Bring your projects across in an afternoon." blurb="Fill in one spreadsheet, drop it on the Import page, and every job under construction is in Certlyn with its approval recorded, ready for inspections and the OC." primary={{ href: "/join?intent=demo", label: "Book a Demo" }} secondary={{ href: "/join?intent=launch-offer", label: "Join the Certlyn launch program" }} />
     </MarketingShell>
   );
 }

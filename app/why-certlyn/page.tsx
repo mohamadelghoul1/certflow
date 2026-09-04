@@ -77,7 +77,7 @@ export default function WhyCertlynPage() {
         </ul>
       </Section>
 
-      <CallToAction title="See it running on your own projects." blurb="Book a demo and we'll walk you through Certlyn on your own screen, then set your firm up and bring your current jobs across from a spreadsheet." primary={{ href: "/join?intent=demo", label: "Book a Demo" }} secondary={{ href: "/join?intent=launch-offer", label: "Claim the Launch Offer" }} />
+      <CallToAction title="See it running on your own projects." blurb="Book a demo and we'll walk you through Certlyn on your own screen, then set your firm up and bring your current jobs across from a spreadsheet." primary={{ href: "/join?intent=demo", label: "Book a Demo" }} secondary={{ href: "/join?intent=launch-offer", label: "Join the Certlyn launch program" }} />
     </MarketingShell>
   );
 }

@@ -62,10 +62,19 @@ export default function HomePage() {
               <br />
               <span className="text-[#d99a12]">Simplified.</span>
             </h1>
-            <p className="mt-5 max-w-lg text-[18px] leading-relaxed text-slate-600">
-              The certification workflow platform for NSW private certifiers. One place for your projects, documents, inspections, clients,
-              invoicing and certificates &mdash; from application to Occupation Certificate.
+            <p className="mt-5 max-w-lg text-[20px] font-semibold leading-snug text-slate-800">The complete certification workflow for NSW private certifiers.</p>
+            <p className="mt-3 max-w-lg text-[16px] leading-relaxed text-slate-600">
+              Projects, documents, inspections, clients, invoicing and certificates in one place &mdash; from application to Occupation
+              Certificate.
             </p>
+            <ol className="mt-5 flex flex-wrap items-center gap-y-2 text-[12px] font-semibold uppercase tracking-wide text-[#1a3a5f]">
+              {["Application", "Documents", "Certificate", "Inspections", "Occupation Certificate"].map((stage, i, all) => (
+                <li key={stage} className="flex items-center">
+                  <span className={`rounded-full border px-2.5 py-1 ${i === all.length - 1 ? "border-[#1f7f7a] bg-teal-50 text-[#1f7f7a]" : "border-slate-300 bg-white"}`}>{stage}</span>
+                  {i < all.length - 1 && <ArrowRight size={12} className="mx-1.5 text-slate-400" />}
+                </li>
+              ))}
+            </ol>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/join?intent=demo" className={btnPrimary}>
                 Book a Demo <ArrowRight size={17} />
@@ -202,11 +211,19 @@ export default function HomePage() {
                 informed about progress. They see what you choose to share, and nothing you don&rsquo;t.
               </p>
               <ul className="mt-6 space-y-3">
-                <Tick>Upload against each requested document, from a phone or a desk.</Tick>
-                <Tick>See which documents are approved, being reviewed, sent back, or still needed &mdash; with your note beside each.</Tick>
-                <Tick>Book inspections, and see them confirmed.</Tick>
-                <Tick>View and pay invoices by card.</Tick>
-                <Tick>Reminded automatically while anything is outstanding, in your firm&rsquo;s name.</Tick>
+                <Tick>
+                  <span className="font-semibold text-slate-900">Clients know what&rsquo;s required without calling.</span> Every requested document is
+                  listed with its status and your note beside it.
+                </Tick>
+                <Tick>
+                  <span className="font-semibold text-slate-900">Uploads land against the right item</span>, not in your inbox &mdash; from a phone or a
+                  desk.
+                </Tick>
+                <Tick>
+                  <span className="font-semibold text-slate-900">Progress is visible</span>, so the &ldquo;where are we up to?&rdquo; calls stop.
+                </Tick>
+                <Tick>Book inspections and see them confirmed. View and pay invoices by card.</Tick>
+                <Tick>Reminded automatically while anything is outstanding, in your firm&rsquo;s name, and stopped the moment you&rsquo;re in touch.</Tick>
               </ul>
               <Link href="/how-it-works" className={`${btnSecondary} mt-8`}>
                 See how the client portal works <ArrowRight size={16} />
@@ -250,8 +267,10 @@ export default function HomePage() {
         </div>
         <p className="mt-6 inline-flex items-start gap-2 text-[13px] text-slate-500">
           <Sparkles size={15} className="mt-0.5 shrink-0 text-[#1f7f7a]" />
-          Where AI is used, it drafts notes and reads document details for a person to confirm. It never performs statutory assessment or makes
-          certification decisions.
+          <span>
+            <span className="font-semibold text-slate-700">AI assists, the certifier decides.</span> Where AI is used it drafts a note or reads a title
+            block for a person to confirm. It never assesses an application or makes a certification decision.
+          </span>
         </p>
       </Section>
 
@@ -310,23 +329,45 @@ export default function HomePage() {
         </div>
       </Section>
 
-      {/* Why different */}
-      <Section tone="tint" title="More than reporting. More than project software." lead="Certlyn brings your certification workflow, client communication, documents, inspections and invoicing together in one platform.">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
-            <div className="text-[13px] font-semibold uppercase tracking-wide text-slate-500">A reporting tool</div>
-            <p className="mt-3 text-[15px] leading-relaxed text-slate-600">Does one thing: tells the Portal what you did. Everything before and after it still lives in email, folders and spreadsheets.</p>
+      {/* Why Certlyn */}
+      <Section tone="tint" id="why" title="Why Certlyn?" lead="Six things a certifier gets that a reporting tool, a shared drive and an inbox never gave them.">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Card icon={<Clock size={20} />} title="Less admin">
+            The address fills in the land details. The quote fills in the project. Approved documents fill in Schedule 1. The certificate is
+            built from the project, not a blank template.
+          </Card>
+          <Card icon={<FolderKanban size={20} />} title="One workflow">
+            Application, documents, certificate, inspections, amendments, OC and invoicing on one project page, each stage handing what it
+            knows to the next.
+          </Card>
+          <Card icon={<HardHat size={20} />} title="Inspections finished on site">
+            Outcome, issues, photos, notes, signature and the Portal record, from a phone, before you leave the site.
+          </Card>
+          <Card icon={<ClipboardList size={20} />} title="Document requests that run themselves">
+            Checklists from your own library. Clients upload against each item and are reminded until it&rsquo;s done. You approve or send
+            back with a note.
+          </Card>
+          <Card icon={<BellRing size={20} />} title="Clients kept informed">
+            Portal invitations, progress, reports and reminders go out in your firm&rsquo;s name. Nothing is sent without a person pressing
+            Send, apart from the reminders you switch on.
+          </Card>
+          <Card icon={<Landmark size={20} />} title="The Planning Portal, tracked">
+            Case references on every inspection and certificate, the two-business-day window counted for you, and a one-click record of what
+            was reported. Direct API submission is built and awaits the department&rsquo;s onboarding.
+          </Card>
+        </div>
+        <div className="mt-8 grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl border border-slate-200 bg-white px-5 py-4">
+            <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">A reporting tool</div>
+            <p className="mt-1.5 text-[14px] leading-snug text-slate-600">Tells the Portal what you did. Everything before and after it still lives in email and folders.</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
-            <div className="text-[13px] font-semibold uppercase tracking-wide text-slate-500">Generic project software</div>
-            <p className="mt-3 text-[15px] leading-relaxed text-slate-600">Knows nothing of a CDC, a Schedule 1, a critical stage inspection or a two-business-day window. You build it all yourself, and maintain it.</p>
+          <div className="rounded-xl border border-slate-200 bg-white px-5 py-4">
+            <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">Generic project software</div>
+            <p className="mt-1.5 text-[14px] leading-snug text-slate-600">Knows nothing of a CDC, a Schedule 1 or a two-business-day window. You build and maintain it all.</p>
           </div>
-          <div className="rounded-2xl border-2 border-[#1a3a5f] bg-white p-6 shadow-sm">
-            <div className="text-[13px] font-semibold uppercase tracking-wide text-[#1a3a5f]">Certlyn</div>
-            <p className="mt-3 text-[15px] leading-relaxed text-slate-700">
-              Built for the NSW certification workflow, stage by stage, with the client, the documents, the inspections, the certificates and
-              the invoicing already in it. Shaped by feedback from certifiers across NSW.
-            </p>
+          <div className="rounded-xl border-2 border-[#1a3a5f] bg-white px-5 py-4">
+            <div className="text-[12px] font-semibold uppercase tracking-wide text-[#1a3a5f]">Certlyn</div>
+            <p className="mt-1.5 text-[14px] leading-snug text-slate-700">Built for the NSW certification workflow, with the client, documents, inspections, certificates and invoicing already in it.</p>
           </div>
         </div>
       </Section>
@@ -358,14 +399,14 @@ export default function HomePage() {
               </Link>
             </div>
             <div className="rounded-3xl bg-[#1a3a5f] p-8 text-white">
-              <div className="inline-flex items-center rounded-full bg-[#f0b93a] px-3 py-1 text-[12px] font-bold uppercase tracking-wide text-[#241b06]">Launch offer</div>
+              <div className="inline-flex items-center rounded-full bg-[#f0b93a] px-3 py-1 text-[12px] font-bold uppercase tracking-wide text-[#241b06]">Launch program</div>
               <div className="mt-4 text-[30px] font-bold leading-tight tracking-tight sm:text-[34px]">Free until {OFFER_FREE_UNTIL}</div>
               <p className="mt-3 text-[15px] leading-relaxed text-slate-200">
                 Join Certlyn before {OFFER_JOIN_BY} and use the platform at no subscription cost until {OFFER_FREE_UNTIL}.
               </p>
               <p className="mt-3 text-[14px] leading-relaxed text-slate-300">After {OFFER_FREE_UNTIL}, the standard subscription is {PRICE_LABEL} per month.</p>
               <Link href="/join?intent=launch-offer" className={`${btnPrimary} mt-7`}>
-                Claim the Launch Offer <ArrowRight size={17} />
+                Join the Certlyn launch program <ArrowRight size={17} />
               </Link>
             </div>
           </div>
@@ -377,7 +418,7 @@ export default function HomePage() {
         title="Ready to simplify your certification workflow?"
         blurb="See how Certlyn can bring your certification jobs, clients and administration together in one place."
         primary={{ href: "/join?intent=demo", label: "Book a Demo" }}
-        secondary={{ href: "/join?intent=launch-offer", label: "Claim the Launch Offer" }}
+        secondary={{ href: "/join?intent=launch-offer", label: "Join the Certlyn launch program" }}
       />
     </MarketingShell>
   );

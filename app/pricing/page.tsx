@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 const QUESTIONS: { q: string; a: string }[] = [
   {
-    q: "What does the launch offer include?",
+    q: "What does the launch program include?",
     a: `Everything in ${PLAN_NAME}, with no subscription cost until ${OFFER_FREE_UNTIL}, for any firm that joins before ${OFFER_JOIN_BY}. From 1 July 2027 the standard ${PRICE_LABEL} per month applies. There is nothing to pay up front.`,
   },
   {
@@ -82,7 +82,7 @@ export default function PricingPage() {
             </div>
 
             <div className="rounded-3xl bg-[#1a3a5f] p-8 text-white sm:p-10">
-              <div className="inline-flex items-center rounded-full bg-[#f0b93a] px-3 py-1 text-[12px] font-bold uppercase tracking-wide text-[#241b06]">Launch offer</div>
+              <div className="inline-flex items-center rounded-full bg-[#f0b93a] px-3 py-1 text-[12px] font-bold uppercase tracking-wide text-[#241b06]">Launch program</div>
               <div className="mt-5 text-[13px] font-semibold uppercase tracking-[0.2em] text-slate-300">Free until</div>
               <div className="text-[34px] font-bold leading-tight tracking-tight sm:text-[40px]">{OFFER_FREE_UNTIL}</div>
               <p className="mt-4 text-[16px] leading-relaxed text-slate-100">
@@ -94,7 +94,7 @@ export default function PricingPage() {
                 lock-in, no catch: you can leave before then and owe nothing.
               </div>
               <Link href="/join?intent=launch-offer" className={`${btnPrimary} mt-7`}>
-                Claim the Launch Offer <ArrowRight size={17} />
+                Join the Certlyn launch program <ArrowRight size={17} />
               </Link>
             </div>
           </div>
@@ -150,7 +150,7 @@ export default function PricingPage() {
         title="Ready to simplify your certification workflow?"
         blurb="See how Certlyn can bring your certification jobs, clients and administration together in one place."
         primary={{ href: "/join?intent=demo", label: "Book a Demo" }}
-        secondary={{ href: "/join?intent=launch-offer", label: "Claim the Launch Offer" }}
+        secondary={{ href: "/join?intent=launch-offer", label: "Join the Certlyn launch program" }}
       />
     </MarketingShell>
   );
