@@ -85,6 +85,15 @@ email they will sign in with, and choose their role:
   the team of (on the project's page, under the address), or are the
   inspector on. No quotes, no invoices, no firm settings; their own
   card and their own two-factor sign-in are all they can change.
+A team member can prepare a CDC, CC, modified certificate or OC in
+full, but **pressing Issue waits on a director** (database update
+**0074**). They press *Request director approval* beside the Issue
+button; every director is emailed and it appears on their dashboard;
+the director approves or declines with a note, on the project itself.
+An approval covers that one issue and is spent by it — regenerating,
+or issuing a second OC, asks again. Directors are never asked; they
+are the approval. The whole exchange is in the audit log.
+
 - **Inspector** — a certifier who only carries out the inspections
   they are given (database update **0073**). On their projects they see
   two tabs: the approved documents, read-only, and the inspections.
@@ -603,14 +612,18 @@ its own company and ABN, change it there and both pages follow. The
 contact address on both pages is `CONTACT_EMAIL` once it is set in
 Vercel, and the interest form until then.
 
-### Directors, team members and inspectors — run updates 0072 and 0073
+### Roles and the director's sign-off — run updates 0072, 0073 and 0074
 
 Built 4 Sept 2026. Until **0072** is run in Supabase, every certifier
 login still has the run of the firm and the role and invite controls
 under Settings → Certifiers stay hidden. **0073** adds the third role,
 Inspector — inspections only, approval documents read-only, no Portal
 reporting — and is enforced by the database, including a guard that
-stops anyone but a director changing a role. Once it is run, everyone who
+stops anyone but a director changing a role. **0074** adds the
+director's sign-off before a team member issues: the database refuses
+to create a certificate for a non-director without an approved,
+unspent request, and spends it in the same statement, so one yes can
+never issue two certificates. Once it is run, everyone who
 already had a login is a director; add a team member, set their role,
 and press **Invite to sign in** — see "Adding another certifier to your
 firm" above. The invite needs email sending switched on (Settings →
@@ -620,6 +633,8 @@ Three deliberate limits, all the owner's to revisit:
 
 - A team member cannot create a project. The director creates it and
   assigns them; the same for importing.
+- The sign-off is per issue and cannot be switched off for a trusted
+  team member. If someone should issue freely, make them a director.
 - The dashboard's AI note is the director's only, since it is written
   about the whole firm.
 - Firm-level settings functions that store keys (Stripe, Resend) still

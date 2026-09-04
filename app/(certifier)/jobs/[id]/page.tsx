@@ -19,6 +19,7 @@ import { OcPanel } from "@/components/certifier/OcPanel";
 import { InspectionsPanel } from "@/components/certifier/InspectionsPanel";
 import { ProjectTeamPanel } from "@/components/certifier/ProjectTeamPanel";
 import { ApprovedDocuments } from "@/components/certifier/ApprovedDocuments";
+import { approvalFor, type ApprovalRow } from "@/lib/issueApprovals";
 import { JobTabs } from "@/components/certifier/JobTabs";
 import { signedUrl } from "@/lib/storage";
 import type { CdcConditionSet, Contractor, Job } from "@/types/db";
@@ -101,6 +102,22 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
   const { data: memberRows, error: membersError } = await supabase.from("job_members").select("certifier_id").eq("job_id", id);
   const teamReady = !membersError;
   const memberIds = (memberRows || []).map((m) => m.certifier_id);
+
+  // Where a director's sign-off on issuing is up to. A director never
+  // needs one, and a database without migration 0074 has no table — in
+  // both cases nothing is asked and nothing changes.
+  const { data: approvalRows, error: approvalsError } = await supabase
+    .from("issue_approvals")
+    .select("id, stage, status, requested_by, requested_at, request_note, decided_by, decided_at, decision_note, used_at")
+    .eq("job_id", id)
+    .order("requested_at", { ascending: false });
+  const approvalsReady = !approvalsError;
+  const approvals = (approvalRows || []) as ApprovalRow[];
+  // A director sees a pending request here so they can decide it; they
+  // are never held up by one themselves.
+  const needsApproval = approvalsReady && !director;
+  const pathwayApproval = approvalFor(approvals, "pathway", approvalsReady && (needsApproval || director));
+  const ocApproval = approvalFor(approvals, "oc", approvalsReady && (needsApproval || director));
 
   if (!job) notFound();
   // Opening a deleted project's old link lands on the list it can be
@@ -277,6 +294,8 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
                 certifiers={certifiers || []}
                 library={libraries[job.pathway] || []}
                 versions={(pathwayVersions as never[]) || []}
+                approval={pathwayApproval}
+                director={director}
               />
               {/* Conditions are the CDC's own: a CC is issued against a
                   consent whose conditions are the council's, and an OC
@@ -303,6 +322,8 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               modifications={modificationsWithChecklist as never[]}
               library={libraries[job.pathway] || []}
               versions={(pathwayVersions as never[]) || []}
+              approval={pathwayApproval}
+              director={director}
             />
           ),
           noc: nocChecklist ? (
@@ -334,6 +355,8 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
               certifiers={certifiers || []}
               ocRecords={ocRecords || []}
               library={libraries.OC}
+              approval={ocApproval}
+              director={director}
               governingRef={
                 typedJob.pathway_generated
                   ? resolvePathwayCertRef(

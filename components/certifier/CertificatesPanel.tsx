@@ -8,6 +8,8 @@ import { buildStampPreview } from "@/lib/pdf/stampDetails";
 import { PlanningPortalRefField } from "@/components/certifier/PlanningPortalRefField";
 import { PreInspectionField } from "@/components/certifier/PreInspectionField";
 import { IssueCertificateForm, IssueModificationForm } from "@/components/certifier/IssueCertificateForm";
+import { IssueApprovalPanel } from "@/components/certifier/IssueApprovalPanel";
+import { canIssueNow, type ApprovalState } from "@/lib/issueApprovals";
 import { DeletePathwayVersionButton } from "@/components/certifier/DeletePathwayVersionButton";
 import { DeleteModificationButton } from "@/components/certifier/DeleteModificationButton";
 import { EditableCertRef } from "@/components/certifier/EditableCertRef";
@@ -29,6 +31,8 @@ export async function CertificatesPanel({
   certifiers,
   library,
   versions,
+  approval = { state: "not-needed" },
+  director = true,
 }: {
   job: Job;
   firmId: string;
@@ -37,6 +41,11 @@ export async function CertificatesPanel({
   certifiers: Certifier[];
   library: LibItem[];
   versions: PathwayCertificateVersion[];
+  // Where the director's sign-off on issuing this certificate is up to.
+  // "not-needed" for a director, and for any firm on a database that has
+  // not run migration 0074.
+  approval?: ApprovalState;
+  director?: boolean;
 }) {
   const complete = stageComplete(pathwayItems);
   // What the stamp will say and how big it is, worked out once for the
@@ -122,12 +131,21 @@ export async function CertificatesPanel({
                 applicationDate={job.details?.preInspection?.applicationDate || ""}
                 inspectionDate={job.details?.preInspection?.inspectionDate || ""}
               />
+              <IssueApprovalPanel
+                jobId={job.id}
+                stage="pathway"
+                what={job.pathway}
+                approval={approval}
+                director={director}
+                nameOf={Object.fromEntries(certifiers.map((c) => [c.id, c.name]))}
+              />
               <IssueCertificateForm
                 jobId={job.id}
                 assignedCertifierId={job.assigned_certifier_id}
                 certifiers={certifiers}
                 isRegenerate={job.pathway_generated}
                 hasPortalRef={portalRef.trim().length > 0}
+                needsApproval={!canIssueNow(approval)}
               />
             </>
           )}
@@ -181,6 +199,8 @@ export async function ModificationsPanel({
   modifications,
   library,
   versions,
+  approval = { state: "not-needed" },
+  director = true,
 }: {
   job: Job;
   firmId: string;
@@ -188,6 +208,8 @@ export async function ModificationsPanel({
   modifications: ModificationWithChecklist[];
   library: LibItem[];
   versions: PathwayCertificateVersion[];
+  approval?: ApprovalState;
+  director?: boolean;
 }) {
   const maxVersion = versions.reduce((max, v) => Math.max(max, v.version), 0);
 
@@ -209,6 +231,8 @@ export async function ModificationsPanel({
           library={library}
           linkedVersion={versions.find((v) => v.id === m.certificate_version_id)}
           maxVersion={maxVersion}
+          approval={approval}
+          director={director}
         />
       ))}
 
@@ -329,6 +353,8 @@ async function ModificationCard({
   library,
   linkedVersion,
   maxVersion,
+  approval,
+  director,
 }: {
   mod: ModificationWithChecklist;
   job: Job;
@@ -341,6 +367,8 @@ async function ModificationCard({
   // certificate" label, where its Delete button deleted the original.
   linkedVersion: PathwayCertificateVersion | undefined;
   maxVersion: number;
+  approval: ApprovalState;
+  director: boolean;
 }) {
   const complete = stageComplete(mod.items);
   const issuedBy = certifiers.find((c) => c.id === mod.issued_by);
@@ -423,6 +451,14 @@ async function ModificationCard({
                 This modification is marked issued, but no modified certificate exists for it. Issue it again to create one.
               </p>
             )}
+            <IssueApprovalPanel
+              jobId={job.id}
+              stage="pathway"
+              what={`modified ${job.pathway}`}
+              approval={approval}
+              director={director}
+              nameOf={Object.fromEntries(certifiers.map((c) => [c.id, c.name]))}
+            />
             <IssueModificationForm
               jobId={job.id}
               modificationId={mod.id}
@@ -430,6 +466,7 @@ async function ModificationCard({
               certifiers={certifiers}
               hasPortalRef={(mod.portal_ref || "").trim().length > 0}
               pathway={job.pathway}
+              needsApproval={!canIssueNow(approval)}
             />
           </>
         )}

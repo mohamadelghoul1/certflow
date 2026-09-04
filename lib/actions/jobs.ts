@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { recordReviewEvent } from "@/lib/reviewDigest";
 import { pruneSupersededVersions } from "@/lib/documentPruning";
 import { requireJobWriter, requireDirector } from "@/lib/auth";
+import type { IssueStage } from "@/lib/issueApprovals";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { PRIOR_APPROVAL_DOCUMENTS, INSPECTION_LIBRARY, defaultCriticalStageInspections, normalizeCriticalStageInspections, epiForCodeParts } from "@/lib/constants";
@@ -1072,8 +1073,23 @@ export async function setNeighbourNotificationDates(_prev: ActionState, formData
   return { savedAt: Date.now() };
 }
 
+// A team member issues only where a director has said yes. The database
+// refuses it too (migration 0074) and spends the approval in the same
+// statement that creates the certificate — this is so the answer reads
+// as a sentence rather than as a database error.
+async function awaitingDirector(supabase: SupabaseClient, jobId: string, stage: IssueStage, director: boolean): Promise<boolean> {
+  if (director) return false;
+  const { data, error } = await supabase.rpc("issue_approval_open", { p_job_id: jobId, p_stage: stage });
+  // No such function means migration 0074 has not been run, and nothing
+  // is being asked of anyone yet.
+  if (error) return false;
+  return !data;
+}
+
+const NEEDS_APPROVAL = "A director has to approve this before you can issue it — use Request director approval above.";
+
 export async function issuePathwayCertificate(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireJobWriter();
+  const { profile, director } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const certifierId = String(formData.get("certifier_id") || "");
@@ -1081,6 +1097,7 @@ export async function issuePathwayCertificate(_prev: ActionState, formData: Form
 
   const { data: job } = await supabase.from("jobs").select("id, details").eq("id", jobId).eq("firm_id", profile.firm_id).single();
   if (!job) return { error: "Project not found." };
+  if (await awaitingDirector(supabase, jobId, "pathway", director)) return { error: NEEDS_APPROVAL };
 
   // The certificate carries the NSW Planning Portal reference, so it
   // cannot be issued without one. Checked here as well as in the form —
@@ -1460,7 +1477,7 @@ export async function startModification(formData: FormData) {
 }
 
 export async function issueModification(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireJobWriter();
+  const { profile, director } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const modificationId = String(formData.get("modification_id"));
@@ -1472,6 +1489,7 @@ export async function issueModification(_prev: ActionState, formData: FormData):
   // modification's own number, not the original certificate's.
   const { data: modJob } = await supabase.from("jobs").select("id").eq("id", jobId).eq("firm_id", profile.firm_id).single();
   if (!modJob) return { error: "Project not found." };
+  if (await awaitingDirector(supabase, jobId, "pathway", director)) return { error: NEEDS_APPROVAL };
   const { data: modRow } = await supabase.from("modifications").select("portal_ref").eq("id", modificationId).eq("job_id", jobId).single();
   if (!modRow) return { error: "Modification not found." };
   if (!modRow.portal_ref?.trim()) {
@@ -1516,9 +1534,10 @@ export async function uploadModificationApproval(formData: FormData) {
 }
 
 export async function issueOc(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireJobWriter();
+  const { director } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
+  if (await awaitingDirector(supabase, jobId, "oc", director)) return { error: NEEDS_APPROVAL };
   const type = String(formData.get("type")) as "partial" | "whole";
   const description = String(formData.get("description") || "");
   const exclusions = String(formData.get("exclusions") || "").trim();

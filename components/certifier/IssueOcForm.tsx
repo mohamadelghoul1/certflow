@@ -6,7 +6,19 @@ import type { ActionState } from "@/lib/actions/auth";
 import type { Certifier } from "@/types/db";
 import { portalRefPlaceholder, portalRefPrefix } from "@/lib/business";
 
-export function IssueOcForm({ jobId, assignedCertifierId, certifiers }: { jobId: string; assignedCertifierId: string | null; certifiers: Certifier[] }) {
+export function IssueOcForm({
+  jobId,
+  assignedCertifierId,
+  certifiers,
+  needsApproval = false,
+}: {
+  jobId: string;
+  assignedCertifierId: string | null;
+  certifiers: Certifier[];
+  // A team member whose director has not approved this one. They ask in
+  // the panel above; the database refuses it either way (0074).
+  needsApproval?: boolean;
+}) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(issueOc, undefined);
   return (
     <form action={formAction} className="border border-line rounded-md p-4 flex flex-wrap items-end gap-2">
@@ -58,7 +70,11 @@ export function IssueOcForm({ jobId, assignedCertifierId, certifiers }: { jobId:
           ))}
         </select>
       </div>
-      <button disabled={pending} className="text-xs font-semibold text-white bg-success hover:bg-success px-3 py-1.5 rounded-md disabled:opacity-60">
+      <button
+        disabled={pending || needsApproval}
+        title={needsApproval ? "A director has to approve this first" : undefined}
+        className="text-xs font-semibold text-white bg-success hover:bg-success px-3 py-1.5 rounded-md disabled:opacity-60 disabled:cursor-not-allowed"
+      >
         {pending ? "Issuing…" : "Issue OC"}
       </button>
       {state?.error && <span className="text-xs text-error">{state.error}</span>}

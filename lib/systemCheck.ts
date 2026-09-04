@@ -372,6 +372,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "A certifier who only carries out the inspections they are given: approved documents read-only, no changes to the project, and Portal reporting stays with the firm.",
       probe: hasFunction(supabase, "is_inspector", {}),
     },
+    {
+      migration: "0074",
+      label: "A director's sign-off before issuing",
+      detail: "A team member can prepare a CDC, CC or OC in full, but issuing it waits on a director approving that one issue.",
+      probe: hasTable(supabase, "issue_approvals"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));

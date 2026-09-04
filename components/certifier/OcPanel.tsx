@@ -5,6 +5,8 @@ import { markJobComplete, reopenJob, notifyClientMessage, sendOcToClient } from 
 import { NotifyClientButton } from "@/components/certifier/NotifyClientButton";
 import { ChecklistSection } from "@/components/certifier/ChecklistSection";
 import { IssueOcForm } from "@/components/certifier/IssueOcForm";
+import { IssueApprovalPanel } from "@/components/certifier/IssueApprovalPanel";
+import { canIssueNow, type ApprovalState } from "@/lib/issueApprovals";
 import { SendToClientButton } from "@/components/certifier/SendToClientButton";
 import { Download } from "lucide-react";
 import { EditableCertRef } from "@/components/certifier/EditableCertRef";
@@ -24,6 +26,8 @@ export async function OcPanel({
   ocRecords,
   library,
   governingRef,
+  approval = { state: "not-needed" },
+  director = true,
 }: {
   job: Job;
   firmId: string;
@@ -35,6 +39,9 @@ export async function OcPanel({
   // The job's current CDC/CC reference — the number an OC is issued
   // under on a full-service job. Empty on a PC/OC job.
   governingRef: string;
+  // Where the director's sign-off on issuing this OC is up to.
+  approval?: ApprovalState;
+  director?: boolean;
 }) {
   const complete = stageComplete(items);
   const hasWhole = ocRecords.some((r) => r.type === "whole");
@@ -58,7 +65,21 @@ export async function OcPanel({
         </div>
       )}
 
-      {canIssue && complete && <IssueOcForm jobId={job.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} />}
+      {canIssue && complete && (
+        <div>
+          <IssueApprovalPanel
+            jobId={job.id}
+            stage="oc"
+            what="Occupation Certificate"
+            approval={approval}
+            director={director}
+            nameOf={Object.fromEntries(certifiers.map((c) => [c.id, c.name]))}
+          />
+          <div className="mt-3">
+            <IssueOcForm jobId={job.id} assignedCertifierId={job.assigned_certifier_id} certifiers={certifiers} needsApproval={!canIssueNow(approval)} />
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         {ocRecords.map((r, i) => (

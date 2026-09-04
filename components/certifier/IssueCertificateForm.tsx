@@ -13,11 +13,16 @@ export function IssueCertificateForm({
   certifiers,
   isRegenerate,
   hasPortalRef,
+  needsApproval = false,
 }: {
   jobId: string;
   assignedCertifierId: string | null;
   certifiers: Certifier[];
   isRegenerate: boolean;
+  // A team member whose director has not approved this issue. The panel
+  // beside this form is where they ask; the database refuses the issue
+  // either way (migration 0074).
+  needsApproval?: boolean;
   // The certificate prints the NSW Planning Portal reference, so there is
   // nothing to issue until one has been recorded. The server refuses too —
   // this only saves the certifier a press to find that out.
@@ -36,8 +41,8 @@ export function IssueCertificateForm({
         ))}
       </select>
       <button
-        disabled={pending || !hasPortalRef}
-        title={hasPortalRef ? undefined : "Enter the NSW Planning Portal reference first"}
+        disabled={pending || !hasPortalRef || needsApproval}
+        title={needsApproval ? "A director has to approve this first" : hasPortalRef ? undefined : "Enter the NSW Planning Portal reference first"}
         className="text-xs font-semibold text-white bg-success hover:bg-success px-3 py-1.5 rounded-md disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {pending ? "Issuing…" : isRegenerate ? "Regenerate certificate" : "Issue certificate"}
@@ -54,6 +59,7 @@ export function IssueModificationForm({
   certifiers,
   hasPortalRef,
   pathway,
+  needsApproval = false,
 }: {
   jobId: string;
   modificationId: string;
@@ -63,6 +69,8 @@ export function IssueModificationForm({
   // original does, so it is gated the same way.
   hasPortalRef: boolean;
   pathway: string;
+  // As above: waiting on a director.
+  needsApproval?: boolean;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(issueModification, undefined);
   return (
@@ -78,8 +86,8 @@ export function IssueModificationForm({
         ))}
       </select>
       <button
-        disabled={pending || !hasPortalRef}
-        title={hasPortalRef ? undefined : "Enter the NSW Planning Portal reference first"}
+        disabled={pending || !hasPortalRef || needsApproval}
+        title={needsApproval ? "A director has to approve this first" : hasPortalRef ? undefined : "Enter the NSW Planning Portal reference first"}
         className="text-xs font-semibold text-white bg-success hover:bg-success px-3 py-1.5 rounded-md disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {pending ? "Issuing…" : `Issue modified ${pathway}`}

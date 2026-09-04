@@ -95,7 +95,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const { profile, director } = await requireProfile("certifier");
   const supabase = await createClient();
 
-  const [{ data: jobs }, { data: certifiers }, { data: taskLists }, { data: manualTasks }, auditEvents, issuanceEvents] = await Promise.all([
+  const [{ data: jobs }, { data: certifiers }, { data: taskLists }, { data: manualTasks }, auditEvents, issuanceEvents, { data: pendingApprovals }] = await Promise.all([
     excludingDeleted((live) => {
       const query = supabase
         .from("jobs")
@@ -112,6 +112,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     supabase.from("manual_tasks").select("*, task_lists!inner(firm_id)").eq("task_lists.firm_id", profile.firm_id).order("sort_order"),
     getAuditEvents(supabase, profile.firm_id),
     getIssuanceEvents(supabase, profile.firm_id),
+    // Team members waiting on a director to let them issue. Empty for a
+    // team member (they see their own request on the project) and on a
+    // database that has not run migration 0074.
+    director
+      ? supabase
+          .from("issue_approvals")
+          .select("id, job_id, stage, requested_at, requested_by, jobs(address)")
+          .eq("status", "pending")
+          .is("used_at", null)
+          .order("requested_at")
+      : Promise.resolve({ data: [] }),
   ]);
   const allJobs = jobs || [];
   const activeJobs = allJobs.filter((j) => j.status === "active");
@@ -124,11 +135,30 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   }
   const listsWithTasks = ((taskLists || []) as TaskList[]).map((l) => ({ ...l, tasks: tasksByList.get(l.id) || [] }));
 
+  // A team member cannot issue a certificate until a director says so,
+  // so a request sitting unanswered is holding up an approval — top of
+  // the list, above anything the firm is merely waiting on a client for.
+  const certifierName = new Map((certifiers || []).map((c) => [c.id, c.name]));
+
   // "Needs your attention" is intentionally narrow: client submissions,
   // client bookings, PI/registration expiry, and CDC lapse dates. Ready-to-
   // issue nudges, portal deadlines, and open-amendment counts are
   // deliberately left out — those are tracked elsewhere, not here.
   const tasks: Task[] = [];
+
+  // PostgREST types an embedded row as an array; one job per request.
+  type PendingApproval = { id: string; job_id: string; stage: string; requested_at: string; requested_by: string | null; jobs: { address: string } | { address: string }[] | null };
+  for (const request of (pendingApprovals || []) as unknown as PendingApproval[]) {
+    const who = request.requested_by ? certifierName.get(request.requested_by) || "A team member" : "A team member";
+    const what = request.stage === "oc" ? "an Occupation Certificate" : "a certificate";
+    const address = (Array.isArray(request.jobs) ? request.jobs[0]?.address : request.jobs?.address) || "a project";
+    tasks.push({
+      priority: "High",
+      text: `${who} is waiting on you to approve issuing ${what} for ${address}`,
+      jobId: request.job_id,
+      href: `/jobs/${request.job_id}?tab=${request.stage === "oc" ? "oc" : "pathway"}`,
+    });
+  }
 
   for (const c of certifiers || []) {
     const piDays = daysUntil(c.pi_insurance_expiry);
