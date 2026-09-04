@@ -36,17 +36,32 @@ export const ALLOWED_UPLOAD_EXTENSIONS = [
 
 // What one client upload may weigh.
 //
-// Twenty is comfortable for a scanned structural certificate or a full
-// drawing set as a PDF, and it is one fortieth of the whole storage
-// plan — so no single client can take a noticeable bite out of it, and a
-// firm that fills up does it gradually enough to notice.
+// A hundred megabytes takes a full architectural set, a scanned
+// structural certificate, or a survey with photographs, without the
+// client having to split anything. It was twenty, which is enough for
+// most documents and not enough for the ones that matter most: a client
+// standing in front of a rejected upload rings the certifier, which is
+// exactly the phone call Certlyn exists to avoid.
 //
-// The certifier is not capped. They are uploading their own work to
-// their own storage, they can see what it is costing them on the
+// Storage is billed by the gigabyte rather than capped, so a large file
+// costs cents rather than breaking anything. Raise it further with
+// MAX_UPLOAD_MB in Vercel — and raise the matching limit in Supabase
+// (Storage → Settings → Upload file size limit), which refuses anything
+// over its own figure whatever this says.
+//
+// The certifier is not capped at all. They are uploading their own work
+// to their own storage, they can see what it is costing them on the
 // Storage page, and a limit there would only get in the way of a
 // certificate that happens to be large.
-export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
-export const MAX_UPLOAD_MB = MAX_UPLOAD_BYTES / (1024 * 1024);
+const DEFAULT_MAX_UPLOAD_MB = 100;
+
+function configuredMaxUploadMb(): number {
+  const raw = Number((process.env.NEXT_PUBLIC_MAX_UPLOAD_MB || "").trim());
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : DEFAULT_MAX_UPLOAD_MB;
+}
+
+export const MAX_UPLOAD_MB = configuredMaxUploadMb();
+export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
 // What the portal tells a client before they choose a file. Written out
 // once so the note, the refusal and the check can never disagree.

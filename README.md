@@ -113,6 +113,61 @@ director, so nothing changes for anyone until a director changes it.
 Your own role can only be changed by another director, so a firm is
 never left without one.
 
+## Running Certlyn commercially — what you pay for
+
+Five accounts sit under Certlyn. Only two of them have to be paid plans
+before you take money from another firm.
+
+| Service | What it does | Plan you need | Roughly |
+| --- | --- | --- | --- |
+| **Supabase** | The database, the logins, and every uploaded file | **Pro** — the free plan is not for production and pauses when idle | US$25 / month, plus usage |
+| **Vercel** | Runs the website and the app | **Pro** — the Hobby plan forbids commercial use | US$20 / month per person |
+| **Resend** | Sends every email Certlyn sends | Free covers 3,000 emails a month; paid above that | Free, then about US$20 |
+| **Anthropic** | The optional AI features | Pay as you go, no monthly fee | Cents per note |
+| **Stripe** | Card payments from your clients | No monthly fee | About 1.7% + 30c a payment |
+| **A mailbox** | Receiving replies at certlyn.com.au | Any provider | About A$10 / month |
+
+Prices move — confirm each on the provider's own pricing page before you
+commit. All figures except the mailbox are in US dollars.
+
+### Never let an upload be refused for want of space
+
+This is the one setting that decides whether a client is ever told "no"
+when they try to send a document. Two things have to be right:
+
+1. **Supabase → Settings → Billing → turn the Spend Cap OFF.** With the
+   cap on, Supabase *stops* rather than bills you when you pass what the
+   plan includes — which means uploads start failing. Off means it bills
+   you for what you use, per gigabyte, and nothing ever stops. This is
+   the single most important switch on this page.
+2. **Supabase → Storage → Settings → Upload file size limit.** Set it to
+   at least what the app allows — 100 MB out of the box. Storage refuses
+   anything over its own figure whatever the app says.
+
+The app's own limit for a **client** upload is 100 MB per file, enough
+for a full architectural set. Raise it with `NEXT_PUBLIC_MAX_UPLOAD_MB`
+in Vercel (and raise Supabase's to match). A **certifier** uploading
+their own work has no limit at all.
+
+Optionally set `STORAGE_LIMIT_GB` in Vercel to whatever your Supabase
+plan includes, and Settings → Storage will show what is left of it.
+
+### Do you need an email address for Certlyn?
+
+**Yes — one mailbox, for receiving.** Resend sends mail but cannot
+receive a word. Without a mailbox, a certifier who replies to a Certlyn
+email, or fills in the contact form, has nowhere to reach.
+
+Buy one mailbox on `certlyn.com.au` — Google Workspace, Microsoft 365,
+or the cheaper email hosting at VentraIP where the domain already
+lives. `hello@certlyn.com.au` is enough. Then set in Vercel:
+
+- `CONTACT_EMAIL` — where the website's contact form lands
+- `RESEND_REPLY_TO` — where a reply to a Certlyn email goes
+
+Sending is already done: `certlyn.com.au` is verified in Resend and mail
+goes out as `notifications@certlyn.com.au`.
+
 ## Charging other firms — the Firms page
 
 You are the platform owner (migration 0068 marks your firm), so there is

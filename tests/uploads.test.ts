@@ -45,7 +45,12 @@ describe("what a client may send their certifier", () => {
   // told one thing and then another.
   test("the note a client reads names the same limit that is enforced", () => {
     assert.match(UPLOAD_HINT, new RegExp(`${MAX_UPLOAD_MB} MB`));
-    assert.equal(MAX_UPLOAD_MB, 20);
+    // Big enough for a full architectural set without splitting it —
+    // a client stopped by an upload limit rings the certifier, which is
+    // the phone call Certlyn exists to avoid. Raised with
+    // NEXT_PUBLIC_MAX_UPLOAD_MB in Vercel; the Supabase project's own
+    // limit has to allow at least as much.
+    assert.equal(MAX_UPLOAD_MB, 100);
   });
 
   test("an empty file is caught, since it usually means a half-finished save", () => {
