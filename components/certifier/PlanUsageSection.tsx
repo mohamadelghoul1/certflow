@@ -48,15 +48,15 @@ export function PlanUsageSection({ plan, used, monthKey }: { plan: FirmPlan | nu
       </div>
 
       <dl className="text-sm space-y-1.5 border-t border-line pt-3">
-        <Line label="Monthly fee" value={`${money(charge.feeCents)}${charge.intro ? " (introductory)" : ""}`} />
+        <Line label="Monthly fee" value={`${money(charge.feeCents)}${charge.intro ? ` (introductory rate, until ${plan.intro_until})` : ""}`} />
         <Line label="New projects included" value={`${plan.included_projects} a month`} />
         <Line label="Each project over that" value={money(plan.extra_project_fee_cents)} />
         <Line label="Arrangement started" value={plan.started_on} />
       </dl>
 
       <p className="text-[11px] text-placeholder">
-        A project counts in the month it was created and keeps counting if it is deleted later. Projects brought across from another system when you
-        joined are never counted. Amounts exclude GST.
+        Billing runs by the calendar month, whatever day of it you started on. A project counts in the month it was created and keeps counting if it is
+        deleted later. Projects brought across from another system when you joined are never counted. Amounts exclude GST.
       </p>
     </div>
   );

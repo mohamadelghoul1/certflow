@@ -6,7 +6,7 @@ function plan(over: Partial<FirmPlan> = {}): FirmPlan {
   return {
     firm_id: "f1",
     started_on: "2026-09-15",
-    intro_months: 6,
+    intro_until: "2027-06-30",
     intro_fee_cents: 9900,
     standard_fee_cents: 39900,
     included_projects: 30,
@@ -36,22 +36,51 @@ describe("which month of the arrangement it is", () => {
 });
 
 describe("the bill", () => {
-  test("is the introductory fee for the first six months", () => {
-    const first = chargeFor(plan(), "2026-09", 10);
-    assert.equal(first.intro, true);
-    assert.equal(first.feeCents, 9900);
-    assert.equal(first.totalCents, 9900);
-    const sixth = chargeFor(plan(), "2027-02", 10);
-    assert.equal(sixth.monthNumber, 6);
-    assert.equal(sixth.intro, true, "the sixth month is still introductory");
-    assert.equal(sixth.feeCents, 9900);
+  test("is the introductory fee every month up to the date the offer ends", () => {
+    for (const month of ["2026-09", "2026-12", "2027-05"]) {
+      const charge = chargeFor(plan(), month, 10);
+      assert.equal(charge.intro, true, month);
+      assert.equal(charge.feeCents, 9900, month);
+    }
   });
 
-  test("moves to the standard fee in the seventh", () => {
-    const seventh = chargeFor(plan(), "2027-03", 10);
-    assert.equal(seventh.monthNumber, 7);
-    assert.equal(seventh.intro, false);
-    assert.equal(seventh.feeCents, 39900);
+  test("covers the whole month the offer ends in", () => {
+    const june = chargeFor(plan(), "2027-06", 10);
+    assert.equal(june.intro, true, "an offer running until 30 June covers June");
+    assert.equal(june.feeCents, 9900);
+  });
+
+  test("moves to the standard fee the month after", () => {
+    const july = chargeFor(plan(), "2027-07", 10);
+    assert.equal(july.intro, false);
+    assert.equal(july.feeCents, 39900);
+    assert.equal(chargeFor(plan(), "2028-01", 10).feeCents, 39900);
+  });
+
+  test("the offer ends on one date for everybody, so a later firm holds it for less", () => {
+    const early = plan({ started_on: "2026-09-15" });
+    const late = plan({ started_on: "2027-05-01" });
+    // Both pay the introductory rate in May 2027 and the standard one in July.
+    assert.equal(chargeFor(early, "2027-05", 1).feeCents, 9900);
+    assert.equal(chargeFor(late, "2027-05", 1).feeCents, 9900);
+    assert.equal(chargeFor(early, "2027-07", 1).feeCents, 39900);
+    assert.equal(chargeFor(late, "2027-07", 1).feeCents, 39900);
+  });
+
+  test("a firm starting part-way through a month pays that month in full", () => {
+    const ninth = chargeFor(plan({ started_on: "2026-09-09" }), "2026-09", 0);
+    assert.equal(ninth.monthNumber, 1);
+    assert.equal(ninth.feeCents, 9900, "no pro rata — the calendar month is the billing month");
+    const lastDay = chargeFor(plan({ started_on: "2026-09-30" }), "2026-09", 0);
+    assert.equal(lastDay.feeCents, 9900);
+  });
+
+  test("the included projects run over the whole calendar month they started in", () => {
+    // 32 projects created in September, whatever day the firm joined.
+    const charge = chargeFor(plan({ started_on: "2026-09-09" }), "2026-09", 32);
+    assert.equal(charge.included, 30);
+    assert.equal(charge.extra, 2, "counted against the full 30, not a part-month share of it");
+    assert.equal(charge.totalCents, 9900 + 5000);
   });
 
   test("charges nothing for projects up to the included number", () => {
@@ -79,9 +108,9 @@ describe("the bill", () => {
   });
 
   test("respects terms that differ from the standard ones", () => {
-    const bespoke = plan({ intro_months: 0, standard_fee_cents: 29900, included_projects: 50, extra_project_fee_cents: 1500 });
+    const bespoke = plan({ intro_until: "2026-08-31", standard_fee_cents: 29900, included_projects: 50, extra_project_fee_cents: 1500 });
     const charge = chargeFor(bespoke, "2026-09", 52);
-    assert.equal(charge.intro, false, "no introductory months means the standard rate from the start");
+    assert.equal(charge.intro, false, "an offer that has already ended means the standard rate from the start");
     assert.equal(charge.feeCents, 29900);
     assert.equal(charge.extra, 2);
     assert.equal(charge.totalCents, 32900);
@@ -89,7 +118,7 @@ describe("the bill", () => {
 
   test("the defaults are the terms being offered", () => {
     assert.equal(DEFAULT_PLAN.intro_fee_cents, 9900);
-    assert.equal(DEFAULT_PLAN.intro_months, 6);
+    assert.equal(DEFAULT_PLAN.intro_until, "2027-06-30");
     assert.equal(DEFAULT_PLAN.included_projects, 30);
     assert.equal(DEFAULT_PLAN.extra_project_fee_cents, 2500);
   });
@@ -103,8 +132,8 @@ describe("how it reads", () => {
   });
 
   test("the rate says where in the arrangement they are", () => {
-    assert.equal(rateLabel(chargeFor(plan(), "2026-11", 1), plan()), "Month 3 of 6 — introductory rate");
-    assert.equal(rateLabel(chargeFor(plan(), "2027-04", 1), plan()), "Month 8 — standard rate");
+    assert.equal(rateLabel(chargeFor(plan(), "2026-11", 1), plan()), "Month 3 — introductory rate, until June 2027");
+    assert.equal(rateLabel(chargeFor(plan(), "2027-08", 1), plan()), "Month 12 — standard rate");
   });
 
   test("the statement is one line, or two when they went over", () => {

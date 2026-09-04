@@ -36,12 +36,14 @@ export async function saveFirmPlan(_prev: ActionState, formData: FormData): Prom
   const firmId = String(formData.get("firm_id"));
   const startedOn = String(formData.get("started_on") || "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(startedOn)) return { error: "Give the date the arrangement starts, as a date." };
+  const introUntil = String(formData.get("intro_until") || "").trim() || DEFAULT_PLAN.intro_until;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(introUntil)) return { error: "Give the last day of the introductory rate, as a date." };
 
   const { error } = await supabase.from("firm_plans").upsert(
     {
       firm_id: firmId,
       started_on: startedOn,
-      intro_months: whole(formData, "intro_months", DEFAULT_PLAN.intro_months),
+      intro_until: introUntil,
       intro_fee_cents: cents(formData, "intro_fee", DEFAULT_PLAN.intro_fee_cents),
       standard_fee_cents: cents(formData, "standard_fee", DEFAULT_PLAN.standard_fee_cents),
       included_projects: whole(formData, "included_projects", DEFAULT_PLAN.included_projects),

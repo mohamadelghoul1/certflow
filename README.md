@@ -135,16 +135,25 @@ up on different terms keeps them:
 
 | Setting | Default |
 | --- | --- |
-| Introductory months | 6 |
-| Introductory fee | $99 per month |
-| Fee after that | $399 per month |
+| Introductory fee | $99 + GST per month |
+| Introductory rate until | 30 June 2027 |
+| Fee after that | $399 + GST per month |
 | New projects included | 30 per month |
-| Each project over that | $25 |
+| Each project over that | $25 + GST |
 
-A project counts in the calendar month it was created, in Sydney time,
-and keeps counting if it is deleted afterwards — a firm cannot unsell a
-project by deleting it. Amounts exclude GST. Nothing here bills anyone
-automatically: Certlyn works out the number, you raise the invoice.
+The introductory rate ends on **one date for everybody**, not after six
+months counted from each firm's own start: a firm joining in January
+2027 holds it for six months, one joining in May holds it for two, and
+both move to $399 on 1 July 2027.
+
+**Billing runs by the calendar month.** A firm that starts on 9
+September pays September in full, and their 30 included projects run
+from the 1st to the end of that month like any other — there is no pro
+rata and no part month. A project counts in the calendar month it was
+created, in Sydney time, and keeps counting if it is deleted afterwards,
+so a firm cannot unsell a project by deleting it. Amounts exclude GST.
+Nothing here bills anyone automatically: Certlyn works out the number,
+you raise the invoice.
 
 The firm sees their own side of it under **Settings → Your plan**: this
 month's count against what they are allowed, and what it comes to. That
@@ -689,18 +698,22 @@ its own company and ABN, change it there and both pages follow. The
 contact address on both pages is `CONTACT_EMAIL` once it is set in
 Vercel, and the interest form until then.
 
-### Charging other firms — run update 0076
+### Charging other firms — run updates 0076 and 0077
 
 Built 4 Sept 2026: see "Charging other firms — the Firms page" above.
-Set each firm's terms on that page as they sign up. Two decisions are
+Run **0076** then **0077** — the second makes the introductory rate end
+on a date rather than after a number of months. Set each firm's terms on
+that page as they sign up. Two decisions are
 still yours:
 
-- **The public pricing pages still say $399 + GST a month with the
-  launch offer (free until 30 June 2027).** The $99 introductory rate
-  is only in the Firms page defaults so far. Tell me which is the offer
-  you want on the website and I will change the wording to match — as
-  it stands a firm reading the site and a firm reading their invoice
-  would see different numbers.
+- **The website now says what the Firms page charges** — $99 + GST a
+  month until 30 June 2027, then $399 + GST, with $25 + GST a project
+  past 30 and billing by calendar month. Both come from
+  `lib/pricing.ts`, so a change of offer is one edit there.
+  The old "join before 1 January 2027" condition is gone: the offer
+  ending on a fixed date does that work by itself, since the later a
+  firm joins the fewer months they get. Say the word if you want the
+  cut-off back.
 - **Nothing enforces the cap.** A firm that creates a 31st project in a
   month is not stopped or warned beyond the bar under Settings → Your
   plan; it simply appears on the invoice. Say the word if you want a

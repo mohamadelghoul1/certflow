@@ -390,6 +390,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Counts each firm's new projects against what their subscription covers, so what to invoice is a number rather than a memory. Only needed once another firm is paying.",
       probe: hasTable(supabase, "firm_plans"),
     },
+    {
+      migration: "0077",
+      label: "The introductory rate ends on a date",
+      detail: "$99 a month until 30 June 2027 for every firm on the offer, rather than six months counted from each firm's own start.",
+      probe: hasColumn(supabase, "firm_plans", "intro_until"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));

@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { MarketingShell, Container, Eyebrow, Section, Card, Check as Tick, CallToAction, btnPrimary, btnSecondary } from "@/components/marketing/MarketingShell";
 import { DashboardMockup, PortalMockup, PortalDesktopMockup, ReminderEmailMockup, WorkflowStrip, ProductFrame } from "@/components/marketing/ProductMockups";
-import { PLAN_NAME, PRICE_LABEL, PLAN_INCLUDES, OFFER_JOIN_BY, OFFER_FREE_UNTIL, COVERAGE_LINE } from "@/lib/pricing";
+import { PLAN_NAME, PRICE_LABEL, PLAN_INCLUDES, INTRO_PRICE_LABEL, INTRO_UNTIL, STANDARD_FROM, COVERAGE_LINE, BILLING_LINE, EXTRA_PROJECT_LINE } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Certlyn — Building Certification. Simplified.",
@@ -95,7 +95,7 @@ export default function HomePage() {
               </li>
             </ul>
             <p className="mt-4 text-[13px] text-slate-500">
-              Free until {OFFER_FREE_UNTIL} for firms that join before {OFFER_JOIN_BY}.{" "}
+              {INTRO_PRICE_LABEL} a month until {INTRO_UNTIL}, then {PRICE_LABEL}.{" "}
               <Link href="/pricing" className="font-semibold text-[#1a3a5f] hover:underline">
                 See pricing
               </Link>
@@ -431,11 +431,17 @@ export default function HomePage() {
             </div>
             <div className="rounded-3xl bg-[#1a3a5f] p-8 text-white">
               <div className="inline-flex items-center rounded-full bg-[#f0b93a] px-3 py-1 text-[12px] font-bold uppercase tracking-wide text-[#241b06]">Launch offer</div>
-              <div className="mt-4 text-[30px] font-bold leading-tight tracking-tight sm:text-[34px]">Free until {OFFER_FREE_UNTIL}</div>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="text-[40px] font-bold leading-none tracking-tight">{INTRO_PRICE_LABEL}</span>
+                <span className="text-[15px] text-slate-300">/ month</span>
+              </div>
               <p className="mt-3 text-[15px] leading-relaxed text-slate-200">
-                Join Certlyn before {OFFER_JOIN_BY} and use the platform at no subscription cost until {OFFER_FREE_UNTIL}.
+                Every firm that joins pays {INTRO_PRICE_LABEL} a month until <span className="font-semibold text-white">{INTRO_UNTIL}</span> — the same
+                platform, the same {COVERAGE_LINE.toLowerCase()} The earlier you join, the longer you hold it.
               </p>
-              <p className="mt-3 text-[14px] leading-relaxed text-slate-300">After {OFFER_FREE_UNTIL}, the standard subscription is {PRICE_LABEL} per month.</p>
+              <p className="mt-3 text-[14px] leading-relaxed text-slate-300">
+                From {STANDARD_FROM} the standard subscription is {PRICE_LABEL} per month. {BILLING_LINE}
+              </p>
               <Link href="/join?intent=launch-offer" className={`${btnPrimary} mt-7`}>
                 Claim the Launch Offer <ArrowRight size={17} />
               </Link>

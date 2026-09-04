@@ -22,7 +22,7 @@ export function FirmPlanForm({
 }: {
   firmId: string;
   plan: FirmPlan | null;
-  defaults: { intro_months: number; intro_fee_cents: number; standard_fee_cents: number; included_projects: number; extra_project_fee_cents: number };
+  defaults: { intro_until: string; intro_fee_cents: number; standard_fee_cents: number; included_projects: number; extra_project_fee_cents: number };
 }) {
   const [editing, setEditing] = useState(false);
   const [state, action, pending] = useActionState<ActionState, FormData>(async (prev, fd) => {
@@ -37,7 +37,7 @@ export function FirmPlanForm({
         {plan ? (
           <dl className="space-y-1.5 text-xs">
             <Line label="Starts" value={plan.started_on} />
-            <Line label="First months" value={`${plan.intro_months} at ${money(plan.intro_fee_cents)} a month`} />
+            <Line label="Introductory rate" value={`${money(plan.intro_fee_cents)} a month until ${plan.intro_until}`} />
             <Line label="After that" value={`${money(plan.standard_fee_cents)} a month`} />
             <Line label="Projects included" value={`${plan.included_projects} a month`} />
             <Line label="Each one over" value={money(plan.extra_project_fee_cents)} />
@@ -64,8 +64,8 @@ export function FirmPlanForm({
           <DateField name="started_on" defaultValue={plan?.started_on || new Date().toISOString().slice(0, 10)} className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Introductory months</label>
-          <input name="intro_months" type="number" min={0} defaultValue={plan?.intro_months ?? defaults.intro_months} className={inputCls} />
+          <label className={labelCls}>Introductory rate until</label>
+          <DateField name="intro_until" defaultValue={plan?.intro_until || defaults.intro_until} className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>Introductory fee / month</label>
@@ -97,7 +97,9 @@ export function FirmPlanForm({
           Cancel
         </button>
       </div>
-      <p className="text-[11px] text-placeholder">Amounts in dollars, excluding GST.</p>
+      <p className="text-[11px] text-placeholder">
+        Amounts in dollars, excluding GST. Billing runs by the calendar month: a firm starting part-way through one pays that month in full.
+      </p>
     </form>
   );
 }

@@ -11,8 +11,21 @@ export const PRICE_LABEL = "$399 + GST";
 export const JOBS_PER_MONTH = 30;
 export const COVERAGE_LINE = `Unlimited certifiers. Up to ${JOBS_PER_MONTH} new projects a month.`;
 
-export const OFFER_JOIN_BY = "1 January 2027";
-export const OFFER_FREE_UNTIL = "30 June 2027";
+// The introductory rate. Not a number of months from joining — a fixed
+// end date, so every firm on it moves to the standard price on the same
+// day and the earlier a firm joins the longer they hold it.
+export const INTRO_PRICE_MONTHLY_EX_GST = 99;
+export const INTRO_PRICE_LABEL = "$99 + GST";
+export const INTRO_UNTIL = "30 June 2027";
+export const STANDARD_FROM = "1 July 2027";
+
+// Billing runs by the calendar month, whatever day of it a firm starts
+// on. Said out loud on the pricing page rather than left for the first
+// invoice to explain.
+export const BILLING_LINE = "Billed by calendar month. A firm joining part-way through a month pays that month in full.";
+
+export const EXTRA_PROJECT_FEE = 25;
+export const EXTRA_PROJECT_LINE = `Projects past the ${JOBS_PER_MONTH} included are $${EXTRA_PROJECT_FEE} + GST each.`;
 
 export const PLAN_INCLUDES = [
   "Unlimited certifiers",

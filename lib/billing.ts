@@ -13,7 +13,9 @@
 export type FirmPlan = {
   firm_id: string;
   started_on: string;
-  intro_months: number;
+  // The last day of the introductory rate — one date for every firm,
+  // not a count of months from each firm's own start.
+  intro_until: string;
   intro_fee_cents: number;
   standard_fee_cents: number;
   included_projects: number;
@@ -25,7 +27,7 @@ export type FirmPlan = {
 // default to when the owner adds one. Kept beside the maths so a change
 // of policy is one edit.
 export const DEFAULT_PLAN = {
-  intro_months: 6,
+  intro_until: "2027-06-30",
   intro_fee_cents: 9900,
   standard_fee_cents: 39900,
   included_projects: 30,
@@ -80,8 +82,9 @@ export function monthsSince(startKey: string, endKey: string): string[] {
 }
 
 // Which month of the arrangement this is. 1 is the month the firm
-// started, whatever day of it they started on — a firm joining on the
-// 28th does not get a month for three days.
+// started, whatever day of it they started on: billing runs by the
+// calendar month, so a firm that joins on the 9th pays that whole month
+// and their projects for it are counted from the 1st.
 export function monthNumber(startedOn: string, key: string): number {
   const start = startedOn.slice(0, 7);
   const [sy, sm] = start.split("-").map(Number);
@@ -96,7 +99,9 @@ export function monthNumber(startedOn: string, key: string): number {
 export function chargeFor(plan: FirmPlan, key: string, used: number): MonthCharge {
   const number = monthNumber(plan.started_on, key);
   const started = number > 0;
-  const intro = started && number <= plan.intro_months;
+  // The whole month the offer ends in is charged at the introductory
+  // rate: an offer that runs "until 30 June 2027" covers June.
+  const intro = started && key <= plan.intro_until.slice(0, 7);
   const feeCents = !started ? 0 : intro ? plan.intro_fee_cents : plan.standard_fee_cents;
   const included = plan.included_projects;
   const extra = Math.max(0, used - included);
@@ -122,7 +127,7 @@ export function money(cents: number): string {
 // introductory rate", or what follows it.
 export function rateLabel(charge: MonthCharge, plan: FirmPlan): string {
   if (charge.monthNumber === 0) return "Before this firm started";
-  if (charge.intro) return `Month ${charge.monthNumber} of ${plan.intro_months} — introductory rate`;
+  if (charge.intro) return `Month ${charge.monthNumber} — introductory rate, until ${monthLabel(plan.intro_until.slice(0, 7))}`;
   return `Month ${charge.monthNumber} — standard rate`;
 }
 

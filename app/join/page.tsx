@@ -3,7 +3,7 @@ import { Upload, Building2, PenLine, Mail, HelpCircle } from "lucide-react";
 import { MarketingShell, Hero, Section, Card } from "@/components/marketing/MarketingShell";
 import { RegisterInterestForm } from "@/components/marketing/RegisterInterestForm";
 import { isIntent, type Intent } from "@/lib/interest";
-import { PRICE_LABEL, OFFER_JOIN_BY, OFFER_FREE_UNTIL, JOBS_PER_MONTH } from "@/lib/pricing";
+import { PRICE_LABEL, INTRO_PRICE_LABEL, INTRO_UNTIL, STANDARD_FROM, JOBS_PER_MONTH, BILLING_LINE, EXTRA_PROJECT_LINE } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Book a demo — Certlyn",
@@ -33,15 +33,15 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What does it cost?",
-    a: `${PRICE_LABEL} per month for your firm — unlimited certifiers, up to ${JOBS_PER_MONTH} new projects a month — after the launch offer. Join before ${OFFER_JOIN_BY} and there is no subscription cost until ${OFFER_FREE_UNTIL}. No setup fee.`,
+    a: `${INTRO_PRICE_LABEL} per month until ${INTRO_UNTIL}, then ${PRICE_LABEL} per month from ${STANDARD_FROM}. That covers your whole firm — unlimited certifiers, up to ${JOBS_PER_MONTH} new projects a month. ${EXTRA_PROJECT_LINE} ${BILLING_LINE} No setup fee, and bringing your existing projects across costs nothing.`,
   },
 ];
 
 const HEADINGS: Record<Intent, { title: React.ReactNode; lead: string }> = {
   demo: { title: <>Book a demo. <span className="text-[#d99a12]">Your own project, start to finish.</span></>, lead: "Tell us a little about your practice and we'll arrange a walk-through on your own screen." },
   "launch-offer": {
-    title: <>Claim the launch offer. <span className="text-[#d99a12]">Free until {OFFER_FREE_UNTIL}.</span></>,
-    lead: `Firms that join before ${OFFER_JOIN_BY} use Certlyn at no subscription cost until ${OFFER_FREE_UNTIL}. Leave your details and we'll set your firm up.`,
+    title: <>Claim the launch offer. <span className="text-[#d99a12]">{INTRO_PRICE_LABEL} a month until {INTRO_UNTIL}.</span></>,
+    lead: `Every firm that joins pays ${INTRO_PRICE_LABEL} a month until ${INTRO_UNTIL}, then ${PRICE_LABEL} a month. Leave your details and we'll set your firm up.`,
   },
   question: { title: <>Ask us anything.</>, lead: "A question about the product, pricing, security or bringing your projects across — we'll answer it." },
 };
