@@ -18,6 +18,7 @@ import { CertificatesPanel, ModificationsPanel } from "@/components/certifier/Ce
 import { OcPanel } from "@/components/certifier/OcPanel";
 import { InspectionsPanel } from "@/components/certifier/InspectionsPanel";
 import { ProjectTeamPanel } from "@/components/certifier/ProjectTeamPanel";
+import { ApprovedDocuments } from "@/components/certifier/ApprovedDocuments";
 import { JobTabs } from "@/components/certifier/JobTabs";
 import { signedUrl } from "@/lib/storage";
 import type { CdcConditionSet, Contractor, Job } from "@/types/db";
@@ -45,7 +46,7 @@ function tabsFor(pathway: Pathway, showModifications: boolean) {
 export default async function JobDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
   const { id } = await params;
   const { tab = "details" } = await searchParams;
-  const { profile, director } = await requireProfile("certifier");
+  const { profile, director, firmRole } = await requireProfile("certifier");
   const supabase = await createClient();
 
   const [
@@ -171,6 +172,11 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           )}
         </div>
         <div className="text-sm text-muted mt-1">{job.description}</div>
+        {firmRole === "inspector" && (
+          <div className="mt-2 inline-flex items-center rounded-full bg-info-bg px-3 py-1 text-xs font-medium text-secondary">
+            You are inspecting this project — the approval is read-only.
+          </div>
+        )}
         <ProjectTeamPanel
           jobId={id}
           certifiers={(certifiers || []).map((c) => ({ id: c.id, name: c.name, firm_role: c.firm_role }))}
@@ -179,14 +185,17 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           manage={director}
           ready={teamReady}
         />
+        {firmRole !== "inspector" && (
         <DocumentReminderControls
           jobId={id}
           hasClient={!!job.client_id}
           paused={typedJob.document_reminders_paused === true}
           lastRemindedAt={typedJob.last_document_reminder_at || null}
         />
+        )}
       </div>
 
+      {firmRole !== "inspector" && (
       <OutstandingDocumentsPanel
         key={typedJob.details?.outstandingSummary?.generatedAt || "none"}
         jobId={id}
@@ -195,7 +204,31 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
         aiConfigured={aiConfigured()}
         hasClient={!!job.client_id}
       />
+      )}
 
+      {firmRole === "inspector" ? (
+        // The inspector's project: the approval to read, the inspections
+        // to carry out. No details form, no checklists, no certificates.
+        <JobTabs
+          initialTab={tab === "documents" ? "documents" : "inspections"}
+          tabs={[
+            { key: "documents", label: "Approved documents" },
+            { key: "inspections", label: "Inspections", complete: inspectionsCarriedOut((inspections || []).map((i) => i.outcome as string)) },
+          ]}
+          content={{
+            documents: <ApprovedDocuments job={typedJob} items={((pathwayChecklist?.checklist_items as never[]) || []) as never} />,
+            inspections: (
+              <InspectionsPanel
+                jobId={id}
+                firmId={profile.firm_id}
+                inspections={(inspections as never[]) || []}
+                certifiers={certifiers || []}
+                manage={false}
+              />
+            ),
+          }}
+        />
+      ) : (
       <JobTabs
         initialTab={tab}
         tabs={tabsFor(job.pathway, job.pathway !== "PC_OC" && typedJob.pathway_generated === true).map((t) => ({
@@ -315,6 +348,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           ) : null,
         }}
       />
+      )}
     </div>
   );
 }

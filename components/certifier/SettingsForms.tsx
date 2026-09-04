@@ -540,7 +540,9 @@ export function CertifierList({
       {manage && rolesReady && (
         <p className="text-xs text-muted">
           A <span className="font-semibold">director</span> runs the firm. A <span className="font-semibold">team member</span> — an employee or a
-          contract certifier — sees only the projects they are assigned to, added to the team of, or inspecting. Set the role here, then press{" "}
+          contract certifier — sees only the projects they are assigned to, added to the team of, or inspecting. An{" "}
+          <span className="font-semibold">inspector</span> only carries out the inspections they are given: the approval is read-only to them, and
+          reporting to the NSW Planning Portal stays with the firm. Set the role here, then press{" "}
           <span className="font-semibold">Invite to sign in</span> to email them their own login.
         </p>
       )}

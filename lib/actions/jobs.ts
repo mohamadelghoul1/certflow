@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordReviewEvent } from "@/lib/reviewDigest";
 import { pruneSupersededVersions } from "@/lib/documentPruning";
-import { requireProfile, requireDirector } from "@/lib/auth";
+import { requireJobWriter, requireDirector } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { PRIOR_APPROVAL_DOCUMENTS, INSPECTION_LIBRARY, defaultCriticalStageInspections, normalizeCriticalStageInspections, epiForCodeParts } from "@/lib/constants";
@@ -302,7 +302,7 @@ async function saveContractorToDirectory(supabase: SupabaseClient, firmId: strin
 }
 
 export async function updateJobDetails(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const pathway = String(formData.get("pathway") || "CDC") as Pathway;
@@ -359,7 +359,7 @@ export async function updateJobDetails(_prev: ActionState, formData: FormData): 
 }
 
 export async function removeChecklistItem(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -371,7 +371,7 @@ export async function removeChecklistItem(formData: FormData) {
 }
 
 export async function addChecklistItems(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const checklistId = String(formData.get("checklist_id"));
   const jobId = String(formData.get("job_id"));
@@ -405,7 +405,7 @@ export async function addChecklistItems(formData: FormData) {
 // 0, so a checklist that has never been through migration 0020 sorts
 // itself out the first time anything is moved.
 export async function moveChecklistItem(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -438,7 +438,7 @@ export async function moveChecklistItem(formData: FormData) {
 // off the approved set PDF and out of Schedule 1. The document is still
 // requested, uploaded, approved and stored exactly as before.
 export async function toggleApprovalInclusion(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -454,7 +454,7 @@ export async function toggleApprovalInclusion(formData: FormData) {
 // and never holds up a booking — the client cannot act on something they
 // cannot see.
 export async function toggleItemInternal(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -485,7 +485,7 @@ async function itemBelongsToJob(supabase: Awaited<ReturnType<typeof createClient
 }
 
 export async function approveItem(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -514,7 +514,7 @@ export async function approveItem(formData: FormData) {
 // document; "new" adds another alongside — an item satisfied by two
 // certificates rather than one.
 export async function certifierUploadItem(formData: FormData) {
-  const { userId } = await requireProfile("certifier");
+  const { userId } = await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -568,7 +568,7 @@ export async function certifierUploadItem(formData: FormData) {
 // certificates under a single item rarely share a preparer, a reference
 // or a date, so each carries its own.
 export async function updateItemDocument(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const fileId = String(formData.get("file_id"));
   const jobId = String(formData.get("job_id"));
@@ -595,7 +595,7 @@ export async function updateItemDocument(formData: FormData) {
 // keeps the rest; removing the last one leaves the item awaiting a
 // document again, which is what it is.
 export async function removeItemDocument(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -627,7 +627,7 @@ export async function removeItemDocument(formData: FormData) {
 // counts. The current version is protected: removing it is what
 // "Remove this document" does, moving the item's pointer with it.
 export async function removeItemDocumentVersion(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const fileId = String(formData.get("file_id"));
   const jobId = String(formData.get("job_id"));
@@ -641,7 +641,7 @@ export async function removeItemDocumentVersion(formData: FormData) {
 }
 
 export async function updateItemDetails(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -655,7 +655,7 @@ export async function updateItemDetails(formData: FormData) {
 }
 
 export async function updateItemMeta(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -689,7 +689,7 @@ export async function updateItemMeta(formData: FormData) {
 // remembered on the firm, so the next plan starts where this one was put
 // instead of back in the corner.
 export async function setStampPlacement(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -708,7 +708,7 @@ export async function setStampPlacement(formData: FormData) {
 
 // Back to the bottom-right corner at normal size.
 export async function clearStampPlacement(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -717,7 +717,7 @@ export async function clearStampPlacement(formData: FormData) {
 }
 
 export async function toggleStamping(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -727,7 +727,7 @@ export async function toggleStamping(formData: FormData) {
 }
 
 export async function addAmendment(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -755,7 +755,7 @@ export type NotifyState = { success?: string; error?: string } | undefined;
 // buildJobUpdateMailto: "X of Y documents approved — Z items need your
 // attention", not a blow-by-blow log.
 export async function notifyClientOfChecklist(_prev: NotifyState, formData: FormData): Promise<NotifyState> {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const checklistId = String(formData.get("checklist_id"));
@@ -814,7 +814,7 @@ export async function notifyClientOfChecklist(_prev: NotifyState, formData: Form
 export type ReminderActionState = { error?: string; success?: string } | undefined;
 
 export async function sendDocumentReminderNow(_prev: ReminderActionState, formData: FormData): Promise<ReminderActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
 
@@ -849,7 +849,7 @@ export async function sendDocumentReminderNow(_prev: ReminderActionState, formDa
 // Some clients shouldn't be chased — a job on hold, a builder who has
 // asked to deal by phone. Pausing is per project and reversible.
 export async function toggleDocumentReminders(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const paused = String(formData.get("paused")) === "true";
@@ -861,7 +861,7 @@ export async function toggleDocumentReminders(formData: FormData) {
 // client" buttons next to a certificate/report once it's ready, instead
 // of firing automatically the moment it's uploaded/marked sent.
 export async function notifyClientMessage(_prev: NotifyState, formData: FormData): Promise<NotifyState> {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const subject = String(formData.get("subject") || "Update on your project");
@@ -876,7 +876,7 @@ export async function notifyClientMessage(_prev: NotifyState, formData: FormData
 }
 
 export async function resolveAmendment(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const amendmentId = String(formData.get("amendment_id"));
   const jobId = String(formData.get("job_id"));
@@ -885,7 +885,7 @@ export async function resolveAmendment(formData: FormData) {
 }
 
 export async function removeAmendment(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const amendmentId = String(formData.get("amendment_id"));
   const jobId = String(formData.get("job_id"));
@@ -894,7 +894,7 @@ export async function removeAmendment(formData: FormData) {
 }
 
 export async function addCondition(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const text = String(formData.get("text") || "").trim();
@@ -906,7 +906,7 @@ export async function addCondition(formData: FormData) {
 }
 
 export async function removeCondition(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const conditionId = String(formData.get("condition_id"));
@@ -916,7 +916,7 @@ export async function removeCondition(formData: FormData) {
 }
 
 export async function reopenItem(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const itemId = String(formData.get("item_id"));
   const jobId = String(formData.get("job_id"));
@@ -991,7 +991,7 @@ async function mirrorVisiblePathwayVersion(
 // because they change how every part of the assessment is approached and
 // belong in front of the certifier from the moment the job is opened.
 export async function setSiteSensitivities(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
 
@@ -1004,7 +1004,7 @@ export async function setSiteSensitivities(formData: FormData) {
 }
 
 export async function setPlanningPortalRef(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const kind = (String(formData.get("kind") || "CDC") as PortalRefKind);
@@ -1031,7 +1031,7 @@ export async function setPlanningPortalRef(_prev: ActionState, formData: FormDat
 // reason the Planning Portal reference is — going back to the Details tab
 // for two fields at the moment of issuing is how a report goes out blank.
 export async function setPreInspectionDates(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const applicationDate = String(formData.get("applicationDate") || "");
@@ -1061,7 +1061,7 @@ export async function setPreInspectionDates(_prev: ActionState, formData: FormDa
 // the start by lib/neighbourNotification — including the Friday rule —
 // unless the certifier types their own.
 export async function setNeighbourNotificationDates(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const start = String(formData.get("start") || "").trim();
@@ -1073,7 +1073,7 @@ export async function setNeighbourNotificationDates(_prev: ActionState, formData
 }
 
 export async function issuePathwayCertificate(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const certifierId = String(formData.get("certifier_id") || "");
@@ -1173,7 +1173,7 @@ async function pruneAfterIssue({ jobId, kind, firmId }: { jobId: string; kind: "
 // first. Signing just stamps the currently-visible version with who/when —
 // it doesn't lock the checklist or letters from further edits.
 export async function signPathwayCertificate(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
 
@@ -1215,7 +1215,7 @@ export async function signPathwayCertificate(_prev: ActionState, formData: FormD
 // resets sent_to_client to false on the new version, so it stays hidden
 // again until deliberately re-sent.
 export async function sendPathwayCertificateToClient(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
 
@@ -1280,7 +1280,7 @@ export async function sendPathwayCertificateToClient(_prev: ActionState, formDat
 }
 
 export async function uploadPathwayApproval(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const versionId = String(formData.get("version_id"));
@@ -1299,7 +1299,7 @@ export async function uploadPathwayApproval(formData: FormData) {
 }
 
 export async function setVisiblePathwayVersion(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const versionId = String(formData.get("version_id"));
@@ -1315,7 +1315,7 @@ export async function setVisiblePathwayVersion(formData: FormData) {
 }
 
 export async function deletePathwayVersion(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const versionId = String(formData.get("version_id"));
@@ -1352,7 +1352,7 @@ export async function deletePathwayVersion(formData: FormData) {
 // quietly stop existing. Recorded in the audit log either way, because
 // an issued certificate disappearing is history, not housekeeping.
 export async function deleteOc(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const ocId = String(formData.get("oc_id"));
@@ -1395,7 +1395,7 @@ export async function deleteOc(_prev: ActionState, formData: FormData): Promise<
 // OC record. Blank clears the override, putting it back on the generated
 // {PATHWAY}-{project number}/{version} form.
 export async function renameCertRef(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const kind = String(formData.get("kind"));
@@ -1415,7 +1415,7 @@ export async function renameCertRef(formData: FormData) {
 }
 
 export async function deleteModification(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const modificationId = String(formData.get("modification_id"));
@@ -1431,7 +1431,7 @@ export async function deleteModification(formData: FormData) {
 }
 
 export async function startModification(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const reason = String(formData.get("reason") || "");
@@ -1460,7 +1460,7 @@ export async function startModification(formData: FormData) {
 }
 
 export async function issueModification(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const modificationId = String(formData.get("modification_id"));
@@ -1506,7 +1506,7 @@ export async function issueModification(_prev: ActionState, formData: FormData):
 }
 
 export async function uploadModificationApproval(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const modificationId = String(formData.get("modification_id"));
@@ -1516,7 +1516,7 @@ export async function uploadModificationApproval(formData: FormData) {
 }
 
 export async function issueOc(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const type = String(formData.get("type")) as "partial" | "whole";
@@ -1568,7 +1568,7 @@ export async function issueOc(_prev: ActionState, formData: FormData): Promise<A
 }
 
 export async function signOc(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const ocId = String(formData.get("oc_id"));
@@ -1581,7 +1581,7 @@ export async function signOc(_prev: ActionState, formData: FormData): Promise<Ac
 }
 
 export async function sendOcToClient(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const ocId = String(formData.get("oc_id"));
@@ -1611,7 +1611,7 @@ export async function sendOcToClient(_prev: ActionState, formData: FormData): Pr
 }
 
 export async function uploadOcApproval(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const ocId = String(formData.get("oc_id"));
@@ -1749,7 +1749,7 @@ export async function purgeJob(_prev: ActionState, formData: FormData): Promise<
 }
 
 export async function markJobComplete(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   await supabase.from("jobs").update({ status: "complete" }).eq("id", jobId);
@@ -1757,7 +1757,7 @@ export async function markJobComplete(formData: FormData) {
 }
 
 export async function reopenJob(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   await supabase.from("jobs").update({ status: "active" }).eq("id", jobId);
@@ -1765,7 +1765,7 @@ export async function reopenJob(formData: FormData) {
 }
 
 export async function assignJobClient(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const clientId = String(formData.get("client_id") || "") || null;
@@ -1777,7 +1777,7 @@ export async function assignJobClient(formData: FormData) {
 // shared access to this job in one step, instead of having to go to
 // Settings -> Clients first and then come back here to share access.
 export async function addClientAndShare(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const name = String(formData.get("name") || "").trim();
@@ -1807,7 +1807,7 @@ export async function addClientAndShare(_prev: ActionState, formData: FormData):
 // come back was a real nuisance — this edits the same client record from
 // the job's own portal-access panel.
 export async function updateClientContact(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const clientId = String(formData.get("client_id"));
@@ -1832,7 +1832,7 @@ export async function updateClientContact(_prev: ActionState, formData: FormData
 }
 
 export async function addSharedAccess(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const clientId = String(formData.get("client_id") || "");
@@ -1842,7 +1842,7 @@ export async function addSharedAccess(formData: FormData) {
 }
 
 export async function removeSharedAccess(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const clientId = String(formData.get("client_id"));
@@ -1857,7 +1857,7 @@ async function getCriticalStageInspections(supabase: SupabaseClient, jobId: stri
 }
 
 export async function toggleCriticalStageInspection(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const id = String(formData.get("id"));
@@ -1869,7 +1869,7 @@ export async function toggleCriticalStageInspection(formData: FormData) {
 }
 
 export async function updateCriticalStageInspection(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const id = String(formData.get("id"));
@@ -1887,7 +1887,7 @@ export async function updateCriticalStageInspection(formData: FormData) {
 }
 
 export async function addCriticalStageInspection(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const stage = String(formData.get("stage") || "").trim();
@@ -1901,7 +1901,7 @@ export async function addCriticalStageInspection(formData: FormData) {
 }
 
 export async function removeCriticalStageInspection(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const id = String(formData.get("id"));
@@ -1922,7 +1922,7 @@ export async function removeCriticalStageInspection(formData: FormData) {
 // block on a letter or a certificate needs no schema change. An empty
 // value clears the override and the standard wording returns.
 export async function updateDocText(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const key = String(formData.get("key") || "").trim();
@@ -1935,7 +1935,7 @@ export async function updateDocText(formData: FormData) {
 }
 
 export async function updateLetterBody(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const field = String(formData.get("letter")) === "applicant" ? "applicant_letter_override" : "council_letter_override";

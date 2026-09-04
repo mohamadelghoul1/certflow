@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireProfile } from "@/lib/auth";
+import { requireJobWriter } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { mergeJobDetailsInDb } from "@/lib/actions/mergeDetails";
 import { notifyJobClient } from "@/lib/email";
@@ -55,7 +55,7 @@ async function keepEdit(jobId: string, firmId: string, text: string) {
 // key, the AI explains each document; without one, the library's own
 // descriptions do — and the certifier is told which they got.
 export async function writeOutstandingSummary(_prev: SummaryState, formData: FormData): Promise<SummaryState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const jobId = String(formData.get("job_id"));
   const job = await loadJob(jobId, profile.firm_id);
   if (!job) return { error: "Project not found." };
@@ -78,7 +78,7 @@ export async function writeOutstandingSummary(_prev: SummaryState, formData: For
 }
 
 export async function saveOutstandingSummary(_prev: SummaryState, formData: FormData): Promise<SummaryState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const jobId = String(formData.get("job_id"));
   const text = String(formData.get("text") || "").trim();
   if (!text) return { error: "The note is empty — write something, or use the Write button." };
@@ -89,7 +89,7 @@ export async function saveOutstandingSummary(_prev: SummaryState, formData: Form
 // Sends what is in the box, not what was last saved: the certifier's
 // final read-through is the version that goes.
 export async function sendOutstandingSummary(_prev: NotifyState, formData: FormData): Promise<NotifyState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const text = String(formData.get("text") || "").trim();

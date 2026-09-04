@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { needsSecondFactor } from "@/lib/twoFactor";
-import { directorFromAnswer } from "@/lib/roles";
+import { roleFromAnswer, canWriteJob, type FirmRole } from "@/lib/roles";
 import type { Profile } from "@/types/db";
 
-export type Session = { profile: Profile; userId: string; director: boolean };
+export type Session = { profile: Profile; userId: string; firmRole: FirmRole; director: boolean };
 
 // Loads the logged-in user's profile row, which is what every RLS policy
 // keys off of (firm_id / role / certifier_id / client_id).
@@ -35,17 +35,27 @@ export async function requireProfile(kind: "certifier" | "client"): Promise<Sess
     redirect(profile.role === "client" ? "/portal" : "/dashboard");
   }
 
-  // Whether this certifier runs the firm or works on the projects they
-  // have been given. The database is asked, since it is the database
-  // that enforces the answer; a database without migration 0072 has no
-  // such question and every certifier is what they always were.
-  let director = kind === "certifier";
-  if (kind === "certifier") {
-    const { data, error } = await supabase.rpc("is_director");
-    director = directorFromAnswer(data, error);
+  // Whether this certifier runs the firm, works the projects they are
+  // given, or only inspects — read off their own certifier card, which
+  // is the same fact the database enforces. A database without
+  // migration 0072 has no such column and every certifier is what they
+  // always were.
+  let firmRole: FirmRole = "director";
+  if (kind === "certifier" && profile.certifier_id) {
+    const { data, error } = await supabase.from("certifiers").select("firm_role").eq("id", profile.certifier_id).single();
+    firmRole = roleFromAnswer((data as { firm_role?: string } | null)?.firm_role, error);
   }
 
-  return { profile, userId: user.id, director };
+  return { profile, userId: user.id, firmRole, director: firmRole === "director" };
+}
+
+// The actions that change what a project is — its details, checklists,
+// documents, certificates, bookings, and the Portal record. A director
+// or team member passes; an inspector reads and inspects only.
+export async function requireJobWriter(): Promise<Session> {
+  const session = await requireProfile("certifier");
+  if (!canWriteJob(session.firmRole)) redirect("/dashboard?directors=only");
+  return session;
 }
 
 // The pages and actions that are the firm's to run, not a team

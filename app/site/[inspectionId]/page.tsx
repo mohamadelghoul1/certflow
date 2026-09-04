@@ -24,7 +24,7 @@ import type { Defect, InspectionPhoto, JobDetails } from "@/types/db";
 // Nothing here needs a second hand or a steady desk.
 export default async function SiteInspectionPage({ params }: { params: Promise<{ inspectionId: string }> }) {
   const { inspectionId } = await params;
-  const { profile } = await requireProfile("certifier");
+  const { profile, firmRole } = await requireProfile("certifier");
   const supabase = await createClient();
 
   const { data } = await supabase
@@ -147,22 +147,28 @@ export default async function SiteInspectionPage({ params }: { params: Promise<{
                 />
               ),
             },
-            {
-              key: "portal",
-              title: "Report to the NSW Planning Portal",
-              node: (
-                <SitePortalReport
-                  inspectionId={inspection.id}
-                  jobId={jobId}
-                  live={portalConfigured()}
-                  defaultCaseId={portalCaseRef}
-                  reported={!!inspection.portal_reported}
-                  reportedDate={inspection.portal_reported_date}
-                  signed={!!inspection.report_signed_at}
-                  submittedBy={submitterEmail}
-                />
-              ),
-            },
+            // An inspector's job ends at the signed report: the Portal,
+            // and its two-day clock, are the firm's.
+            ...(firmRole === "inspector"
+              ? []
+              : [
+                  {
+                    key: "portal",
+                    title: "Report to the NSW Planning Portal",
+                    node: (
+                      <SitePortalReport
+                        inspectionId={inspection.id}
+                        jobId={jobId}
+                        live={portalConfigured()}
+                        defaultCaseId={portalCaseRef}
+                        reported={!!inspection.portal_reported}
+                        reportedDate={inspection.portal_reported_date}
+                        signed={!!inspection.report_signed_at}
+                        submittedBy={submitterEmail}
+                      />
+                    ),
+                  },
+                ]),
             {
               key: "email",
               title: "Email the client (optional)",

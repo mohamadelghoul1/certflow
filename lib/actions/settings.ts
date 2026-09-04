@@ -554,6 +554,8 @@ export async function inviteCertifier(_prev: InviteState, formData: FormData): P
       }</a></p>`,
       certifier.firm_role === "director"
         ? `<p>You have been made a director, with access to everything the firm does on Certlyn.</p>`
+        : certifier.firm_role === "inspector"
+        ? `<p>You will see the inspections the firm assigns to you, with the approved documents to inspect against. From your phone, <strong>On site</strong> is the inspection screen.</p>`
         : `<p>You will see the projects and inspections the firm assigns to you. From your phone, <strong>On site</strong> is the inspection screen.</p>`,
     ].join(""),
     undefined,

@@ -35,11 +35,18 @@ export async function InspectionsPanel({
   certifiers,
   portalCaseRef = "",
   submitterEmail = "",
+  manage = true,
 }: {
   jobId: string;
   firmId: string;
   inspections: InspectionWithDefects[];
   certifiers: Certifier[];
+  // Off for an inspector: they record what they found on the
+  // inspections they are given. Adding, removing, reordering,
+  // reassigning, bookings, client messages and the NSW Planning Portal
+  // are the firm's, and the database (migration 0073) refuses an
+  // inspector those even when asked directly.
+  manage?: boolean;
   // The job's Planning Portal reference, offered as the case number when
   // reporting an inspection.
   portalCaseRef?: string;
@@ -64,10 +71,10 @@ export async function InspectionsPanel({
           jobId={jobId}
           rows={ordered.map((insp) => ({
             id: insp.id,
-            node: <InspectionRow insp={insp} jobId={jobId} firmId={firmId} certifiers={certifiers} portalCaseRef={portalCaseRef} submitterEmail={submitterEmail} />,
+            node: <InspectionRow insp={insp} jobId={jobId} firmId={firmId} certifiers={certifiers} portalCaseRef={portalCaseRef} submitterEmail={submitterEmail} manage={manage} />,
           }))}
         />
-        <AddInspectionForm jobId={jobId} />
+        {manage && <AddInspectionForm jobId={jobId} />}
       </div>
       <CompletedInspections inspections={carriedOut} total={ordered.length} />
     </div>
@@ -112,7 +119,7 @@ function CompletedInspections({ inspections, total }: { inspections: InspectionW
   );
 }
 
-async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, submitterEmail }: { insp: InspectionWithDefects; jobId: string; firmId: string; certifiers: Certifier[]; portalCaseRef: string; submitterEmail: string }) {
+async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, submitterEmail, manage }: { insp: InspectionWithDefects; jobId: string; firmId: string; certifiers: Certifier[]; portalCaseRef: string; submitterEmail: string; manage: boolean }) {
   const reportUrl = await signedUrl(insp.report_file_path);
   const photos = insp.inspection_photos || [];
   const photoUrls = await Promise.all(photos.map((p) => signedUrl(p.file_path)));
@@ -132,9 +139,11 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
             </div>
             <div className="flex items-start gap-2 min-w-0">
               <OutcomeBadge />
-              <div className="shrink-0">
-                <InspectionMoveButtons inspectionId={insp.id} />
-              </div>
+              {manage && (
+                <div className="shrink-0">
+                  <InspectionMoveButtons inspectionId={insp.id} />
+                </div>
+              )}
             </div>
           </div>
 
@@ -143,20 +152,26 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
 
             <div>
               <label className="block text-[11px] text-muted mb-1">Inspector</label>
-              <AutoSubmitSelect
-                action={assignInspector}
-                hidden={{ inspection_id: insp.id, job_id: jobId }}
-                name="certifier_id"
-                defaultValue={insp.inspector_certifier_id || ""}
-                className="w-full px-2 py-1.5 rounded border border-line text-xs"
-              >
-                <option value="">— Select —</option>
-                {certifiers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </AutoSubmitSelect>
+              {manage ? (
+                <AutoSubmitSelect
+                  action={assignInspector}
+                  hidden={{ inspection_id: insp.id, job_id: jobId }}
+                  name="certifier_id"
+                  defaultValue={insp.inspector_certifier_id || ""}
+                  className="w-full px-2 py-1.5 rounded border border-line text-xs"
+                >
+                  <option value="">— Select —</option>
+                  {certifiers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </AutoSubmitSelect>
+              ) : (
+                <div className="px-2 py-1.5 rounded border border-line bg-surface text-xs text-muted">
+                  {certifiers.find((c) => c.id === insp.inspector_certifier_id)?.name || "— Not assigned —"}
+                </div>
+              )}
             </div>
 
             <div>
@@ -165,7 +180,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
             </div>
           </div>
 
-          {insp.booked_by_client && !insp.confirmed ? (
+          {!manage ? null : insp.booked_by_client && !insp.confirmed ? (
             <BookingDecision inspectionId={insp.id} jobId={jobId} requestedDate={insp.date} />
           ) : (
             // The certifier booking the day themselves, rather than
@@ -249,6 +264,7 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
             {insp.report_sent && (
               <>
                 <span className="text-[11px] text-success">Available {formatISODate(insp.report_sent_date)}</span>
+                {manage && (
                 <NotifyClientButton
                   action={notifyClientMessage}
                   label="Notify client"
@@ -258,8 +274,10 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
                     message: `The report for your ${insp.title} inspection is now available in your portal.`,
                   }}
                 />
+                )}
               </>
             )}
+            {manage && (
             <ReportToPortalButton
               inspectionId={insp.id}
               jobId={jobId}
@@ -276,7 +294,13 @@ async function InspectionRow({ insp, jobId, firmId, certifiers, portalCaseRef, s
                 submittedBy: certifiers.find((c) => c.id === insp.inspector_certifier_id)?.portal_email || submitterEmail,
               }}
             />
-            <RemoveInspectionButton inspectionId={insp.id} jobId={jobId} portalReported={insp.portal_reported} />
+            )}
+            {manage && <RemoveInspectionButton inspectionId={insp.id} jobId={jobId} portalReported={insp.portal_reported} />}
+            {!manage && (
+              <span className={`text-[11px] ${insp.portal_reported ? "text-accent" : "text-placeholder"}`}>
+                {insp.portal_reported ? "✓ Reported to the NSW Planning Portal by the firm" : "Portal reporting is done by the firm"}
+              </span>
+            )}
             </div>
         </InspectionCardShell>
       </InspectionCardState>

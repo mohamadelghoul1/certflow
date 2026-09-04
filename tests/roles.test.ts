@@ -1,26 +1,35 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { directorFromAnswer, canChangeRole, teamChanges, staffCanOpen, roleLabel, isFirmRole } from "@/lib/roles";
+import { roleFromAnswer, canWriteJob, canChangeRole, teamChanges, staffCanOpen, roleLabel, isFirmRole } from "@/lib/roles";
 
-// Who runs the firm, read from what the database said.
-describe("director or team member", () => {
-  test("is what is_director() answered", () => {
-    assert.equal(directorFromAnswer(true, null), true);
-    assert.equal(directorFromAnswer(false, null), false);
+// Who runs the firm, read off the person's own certifier card.
+describe("director, team member or inspector", () => {
+  test("is what the card says", () => {
+    assert.equal(roleFromAnswer("director", null), "director");
+    assert.equal(roleFromAnswer("staff", null), "staff");
+    assert.equal(roleFromAnswer("inspector", null), "inspector");
   });
 
   test("is a director when the database cannot say — before 0072, or on a hiccup", () => {
-    assert.equal(directorFromAnswer(null, { code: "PGRST202", message: "function not found" }), true, "migration not run yet");
-    assert.equal(directorFromAnswer(false, { code: "PGRST301", message: "timeout" }), true, "an error never locks a director out");
-    assert.equal(directorFromAnswer(null, null), true, "no answer at all reads as before");
+    assert.equal(roleFromAnswer(undefined, { code: "42703", message: "column does not exist" }), "director", "migration not run yet");
+    assert.equal(roleFromAnswer("staff", { code: "PGRST301", message: "timeout" }), "director", "an error never locks a director out");
+    assert.equal(roleFromAnswer("owner", null), "director", "an unknown value reads as what every login was");
+    assert.equal(roleFromAnswer(null, null), "director");
   });
 
-  test("labels an unknown or missing role as Director, which is what every login was", () => {
+  test("labels the roles, and an unknown one as Director", () => {
     assert.equal(roleLabel("staff"), "Team member");
+    assert.equal(roleLabel("inspector"), "Inspector");
     assert.equal(roleLabel("director"), "Director");
     assert.equal(roleLabel(undefined), "Director");
-    assert.equal(isFirmRole("staff"), true);
+    assert.equal(isFirmRole("inspector"), true);
     assert.equal(isFirmRole("owner"), false);
+  });
+
+  test("an inspector reads the project; the others change it", () => {
+    assert.equal(canWriteJob("director"), true);
+    assert.equal(canWriteJob("staff"), true);
+    assert.equal(canWriteJob("inspector"), false);
   });
 });
 

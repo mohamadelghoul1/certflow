@@ -1,6 +1,6 @@
 "use server";
 
-import { requireProfile } from "@/lib/auth";
+import { requireJobWriter } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { fetchStoredFile } from "@/lib/storage";
 import { aiConfigured, describeAiError } from "@/lib/ai/outstandingSummary";
@@ -24,7 +24,7 @@ function one<T>(value: T | T[] | null | undefined): T | null {
 }
 
 export async function readDocumentWithAi(_prev: ReadingState, formData: FormData): Promise<ReadingState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   if (!aiConfigured()) return { error: "Add ANTHROPIC_API_KEY in Vercel → Settings → Environment Variables to read documents with AI." };
 
   const supabase = await createClient();

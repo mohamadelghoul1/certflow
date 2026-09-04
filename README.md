@@ -85,6 +85,14 @@ email they will sign in with, and choose their role:
   the team of (on the project's page, under the address), or are the
   inspector on. No quotes, no invoices, no firm settings; their own
   card and their own two-factor sign-in are all they can change.
+- **Inspector** — a certifier who only carries out the inspections
+  they are given (database update **0073**). On their projects they see
+  two tabs: the approved documents, read-only, and the inspections.
+  They record outcomes, issues, photos and notes, and sign the report —
+  on the desktop or On site from a phone. They cannot change anything
+  about the project, and reporting to the NSW Planning Portal is not
+  offered to them: that stays with the firm, which owns the two-day
+  reporting window.
 
 Then press **Invite to sign in** on their card. They get an email with a
 link to choose a password, and they are in. The database enforces the
@@ -595,11 +603,14 @@ its own company and ABN, change it there and both pages follow. The
 contact address on both pages is `CONTACT_EMAIL` once it is set in
 Vercel, and the interest form until then.
 
-### Directors and team members — run database update 0072
+### Directors, team members and inspectors — run updates 0072 and 0073
 
 Built 4 Sept 2026. Until **0072** is run in Supabase, every certifier
 login still has the run of the firm and the role and invite controls
-under Settings → Certifiers stay hidden. Once it is run, everyone who
+under Settings → Certifiers stay hidden. **0073** adds the third role,
+Inspector — inspections only, approval documents read-only, no Portal
+reporting — and is enforced by the database, including a guard that
+stops anyone but a director changing a role. Once it is run, everyone who
 already had a login is a director; add a team member, set their role,
 and press **Invite to sign in** — see "Adding another certifier to your
 firm" above. The invite needs email sending switched on (Settings →

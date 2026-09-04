@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { requireProfile } from "@/lib/auth";
+import { requireProfile, requireJobWriter } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { inspectionBookingEmail } from "@/lib/inspections/bookingEmail";
 import { todayISO, todayInNsw, formatISODate } from "@/lib/business";
@@ -18,7 +18,7 @@ import { sendInspectionToPortal } from "@/lib/portal/report";
 import { isUnknownColumn } from "@/lib/softDelete";
 
 export async function assignInspector(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
@@ -241,7 +241,7 @@ export async function unsignInspectionReport(_prev: ActionState, formData: FormD
 // on this: until it happens their request reads as outstanding and they
 // cannot ask again, so nothing here may fail quietly.
 export async function confirmBooking(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
@@ -269,7 +269,7 @@ export async function confirmBooking(formData: FormData) {
 // the client, because a date changed without telling them is a certifier
 // arriving on a day the builder is not expecting.
 export async function rescheduleBooking(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
@@ -307,7 +307,7 @@ export async function rescheduleBooking(_prev: ActionState, formData: FormData):
 // Rebooking an already-booked inspection goes through this too — the
 // wording says which it is.
 export async function bookInspection(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
@@ -352,7 +352,7 @@ export async function bookInspection(_prev: ActionState, formData: FormData): Pr
 // fixed list — the suggestions offered in the form are a shortcut, not a
 // limit — because no list of stages covers every job.
 export async function addInspection(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const title = String(formData.get("title") || "").trim();
@@ -417,7 +417,7 @@ async function nextInspectionOrder(supabase: SupabaseClient, jobId: string) {
 // 0022 has not been run — the arrows are simply inert rather than the
 // page breaking.
 export async function moveInspection(formData: FormData) {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
@@ -445,7 +445,7 @@ export async function moveInspection(formData: FormData) {
 // would leave the app disagreeing with the Portal about what happened on
 // the job, with nothing to show why — so once reported, it stays.
 export async function removeInspection(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
@@ -516,7 +516,7 @@ export async function removePhoto(formData: FormData) {
 // to the Portal, for a firm that has not connected the API (or reported
 // this one by hand on the Portal website).
 export async function reportToPortal(formData: FormData) {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
@@ -530,7 +530,7 @@ export async function reportToPortal(formData: FormData) {
 // inspection the API actually sent carries the Portal's own case number
 // and stays put.
 export async function unreportFromPortal(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireProfile("certifier");
+  await requireJobWriter();
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
@@ -551,7 +551,7 @@ export async function unreportFromPortal(_prev: ActionState, formData: FormData)
 // link — and only marks it reported once the Portal has accepted all
 // three. Every request and response lands in the audit log either way.
 export async function reportInspectionToPortalLive(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireProfile("certifier");
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const inspectionId = String(formData.get("inspection_id"));
   const jobId = String(formData.get("job_id"));
