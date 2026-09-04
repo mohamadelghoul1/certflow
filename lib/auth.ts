@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { needsSecondFactor } from "@/lib/twoFactor";
 import { roleFromAnswer, canWriteJob, type FirmRole } from "@/lib/roles";
+import { isPlatformOwner } from "@/lib/platformOwner";
 import type { Profile } from "@/types/db";
 
 export type Session = { profile: Profile; userId: string; firmRole: FirmRole; director: boolean };
@@ -55,6 +56,17 @@ export async function requireProfile(kind: "certifier" | "client"): Promise<Sess
 export async function requireJobWriter(): Promise<Session> {
   const session = await requireProfile("certifier");
   if (!canWriteJob(session.firmRole)) redirect("/dashboard?directors=only");
+  return session;
+}
+
+// The handful of pages that belong to the firm that runs Certlyn
+// rather than to a firm using it: what every firm has used, and what
+// each is being charged. The database agrees (is_platform_owner, added
+// by migration 0076), so this is the screen door on a locked door.
+export async function requirePlatformOwner(): Promise<Session> {
+  const session = await requireDirector();
+  const supabase = await createClient();
+  if (!(await isPlatformOwner(supabase, session.profile.firm_id))) redirect("/dashboard?directors=only");
   return session;
 }
 

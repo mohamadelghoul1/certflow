@@ -384,6 +384,12 @@ export async function runSystemChecks(supabase: SupabaseClient): Promise<SystemC
       detail: "Marks a firm as a demonstration: sample projects to show other certifiers, and Certlyn refuses to send email from it. Only needed if you run a demo account.",
       probe: hasColumn(supabase, "firms", "demo"),
     },
+    {
+      migration: "0076",
+      label: "Subscriptions and usage",
+      detail: "Counts each firm's new projects against what their subscription covers, so what to invoice is a number rather than a memory. Only needed once another firm is paying.",
+      probe: hasTable(supabase, "firm_plans"),
+    },
   ];
 
   const applied = await Promise.all(checks.map((c) => c.probe));

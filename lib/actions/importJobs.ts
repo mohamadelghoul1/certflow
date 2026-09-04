@@ -57,7 +57,7 @@ export async function importJobs(_prev: ImportResult | undefined, formData: Form
       continue;
     }
 
-    const { data: row, error } = await supabase
+    let { data: row, error } = await supabase
       .from("jobs")
       .insert({
         firm_id: profile.firm_id,
@@ -69,9 +69,33 @@ export async function importJobs(_prev: ImportResult | undefined, formData: Form
         client_id: null,
         details: job.details,
         critical_stage_inspections: defaultCriticalStageInspections(),
+        // Their existing work, not a project Certlyn sold them: excluded
+        // from the monthly count (migration 0076). A database without
+        // that column falls through to the retry below.
+        imported: true,
       })
       .select("id")
       .single();
+
+    if (error && (error.code === "PGRST204" || error.code === "42703")) {
+      const retry = await supabase
+        .from("jobs")
+        .insert({
+          firm_id: profile.firm_id,
+          address: job.address,
+          description: job.description,
+          job_types: [],
+          pathway: "PC_OC",
+          assigned_certifier_id: certifierByName.get(job.certifierName.trim().toLowerCase()) || certifierId,
+          client_id: null,
+          details: job.details,
+          critical_stage_inspections: defaultCriticalStageInspections(),
+        })
+        .select("id")
+        .single();
+      row = retry.data;
+      error = retry.error;
+    }
 
     if (error || !row) {
       skipped.push(`Row ${job.rowNumber}: ${job.address} — ${error?.message || "could not be created"}`);

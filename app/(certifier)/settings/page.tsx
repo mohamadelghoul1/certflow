@@ -29,7 +29,9 @@ import { StorageSection } from "@/components/certifier/StorageSection";
 import { SystemCheckSection } from "@/components/certifier/SystemCheckSection";
 import { SecuritySection } from "@/components/certifier/SecuritySection";
 import Link from "next/link";
-import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, Activity, FileText, Mail, PenLine, ScrollText, type LucideIcon, HardDrive, ShieldCheck } from "lucide-react";
+import { Building2, Landmark, BellRing, Users, KeyRound, Library, CloudUpload, Activity, FileText, Mail, PenLine, ScrollText, type LucideIcon, HardDrive, ShieldCheck, Receipt } from "lucide-react";
+import { PlanUsageSection } from "@/components/certifier/PlanUsageSection";
+import { monthKey, type FirmPlan } from "@/lib/billing";
 
 // Settings, one section at a time. Everything used to sit on one long
 // page; finding the certifier list meant scrolling past the firm form
@@ -44,6 +46,7 @@ const SECTIONS: { key: string; label: string; icon: LucideIcon; blurb: string }[
   { key: "reminders", label: "Client reminders", icon: BellRing, blurb: "Automatic chasing of outstanding documents" },
   { key: "certifiers", label: "Certifiers", icon: Users, blurb: "The team, signatures and registrations" },
   { key: "security", label: "Sign-in security", icon: ShieldCheck, blurb: "Two-factor sign-in for your own login" },
+  { key: "plan", label: "Your plan", icon: Receipt, blurb: "This month's projects against what your subscription covers" },
   { key: "clients", label: "Clients & portal access", icon: KeyRound, blurb: "Contacts and their portal logins" },
   { key: "library", label: "Document library", icon: Library, blurb: "What each checklist asks for" },
   { key: "certificates", label: "Certificate layout", icon: FileText, blurb: "What prints on your CDC, CC and OC" },
@@ -76,7 +79,18 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
   let content: React.ReactNode = null;
 
-  if (active.key === "me") {
+  if (active.key === "plan") {
+    // Both answers come from the database's own counting (migration
+    // 0076), so what a firm reads here is the same number the owner
+    // reads on the Firms page. Without the migration there is no plan
+    // and no count, and the section says so rather than guessing.
+    const month = monthKey();
+    const [{ data: planRow }, { data: usedRow }] = await Promise.all([
+      supabase.from("firm_plans").select("*").eq("firm_id", profile.firm_id).maybeSingle(),
+      supabase.rpc("my_firm_usage", { p_month: month }),
+    ]);
+    content = <PlanUsageSection plan={(planRow as FirmPlan | null) ?? null} used={Number(usedRow ?? 0)} monthKey={month} />;
+  } else if (active.key === "me") {
     const { data: certifiers } = profile.certifier_id
       ? await supabase.from("certifiers").select("*").eq("id", profile.certifier_id).eq("firm_id", profile.firm_id)
       : { data: [] };

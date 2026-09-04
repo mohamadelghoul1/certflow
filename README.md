@@ -113,6 +113,47 @@ director, so nothing changes for anyone until a director changes it.
 Your own role can only be changed by another director, so a firm is
 never left without one.
 
+## Charging other firms — the Firms page
+
+You are the platform owner (migration 0068 marks your firm), so there is
+no separate administrator login to create: sign in as yourself and a
+**Firms** entry appears in the top bar that nobody else can see, at
+`/platform`. It needs database update **0076**.
+
+For each firm it shows, for whichever month you pick:
+
+- how many **new projects** they created that month,
+- how many were **brought across** from another system when they joined
+  — never counted, so importing their back catalogue costs them nothing,
+- how many they went **over** what their fee covers,
+- and **what to invoice**, as lines you can copy onto an invoice.
+
+**Export CSV** gives the whole month as a spreadsheet.
+
+Each firm's terms are set on that same page, per firm, so a firm signed
+up on different terms keeps them:
+
+| Setting | Default |
+| --- | --- |
+| Introductory months | 6 |
+| Introductory fee | $99 per month |
+| Fee after that | $399 per month |
+| New projects included | 30 per month |
+| Each project over that | $25 |
+
+A project counts in the calendar month it was created, in Sydney time,
+and keeps counting if it is deleted afterwards — a firm cannot unsell a
+project by deleting it. Amounts exclude GST. Nothing here bills anyone
+automatically: Certlyn works out the number, you raise the invoice.
+
+The firm sees their own side of it under **Settings → Your plan**: this
+month's count against what they are allowed, and what it comes to. That
+is deliberate — a firm should never learn they went over from the
+invoice.
+
+Until you set terms for a firm, nothing is counted against a fee for
+them and their page says so.
+
 ## The demonstration account
 
 An account for showing Certlyn to other certifiers, with nothing to do
@@ -647,6 +688,23 @@ The operating entity is `Certlyn` in `lib/legal.ts`; when Certlyn has
 its own company and ABN, change it there and both pages follow. The
 contact address on both pages is `CONTACT_EMAIL` once it is set in
 Vercel, and the interest form until then.
+
+### Charging other firms — run update 0076
+
+Built 4 Sept 2026: see "Charging other firms — the Firms page" above.
+Set each firm's terms on that page as they sign up. Two decisions are
+still yours:
+
+- **The public pricing pages still say $399 + GST a month with the
+  launch offer (free until 30 June 2027).** The $99 introductory rate
+  is only in the Firms page defaults so far. Tell me which is the offer
+  you want on the website and I will change the wording to match — as
+  it stands a firm reading the site and a firm reading their invoice
+  would see different numbers.
+- **Nothing enforces the cap.** A firm that creates a 31st project in a
+  month is not stopped or warned beyond the bar under Settings → Your
+  plan; it simply appears on the invoice. Say the word if you want a
+  warning at the point of creating one.
 
 ### The demonstration account — run update 0075
 

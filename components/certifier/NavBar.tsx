@@ -18,7 +18,7 @@ function initialsOf(name: string) {
 // director: whether the person runs the firm. A team member gets
 // Projects, Calendar and Settings — quotes, money, the audit log and the
 // firm's setup are the director's, and the pages themselves check too.
-export function NavBar({ director, firmName, userName, recentJobs, recentQuotes }: { director: boolean; firmName: string; userName: string; recentJobs: Item[]; recentQuotes: Item[] }) {
+export function NavBar({ director, platformOwner = false, firmName, userName, recentJobs, recentQuotes }: { director: boolean; platformOwner?: boolean; firmName: string; userName: string; recentJobs: Item[]; recentQuotes: Item[] }) {
   return (
     <div className="flex items-center justify-between bg-primary px-4 sm:px-6">
       <div className="flex items-center overflow-x-auto" style={{ scrollbarWidth: "none" }}>
@@ -63,6 +63,9 @@ export function NavBar({ director, firmName, userName, recentJobs, recentQuotes 
             without renaming it again. */}
         {director && <NavLink href="/invoices">Admin</NavLink>}
         {director && <NavLink href="/audit">Audit</NavLink>}
+        {/* Only the firm that runs Certlyn: every other firm's usage
+            and what they are charged for it. */}
+        {platformOwner && <NavLink href="/platform">Firms</NavLink>}
         <NavLink href="/settings">Settings</NavLink>
         </div>
       </div>
