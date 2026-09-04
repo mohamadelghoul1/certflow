@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Check, HelpCircle } from "lucide-react";
 import { MarketingShell, Container, Eyebrow, Section, CallToAction, btnPrimary, btnSecondary } from "@/components/marketing/MarketingShell";
-import { PLAN_NAME, PRICE_LABEL, PLAN_INCLUDES, OFFER_JOIN_BY, OFFER_FREE_UNTIL } from "@/lib/pricing";
+import { PLAN_NAME, PRICE_LABEL, PLAN_INCLUDES, OFFER_JOIN_BY, OFFER_FREE_UNTIL, COVERAGE_LINE, JOBS_PER_MONTH } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Pricing — Certlyn",
@@ -16,7 +16,11 @@ const QUESTIONS: { q: string; a: string }[] = [
   },
   {
     q: "Is the price per firm or per certifier?",
-    a: "Per firm. One subscription covers your practice, your certifiers and your clients' portal access.",
+    a: "Per firm, with unlimited certifiers. One subscription covers your practice, every certifier in it, and your clients' portal access.",
+  },
+  {
+    q: `What does "up to ${JOBS_PER_MONTH} new projects a month" mean?`,
+    a: `The subscription covers up to ${JOBS_PER_MONTH} new projects created in a calendar month — a project being one application, whatever certificates and inspections it goes on to need. Projects already under way don't count again. If your firm regularly opens more than ${JOBS_PER_MONTH} a month, talk to us about a larger plan.`,
   },
   {
     q: "Is there a setup fee?",
@@ -59,7 +63,7 @@ export default function PricingPage() {
                 <span className="text-[52px] font-bold leading-none tracking-tight text-[#1a3a5f]">{PRICE_LABEL}</span>
                 <span className="text-[16px] text-slate-500">/ month</span>
               </div>
-              <div className="mt-2 text-[14px] text-slate-500">One subscription for your firm. No setup fee. Cancel any time.</div>
+              <div className="mt-2 text-[14px] text-slate-500">One subscription for your firm. {COVERAGE_LINE} No setup fee. Cancel any time.</div>
               <ul className="mt-8 grid gap-3 sm:grid-cols-2">
                 {PLAN_INCLUDES.map((item) => (
                   <li key={item} className="flex items-center gap-2.5 text-[15px] text-slate-700">

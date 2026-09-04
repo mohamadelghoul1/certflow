@@ -3,7 +3,7 @@ import { Upload, Building2, PenLine, Mail, HelpCircle } from "lucide-react";
 import { MarketingShell, Hero, Section, Card } from "@/components/marketing/MarketingShell";
 import { RegisterInterestForm } from "@/components/marketing/RegisterInterestForm";
 import { isIntent, type Intent } from "@/lib/interest";
-import { PRICE_LABEL, OFFER_JOIN_BY, OFFER_FREE_UNTIL } from "@/lib/pricing";
+import { PRICE_LABEL, OFFER_JOIN_BY, OFFER_FREE_UNTIL, JOBS_PER_MONTH } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Book a demo — Certlyn",
@@ -33,7 +33,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What does it cost?",
-    a: `${PRICE_LABEL} per month for your firm, after the launch offer. Join before ${OFFER_JOIN_BY} and there is no subscription cost until ${OFFER_FREE_UNTIL}. No setup fee.`,
+    a: `${PRICE_LABEL} per month for your firm — unlimited certifiers, up to ${JOBS_PER_MONTH} new projects a month — after the launch offer. Join before ${OFFER_JOIN_BY} and there is no subscription cost until ${OFFER_FREE_UNTIL}. No setup fee.`,
   },
 ];
 

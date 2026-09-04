@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { MarketingShell, Container, Eyebrow, Section, Card, Check as Tick, CallToAction, btnPrimary, btnSecondary } from "@/components/marketing/MarketingShell";
 import { DashboardMockup, PortalMockup, PortalDesktopMockup, ReminderEmailMockup, WorkflowStrip, ProductFrame } from "@/components/marketing/ProductMockups";
-import { PLAN_NAME, PRICE_LABEL, PLAN_INCLUDES, OFFER_JOIN_BY, OFFER_FREE_UNTIL } from "@/lib/pricing";
+import { PLAN_NAME, PRICE_LABEL, PLAN_INCLUDES, OFFER_JOIN_BY, OFFER_FREE_UNTIL, COVERAGE_LINE } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Certlyn — Building Certification. Simplified.",
@@ -345,7 +345,7 @@ export default function HomePage() {
                 <span className="text-[44px] font-bold leading-none tracking-tight text-[#1a3a5f]">{PRICE_LABEL}</span>
                 <span className="text-[15px] text-slate-500">/ month</span>
               </div>
-              <div className="mt-1 text-[13px] text-slate-500">One subscription for your firm. Cancel any time.</div>
+              <div className="mt-1 text-[13px] text-slate-500">One subscription for your firm. {COVERAGE_LINE} Cancel any time.</div>
               <ul className="mt-6 grid gap-2.5 sm:grid-cols-2">
                 {PLAN_INCLUDES.map((item) => (
                   <li key={item} className="flex items-center gap-2 text-[14px] text-slate-700">
