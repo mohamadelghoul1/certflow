@@ -24,7 +24,7 @@ export type ItemDocument = {
   documentDate: string | null;
 };
 
-type ItemLike = {
+export type ItemLike = {
   file_path?: string | null;
   prepared_by?: string | null;
   drawing_number?: string | null;

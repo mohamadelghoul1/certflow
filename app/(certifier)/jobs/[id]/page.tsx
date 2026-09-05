@@ -7,7 +7,7 @@ import { DetailsTab } from "@/components/certifier/DetailsTab";
 import { SiteSensitivities } from "@/components/certifier/SiteSensitivities";
 import { DocumentReminderControls } from "@/components/certifier/DocumentReminderControls";
 import { createInvoice } from "@/lib/actions/invoices";
-import { ReceiptText } from "lucide-react";
+import { ReceiptText, FolderDown } from "lucide-react";
 import { NeighbourNotificationPanel } from "@/components/certifier/NeighbourNotificationPanel";
 import { JobCdcConditions } from "@/components/certifier/JobCdcConditions";
 import { OutstandingDocumentsPanel } from "@/components/certifier/OutstandingDocumentsPanel";
@@ -25,6 +25,7 @@ import { signedUrl } from "@/lib/storage";
 import type { CdcConditionSet, Contractor, Job } from "@/types/db";
 import { pathwayLabel, resolvePathwayCertRef, type Pathway } from "@/lib/business";
 import { SubmitButton } from "@/components/SubmitButton";
+import { DownloadButton } from "@/components/certifier/DownloadButton";
 
 // hasModifications: the tab appears once the CDC/CC has been issued,
 // since there is nothing to modify before that. It is a tab of its own
@@ -179,6 +180,18 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           {/* Straight to a draft invoice carrying this job's address and
               client — the route for projects that never had a quote,
               which is every imported one. */}
+          {/* Every document on the job, every version of each, the
+              inspection reports and photos, in one zip. It has existed
+              since the archive was built and was linked from nowhere,
+              so nobody could reach it. */}
+          <DownloadButton
+            href={`/api/jobs/${id}/archive`}
+            fallbackName="Job archive.zip"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary hover:underline"
+            preparingLabel="Zipping…"
+          >
+            <FolderDown size={13} /> Download the whole project
+          </DownloadButton>
           {director && (
             <form action={createInvoice}>
               <input type="hidden" name="job_id" value={id} />

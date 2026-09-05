@@ -113,6 +113,29 @@ director, so nothing changes for anyone until a director changes it.
 Your own role can only be changed by another director, so a firm is
 never left without one.
 
+## Getting documents out in one press
+
+Three downloads, each a different question a certifier asks:
+
+- **Download all N documents** — on every checklist (CDC/CC, NOC, OC and
+  a modification's). One zip of what is on that checklist now: the
+  current version of each document, numbered and named the way the
+  checklist names them, so `01 Architectural Plans.pdf` rather than
+  `scan_0001.pdf`. Superseded versions stay out. A file that cannot be
+  read is listed in a `MISSING FILES.txt` inside the zip rather than
+  failing the whole download.
+- **Download the whole project** — beside the address on the project
+  page. Every document and *every version of each*, the inspection
+  reports and photos, the signed approval, and a summary of the job.
+  This is the record a certifier has to hold for years, and the reason
+  the versions are kept: they show the set a certificate was actually
+  assessed against.
+- **Download the full approved set (PDF)** — on the certificate card.
+  The signed approval with every stamped document behind it, as one PDF.
+
+Both zips share the heavy-download rate limit, so a burst of them is
+slowed rather than allowed to hammer storage.
+
 ## Running Certlyn commercially — what you pay for
 
 Five accounts sit under Certlyn. Only two of them have to be paid plans
