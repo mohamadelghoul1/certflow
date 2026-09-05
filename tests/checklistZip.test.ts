@@ -1,13 +1,16 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { documentEntries, buildChecklistZip, type NamedItem } from "@/lib/archive/checklistDocuments";
+import { documentEntries, buildChecklistZip, chosenEntries, documentKey, type NamedItem } from "@/lib/archive/checklistDocuments";
 
 // Everything on one checklist, in one zip, named the way the checklist
 // names it — so a certifier is not left with a Downloads folder full of
 // "scan_0001.pdf".
 
+let nextId = 0;
+
 function item(title: string, files: { path: string; no?: number; label?: string; current?: boolean }[]): NamedItem {
   return {
+    id: `item-${++nextId}`,
     title,
     checklist_item_files: files.map((f, i) => ({
       id: `f${i}`,
@@ -68,8 +71,8 @@ describe("what goes into the zip", () => {
 
 describe("building it", () => {
   const entries = [
-    { fileName: "01 Plans.pdf", storagePath: "u/a.pdf" },
-    { fileName: "02 BASIX.pdf", storagePath: "u/b.pdf" },
+    { key: "a:1", fileName: "01 Plans.pdf", storagePath: "u/a.pdf", itemTitle: "Plans" },
+    { key: "b:1", fileName: "02 BASIX.pdf", storagePath: "u/b.pdf", itemTitle: "BASIX" },
   ];
 
   test("holds every file that could be read", async () => {
@@ -83,5 +86,52 @@ describe("building it", () => {
     const zip = await buildChecklistZip(entries, async (path) => (path === "u/a.pdf" ? new Uint8Array([1]) : null));
     assert.equal(zip.included, 1, "the readable one is still there");
     assert.deepEqual(zip.missing, ["02 BASIX.pdf"]);
+  });
+});
+
+
+// Ticking a few of twenty, rather than taking the lot.
+describe("choosing which documents to download", () => {
+  const items = [item("Plans", [{ path: "u/a.pdf" }]), item("BASIX", [{ path: "u/b.pdf" }]), item("Survey", [{ path: "u/c.pdf" }])];
+  const all = documentEntries(items);
+
+  test("no choice at all means everything — the plain button", () => {
+    assert.equal(chosenEntries(all, null).length, 3);
+    assert.equal(chosenEntries(all, []).length, 3, "an empty list is not a request for nothing");
+  });
+
+  test("only the ticked ones are included", () => {
+    const picked = chosenEntries(all, [all[0].key, all[2].key]);
+    assert.deepEqual(picked.map((e) => e.storagePath), ["u/a.pdf", "u/c.pdf"]);
+  });
+
+  test("the numbering stays that of the whole checklist, so a file can still be matched to its row", () => {
+    const picked = chosenEntries(all, [all[2].key]);
+    assert.deepEqual(picked.map((e) => e.fileName), ["03 Survey.pdf"], "not renumbered to 01");
+  });
+
+  test("a key naming nothing on this checklist matches nothing", () => {
+    assert.deepEqual(chosenEntries(all, ["some-other-job-item:1"]), []);
+  });
+
+  test("every document has a key of its own, including two on the same item", () => {
+    const twoDocs = [item("Engineering", [{ path: "u/a.pdf", no: 1 }, { path: "u/b.pdf", no: 2 }])];
+    const entries = documentEntries(twoDocs);
+    assert.equal(new Set(entries.map((e) => e.key)).size, 2);
+    assert.equal(entries[0].key, documentKey(twoDocs[0].id, 1));
+  });
+
+  // A document uploaded before migration 0023 reports its id as "item",
+  // so keying on that alone would give every one of them the same key
+  // and ticking one would tick them all.
+  test("documents from before per-document rows still get distinct keys", () => {
+    const legacy = [
+      { id: "old-1", title: "Plans", file_path: "u/old-a.pdf" } as NamedItem,
+      { id: "old-2", title: "Survey", file_path: "u/old-b.pdf" } as NamedItem,
+    ];
+    const entries = documentEntries(legacy);
+    assert.equal(entries.length, 2);
+    assert.equal(new Set(entries.map((e) => e.key)).size, 2);
+    assert.deepEqual(chosenEntries(entries, [entries[1].key]).map((e) => e.storagePath), ["u/old-b.pdf"]);
   });
 });

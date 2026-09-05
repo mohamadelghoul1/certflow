@@ -5,7 +5,7 @@ import { fetchStoredFile } from "@/lib/storage";
 import { withinLimit, downloadBucket, HEAVY_DOWNLOAD_LIMIT } from "@/lib/rateLimit";
 import { attachmentHeader, jobDocumentName } from "@/lib/downloadName";
 import { resolvePathwayCertRef } from "@/lib/business";
-import { buildChecklistZip, documentEntries, type NamedItem } from "@/lib/archive/checklistDocuments";
+import { buildChecklistZip, chosenEntries, documentEntries, type NamedItem } from "@/lib/archive/checklistDocuments";
 import type { Job } from "@/types/db";
 
 // Everything on one checklist, as a single zip.
@@ -13,7 +13,7 @@ import type { Job } from "@/types/db";
 // Read through the certifier's own session, so row security decides
 // whose documents these are rather than this route being trusted to ask
 // for the right job.
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ jobId: string; checklistId: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ jobId: string; checklistId: string }> }) {
   const { jobId, checklistId } = await params;
   const { profile, userId } = await requireProfile("certifier");
   const supabase = await createClient();
@@ -41,9 +41,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const job = rawJob as Job;
 
   const items = ((checklist.checklist_items as NamedItem[] | null) || []).filter(Boolean);
-  const entries = documentEntries(items);
+  // Which documents were ticked. Absent means all of them — the plain
+  // button — and a key that names nothing simply matches nothing, so a
+  // stale link cannot reach another job's files.
+  const asked = request.nextUrl.searchParams.get("docs");
+  const entries = chosenEntries(
+    documentEntries(items),
+    asked ? asked.split(",").map((k) => k.trim()).filter(Boolean) : null
+  );
   if (entries.length === 0) {
-    return NextResponse.json({ error: "There are no documents on this checklist yet." }, { status: 404 });
+    return NextResponse.json({ error: asked ? "None of those documents are on this checklist." : "There are no documents on this checklist yet." }, { status: 404 });
   }
 
   const { bytes, included } = await buildChecklistZip(entries, async (path) => (await fetchStoredFile(path, supabase))?.bytes || null);

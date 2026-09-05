@@ -2,8 +2,8 @@ import { displayStatus, formatISODate } from "@/lib/business";
 import { signedUrl } from "@/lib/storage";
 import { notifyClientOfChecklist } from "@/lib/actions/jobs";
 import { NotifyClientButton } from "@/components/certifier/NotifyClientButton";
-import { DownloadButton } from "@/components/certifier/DownloadButton";
-import { currentDocuments } from "@/lib/checklistDocuments";
+import { ChecklistDownloadPicker } from "@/components/certifier/ChecklistDownloadPicker";
+import { documentEntries } from "@/lib/archive/checklistDocuments";
 import { DocumentPicker } from "@/components/certifier/DocumentPicker";
 import { RemoveItemButton } from "@/components/certifier/RemoveItemButton";
 import { RemovableRow } from "@/components/certifier/RemovableRow";
@@ -15,7 +15,7 @@ import { ItemDocuments } from "@/components/certifier/ItemDocuments";
 import { StampPositioner } from "@/components/certifier/StampPositioner";
 import { stampLines } from "@/lib/pdf/stamp";
 import type { StampPreview } from "@/lib/pdf/stampDetails";
-import { CheckCircle2, Download, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler, FolderDown } from "lucide-react";
+import { CheckCircle2, Download, FileText, Layers, Award, HardHat, Droplets, ClipboardList, Landmark, Ruler } from "lucide-react";
 import type { ChecklistItem, Amendment, ChecklistItemFile } from "@/types/db";
 
 type ItemWithAmendments = ChecklistItem & { amendments: Amendment[]; checklist_item_files?: ChecklistItemFile[] | null };
@@ -72,9 +72,10 @@ export async function ChecklistSection({
   const percent = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
   const allComplete = items.length > 0 && doneCount === items.length;
   const remaining = items.length - doneCount;
-  // How many rows actually have a file behind them — what the download
-  // would contain, and whether it is worth offering at all.
-  const withDocuments = items.filter((i) => currentDocuments(i).some((d) => d.filePath)).length;
+  // What the download would contain, worked out the same way the zip
+  // works it out, so the list the certifier ticks and the files that
+  // arrive are the same list.
+  const downloadable = documentEntries(items as never).map((e) => ({ key: e.key, fileName: e.fileName, itemTitle: e.itemTitle }));
 
   return (
     <div className="space-y-5">
@@ -101,16 +102,7 @@ export async function ChecklistSection({
                   folder full of "scan_0001.pdf". One press, one zip,
                   each file named and numbered the way the checklist
                   names it. */}
-              {withDocuments > 0 && (
-                <DownloadButton
-                  href={`/api/jobs/${jobId}/checklists/${checklistId}/documents`}
-                  fallbackName={`${label} Documents.zip`}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-secondary hover:underline"
-                  preparingLabel="Zipping…"
-                >
-                  <FolderDown size={13} /> Download all {withDocuments} document{withDocuments === 1 ? "" : "s"}
-                </DownloadButton>
-              )}
+              <ChecklistDownloadPicker jobId={jobId} checklistId={checklistId} label={label} documents={downloadable} />
               <NotifyClientButton action={notifyClientOfChecklist} label="Notify client of update" fields={{ job_id: jobId, checklist_id: checklistId, label }} />
             </div>
           </div>

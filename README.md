@@ -117,13 +117,17 @@ never left without one.
 
 Three downloads, each a different question a certifier asks:
 
-- **Download all N documents** — on every checklist (CDC/CC, NOC, OC and
-  a modification's). One zip of what is on that checklist now: the
-  current version of each document, numbered and named the way the
-  checklist names them, so `01 Architectural Plans.pdf` rather than
-  `scan_0001.pdf`. Superseded versions stay out. A file that cannot be
-  read is listed in a `MISSING FILES.txt` inside the zip rather than
-  failing the whole download.
+- **Download N documents** — on every checklist (CDC/CC, NOC, OC and a
+  modification's). Press it and the documents are listed with everything
+  ticked; untick what you don't want, or use Select none and tick the
+  two you do. One zip of the current version of each, numbered and named
+  the way the checklist names them, so `01 Architectural Plans.pdf`
+  rather than `scan_0001.pdf`. A part-selection keeps the numbering of
+  the whole checklist — pick the third and seventh and you get `03 …`
+  and `07 …` — so a file can still be matched to the row it came from.
+  Superseded versions stay out. A file that cannot be read is listed in
+  a `MISSING FILES.txt` inside the zip rather than failing the whole
+  download.
 - **Download the whole project** — beside the address on the project
   page. Every document and *every version of each*, the inspection
   reports and photos, the signed approval, and a summary of the job.
