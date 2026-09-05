@@ -9,6 +9,10 @@ import Link from "next/link";
 import { DashboardSearch } from "@/components/certifier/DashboardSearch";
 import { TaskBoard } from "@/components/certifier/TaskBoard";
 import { AssistantBriefing } from "@/components/certifier/AssistantBriefing";
+import { FirmSetupPanel } from "@/components/certifier/FirmSetupPanel";
+import { setupSteps } from "@/lib/firmSetup";
+import { OverageNoticeCard } from "@/components/certifier/OverageNotice";
+import { overageNotice, monthKey as billingMonthKey, type FirmPlan } from "@/lib/billing";
 import { ProjectsDonut } from "@/components/certifier/ProjectsDonut";
 import { AlertTriangle, Building2, CalendarCheck, ClipboardCheck, Activity, CalendarClock, ShieldCheck, Inbox, Zap, Plus, FilePlus, UserPlus, BarChart3, PieChart, HardHat } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -126,6 +130,52 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   ]);
   const allJobs = jobs || [];
   const activeJobs = allJobs.filter((j) => j.status === "active");
+
+  // Whether this month has gone past what their subscription covers.
+  // The director's business, like the rest of the money.
+  let overage: ReturnType<typeof overageNotice> = null;
+  if (director) {
+    const month = billingMonthKey();
+    const [{ data: planRow }, { data: usedRow }] = await Promise.all([
+      supabase.from("firm_plans").select("*").eq("firm_id", profile.firm_id).maybeSingle(),
+      supabase.rpc("my_firm_usage", { p_month: month }),
+    ]);
+    const notice = overageNotice((planRow as FirmPlan | null) ?? null, Number(usedRow ?? 0), month);
+    // On the dashboard only once it is actually costing them: a count
+    // of what is left belongs on the page where a project is created.
+    overage = notice && notice.level !== "near" ? notice : null;
+  }
+
+  // What the firm still has to set up. A director's business — a team
+  // member cannot change any of it — and asked for only while there is
+  // something left to do, so a settled firm pays nothing for it after
+  // the first week.
+  let setup: ReturnType<typeof setupSteps> | null = null;
+  if (director) {
+    const [{ data: firmRow }, { data: fullCertifiers }, { count: libraryItems }, { count: clientCount }, { data: factors }] = await Promise.all([
+      supabase.from("firms").select("*").eq("id", profile.firm_id).maybeSingle(),
+      supabase.from("certifiers").select("registration_no, signature_url").eq("firm_id", profile.firm_id),
+      supabase.from("document_library_items").select("id", { count: "exact", head: true }).eq("firm_id", profile.firm_id),
+      supabase.from("clients").select("id", { count: "exact", head: true }).eq("firm_id", profile.firm_id),
+      supabase.auth.mfa.listFactors(),
+    ]);
+    const firm = (firmRow || {}) as { name?: string; abn?: string; office_address?: string; phone?: string; logo_url?: string; from_email?: string; email?: string };
+    setup = setupSteps({
+      firmName: firm.name ?? null,
+      abn: firm.abn ?? null,
+      officeAddress: firm.office_address ?? null,
+      phone: firm.phone ?? null,
+      logoUrl: firm.logo_url ?? null,
+      // Either their own sending address or the firm's contact address:
+      // both are enough for a client to see who wrote to them.
+      sendingAddressSet: !!(firm.from_email || firm.email),
+      certifiers: (fullCertifiers || []).map((c) => ({ registrationNo: c.registration_no, signatureUrl: c.signature_url })),
+      libraryItems: libraryItems || 0,
+      clients: clientCount || 0,
+      jobs: allJobs.length,
+      twoFactorOn: (factors?.totp || []).length > 0,
+    });
+  }
 
   const tasksByList = new Map<string, ManualTask[]>();
   for (const t of (manualTasks || []) as ManualTask[]) {
@@ -302,6 +352,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           {getGreeting()}, {firstName}. Here&rsquo;s what&rsquo;s happening today.
         </p>
       </div>
+
+      {setup && (
+        <div className="mb-6">
+          <FirmSetupPanel steps={setup} />
+        </div>
+      )}
+
+      <OverageNoticeCard notice={overage} />
 
       {/* Where a team member lands after following a link to a page that
           is the director's — told why, rather than bounced in silence. */}

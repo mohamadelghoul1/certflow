@@ -168,6 +168,30 @@ lives. `hello@certlyn.com.au` is enough. Then set in Vercel:
 Sending is already done: `certlyn.com.au` is verified in Resend and mail
 goes out as `notifications@certlyn.com.au`.
 
+## Knowing when Certlyn is down
+
+`https://www.certlyn.com.au/api/health` answers `{"status":"ok"}` with a
+**200** when the database replies, and `{"status":"degraded"}` with a
+**503** when it does not. It asks the database a real question rather
+than only checking that a page renders, because the failure that matters
+is the one where the site loads and nobody can sign in. It gives up
+after five seconds, so a hung database reports as down rather than
+leaving a monitor hanging. It says nothing about any firm — anyone on
+the internet can reach it.
+
+**Point a monitor at it.** UptimeRobot and BetterStack both have free
+plans that will check it every five minutes and text or email you when
+it fails:
+
+1. Create a monitor of type **HTTP(s)**.
+2. URL: `https://www.certlyn.com.au/api/health`
+3. Alert when the status code is **not 200**.
+4. Send alerts to your mobile as well as email — an outage at 9am on a
+   Tuesday is worth being woken for; an email you read at lunchtime is
+   not.
+
+Without this you find out Certlyn is down from a certifier ringing you.
+
 ## Charging other firms — the Firms page
 
 You are the platform owner (migration 0068 marks your firm), so there is
@@ -753,6 +777,22 @@ its own company and ABN, change it there and both pages follow. The
 contact address on both pages is `CONTACT_EMAIL` once it is set in
 Vercel, and the interest form until then.
 
+### Monitoring, first-run setup and the overage warning — nothing to run
+
+Built 4 Sept 2026, all three in code with no database update needed.
+
+- **`/api/health`** and the monitor to point at it — see "Knowing when
+  Certlyn is down" above. Setting up the monitor is the only step, and
+  it is yours.
+- **A setup checklist on a new firm's dashboard.** Firm details, logo,
+  certifiers and their registrations, a signature for each, the sending
+  address, the document library, a first client, a first project, and
+  two-factor. It opens itself while anything essential is missing,
+  collapses to one line once they are done, and disappears entirely when
+  the firm is set up. Directors only — a team member can change none of
+  it.
+- **The overage warning**, described under "Charging other firms".
+
 ### Charging other firms — run updates 0076 and 0077
 
 Built 4 Sept 2026: see "Charging other firms — the Firms page" above.
@@ -769,10 +809,12 @@ still yours:
   ending on a fixed date does that work by itself, since the later a
   firm joins the fewer months they get. Say the word if you want the
   cut-off back.
-- **Nothing enforces the cap.** A firm that creates a 31st project in a
-  month is not stopped or warned beyond the bar under Settings → Your
-  plan; it simply appears on the invoice. Say the word if you want a
-  warning at the point of creating one.
+- **Nothing enforces the cap, but nothing is a surprise either.** A firm
+  is told on the New Project page when five or fewer of their included
+  projects are left, again when the last one is used, and on their
+  dashboard once they are over — each time naming what the next project
+  will add to the invoice. They are never stopped: a certifier with a
+  job to open opens it. Say the word if you want it to actually refuse.
 
 ### The demonstration account — run update 0075
 

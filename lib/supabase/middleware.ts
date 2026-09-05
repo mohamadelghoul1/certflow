@@ -35,7 +35,10 @@ export async function updateSession(request: NextRequest) {
   // itself. Bouncing them to the sign-in page here would eat the link.
   // The public pages a certifier reads before they have a login.
   const isMarketingRoute = path === "/how-it-works" || path === "/why-certlyn" || path === "/join" || path === "/pricing" || path === "/privacy" || path === "/terms";
-  const isPublicRoute = path === "/" || isAuthRoute || isMarketingRoute || path.startsWith("/auth/");
+  // The monitoring endpoint answers to anyone, because a monitor has no
+  // login and the whole point is that it still answers when the rest of
+  // the app cannot. It says nothing but whether the database replied.
+  const isPublicRoute = path === "/" || isAuthRoute || isMarketingRoute || path.startsWith("/auth/") || path === "/api/health";
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();

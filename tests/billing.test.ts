@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { chargeFor, monthNumber, monthKey, monthLabel, monthsSince, money, rateLabel, statementLines, usageCsv, DEFAULT_PLAN, type FirmPlan } from "@/lib/billing";
+import { chargeFor, monthNumber, monthKey, monthLabel, monthsSince, money, rateLabel, statementLines, usageCsv, overageNotice, DEFAULT_PLAN, type FirmPlan } from "@/lib/billing";
 
 function plan(over: Partial<FirmPlan> = {}): FirmPlan {
   return {
@@ -175,5 +175,43 @@ describe("the spreadsheet", () => {
     const firm = { firm_id: "f1", firm_name: "Smith, Jones & Co", created_on: "2026-09-15", billable_projects: 1, imported_projects: 0, total_projects: 1 };
     const csv = usageCsv([{ firm, plan: null, charge: null }], "2026-09");
     assert.match(csv.split("\n")[1], /"Smith, Jones & Co"/);
+  });
+});
+
+
+// Nobody should learn they went over from the invoice.
+describe("the warning before a project is charged for", () => {
+  test("says nothing while the month has room", () => {
+    assert.equal(overageNotice(plan(), 0, "2026-09"), null);
+    assert.equal(overageNotice(plan(), 24, "2026-09"), null, "24 of 30 is not worth interrupting anyone for");
+  });
+
+  test("gives a quiet word when the last few are left", () => {
+    const notice = overageNotice(plan(), 25, "2026-09");
+    assert.equal(notice?.level, "near");
+    assert.match(notice?.headline || "", /5 of your 30 projects left/);
+  });
+
+  test("says plainly when the last one has been used", () => {
+    const notice = overageNotice(plan(), 30, "2026-09");
+    assert.equal(notice?.level, "at");
+    assert.match(notice?.detail || "", /\$25\.00 \+ GST/);
+  });
+
+  test("says what it is costing once they are over", () => {
+    const notice = overageNotice(plan(), 33, "2026-09");
+    assert.equal(notice?.level, "over");
+    assert.match(notice?.headline || "", /3 projects past the 30/);
+    assert.match(notice?.detail || "", /\$75\.00 to this month/);
+    assert.match(notice?.detail || "", /Another one adds \$25\.00/);
+  });
+
+  test("one over reads as one, not as a plural", () => {
+    assert.match(overageNotice(plan(), 31, "2026-09")?.headline || "", /1 project past/);
+  });
+
+  test("says nothing at all for a firm with no terms, or before their terms start", () => {
+    assert.equal(overageNotice(null, 99, "2026-09"), null);
+    assert.equal(overageNotice(plan(), 99, "2026-08"), null, "the month before they joined is not theirs to be charged for");
   });
 });

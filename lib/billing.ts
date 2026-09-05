@@ -177,3 +177,47 @@ export function usageCsv(rows: { firm: FirmUsageRow; plan: FirmPlan | null; char
   ]);
   return [head, ...body].map((r) => r.map((cell) => (/[",\n]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell)).join(",")).join("\n");
 }
+
+
+// A word of warning before a firm is charged for a project.
+//
+// Nobody should learn they went past what their subscription covers by
+// reading the invoice. This is what the New Project page says before
+// the project is created, and what the dashboard says once it has been.
+// Deliberately not a block: a certifier with a job to open opens it,
+// and finds out what it costs at the moment they decide, not after.
+export type OverageNotice = { level: "near" | "at" | "over"; headline: string; detail: string };
+
+export function overageNotice(plan: FirmPlan | null, used: number, monthKeyValue: string): OverageNotice | null {
+  if (!plan) return null;
+  const charge = chargeFor(plan, monthKeyValue, used);
+  // Before the arrangement starts nothing is being counted against it.
+  if (charge.monthNumber === 0) return null;
+  const each = money(plan.extra_project_fee_cents);
+  const left = charge.included - used;
+  const month = monthLabel(monthKeyValue);
+
+  if (charge.extra > 0) {
+    return {
+      level: "over",
+      headline: `${charge.extra} project${charge.extra === 1 ? "" : "s"} past the ${charge.included} included this month`,
+      detail: `${month} so far: ${used} new projects. The ${charge.extra} past your first ${charge.included} add ${money(charge.extraCents)} to this month's invoice, at ${each} each. Another one adds ${each}.`,
+    };
+  }
+  if (left === 0) {
+    return {
+      level: "at",
+      headline: `You have used all ${charge.included} projects your subscription covers this month`,
+      detail: `The next project you create in ${month} adds ${each} + GST to this month's invoice. Projects brought across from another system are never counted.`,
+    };
+  }
+  // Five or fewer left is worth a quiet word; earlier than that is noise.
+  if (left > 0 && left <= 5) {
+    return {
+      level: "near",
+      headline: `${left} of your ${charge.included} projects left this month`,
+      detail: `After that, each new project in ${month} adds ${each} + GST. Imported projects are never counted.`,
+    };
+  }
+  return null;
+}
