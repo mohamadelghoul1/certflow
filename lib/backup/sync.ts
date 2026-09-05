@@ -62,6 +62,13 @@ export function candidatesForJob(job: Job, items: ItemWithFiles[], inspections: 
 
   inspections.forEach((inspection, index) => {
     const folder = inspectionFolder(index + 1, inspection.title, inspection.date ? formatISODate(inspection.date) : null);
+    // The report Certlyn built and stored the moment it was signed. It
+    // was missing from the backup entirely: a firm filing its
+    // inspections got the photographs and nothing that said what the
+    // certifier found.
+    if (inspection.report_pdf_path) {
+      candidates.push({ storagePath: inspection.report_pdf_path, folder, fileName: "Inspection report (signed).pdf" });
+    }
     if (inspection.report_file_path) {
       const extension = inspection.report_file_path.includes(".") ? inspection.report_file_path.slice(inspection.report_file_path.lastIndexOf(".")) : "";
       candidates.push({ storagePath: inspection.report_file_path, folder, fileName: `Inspection report${extension}` });

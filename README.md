@@ -445,6 +445,30 @@ Lets a firm keep its own copy of every document in its own cloud storage,
 in the same folders as the job archive download. Off unless configured:
 the Settings page only offers a provider whose keys are present.
 
+**When a copy is made.** At each moment a job's records become worth
+keeping, rather than when a certificate happens to be emailed to a
+client:
+
+- the CDC/CC is **issued** — everything the client sent goes up
+- the CDC/CC is **signed** — the finished approved set follows
+- a **modification** is issued
+- an **inspection report is signed** — the signed report, and the
+  photographs with it
+- an **Occupation Certificate** is issued, and again when it is signed
+
+Copying more often costs almost nothing: a file already sent up is
+remembered by its storage path and never sent twice, so a second run
+over the same job uploads only what is new.
+
+**What is not copied.** Superseded drafts and documents still waiting on
+a decision — the firm's filing holds what it relied on, one file per
+document. An unsigned approved set, which is a draft. And a project
+where nothing has been issued or signed yet: until then it lives only in
+Certlyn, and the nightly Supabase backup is what covers it. Quotes,
+invoices, clients and the audit log are records rather than documents —
+Settings → Cloud backup has a **Download a copy of your records** button
+for those.
+
 You register the app with the provider; Certlyn never sees your firm's
 password, and the keys below are the deployment's, not any one firm's.
 

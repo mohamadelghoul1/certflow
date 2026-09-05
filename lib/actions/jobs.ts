@@ -1120,6 +1120,12 @@ export async function issuePathwayCertificate(_prev: ActionState, formData: Form
 
   const issued = await issueNextPathwayVersion(supabase, jobId, certifierId, profile.firm_id);
   if (issued.error) return { error: issued.error };
+  // Everything the client sent goes to the firm's own cloud now, rather
+  // than waiting for the certificate to be emailed. After the response:
+  // a copy to somebody's Dropbox must never hold up a certificate.
+  after(async () => {
+    await backUpIssuedJob(jobId, profile, "pathway");
+  });
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
 }
@@ -1222,6 +1228,11 @@ export async function signPathwayCertificate(_prev: ActionState, formData: FormD
 
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/pathway/${jobId}`);
+  // The signed approved set is the record worth filing, so this is the
+  // run that puts it in the firm's cloud.
+  after(async () => {
+    await backUpIssuedJob(jobId, profile, "pathway");
+  });
   return undefined;
 }
 
@@ -1282,13 +1293,6 @@ export async function sendPathwayCertificateToClient(_prev: ActionState, formDat
     jobAddress: job.address,
     actor: profile,
     detail: { pathway: job.pathway, version: job.pathway_version },
-  });
-
-  // The moment a certificate is released is the moment the job's records
-  // are worth keeping. After the response, because a copy to somebody's
-  // Dropbox must never hold up issuing a certificate.
-  after(async () => {
-    await backUpIssuedJob(jobId, profile, "pathway");
   });
 
   revalidatePath(`/jobs/${jobId}`);
@@ -1520,6 +1524,10 @@ export async function issueModification(_prev: ActionState, formData: FormData):
     return { error: error.message };
   }
   revalidatePath(`/jobs/${jobId}`);
+  // A modified certificate is a new certificate, and is filed like one.
+  after(async () => {
+    await backUpIssuedJob(jobId, profile, "pathway");
+  });
   return undefined;
 }
 
@@ -1534,7 +1542,7 @@ export async function uploadModificationApproval(formData: FormData) {
 }
 
 export async function issueOc(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { director } = await requireJobWriter();
+  const { profile, director } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   if (await awaitingDirector(supabase, jobId, "oc", director)) return { error: NEEDS_APPROVAL };
@@ -1582,12 +1590,17 @@ export async function issueOc(_prev: ActionState, formData: FormData): Promise<A
   }
 
   after(() => pruneAfterIssue({ jobId, kind: "oc", firmId: ocJob.firm_id ?? null }));
+  // Every document behind the Occupation Certificate goes to the firm's
+  // own cloud on issuing; the finished set follows when it is signed.
+  after(async () => {
+    await backUpIssuedJob(jobId, profile, "oc");
+  });
   revalidatePath(`/jobs/${jobId}`);
   return undefined;
 }
 
 export async function signOc(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireJobWriter();
+  const { profile } = await requireJobWriter();
   const supabase = await createClient();
   const jobId = String(formData.get("job_id"));
   const ocId = String(formData.get("oc_id"));
@@ -1596,6 +1609,10 @@ export async function signOc(_prev: ActionState, formData: FormData): Promise<Ac
   if (!data || data.length === 0) return { error: "Could not find this Occupation Certificate to sign." };
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/oc/${jobId}/${ocId}`);
+  // The signed Occupation Certificate set, into the firm's own cloud.
+  after(async () => {
+    await backUpIssuedJob(jobId, profile, "oc");
+  });
   return undefined;
 }
 
@@ -1619,10 +1636,6 @@ export async function sendOcToClient(_prev: ActionState, formData: FormData): Pr
     "Occupation Certificate issued",
     `<p>Your ${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate has been issued and is now available to view in your portal.</p>`
   );
-
-  after(async () => {
-    await backUpIssuedJob(jobId, profile, "oc");
-  });
 
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/certificate/oc/${jobId}/${ocId}`);

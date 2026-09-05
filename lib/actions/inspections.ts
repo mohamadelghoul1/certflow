@@ -1,11 +1,13 @@
 "use server";
 
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireProfile, requireJobWriter } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { inspectionBookingEmail } from "@/lib/inspections/bookingEmail";
 import { todayISO, todayInNsw, formatISODate } from "@/lib/business";
+import { backUpIssuedJob } from "@/lib/backup/autoBackup";
 import type { ActionState } from "@/lib/actions/auth";
 import { inspectionDescriptionFor, MAX_INSPECTION_PHOTOS } from "@/lib/constants";
 import { reorderedIds } from "@/lib/checklists";
@@ -213,6 +215,14 @@ export async function signInspectionReport(_prev: ActionState, formData: FormDat
   } catch (buildError) {
     console.error("could not store the signed inspection report:", buildError instanceof Error ? buildError.message : buildError);
   }
+
+  // A signed inspection report is a record worth keeping, so the firm's
+  // own cloud gets it — and the job's other files with it — without
+  // waiting for a certificate months later. After the response: a copy
+  // to somebody's Dropbox must never hold up signing.
+  after(async () => {
+    await backUpIssuedJob(jobId, profile, "inspection");
+  });
 
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath(`/jobs/${jobId}/inspections/${inspectionId}/report`);

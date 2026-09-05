@@ -88,4 +88,31 @@ describe("what a backup copies from a checklist", () => {
       "Documents/Inspections/01 Piers - 26 Aug 2026/01.jpg",
     ]);
   });
+
+  // The report Certlyn writes and stores when the certifier signs it.
+  // It was missing from the backup entirely: a firm filing its
+  // inspections got the photographs and nothing saying what was found.
+  test("the signed inspection report is copied", () => {
+    const inspections = [
+      { id: "i1", title: "Frame", date: "2026-08-26", report_pdf_path: "r/signed-frame.pdf", inspection_photos: [] },
+    ] as never[];
+    assert.deepEqual(paths(candidatesForJob(job, [], inspections)), [
+      "Documents/Inspections/01 Frame - 26 Aug 2026/Inspection report (signed).pdf",
+    ]);
+  });
+
+  test("a signed report and an uploaded one are two different documents", () => {
+    const inspections = [
+      { id: "i1", title: "Final", date: "2026-08-26", report_pdf_path: "r/signed.pdf", report_file_path: "r/uploaded.pdf", inspection_photos: [] },
+    ] as never[];
+    assert.deepEqual(paths(candidatesForJob(job, [], inspections)), [
+      "Documents/Inspections/01 Final - 26 Aug 2026/Inspection report (signed).pdf",
+      "Documents/Inspections/01 Final - 26 Aug 2026/Inspection report.pdf",
+    ]);
+  });
+
+  test("an inspection with nothing recorded yet copies nothing", () => {
+    const inspections = [{ id: "i1", title: "Piers", date: null, inspection_photos: [] }] as never[];
+    assert.deepEqual(paths(candidatesForJob(job, [], inspections)), []);
+  });
 });

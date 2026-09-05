@@ -10,21 +10,26 @@ import { recordAuditEvent } from "@/lib/audit";
 import type { Connection } from "@/lib/backup/connection";
 import type { Profile } from "@/types/db";
 
-// Copying a finished job to the firm's own cloud, without anyone
-// remembering to.
+// Copying a job to the firm's own cloud, without anyone remembering to.
 //
 // A backup that depends on a button being pressed is a backup that
-// exists on the days somebody thought about it. The moment a certificate
-// is released is the moment the job's records are worth keeping, so that
-// is when the copy is made — every document the client sent, every
-// inspection report and photo, and the finished set itself.
+// exists on the days somebody thought about it. So the copy is made at
+// each moment the job's records become worth keeping — a certificate
+// issued or signed, an inspection report signed, an Occupation
+// Certificate issued or signed — rather than waiting for the certificate
+// to be emailed to the client, which a firm might do days later or not
+// at all.
+//
+// Copying more often costs almost nothing: a file already sent up is
+// remembered by its storage path and never sent twice, so a second run
+// over the same job uploads only what is new.
 //
 // Nothing here can fail loudly: a firm that has not connected any cloud
 // storage simply has nothing to copy to, and a copy that fails must not
 // undo the issuing of a certificate. Failures go to the audit log, where
 // the certifier will see them.
 
-export type AutoBackupReason = "pathway" | "oc";
+export type AutoBackupReason = "pathway" | "oc" | "inspection";
 
 // Every cloud a firm has connected, not one: a firm can hold both
 // Dropbox and OneDrive, and a copy that only reached one of them is a
@@ -46,10 +51,19 @@ async function connectionsFor(firmId: string): Promise<Connection[]> {
 async function generatedFor(reason: AutoBackupReason, jobId: string, profile: Profile): Promise<GeneratedDocument[]> {
   const admin = createAdminClient();
 
+  // An inspection's signed report is stored the moment it is signed, so
+  // it travels with the job's other files and there is nothing to build.
+  if (reason === "inspection") return [];
+
   if (reason === "pathway") {
     const { data: job } = await admin.from("jobs").select("pathway, pathway_signed_at, pathway_version").eq("id", jobId).maybeSingle();
     const row = job as { pathway?: string; pathway_signed_at?: string | null; pathway_version?: number | null } | null;
-    const marker = `v${row?.pathway_version ?? 1}:${row?.pathway_signed_at || "unsigned"}`;
+    // An unsigned approved set is a draft, and a draft has no place in
+    // the firm's filing. Issuing still copies everything the client
+    // sent — the part that could not be rebuilt — and the set itself
+    // arrives when the certificate is signed.
+    if (!row?.pathway_signed_at) return [];
+    const marker = `v${row?.pathway_version ?? 1}:${row.pathway_signed_at}`;
     const documents: GeneratedDocument[] = [
       {
         folder: certificateFolder(row?.pathway || "CDC"),
@@ -77,11 +91,12 @@ async function generatedFor(reason: AutoBackupReason, jobId: string, profile: Pr
 
   const { data: records } = await admin.from("oc_records").select("id, type, signed_at, generated_date").eq("job_id", jobId).order("created_at");
   return ((records || []) as { id: string; type: string; signed_at: string | null; generated_date: string | null }[])
-    .filter((record) => record.signed_at || record.generated_date)
+    // Signed ones only, for the same reason as the approved set above.
+    .filter((record) => record.signed_at)
     .map((record) => ({
       folder: ARCHIVE_SECTIONS.oc,
       fileName: `${record.type === "whole" ? "Whole" : "Partial"} Occupation Certificate set.pdf`,
-      marker: `${record.id}:${record.signed_at || record.generated_date}`,
+      marker: `${record.id}:${record.signed_at}`,
       build: async () => (await buildOcSet(jobId, record.id, profile))?.bytes || null,
     }));
 }
@@ -126,7 +141,7 @@ export async function backUpIssuedJob(jobId: string, profile: Profile, reason: A
       await recordAuditEvent(admin, {
         firmId: profile.firm_id,
         action: "backup.failed",
-        summary: `Copy to ${connection.provider} after issuing: ${failure}`,
+        summary: `Copy to ${connection.provider}: ${failure}`,
         jobId,
         jobAddress: (job as { address?: string } | null)?.address || null,
         detail: { uploaded, provider: connection.provider },
